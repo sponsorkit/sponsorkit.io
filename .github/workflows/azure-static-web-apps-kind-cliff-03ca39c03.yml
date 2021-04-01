@@ -19,11 +19,6 @@ jobs:
         with:
           submodules: true
           
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '3.1.100'
-          
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v0.0.1-preview
@@ -34,6 +29,7 @@ jobs:
           app_location: "/src/frontend"
           api_location: "/src/api"
           output_location: "public"
+          skip_app_build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
