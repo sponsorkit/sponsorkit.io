@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sponsorkit.Domain.Models;
@@ -11,9 +12,23 @@ namespace Sponsorkit.Infrastructure
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddOptions<CosmosOptions>();
+            AddOptions<CosmosOptions>(builder);
             
             builder.Services.AddDbContext<DataContext>();
+        }
+        
+        private static void AddOptions<TOptions>(IFunctionsHostBuilder builder) where TOptions: class
+        {
+            var name = typeof(TOptions).Name;
+
+            builder.Services
+                .AddOptions<TOptions>()
+                .Configure<IConfiguration>((settings, configuration) =>
+                {
+                    configuration
+                        .GetSection(name)
+                        .Bind(settings);
+                });
         }
     }
 }
