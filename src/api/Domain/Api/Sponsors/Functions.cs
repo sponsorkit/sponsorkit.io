@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -35,48 +36,44 @@ namespace Sponsorkit.Domain.Api.Sponsors
         /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32"/>
         /// </summary>
         [Function("SponsorGet")]
-        public async Task<IActionResult> SponsorBeneficiaryGet(
+        public async Task<HttpResponseData?> SponsorBeneficiaryGet(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}")]
             HttpRequestData request,
             string beneficiary)
         {
-            var cancellationToken = CancellationToken.None;
-            
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                return new BadRequestObjectResult("Beneficiary ID was not of a correct format.");
+                throw new InvalidOperationException("Invalid beneficiary ID.");
+
+            var details = await _mediator.Send(new GetUserDetailsQuery(beneficiaryId));
+
+            var response = request.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(details);
             
-            var response = await _mediator.Send(
-                new GetUserDetailsQuery(beneficiaryId),
-                cancellationToken);
-            return new OkObjectResult(response);
+            return response;
         }
 
         /// <summary>
         /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
         /// </summary>
         [Function("BeneficiaryReferenceGet")]
-        public async Task<IActionResult> SponsorBeneficiaryReferenceGet(
+        public async Task<HttpResponseData> SponsorBeneficiaryReferenceGet(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
             HttpRequestData request,
             string beneficiary,
             string reference)
         {
-            var cancellationToken = CancellationToken.None;
-            
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                return new BadRequestObjectResult("Beneficiary ID was not of a correct format.");
+                throw new InvalidOperationException("Invalid beneficiary ID.");
             
             const int amountToTake = 10;
             
             var currentSponsor = await _mediator.Send(
                 new GetBeneficiarySponsorshipSummaryByReferenceQuery(
                     beneficiaryId,
-                    reference),
-                cancellationToken);
+                    reference));
 
             var donationStatistics = await _mediator.Send(
-                new GetBeneficiaryStatisticsQuery(beneficiaryId),
-                cancellationToken);
+                new GetBeneficiaryStatisticsQuery(beneficiaryId));
 
             var leastAmountSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
@@ -86,9 +83,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         Sort = new SummarySortOptions(
                             SummarySortProperty.ByAmount,
                             SortDirection.Ascending)
-                    },
-                    cancellationToken),
-                cancellationToken);
+                    }));
 
             var mostAmountSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
@@ -98,9 +93,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         Sort = new SummarySortOptions(
                             SummarySortProperty.ByAmount,
                             SortDirection.Descending)
-                    },
-                    cancellationToken),
-                cancellationToken);
+                    }));
 
             var earliestSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
@@ -110,9 +103,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         Sort = new SummarySortOptions(
                             SummarySortProperty.ByDate,
                             SortDirection.Ascending)
-                    },
-                    cancellationToken),
-                cancellationToken);
+                    }));
 
             var latestSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
@@ -122,11 +113,10 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         Sort = new SummarySortOptions(
                             SummarySortProperty.ByDate,
                             SortDirection.Descending)
-                    },
-                    cancellationToken),
-                cancellationToken);
-            
-            return new OkObjectResult(
+                    }));
+
+            var response = request.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(
                 new Response(
                     _mapper.Map<DonationsResponse>(donationStatistics),
                     new SponsorsResponse(
@@ -137,6 +127,8 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         new SponsorsByDateResponse(
                             latestSponsors,
                             earliestSponsors))));
+
+            return response;
         }
 
         private SponsorResponse MapSponsorResponse(GetSponsorshipSummaryResponse summary)
@@ -145,11 +137,10 @@ namespace Sponsorkit.Domain.Api.Sponsors
         }
 
         private async Task<IEnumerable<SponsorResponse>> MapSponsorResponsesAsync(
-            Func<Task<IQueryable<GetSponsorshipSummaryResponse>>> summariesFactory,
-            CancellationToken cancellationToken)
+            Func<Task<IQueryable<GetSponsorshipSummaryResponse>>> summariesFactory)
         {
             var summariesQueryable = await summariesFactory();
-            var summariesArray = await summariesQueryable.ToArrayAsync(cancellationToken);
+            var summariesArray = await summariesQueryable.ToArrayAsync();
             return summariesArray
                 .Select(MapSponsorResponse)
                 .ToArray();
