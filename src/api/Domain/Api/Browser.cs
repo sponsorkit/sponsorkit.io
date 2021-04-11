@@ -1,12 +1,6 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Sponsorkit.Domain.Api
 {
@@ -16,12 +10,12 @@ namespace Sponsorkit.Domain.Api
         
         [FunctionName("BrowserGet")]
         public IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{token}")] 
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{reference}")] 
             Request request,
             string beneficiary,
-            string token)
+            string reference)
         {
-            return new RedirectResult($"/{beneficiary}?token={token}");
+            return new RedirectResult($"/{beneficiary}?reference={reference}");
         }
     }
 }
