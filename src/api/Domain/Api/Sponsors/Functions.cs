@@ -16,6 +16,7 @@ using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaryByReference;
 using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
 using Sponsorkit.Domain.Queries.GetUserDetails;
+using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Domain.Api.Sponsors
 {
@@ -42,14 +43,10 @@ namespace Sponsorkit.Domain.Api.Sponsors
             string beneficiary)
         {
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                throw new InvalidOperationException("Invalid beneficiary ID.");
+                return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
 
             var details = await _mediator.Send(new GetUserDetailsQuery(beneficiaryId));
-
-            var response = request.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(details);
-            
-            return response;
+            return await request.CreateOkResponseAsync(details);
         }
 
         /// <summary>
@@ -63,7 +60,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
             string reference)
         {
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                throw new InvalidOperationException("Invalid beneficiary ID.");
+                return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
             
             const int amountToTake = 10;
             
@@ -115,8 +112,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
                             SortDirection.Descending)
                     }));
 
-            var response = request.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(
+            return await request.CreateOkResponseAsync(
                 new Response(
                     _mapper.Map<DonationsResponse>(donationStatistics),
                     new SponsorsResponse(
@@ -127,8 +123,6 @@ namespace Sponsorkit.Domain.Api.Sponsors
                         new SponsorsByDateResponse(
                             latestSponsors,
                             earliestSponsors))));
-
-            return response;
         }
 
         private SponsorResponse MapSponsorResponse(GetSponsorshipSummaryResponse summary)
