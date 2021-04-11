@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using MediatR;
-using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaries;
 
 namespace Sponsorkit.Domain.Queries.GetSponsorshipSummaries
 {

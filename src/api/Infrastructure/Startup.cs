@@ -1,11 +1,8 @@
-﻿using System.Diagnostics;
-using System.Threading.Tasks;
-using MediatR;
+﻿using MediatR;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Sponsorkit.Domain.Models;
 
 [assembly: FunctionsStartup(typeof(Sponsorkit.Infrastructure.Startup))]
