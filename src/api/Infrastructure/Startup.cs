@@ -1,4 +1,8 @@
-﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
+using MediatR;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,16 +16,38 @@ namespace Sponsorkit.Infrastructure
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            AddOptions<CosmosOptions>(builder);
-            
-            builder.Services.AddDbContext<DataContext>();
+            Configure(builder.Services);
         }
-        
-        private static void AddOptions<TOptions>(IFunctionsHostBuilder builder) where TOptions: class
+
+        private static void Configure(IServiceCollection services)
+        {
+            ConfigureOptions(services);
+            
+            services.AddDbContext<DataContext>();
+            services.AddMediatR(typeof(Startup).Assembly);
+
+            HandleDatabaseCreationIfDebugging(services);
+        }
+
+        private static void HandleDatabaseCreationIfDebugging(IServiceCollection services)
+        {
+            var provider = services.BuildServiceProvider();
+            var dataContext = provider.GetRequiredService<DataContext>();
+
+            dataContext.Database.EnsureDeleted();
+            dataContext.Database.Migrate();
+        }
+
+        private static void ConfigureOptions(IServiceCollection services)
+        {
+            AddOptions<SqlServerOptions>(services);
+        }
+
+        private static void AddOptions<TOptions>(IServiceCollection services) where TOptions: class
         {
             var name = typeof(TOptions).Name;
 
-            builder.Services
+            services
                 .AddOptions<TOptions>()
                 .Configure<IConfiguration>((settings, configuration) =>
                 {

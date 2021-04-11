@@ -1,10 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+// ReSharper disable CollectionNeverUpdated.Global
 
 namespace Sponsorkit.Domain.Models
 {
     public class User
     {
+        [Key]
+        public Guid Id { get; set; }
+        
+        public string Name { get; set; }
+
         public string StripeId { get; set; } = null!;
         
         public DateTime CreatedAtUtc { get; set; }

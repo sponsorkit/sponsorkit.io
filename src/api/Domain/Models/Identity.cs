@@ -1,7 +1,13 @@
-﻿namespace Sponsorkit.Domain.Models
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace Sponsorkit.Domain.Models
 {
     public class Identity
     {
+        [Key]
+        public Guid Id { get; set; }
+        
         public string EncryptedEmail { get; set; } = null!;
         
         public string? EncryptedPassword { get; set; }

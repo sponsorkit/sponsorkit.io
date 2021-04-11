@@ -16,12 +16,12 @@ namespace Sponsorkit.Domain.Api
         
         [FunctionName("BrowserGet")]
         public IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{token}")] 
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{reference}")] 
             Request request,
             string beneficiary,
-            string token)
+            string reference)
         {
-            return new RedirectResult($"/{beneficiary}?token={token}");
+            return new RedirectResult($"/{beneficiary}?reference={reference}");
         }
     }
 }

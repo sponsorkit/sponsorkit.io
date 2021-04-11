@@ -1,4 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Sponsorkit.Infrastructure;
 
@@ -6,6 +10,22 @@ using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Domain.Models
 {
+    public class DataContextFactory : IDesignTimeDbContextFactory<DataContext>
+    {
+        public DataContext CreateDbContext(string[] args)
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("local.settings.json", false)
+                .Build();
+
+            var sqlServerOptions = new SqlServerOptions();
+            configuration.GetSection("Values:SqlServerOptions").Bind(sqlServerOptions);
+
+            return new DataContext(
+                new OptionsWrapper<SqlServerOptions>(sqlServerOptions));
+        }
+    }
+    
     public class DataContext : DbContext
     {
         public DbSet<Bounty> Bounties { get; set; }
@@ -16,19 +36,108 @@ namespace Sponsorkit.Domain.Models
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
         
-        private readonly IOptions<CosmosOptions> _options;
+        private readonly IOptions<SqlServerOptions> _sqlServerOptions;
 
         public DataContext(
-            IOptions<CosmosOptions> options)
+            IOptions<SqlServerOptions> sqlServerOptions) 
         {
-            _options = options;
+            _sqlServerOptions = sqlServerOptions;
         }
         
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseCosmos(
-                _options.Value.AccountEndpoint,
-                _options.Value.AccountKey);
+            optionsBuilder.EnableSensitiveDataLogging();
+            optionsBuilder.EnableDetailedErrors();
+
+            var connectionString = _sqlServerOptions.Value.ConnectionString;
+            optionsBuilder.UseSqlServer(connectionString);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Bounty>(entity =>
+            {
+                entity
+                    .HasOne(x => x.Creator)
+                    .WithMany(x => x.CreatedBounties)
+                    .HasForeignKey(x => x.CreatorId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity
+                    .HasOne(x => x.AwardedTo)
+                    .WithMany(x => x!.AwardedBounties)
+                    .HasForeignKey(x => x.AwardedToId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+            
+            modelBuilder.Entity<Sponsorship>(entity =>
+            {
+                entity
+                    .HasOne(x => x.Beneficiary)
+                    .WithMany(x => x.AwardedSponsorships)
+                    .HasForeignKey(x => x.BeneficiaryId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                
+                entity
+                    .HasOne(x => x.Sponsor)
+                    .WithMany(x => x.CreatedSponsorships)
+                    .HasForeignKey(x => x.SponsorId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            ConfigureSeeding(modelBuilder);
+        }
+
+        private static void ConfigureSeeding(ModelBuilder modelBuilder)
+        {
+            var beneficiaryUserId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32");
+            var sponsorUserId = Guid.NewGuid();
+            modelBuilder
+                .Entity<User>()
+                .HasData(
+                    new User()
+                    {
+                        Id = beneficiaryUserId,
+                        Name = "the-beneficiary",
+                        StripeId = "foo",
+                        CreatedAtUtc = DateTime.UtcNow
+                    },
+                    new User()
+                    {
+                        Id = sponsorUserId,
+                        Name = "the-sponsor",
+                        StripeId = "foo",
+                        CreatedAtUtc = DateTime.UtcNow
+                    });
+
+            var sponsorshipId = Guid.NewGuid();
+            modelBuilder
+                .Entity<Sponsorship>()
+                .HasData(new Sponsorship()
+                {
+                    Id = sponsorshipId,
+                    Reference = "sponsorship-foo",
+                    SponsorId = sponsorUserId,
+                    BeneficiaryId = beneficiaryUserId
+                });
+
+            modelBuilder
+                .Entity<Payment>()
+                .HasData(
+                    new Payment()
+                    {
+                        Id = Guid.NewGuid(),
+                        StripeId = "foo",
+                        SponsorshipId = sponsorshipId,
+                        AmountInHundreds = 1_00
+                    },
+                    new Payment()
+                    {
+                        Id = Guid.NewGuid(),
+                        StripeId = "foo",
+                        SponsorshipId = sponsorshipId,
+                        AmountInHundreds = 2_50
+                    });
         }
     }
 }

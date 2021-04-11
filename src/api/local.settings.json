@@ -1,0 +1,8 @@
+﻿{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "SqlServerOptions:ConnectionString": "Server=localhost;Database=sponsorkit;User=sa;Password=amazing_dev_only_password_totally_secret_such_wow;"
+  }
+}
