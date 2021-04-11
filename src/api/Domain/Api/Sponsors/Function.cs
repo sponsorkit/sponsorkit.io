@@ -27,6 +27,9 @@ namespace Sponsorkit.Domain.Api.Sponsors
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
+        /// </summary>
         [FunctionName("SponsorGet")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
