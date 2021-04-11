@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Sponsorkit.Domain.Api.Sponsors.Models;
+using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
 
 namespace Sponsorkit.Domain.Api.Sponsors
@@ -14,6 +15,8 @@ namespace Sponsorkit.Domain.Api.Sponsors
                     x.Sponsorship.MonthlyAmountInHundreds,
                     x.TotalDonationsInHundreds,
                     x.Sponsorship.CreatedAtUtc));
+            
+            CreateMap<GetBeneficiaryStatisticsResponse, DonationsResponse>();
         }
     }
 }

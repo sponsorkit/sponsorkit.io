@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Api.Sponsors.Models;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaries;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaryByReference;
+using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
 
 namespace Sponsorkit.Domain.Api.Sponsors
@@ -46,6 +47,10 @@ namespace Sponsorkit.Domain.Api.Sponsors
                 new GetBeneficiarySponsorshipSummaryByReferenceQuery(
                     beneficiary,
                     reference),
+                cancellationToken);
+
+            var donationStatistics = await _mediator.Send(
+                new GetBeneficiaryStatisticsQuery(beneficiary),
                 cancellationToken);
 
             var leastAmountSponsors = await MapSponsorResponsesAsync(
@@ -98,7 +103,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
             
             return new OkObjectResult(
                 new Response(
-                    null!,
+                    _mapper.Map<DonationsResponse>(donationStatistics),
                     new SponsorsResponse(
                         MapSponsorResponse(currentSponsor),
                         new SponsorsByAmountResponse(
