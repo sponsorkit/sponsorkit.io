@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -13,18 +15,23 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Sponsorkit.Domain.Api.Sponsors.Models;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Queries.GetSponsorshipByReference;
+using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaries;
+using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaryByReference;
+using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
 
 namespace Sponsorkit.Domain.Api.Sponsors
 {
     public class Function
     {
         private readonly IMediator _mediator;
+        private readonly IMapper _mapper;
 
         public Function(
-            IMediator mediator)
+            IMediator mediator,
+            IMapper mapper)
         {
             _mediator = mediator;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -38,22 +45,89 @@ namespace Sponsorkit.Domain.Api.Sponsors
             string reference,
             CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(
-                new GetSponsorshipByReferenceQuery(
+            const int amountToTake = 10;
+            
+            var currentSponsor = await _mediator.Send(
+                new GetBeneficiarySponsorshipSummaryByReferenceQuery(
                     beneficiary,
                     reference),
+                cancellationToken);
+
+            var leastAmountSponsors = await MapSponsorResponsesAsync(
+                async () => await _mediator.Send(
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    {
+                        Take = amountToTake,
+                        Sort = new SummarySortOptions(
+                            SummarySortProperty.ByAmount,
+                            SortDirection.Ascending)
+                    },
+                    cancellationToken),
+                cancellationToken);
+
+            var mostAmountSponsors = await MapSponsorResponsesAsync(
+                async () => await _mediator.Send(
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    {
+                        Take = amountToTake,
+                        Sort = new SummarySortOptions(
+                            SummarySortProperty.ByAmount,
+                            SortDirection.Descending)
+                    },
+                    cancellationToken),
+                cancellationToken);
+
+            var earliestSponsors = await MapSponsorResponsesAsync(
+                async () => await _mediator.Send(
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    {
+                        Take = amountToTake,
+                        Sort = new SummarySortOptions(
+                            SummarySortProperty.ByDate,
+                            SortDirection.Ascending)
+                    },
+                    cancellationToken),
+                cancellationToken);
+
+            var latestSponsors = await MapSponsorResponsesAsync(
+                async () => await _mediator.Send(
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    {
+                        Take = amountToTake,
+                        Sort = new SummarySortOptions(
+                            SummarySortProperty.ByDate,
+                            SortDirection.Descending)
+                    },
+                    cancellationToken),
                 cancellationToken);
             
             return new OkObjectResult(
                 new Response(
                     null!,
                     new SponsorsResponse(
-                        new SponsorResponse(
-                            result.User.Name,
-                            result.Sponsorship.MonthlyAmountInHundreds,
-                            result.TotalDonationsInHundreds,
-                            result.Sponsorship.CreatedAtUtc),
-                        null!)));
+                        MapSponsorResponse(currentSponsor),
+                        new SponsorsByAmountResponse(
+                            mostAmountSponsors,
+                            leastAmountSponsors),
+                        new SponsorsByDateResponse(
+                            latestSponsors,
+                            earliestSponsors))));
+        }
+
+        private SponsorResponse MapSponsorResponse(GetSponsorshipSummaryResponse summary)
+        {
+            return _mapper.Map<SponsorResponse>(summary);
+        }
+
+        private async Task<IEnumerable<SponsorResponse>> MapSponsorResponsesAsync(
+            Func<Task<IQueryable<GetSponsorshipSummaryResponse>>> summariesFactory,
+            CancellationToken cancellationToken)
+        {
+            var summariesQueryable = await summariesFactory();
+            var summariesArray = await summariesQueryable.ToArrayAsync(cancellationToken);
+            return summariesArray
+                .Select(MapSponsorResponse)
+                .ToArray();
         }
     }
 }

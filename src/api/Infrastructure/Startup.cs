@@ -25,6 +25,7 @@ namespace Sponsorkit.Infrastructure
             
             services.AddDbContext<DataContext>();
             services.AddMediatR(typeof(Startup).Assembly);
+            services.AddAutoMapper(x => x.AddMaps(typeof(Startup).Assembly));
 
             HandleDatabaseCreationIfDebugging(services);
         }

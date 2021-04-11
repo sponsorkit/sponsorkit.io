@@ -1,16 +1,18 @@
-﻿namespace Sponsorkit.Domain.Api.Sponsors.Models
+﻿using System.Collections.Generic;
+
+namespace Sponsorkit.Domain.Api.Sponsors.Models
 {
     public class SponsorsByAmountResponse
     {
         public SponsorsByAmountResponse(
-            SponsorResponse[] most,
-            SponsorResponse[] least)
+            IEnumerable<SponsorResponse> most,
+            IEnumerable<SponsorResponse> least)
         {
             Most = most;
             Least = least;
         }
 
-        public SponsorResponse[] Most { get; }
-        public SponsorResponse[] Least { get; }
+        public IEnumerable<SponsorResponse> Most { get; }
+        public IEnumerable<SponsorResponse> Least { get; }
     }
 }
