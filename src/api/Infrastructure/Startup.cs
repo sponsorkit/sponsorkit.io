@@ -1,5 +1,7 @@
 ﻿using System.Threading.Tasks;
 using MediatR;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +15,8 @@ namespace Sponsorkit.Infrastructure
         public static async Task Main()
         {
             var host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults()
+                .ConfigureFunctionsWorkerDefaults(x => 
+                    x.UseDefaultWorkerMiddleware())
                 .ConfigureAppConfiguration((_, builder) => builder
                     .AddJsonFile("local.settings.json", true)
                     .Build())
