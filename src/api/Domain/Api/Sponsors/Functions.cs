@@ -31,9 +31,22 @@ namespace Sponsorkit.Domain.Api.Sponsors
         }
 
         /// <summary>
-        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
+        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32"/>
         /// </summary>
         [FunctionName("SponsorGet")]
+        public async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}")]
+            Request request,
+            Guid beneficiary,
+            string reference,
+            CancellationToken cancellationToken)
+        {
+        }
+
+        /// <summary>
+        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
+        /// </summary>
+        [FunctionName("BeneficiaryReferenceGet")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
             Request request,
