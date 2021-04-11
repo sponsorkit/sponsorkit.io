@@ -14,7 +14,9 @@ namespace Sponsorkit.Domain.Models
         public string Name { get; set; }
 
         public string StripeId { get; set; } = null!;
-        
+
+        public string? GitHubId { get; set; }
+
         public DateTime CreatedAtUtc { get; set; }
         
         public List<Identity> Identities { get; set; } = new List<Identity>();

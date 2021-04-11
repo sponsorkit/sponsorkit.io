@@ -5,15 +5,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Api.Sponsors.Models;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaries;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaryByReference;
 using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
+using Sponsorkit.Domain.Queries.GetUserDetails;
 
 namespace Sponsorkit.Domain.Api.Sponsors
 {
@@ -33,42 +34,53 @@ namespace Sponsorkit.Domain.Api.Sponsors
         /// <summary>
         /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32"/>
         /// </summary>
-        [FunctionName("SponsorGet")]
-        public async Task<IActionResult> Run(
+        [Function("SponsorGet")]
+        public async Task<IActionResult> SponsorBeneficiaryGet(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}")]
-            Request request,
-            Guid beneficiary,
-            string reference,
-            CancellationToken cancellationToken)
+            HttpRequestData request,
+            string beneficiary)
         {
+            var cancellationToken = CancellationToken.None;
+            
+            if (!Guid.TryParse(beneficiary, out var beneficiaryId))
+                return new BadRequestObjectResult("Beneficiary ID was not of a correct format.");
+            
+            var response = await _mediator.Send(
+                new GetUserDetailsQuery(beneficiaryId),
+                cancellationToken);
+            return new OkObjectResult(response);
         }
 
         /// <summary>
         /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
         /// </summary>
-        [FunctionName("BeneficiaryReferenceGet")]
-        public async Task<IActionResult> Run(
+        [Function("BeneficiaryReferenceGet")]
+        public async Task<IActionResult> SponsorBeneficiaryReferenceGet(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
-            Request request,
-            Guid beneficiary,
-            string reference,
-            CancellationToken cancellationToken)
+            HttpRequestData request,
+            string beneficiary,
+            string reference)
         {
+            var cancellationToken = CancellationToken.None;
+            
+            if (!Guid.TryParse(beneficiary, out var beneficiaryId))
+                return new BadRequestObjectResult("Beneficiary ID was not of a correct format.");
+            
             const int amountToTake = 10;
             
             var currentSponsor = await _mediator.Send(
                 new GetBeneficiarySponsorshipSummaryByReferenceQuery(
-                    beneficiary,
+                    beneficiaryId,
                     reference),
                 cancellationToken);
 
             var donationStatistics = await _mediator.Send(
-                new GetBeneficiaryStatisticsQuery(beneficiary),
+                new GetBeneficiaryStatisticsQuery(beneficiaryId),
                 cancellationToken);
 
             var leastAmountSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
-                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiaryId)
                     {
                         Take = amountToTake,
                         Sort = new SummarySortOptions(
@@ -80,7 +92,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
 
             var mostAmountSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
-                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiaryId)
                     {
                         Take = amountToTake,
                         Sort = new SummarySortOptions(
@@ -92,7 +104,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
 
             var earliestSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
-                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiaryId)
                     {
                         Take = amountToTake,
                         Sort = new SummarySortOptions(
@@ -104,7 +116,7 @@ namespace Sponsorkit.Domain.Api.Sponsors
 
             var latestSponsors = await MapSponsorResponsesAsync(
                 async () => await _mediator.Send(
-                    new GetBeneficiarySponsorshipSummariesQuery(beneficiary)
+                    new GetBeneficiarySponsorshipSummariesQuery(beneficiaryId)
                     {
                         Take = amountToTake,
                         Sort = new SummarySortOptions(

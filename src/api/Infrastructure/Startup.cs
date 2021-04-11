@@ -1,28 +1,36 @@
-﻿using MediatR;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using System.Threading.Tasks;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Sponsorkit.Domain.Models;
-
-[assembly: FunctionsStartup(typeof(Sponsorkit.Infrastructure.Startup))]
 
 namespace Sponsorkit.Infrastructure
 {
-    public class Startup : FunctionsStartup
+    public class Program
     {
-        public override void Configure(IFunctionsHostBuilder builder)
+        public static async Task Main()
         {
-            Configure(builder.Services);
+            var host = new HostBuilder()
+                .ConfigureFunctionsWorkerDefaults()
+                .ConfigureAppConfiguration((_, builder) => builder
+                    .AddJsonFile("local.settings.json", true)
+                    .Build())
+                .ConfigureServices(ConfigureServices)
+                .Build();
+
+            await host.RunAsync();
         }
 
-        private static void Configure(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services)
         {
             ConfigureOptions(services);
-            
+
+            services.AddMvcCore();
             services.AddDbContext<DataContext>();
-            services.AddMediatR(typeof(Startup).Assembly);
-            services.AddAutoMapper(x => x.AddMaps(typeof(Startup).Assembly));
+            services.AddMediatR(typeof(Program).Assembly);
+            services.AddAutoMapper(x => x.AddMaps(typeof(Program).Assembly));
 
             HandleDatabaseCreationIfDebugging(services);
         }
@@ -49,9 +57,9 @@ namespace Sponsorkit.Infrastructure
                 .AddOptions<TOptions>()
                 .Configure<IConfiguration>((settings, configuration) =>
                 {
-                    configuration
-                        .GetSection(name)
-                        .Bind(settings);
+                    var valuesSection = configuration.GetSection("Values");
+                    var configurationSection = valuesSection.GetSection(name);
+                    configurationSection.Bind(settings);
                 });
         }
     }

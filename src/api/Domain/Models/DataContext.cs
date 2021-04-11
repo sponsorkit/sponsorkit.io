@@ -81,7 +81,8 @@ namespace Sponsorkit.Domain.Models
                         Id = beneficiaryUserId,
                         Name = "the-beneficiary",
                         StripeId = "foo",
-                        CreatedAtUtc = DateTime.UtcNow
+                        CreatedAtUtc = DateTime.UtcNow,
+                        GitHubId = "ffMathy"
                     },
                     new User()
                     {

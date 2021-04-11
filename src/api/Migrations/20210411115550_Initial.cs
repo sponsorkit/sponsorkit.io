@@ -11,10 +11,11 @@ namespace Sponsorkit.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    Name = table.Column<string>(nullable: false),
-                    StripeId = table.Column<string>(nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StripeId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GitHubId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -25,11 +26,11 @@ namespace Sponsorkit.Migrations
                 name: "Identities",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    EncryptedEmail = table.Column<string>(nullable: false),
-                    EncryptedPassword = table.Column<string>(nullable: true),
-                    GitHubUserId = table.Column<string>(nullable: true),
-                    OwnerId = table.Column<Guid>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    EncryptedEmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EncryptedPassword = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    GitHubUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,10 +47,10 @@ namespace Sponsorkit.Migrations
                 name: "Repositories",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    GitHubId = table.Column<string>(nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(nullable: false),
-                    OwnerId = table.Column<Guid>(nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GitHubId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -66,12 +67,12 @@ namespace Sponsorkit.Migrations
                 name: "Sponsorships",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(nullable: false),
-                    Reference = table.Column<string>(nullable: false),
-                    MonthlyAmountInHundreds = table.Column<int>(nullable: true),
-                    BeneficiaryId = table.Column<Guid>(nullable: false),
-                    SponsorId = table.Column<Guid>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Reference = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MonthlyAmountInHundreds = table.Column<int>(type: "int", nullable: true),
+                    BeneficiaryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SponsorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -92,9 +93,9 @@ namespace Sponsorkit.Migrations
                 name: "Issues",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    GitHubId = table.Column<string>(nullable: false),
-                    RepositoryId = table.Column<Guid>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GitHubId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RepositoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -111,16 +112,22 @@ namespace Sponsorkit.Migrations
                 name: "Bounties",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    AmountInHundreds = table.Column<int>(nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(nullable: false),
-                    CreatorId = table.Column<Guid>(nullable: false),
-                    AwardedToId = table.Column<Guid>(nullable: false),
-                    IssueId = table.Column<Guid>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AmountInHundreds = table.Column<int>(type: "int", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AwardedToId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Bounties", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Bounties_Issues_IssueId",
+                        column: x => x.IssueId,
+                        principalTable: "Issues",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Bounties_Users_AwardedToId",
                         column: x => x.AwardedToId,
@@ -131,24 +138,18 @@ namespace Sponsorkit.Migrations
                         column: x => x.CreatorId,
                         principalTable: "Users",
                         principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Bounties_Issues_IssueId",
-                        column: x => x.IssueId,
-                        principalTable: "Issues",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
-                    BountyId = table.Column<Guid>(nullable: true),
-                    SponsorshipId = table.Column<Guid>(nullable: true),
-                    AmountInHundreds = table.Column<int>(nullable: false),
-                    StripeId = table.Column<string>(nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BountyId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SponsorshipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AmountInHundreds = table.Column<int>(type: "int", nullable: false),
+                    StripeId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -169,28 +170,28 @@ namespace Sponsorkit.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "CreatedAtUtc", "Name", "StripeId" },
-                values: new object[] { new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2006), "the-beneficiary", "foo" });
+                columns: new[] { "Id", "CreatedAtUtc", "GitHubId", "Name", "StripeId" },
+                values: new object[] { new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(2021, 4, 11, 11, 55, 50, 221, DateTimeKind.Utc).AddTicks(7950), null, "the-beneficiary", "foo" });
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "CreatedAtUtc", "Name", "StripeId" },
-                values: new object[] { new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d"), new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2377), "the-sponsor", "foo" });
+                columns: new[] { "Id", "CreatedAtUtc", "GitHubId", "Name", "StripeId" },
+                values: new object[] { new Guid("e64d3cdc-2de8-46dd-b721-227aee0f39e9"), new DateTime(2021, 4, 11, 11, 55, 50, 221, DateTimeKind.Utc).AddTicks(8205), null, "the-sponsor", "foo" });
 
             migrationBuilder.InsertData(
                 table: "Sponsorships",
                 columns: new[] { "Id", "BeneficiaryId", "CreatedAtUtc", "MonthlyAmountInHundreds", "Reference", "SponsorId" },
-                values: new object[] { new Guid("43029511-840f-472d-aec5-3ae45787308b"), new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "sponsorship-foo", new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d") });
+                values: new object[] { new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"), new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "sponsorship-foo", new Guid("e64d3cdc-2de8-46dd-b721-227aee0f39e9") });
 
             migrationBuilder.InsertData(
                 table: "Payments",
                 columns: new[] { "Id", "AmountInHundreds", "BountyId", "CreatedAtUtc", "SponsorshipId", "StripeId" },
-                values: new object[] { new Guid("8d5d4bc2-8b18-45c0-b48e-5d81773c2eb3"), 100, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("43029511-840f-472d-aec5-3ae45787308b"), "foo" });
+                values: new object[] { new Guid("89154013-4987-43e8-babd-272cf15f5de9"), 100, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"), "foo" });
 
             migrationBuilder.InsertData(
                 table: "Payments",
                 columns: new[] { "Id", "AmountInHundreds", "BountyId", "CreatedAtUtc", "SponsorshipId", "StripeId" },
-                values: new object[] { new Guid("b5e19f7a-2dff-4da2-9801-19a4fc8fe460"), 250, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("43029511-840f-472d-aec5-3ae45787308b"), "foo" });
+                values: new object[] { new Guid("33cb5eab-e973-460a-a717-3f28fe5c4f03"), 250, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"), "foo" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bounties_AwardedToId",

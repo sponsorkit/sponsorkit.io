@@ -10,15 +10,15 @@ using Sponsorkit.Domain.Models;
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20210411012829_Initial")]
+    [Migration("20210411115550_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
+                .HasAnnotation("ProductVersion", "5.0.5")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
@@ -134,18 +134,18 @@ namespace Sponsorkit.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("8d5d4bc2-8b18-45c0-b48e-5d81773c2eb3"),
+                            Id = new Guid("89154013-4987-43e8-babd-272cf15f5de9"),
                             AmountInHundreds = 100,
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
+                            SponsorshipId = new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"),
                             StripeId = "foo"
                         },
                         new
                         {
-                            Id = new Guid("b5e19f7a-2dff-4da2-9801-19a4fc8fe460"),
+                            Id = new Guid("33cb5eab-e973-460a-a717-3f28fe5c4f03"),
                             AmountInHundreds = 250,
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
+                            SponsorshipId = new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"),
                             StripeId = "foo"
                         });
                 });
@@ -206,11 +206,11 @@ namespace Sponsorkit.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
+                            Id = new Guid("12386280-96c0-44ba-b305-3eef7e4e86b1"),
                             BeneficiaryId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Reference = "sponsorship-foo",
-                            SponsorId = new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d")
+                            SponsorId = new Guid("e64d3cdc-2de8-46dd-b721-227aee0f39e9")
                         });
                 });
 
@@ -222,6 +222,9 @@ namespace Sponsorkit.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("GitHubId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -239,14 +242,14 @@ namespace Sponsorkit.Migrations
                         new
                         {
                             Id = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
-                            CreatedAtUtc = new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2006),
+                            CreatedAtUtc = new DateTime(2021, 4, 11, 11, 55, 50, 221, DateTimeKind.Utc).AddTicks(7950),
                             Name = "the-beneficiary",
                             StripeId = "foo"
                         },
                         new
                         {
-                            Id = new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d"),
-                            CreatedAtUtc = new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2377),
+                            Id = new Guid("e64d3cdc-2de8-46dd-b721-227aee0f39e9"),
+                            CreatedAtUtc = new DateTime(2021, 4, 11, 11, 55, 50, 221, DateTimeKind.Utc).AddTicks(8205),
                             Name = "the-sponsor",
                             StripeId = "foo"
                         });
@@ -271,6 +274,12 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AwardedTo");
+
+                    b.Navigation("Creator");
+
+                    b.Navigation("Issue");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Identity", b =>
@@ -280,6 +289,8 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
@@ -289,6 +300,8 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Repository");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Payment", b =>
@@ -300,6 +313,10 @@ namespace Sponsorkit.Migrations
                     b.HasOne("Sponsorkit.Domain.Models.Sponsorship", "Sponsorship")
                         .WithMany("Payments")
                         .HasForeignKey("SponsorshipId");
+
+                    b.Navigation("Bounty");
+
+                    b.Navigation("Sponsorship");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
@@ -307,6 +324,8 @@ namespace Sponsorkit.Migrations
                     b.HasOne("Sponsorkit.Domain.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
@@ -322,6 +341,45 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("SponsorId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Beneficiary");
+
+                    b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
+                {
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
+                {
+                    b.Navigation("Bounties");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+                {
+                    b.Navigation("Issues");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+                {
+                    b.Navigation("AwardedBounties");
+
+                    b.Navigation("AwardedSponsorships");
+
+                    b.Navigation("CreatedBounties");
+
+                    b.Navigation("CreatedSponsorships");
+
+                    b.Navigation("Identities");
+
+                    b.Navigation("Repositories");
                 });
 #pragma warning restore 612, 618
         }

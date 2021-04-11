@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 
 namespace Sponsorkit.Domain.Api
 {
@@ -8,10 +8,10 @@ namespace Sponsorkit.Domain.Api
     {
         public class Request {}
         
-        [FunctionName("BrowserGet")]
+        [Function("BrowserGet")]
         public IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{reference}")] 
-            Request request,
+            HttpRequestData request,
             string beneficiary,
             string reference)
         {
