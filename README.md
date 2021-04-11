@@ -4,14 +4,12 @@
  - A redirect is made to `sponsorkit.io/{beneficiary}?token={token}` (S3).
  - Repeatedly check for donations at `GET sponsorkit.io/api/sponsor/{beneficiary}/{token}` (serverless).
     - Not finished yet: `206 Partial Content`
-    - Not found: `404 Not Found`
-    - Cancelled: `410 Gone`
+    - Cancelled / Not found: `204 No Content`
 
 2. Has token?
  - Check for donations at `GET sponsorkit.io/api/sponsor/{beneficiary}/{token}` (serverless) once.
     - Not finished yet: `206 Partial Content`
-    - Not found: `404 Not Found`
-    - Cancelled: `410 Gone`
+    - Cancelled / Not found: `204 No Content`
 
 # Signup flow
 1. Go to sponsorkit.io
