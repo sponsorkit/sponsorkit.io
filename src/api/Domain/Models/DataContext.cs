@@ -64,6 +64,12 @@ namespace Sponsorkit.Domain.Models
                     .WithMany(x => x.CreatedSponsorships)
                     .HasForeignKey(x => x.SponsorId)
                     .OnDelete(DeleteBehavior.NoAction);
+
+                entity
+                    .HasOne(x => x.Repository)
+                    .WithMany(x => x!.Sponsorships)
+                    .HasForeignKey(x => x.SponsorId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             ConfigureSeeding(modelBuilder);

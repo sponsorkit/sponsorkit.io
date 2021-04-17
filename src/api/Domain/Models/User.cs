@@ -10,8 +10,8 @@ namespace Sponsorkit.Domain.Models
     {
         [Key]
         public Guid Id { get; set; }
-        
-        public string Name { get; set; }
+
+        public string Name { get; set; } = null!;
 
         public string StripeId { get; set; } = null!;
 
@@ -19,13 +19,13 @@ namespace Sponsorkit.Domain.Models
 
         public DateTime CreatedAtUtc { get; set; }
         
-        public List<Identity> Identities { get; set; } = new List<Identity>();
-        public List<Repository> Repositories { get; set; } = new List<Repository>();
+        public List<Identity> Identities { get; set; } = new();
+        public List<Repository> Repositories { get; set; } = new();
         
-        public List<Bounty> CreatedBounties { get; set; } = new List<Bounty>();
-        public List<Bounty> AwardedBounties { get; set; } = new List<Bounty>();
+        public List<Bounty> CreatedBounties { get; set; } = new();
+        public List<Bounty> AwardedBounties { get; set; } = new();
 
-        public List<Sponsorship> CreatedSponsorships { get; set; } = new List<Sponsorship>();
-        public List<Sponsorship> AwardedSponsorships { get; set; } = new List<Sponsorship>();
+        public List<Sponsorship> CreatedSponsorships { get; set; } = new();
+        public List<Sponsorship> AwardedSponsorships { get; set; } = new();
     }
 }

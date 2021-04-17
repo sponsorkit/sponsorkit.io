@@ -9,13 +9,17 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
 
-        public DateTime CreatedAtUtc { get; set; } = new DateTime();
+        public DateTime CreatedAtUtc { get; set; } = new();
 
-        public string Reference { get; set; } = null!;
+        /// <summary>
+        /// The repository that this sponsorship is regarding.
+        /// </summary>
+        public Repository? Repository { get; set; }
+        public Guid? RepositoryId { get; set; }
 
         public int? MonthlyAmountInHundreds { get; set; }
 
-        public List<Payment> Payments { get; set; } = new List<Payment>();
+        public List<Payment> Payments { get; set; } = new();
         
         public User Beneficiary { get; set; } = null!;
         public Guid BeneficiaryId { get; set; }

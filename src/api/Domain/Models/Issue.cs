@@ -13,6 +13,6 @@ namespace Sponsorkit.Domain.Models
 
         public Repository Repository { get; set; } = null!;
 
-        public List<Bounty> Bounties { get; set; } = new List<Bounty>();
+        public List<Bounty> Bounties { get; set; } = new();
     }
 }
