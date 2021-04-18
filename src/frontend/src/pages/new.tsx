@@ -12,15 +12,13 @@ import { useOctokit } from "../hooks/clients";
 import PaymentDetails, { PaymentDetailsContract } from '../components/stripe/payment-details';
 
 function SponsorshipOptions(props: {
-  options: number[]
+  options: number[],
+  onAmountChanged: (amount: number) => void
 }) {
   const [selectedOption, setSelectedOption] = useState(props.options[0] + "");
-
-  const getSponsorkitFees = () => 
-    +selectedOption * 0.01;
-
-  const getStripeFees = () => 
-    (+selectedOption * 0.029) + 0.30;
+  useEffect(
+    () => props.onAmountChanged(+selectedOption),
+    [selectedOption]);
 
   return <Box className={sponsorshipOptions}>
     <Box>
@@ -55,10 +53,22 @@ function SponsorshipOptions(props: {
       value={selectedOption}
       onChange={e => setSelectedOption(e.target.value)} 
     />
-    <Typography className={summary}>
-      ${(+selectedOption + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged monthly (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
-    </Typography>
+    <ChargeSummary amount={+selectedOption} />
   </Box>;
+}
+
+function ChargeSummary(props: { 
+  amount: number 
+}) {
+  const getSponsorkitFees = () => 
+    props.amount * 0.01;
+
+  const getStripeFees = () => 
+    (props.amount * 0.029) + 0.30;
+
+  return <Typography className={summary}>
+    ${(props.amount + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged monthly (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
+  </Typography>
 }
 
 function SponsorDetails(props: {
@@ -111,6 +121,7 @@ function SponsorDetails(props: {
 
 export default function NewPage() {
   const paymentDetails = useRef<PaymentDetailsContract>(null);
+  const [amount, setAmount] = useState(0);
 
   return <Box flex="1" style={{
     display: 'flex'
@@ -123,12 +134,16 @@ export default function NewPage() {
         {
           title: 'Monthly sponsorship amount',
           component: 
-            <SponsorshipOptions options={[2, 5, 20, 50]} />
+            <SponsorshipOptions 
+              options={[2, 5, 20, 50]}
+              onAmountChanged={setAmount} />
         },
         {
           title: 'Payment details',
-          component: 
-            <PaymentDetails ref={paymentDetails} />,
+          component: <> 
+            <PaymentDetails ref={paymentDetails} />
+            <ChargeSummary amount={amount} />
+          </>,
           onCompleted: async () => {
             const paymentMethod = await paymentDetails.current?.createPaymentDetails();
             console.log("outer create!", paymentMethod);

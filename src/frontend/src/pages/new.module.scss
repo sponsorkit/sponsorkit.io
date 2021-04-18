@@ -5,6 +5,7 @@
     width: auto;
     flex-shrink: 1;
     place-items: center;
+    align-self: flex-start;
 
     .amount-button {
         margin: 6px;
@@ -28,20 +29,20 @@
         opacity: 0.5;
         font-size: 125%;
     }
+}
 
-    .summary {
-        opacity: 0.5;
-        font-size: 80%;
+.summary {
+    opacity: 0.5;
+    font-size: 80%;
 
-        margin-top: 8px;
-        margin-bottom: 8px;
+    margin-top: 8px;
+    margin-bottom: 8px;
 
-        width: 275px;
+    width: 275px;
 
-        place-self: flex-start;
+    place-self: flex-start;
 
-        a {
-            color: inherit;
-        }
+    a {
+        color: inherit;
     }
 }
