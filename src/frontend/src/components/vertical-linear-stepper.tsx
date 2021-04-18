@@ -62,40 +62,38 @@ export default function VerticalLinearStepper(props: {
     };
 
     return (
-        <div className={classes.root}>
-            <Stepper activeStep={activeStepIndex} orientation="vertical">
-                {steps.map((label) => (
-                    <Step key={label.title}>
-                        <StepLabel>{label.title}</StepLabel>
-                        <StepContent>
-                            <div className={classes.stepContainer}>{activeStep.component}</div>
-                            <div className={classes.actionsContainer}>
-                                <div>
-                                    <Button
-                                        variant="outlined"
-                                        disableElevation
-                                        disabled={activeStepIndex === 0 || isLoading}
-                                        onClick={handleBack}
-                                        className={classes.button}
-                                    >
-                                        Back
-                                    </Button>
-                                    <Button
-                                        disableElevation
-                                        variant="contained"
-                                        color="primary"
-                                        onClick={handleNext}
-                                        className={classes.button}
-                                        disabled={isLoading}
-                                    >
-                                        {activeStepIndex === steps.length - 1 ? 'Finish' : 'Continue'}
-                                    </Button>
-                                </div>
+        <Stepper className={classes.root} activeStep={activeStepIndex} orientation="vertical">
+            {steps.map((label) => (
+                <Step key={label.title}>
+                    <StepLabel>{label.title}</StepLabel>
+                    <StepContent>
+                        <div className={classes.stepContainer}>{activeStep.component}</div>
+                        <div className={classes.actionsContainer}>
+                            <div>
+                                <Button
+                                    variant="outlined"
+                                    disableElevation
+                                    disabled={activeStepIndex === 0 || isLoading}
+                                    onClick={handleBack}
+                                    className={classes.button}
+                                >
+                                    Back
+                                </Button>
+                                <Button
+                                    disableElevation
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleNext}
+                                    className={classes.button}
+                                    disabled={isLoading}
+                                >
+                                    {activeStepIndex === steps.length - 1 ? 'Finish' : 'Continue'}
+                                </Button>
                             </div>
-                        </StepContent>
-                    </Step>
-                ))}
-            </Stepper>
-        </div>
+                        </div>
+                    </StepContent>
+                </Step>
+            ))}
+        </Stepper>
     );
 }

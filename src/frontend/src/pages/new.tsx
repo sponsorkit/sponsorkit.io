@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, CircularProgress, InputAdornment, Paper, TextField, Typography } from "@material-ui/core";
+import { Avatar, Box, Button, CircularProgress, Container, InputAdornment, Paper, TextField, Typography } from "@material-ui/core";
 import React, { FormEvent, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import VerticalLinearStepper from "../components/vertical-linear-stepper"
 import theme from "../theme";
@@ -8,8 +8,7 @@ import {
   sponsorshipOptions, 
   summary 
 } from './new.module.scss';
-import { useOctokit } from "../hooks/clients";
-import PaymentDetails, { PaymentDetailsContract } from '../components/stripe/payment-details';
+import PaymentDetails, { PaymentDetailsContract } from '../components/payment-details';
 
 function SponsorshipOptions(props: {
   options: number[],
@@ -95,6 +94,7 @@ function SponsorDetails(props: {
       display: "flex",
       alignSelf: 'flex-start',
       margin: 32,
+      marginLeft: 0,
       padding: 16
     }}>
       <Avatar 
@@ -123,7 +123,7 @@ export default function NewPage() {
   const paymentDetails = useRef<PaymentDetailsContract>(null);
   const [amount, setAmount] = useState(0);
 
-  return <Box flex="1" style={{
+  return <Container maxWidth="md" style={{
     display: 'flex'
   }}>
     <Paper style={{
@@ -152,5 +152,5 @@ export default function NewPage() {
       ]} />
     </Paper>
     <SponsorDetails gitHubUsername="ffMathy" />
-  </Box>
+  </Container>
 }
