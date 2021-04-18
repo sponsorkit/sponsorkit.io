@@ -1,53 +1,82 @@
-import { Avatar, Box, Button, CircularProgress, Paper, TextField, Typography } from "@material-ui/core";
-import React, { useState } from "react"
+import { Avatar, Box, Button, CircularProgress, InputAdornment, Paper, TextField, Typography } from "@material-ui/core";
+import React, { FormEvent, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import VerticalLinearStepper from "../components/vertical-linear-stepper"
+import theme from "../theme";
+import { 
+  amountButton, 
+  separator, 
+  sponsorshipOptions, 
+  summary 
+} from './new.module.scss';
 import { useOctokit } from "../hooks/clients";
-
-function renderSponsorshipAmount() {
-  return <>
-    <SponsorshipOptions options={[2, 5, 20, 50]} />
-  </>
-}
-
-function renderPaymentInformation() {
-  return <>
-  </>
-}
+import PaymentDetails, { PaymentDetailsContract } from '../components/stripe/payment-details';
 
 function SponsorshipOptions(props: {
   options: number[]
 }) {
-  const [selectedOption, setSelectedOption] = useState(props.options[0]);
+  const [selectedOption, setSelectedOption] = useState(props.options[0] + "");
 
-  return <>
+  const getSponsorkitFees = () => 
+    +selectedOption * 0.01;
+
+  const getStripeFees = () => 
+    (+selectedOption * 0.029) + 0.30;
+
+  return <Box className={sponsorshipOptions}>
     <Box>
-      {props.options.map(option => <>
+      {props.options.map(option => 
         <Button 
+          key={`button-${option}`}
           variant="outlined"
-          onClick={() => setSelectedOption(option)}
+          disableElevation
+          onClick={() => setSelectedOption(option.toString())}
+          className={amountButton}
           style={{
-            margin: 6,
-            // borderColor: selectedOption === option ?
-              
+            backgroundColor: selectedOption == option.toString() ?
+              theme.palette.primary.main :
+              "",
+            color: selectedOption == option.toString() ?
+              "white" :
+              ""
           }}
         >
           ${option}
-        </Button>
-      </>)}
+        </Button>)}
     </Box>
-    <TextField />
-  </>;
+    <Box className={separator}>- or -</Box>
+    <TextField 
+      variant="outlined"
+      margin="dense"
+      fullWidth
+      type="number"
+      InputProps={{
+        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+      }}
+      value={selectedOption}
+      onChange={e => setSelectedOption(e.target.value)} 
+    />
+    <Typography className={summary}>
+      ${(+selectedOption + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged monthly (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
+    </Typography>
+  </Box>;
 }
 
 function SponsorDetails(props: {
   gitHubUsername: string
 }) {
-  const user = useOctokit((octokit, signal) => octokit.users.getByUsername({
-    username: props.gitHubUsername,
-    request: {
-      signal
+  // const user = useOctokit((octokit, signal) => octokit.users.getByUsername({
+  //   username: props.gitHubUsername,
+  //   request: {
+  //     signal
+  //   }
+  // }));
+  const user = {
+    data: {
+      avatar_url: "https://avatars.githubusercontent.com/u/2824010?v=4",
+      name: "Mathias Lykkegaard Lorenzen",
+      public_repos: 1337
     }
-  }));
+  };
   if(!user?.data)
     return <CircularProgress />;
 
@@ -78,7 +107,11 @@ function SponsorDetails(props: {
   </>;
 }
 
+
+
 export default function NewPage() {
+  const paymentDetails = useRef<PaymentDetailsContract>(null);
+
   return <Box flex="1" style={{
     display: 'flex'
   }}>
@@ -88,12 +121,18 @@ export default function NewPage() {
     }}>
       <VerticalLinearStepper steps={[
         {
-          title: 'Sponsorship amount',
-          render: () => renderSponsorshipAmount()
+          title: 'Monthly sponsorship amount',
+          component: 
+            <SponsorshipOptions options={[2, 5, 20, 50]} />
         },
         {
           title: 'Payment details',
-          render: () => renderPaymentInformation()
+          component: 
+            <PaymentDetails ref={paymentDetails} />,
+          onCompleted: async () => {
+            const paymentMethod = await paymentDetails.current?.createPaymentDetails();
+            console.log("outer create!", paymentMethod);
+          }
         }
       ]} />
     </Paper>

@@ -1,29 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
-import { Button, createStyles, makeStyles, Step, StepContent, StepLabel, Stepper, Theme } from "@material-ui/core";
+import { Button, Step, StepContent, StepLabel, Stepper } from "@material-ui/core";
+import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        root: {
-            width: '100%'
-        },
-        button: {
-            marginTop: theme.spacing(1),
-            marginRight: theme.spacing(1),
-        },
-        actionsContainer: {
-            marginBottom: theme.spacing(2),
-        },
-        resetContainer: {
-            padding: theme.spacing(3),
-        },
-    }),
-);
+import * as classes from './vertical-linear-stepper.module.scss';
 
 type Step = {
     title: string,
-    render: () => React.ReactNode,
+    component: React.ReactNode,
     onCompleted?: () => Promise<void> | void
 }
 
@@ -31,12 +16,13 @@ export default function VerticalLinearStepper(props: {
     steps: Step[],
     onCompleted?: () => Promise<void> | void
 }) {
-    const classes = useStyles();
     const [isLoading, setIsLoading] = useState(false);
     const [activeStepIndex, setActiveStepIndex] = useState(0);
 
     const steps = props.steps;
-    const activeStep = steps[activeStepIndex];
+    const activeStep = useMemo(
+        () => props.steps[activeStepIndex],
+        [activeStepIndex, props.steps]);
 
     const wrapInLoading = async (action: () => Promise<void>|void) => {
         if(isLoading)
@@ -57,14 +43,19 @@ export default function VerticalLinearStepper(props: {
             if (onStepCompleted)
                 await Promise.resolve(onStepCompleted());
 
-            if (activeStepIndex + 1 === steps.length && props.onCompleted)
-                await Promise.resolve(props.onCompleted());
+            if (activeStepIndex + 1 >= steps.length) {
+                props.onCompleted && await Promise.resolve(props.onCompleted());
+                return;
+            }
 
             setActiveStepIndex((prevActiveStep) => prevActiveStep + 1);
         });
     };
 
     const handleBack = async () => {
+        if(activeStepIndex <= 0)
+            return;
+
         await wrapInLoading(async () => {
             setActiveStepIndex((prevActiveStep) => prevActiveStep - 1);
         });
@@ -77,10 +68,12 @@ export default function VerticalLinearStepper(props: {
                     <Step key={label.title}>
                         <StepLabel>{label.title}</StepLabel>
                         <StepContent>
-                            <>{activeStep.render()}</>
+                            <div className={classes.stepContainer}>{activeStep.component}</div>
                             <div className={classes.actionsContainer}>
                                 <div>
                                     <Button
+                                        variant="outlined"
+                                        disableElevation
                                         disabled={activeStepIndex === 0 || isLoading}
                                         onClick={handleBack}
                                         className={classes.button}
@@ -88,13 +81,14 @@ export default function VerticalLinearStepper(props: {
                                         Back
                                     </Button>
                                     <Button
+                                        disableElevation
                                         variant="contained"
                                         color="primary"
                                         onClick={handleNext}
                                         className={classes.button}
                                         disabled={isLoading}
                                     >
-                                        {activeStepIndex === steps.length - 1 ? 'Finish' : 'Next'}
+                                        {activeStepIndex === steps.length - 1 ? 'Finish' : 'Continue'}
                                     </Button>
                                 </div>
                             </div>

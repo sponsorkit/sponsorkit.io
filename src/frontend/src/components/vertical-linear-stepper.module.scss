@@ -1,0 +1,21 @@
+.root {
+    width: 100%;
+
+    .button {
+        margin-top: 8px;
+        margin-right: 8px;
+    }
+
+    .actions-container {
+        margin-top: 8px;
+        margin-bottom: 16px;
+    }
+
+    .reset-container {
+        padding: 24px;
+    }
+
+    .step-container {
+        display: flex;
+    }
+}

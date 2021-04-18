@@ -1,0 +1,47 @@
+.sponsorship-options {
+    display: flex;
+    flex-direction: column;
+
+    width: auto;
+    flex-shrink: 1;
+    place-items: center;
+
+    .amount-button {
+        margin: 6px;
+        border-width: 1px;
+        border-radius: 5px;
+        padding: 8px;
+        text-transform: none;
+
+        &:first-child {
+            margin-left: 0;
+        }
+
+        &:last-child {
+            margin-right: 0;
+        }
+    }
+
+    .separator {
+        margin: 2px;
+        margin-top: 4px;
+        opacity: 0.5;
+        font-size: 125%;
+    }
+
+    .summary {
+        opacity: 0.5;
+        font-size: 80%;
+
+        margin-top: 8px;
+        margin-bottom: 8px;
+
+        width: 275px;
+
+        place-self: flex-start;
+
+        a {
+            color: inherit;
+        }
+    }
+}

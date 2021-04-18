@@ -1,11 +1,18 @@
 {
     "include": ["./src/**/*"],
     "compilerOptions": {
+      "plugins": [{
+        "name": "typescript-plugin-css-modules",
+        "options": {
+          "classnameTransform": "dashes",
+          "dotenvOptions": {},
+          "postCssOptions": {},
+          "rendererOptions": {}
+        }
+      }],
       "target": "esnext",
       "module": "esnext",
       "lib": ["dom", "es2017"],
-      // "allowJs": true,
-      // "checkJs": true,
       "moduleResolution": "node",
       "jsx": "react",
       "strict": true,

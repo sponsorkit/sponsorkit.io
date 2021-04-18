@@ -6,14 +6,19 @@
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "@material-ui/core": "^4.11.3",
+    "@material-ui/styles": "^4.11.3",
     "@octokit/rest": "^18.5.2",
+    "@stripe/react-stripe-js": "^1.4.0",
+    "@stripe/stripe-js": "^1.13.2",
     "gatsby": "^3.1.2",
     "gatsby-plugin-gatsby-cloud": "^2.1.0",
     "gatsby-plugin-image": "^1.1.2",
     "gatsby-plugin-manifest": "^3.1.0",
+    "gatsby-plugin-material-ui": "^3.0.1",
     "gatsby-plugin-offline": "^4.1.0",
     "gatsby-plugin-react-helmet": "^4.1.0",
     "gatsby-plugin-sharp": "^3.1.2",
+    "gatsby-plugin-styled-components": "^4.3.0",
     "gatsby-source-filesystem": "^3.1.0",
     "gatsby-transformer-sharp": "^3.1.0",
     "prop-types": "^15.7.2",
@@ -24,8 +29,11 @@
   "devDependencies": {
     "@azure/static-web-apps-cli": "^0.3.0",
     "@types/react-helmet": "^6.1.1",
+    "gatsby-plugin-sass": "^4.3.0",
     "prettier": "2.2.1",
-    "typescript": "^4.2.4"
+    "sass": "^1.32.10",
+    "typescript": "^4.2.4",
+    "typescript-plugin-css-modules": "^3.2.0"
   },
   "keywords": [
     "gatsby"
