@@ -8,7 +8,7 @@ import {
   sponsorshipOptions, 
   summary 
 } from './new.module.scss';
-import PaymentDetails, { PaymentDetailsContract } from '../components/payment-details';
+import StripeCreditCard, { StripeCreditCardContract } from '../components/stripe/credit-card';
 
 function SponsorshipOptions(props: {
   options: number[],
@@ -42,6 +42,7 @@ function SponsorshipOptions(props: {
     </Box>
     <Box className={separator}>- or -</Box>
     <TextField 
+      label="Custom amount"
       variant="outlined"
       margin="dense"
       fullWidth
@@ -117,10 +118,28 @@ function SponsorDetails(props: {
   </>;
 }
 
-
+const PaymentDetails = forwardRef<StripeCreditCardContract, { amount: number }>(function(
+  props,
+  ref)
+{
+  const [email, setEmail] = useState("");
+  return <>
+    <TextField 
+      label="E-mail address"
+      variant="outlined"
+      margin="dense"
+      fullWidth
+      type="email"
+      value={email}
+      onChange={e => setEmail(e.target.value)} 
+    />
+    <StripeCreditCard ref={ref} />
+    <ChargeSummary amount={props.amount} />
+  </>
+});
 
 export default function NewPage() {
-  const paymentDetails = useRef<PaymentDetailsContract>(null);
+  const paymentDetails = useRef<StripeCreditCardContract>(null);
   const [amount, setAmount] = useState(0);
 
   return <Container maxWidth="md" style={{
@@ -140,10 +159,8 @@ export default function NewPage() {
         },
         {
           title: 'Payment details',
-          component: <> 
-            <PaymentDetails ref={paymentDetails} />
-            <ChargeSummary amount={amount} />
-          </>,
+          component: 
+            <PaymentDetails amount={amount} />,
           onCompleted: async () => {
             const paymentMethod = await paymentDetails.current?.createPaymentDetails();
             console.log("outer create!", paymentMethod);
