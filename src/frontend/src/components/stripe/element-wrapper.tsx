@@ -27,12 +27,16 @@ export default function ElementWrapper(props: {
             </InputLabel>
             <OutlinedInput
                 fullWidth
+                notched={true}
                 label={props.label}
                 inputComponent={StripeInput}
                 onFocus={onFocus}
                 onBlur={onBlur}
                 onChange={onChange}
                 inputProps={{ component: props.component }}
+                style={{
+                    padding: 6
+                }}
             />
         </FormControl>
         {error && <FormHelperText error>{error.message}</FormHelperText>}

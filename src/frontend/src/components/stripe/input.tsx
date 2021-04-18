@@ -26,11 +26,11 @@ export default function StripeInput(props: {
         onChange={(e: ChangeEvent<HTMLInputElement>) => props.onChange && props.onChange(e)}
         placeholder=""
         style={{
-            base: {
-                fontSize: `${theme.typography.fontSize}px`,
-                fontFamily: theme.typography.fontFamily,
-                color: '#000000de'
-            }
+            // base: {
+            //     fontSize: `${theme.typography.fontSize}px`,
+            //     fontFamily: theme.typography.fontFamily,
+            //     color: '#000000de'
+            // }
         }}
     />
 }
