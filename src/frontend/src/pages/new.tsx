@@ -118,7 +118,9 @@ function SponsorDetails(props: {
   </>;
 }
 
-const PaymentDetails = forwardRef<StripeCreditCardContract, { amount: number }>(function(
+const PaymentDetails = forwardRef<StripeCreditCardContract, { 
+  amount: number 
+}>(function(
   props,
   ref)
 {
@@ -152,18 +154,18 @@ export default function NewPage() {
       <VerticalLinearStepper steps={[
         {
           title: 'Monthly sponsorship amount',
-          component: 
-            <SponsorshipOptions 
+          component: <SponsorshipOptions 
               options={[2, 5, 20, 50]}
               onAmountChanged={setAmount} />
         },
         {
           title: 'Payment details',
-          component: 
-            <PaymentDetails amount={amount} />,
+          component: <PaymentDetails 
+            ref={paymentDetails} 
+            amount={amount} />,
           onCompleted: async () => {
             const paymentMethod = await paymentDetails.current?.createPaymentDetails();
-            console.log("outer create!", paymentMethod);
+            console.log("outer create!", paymentDetails.current, paymentMethod);
           }
         }
       ]} />

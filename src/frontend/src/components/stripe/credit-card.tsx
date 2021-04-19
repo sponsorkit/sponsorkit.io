@@ -17,7 +17,7 @@ export default forwardRef<StripeCreditCardContract, {}>(function (
 ) {
     return <Elements stripe={stripePromise}>
         <div style={{
-            width: 300
+            width: '100%'
         }}>
             <StripeCreditCardInner ref={ref} />
         </div>
@@ -59,13 +59,17 @@ const StripeCreditCardInner = forwardRef<StripeCreditCardContract, {}>(function 
     return <>
         <Grid container>
             <Grid item xs={12}>
-                <ElementWrapper label="Card Number" component={CardNumberElement as any} />
+                <ElementWrapper label="Card number" component={CardNumberElement as any} />
             </Grid>
             <Grid item xs={7}>
                 <ElementWrapper label="Expiry (MM / YY)" component={CardExpiryElement as any} />
             </Grid>
-            <Grid item xs={5}>
-                <ElementWrapper label="CVC" component={CardCvcElement as any} />
+            <Grid item xs={5} style={{
+                paddingLeft: 18
+            }}>
+                <ElementWrapper 
+                    label="CVC" 
+                    component={CardCvcElement as any} />
             </Grid>
         </Grid>
     </>;

@@ -16,7 +16,9 @@ export default function ElementWrapper(props: {
     };
 
     return <>
-        <FormControl variant="outlined" fullWidth size="medium" margin="dense">
+        <FormControl variant="outlined" fullWidth size="medium" margin="dense" style={{
+            marginTop: 18
+        }}>
             <InputLabel
                 variant="outlined"
                 focused={focused}
@@ -35,7 +37,10 @@ export default function ElementWrapper(props: {
                 onChange={onChange}
                 inputProps={{ component: props.component }}
                 style={{
-                    padding: 6
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    paddingTop: 6,
+                    paddingBottom: 6
                 }}
             />
         </FormControl>
