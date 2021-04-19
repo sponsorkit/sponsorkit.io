@@ -29,6 +29,7 @@
   "devDependencies": {
     "@azure/static-web-apps-cli": "^0.3.0",
     "@types/react-helmet": "^6.1.1",
+    "babel-plugin-styled-components": "^1.12.0",
     "gatsby-plugin-sass": "^4.3.0",
     "prettier": "2.2.1",
     "sass": "^1.32.10",
