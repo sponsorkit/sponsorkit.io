@@ -43,7 +43,7 @@ export const StripeInput: React.FC<InputBaseComponentProps> = (props) => {
             fontSize: `${theme.typography.fontSize}px`,
             fontFamily: theme.typography.fontFamily,
             '::placeholder': {
-              color: fade(theme.palette.text.primary, 0.42),
+              color: theme.palette.text.secondary
             },
           },
           invalid: {
