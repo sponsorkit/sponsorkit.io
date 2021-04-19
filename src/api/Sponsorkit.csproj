@@ -24,11 +24,11 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.12" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.0.2" OutputItemType="Analyzer" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.0.1" OutputItemType="Analyzer" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions" Version="4.0.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.0.12" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.4" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.2.1" />
   </ItemGroup>
   <ItemGroup>
