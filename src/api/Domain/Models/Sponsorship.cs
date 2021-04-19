@@ -18,6 +18,8 @@ namespace Sponsorkit.Domain.Models
         public Guid? RepositoryId { get; set; }
 
         public int? MonthlyAmountInHundreds { get; set; }
+        
+        public string Reference { get; set; } = null!;
 
         public List<Payment> Payments { get; set; } = new();
         
