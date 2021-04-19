@@ -1,5 +1,5 @@
 import { Avatar, Box, Button, CircularProgress, Container, InputAdornment, Paper, TextField, Typography } from "@material-ui/core";
-import React, { FormEvent, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import VerticalLinearStepper from "../components/vertical-linear-stepper"
 import theme from "../theme";
 import { 
@@ -8,7 +8,10 @@ import {
   sponsorshipOptions, 
   summary 
 } from './new.module.scss';
-import StripeCreditCard, { StripeCreditCardContract } from '../components/stripe/credit-card';
+import StripeCreditCard from '../components/stripe/credit-card';
+
+import { Stripe, StripeElements } from "@stripe/stripe-js";
+import Elements from "../components/stripe/elements";
 
 function SponsorshipOptions(props: {
   options: number[],
@@ -118,12 +121,17 @@ function SponsorDetails(props: {
   </>;
 }
 
-const PaymentDetails = forwardRef<StripeCreditCardContract, { 
-  amount: number 
-}>(function(
-  props,
-  ref)
-{
+type StripeContext = {
+  stripe: Stripe,
+  elements: StripeElements
+}
+
+function PaymentDetails(props: {
+  amount: number
+}) {
+  const [stripe, setStripe] = useState<StripeContext>();
+  
+
   const [email, setEmail] = useState("");
   return <>
     <TextField 
@@ -135,14 +143,17 @@ const PaymentDetails = forwardRef<StripeCreditCardContract, {
       value={email}
       onChange={e => setEmail(e.target.value)} 
     />
-    <StripeCreditCard ref={ref} />
+    <StripeCreditCard 
+      onInitialized={setStripe} 
+    />
     <ChargeSummary amount={props.amount} />
   </>
-});
+}
 
 export default function NewPage() {
-  const paymentDetails = useRef<StripeCreditCardContract>(null);
+
   const [amount, setAmount] = useState(0);
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   return <Container maxWidth="md" style={{
     display: 'flex'
@@ -151,24 +162,29 @@ export default function NewPage() {
       margin: 32,
       flexGrow: 1
     }}>
-      <VerticalLinearStepper steps={[
-        {
-          title: 'Monthly sponsorship amount',
-          component: <SponsorshipOptions 
-              options={[2, 5, 20, 50]}
-              onAmountChanged={setAmount} />
-        },
-        {
-          title: 'Payment details',
-          component: <PaymentDetails 
-            ref={paymentDetails} 
-            amount={amount} />,
-          onCompleted: async () => {
-            const paymentMethod = await paymentDetails.current?.createPaymentDetails();
-            console.log("outer create!", paymentDetails.current, paymentMethod);
+      <VerticalLinearStepper 
+        onChanged={setActiveStepIndex}
+        steps={[
+          {
+            title: 'Monthly sponsorship amount',
+            component: <SponsorshipOptions 
+                options={[2, 5, 20, 50]}
+                onAmountChanged={setAmount} />
+          },
+          {
+            title: 'Payment details',
+            component: 
+              <Elements>
+                <PaymentDetails 
+                  amount={amount} />
+              </Elements>,
+            onCompleted: async () => {
+              // const paymentMethod = await paymentDetailsContract?.createPaymentDetails();
+              // console.log("outer create!", paymentDetailsContract, paymentMethod);
+            }
           }
-        }
-      ]} />
+        ]} 
+      />
     </Paper>
     <SponsorDetails gitHubUsername="ffMathy" />
   </Container>

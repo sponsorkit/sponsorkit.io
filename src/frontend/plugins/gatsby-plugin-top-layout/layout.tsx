@@ -13,7 +13,6 @@ import "./layout.css"
 import { ThemeProvider } from "@material-ui/core/styles";
 import { CssBaseline } from "@material-ui/core";
 import theme from "../../src/theme";
-
 export default function ({ children }: any) {
   return (<>
     <Helmet>

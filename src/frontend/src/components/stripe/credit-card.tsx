@@ -1,76 +1,79 @@
-import { FormControl, Grid, Input, InputLabel } from "@material-ui/core";
-import { CardCvcElement, CardElement, CardExpiryElement, CardNumberElement, Elements, useElements, useStripe } from "@stripe/react-stripe-js";
-import { loadStripe, PaymentMethod } from "@stripe/stripe-js";
+import { Grid } from "@material-ui/core";
+import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { StripeElementChangeEvent, StripeElements, StripeElementType } from "@stripe/stripe-js";
+import { Stripe } from "@stripe/stripe-js";
 import React, { useState } from "react";
-import { ForwardedRef, forwardRef, useEffect, useImperativeHandle } from "react";
-import ElementWrapper from "./element-wrapper";
+import { useEffect } from "react";
 
-const stripePromise = loadStripe('pk_test_51IWkhfBGc8xbeDA0hIEM0ZyOJfsyGufhwCLzem0YluDpXFLgR2WuHx7priPX5DWKCyvikRTPRgKn7Cf05vZbHuDD00BceWadyX');
+import { StripeTextField } from "./text-field";
 
-export type StripeCreditCardContract = {
-    createPaymentDetails(): Promise<PaymentMethod | null>;
-}
+export type CreditCardInitializedCallback = (context: { stripe: Stripe, elements: StripeElements }) => void;
 
-export default forwardRef<StripeCreditCardContract, {}>(function (
-    _,
-    ref
-) {
-    return <Elements stripe={stripePromise}>
-        <div style={{
-            width: '100%'
-        }}>
-            <StripeCreditCardInner ref={ref} />
-        </div>
-    </Elements>
-});
-
-const StripeCreditCardInner = forwardRef<StripeCreditCardContract, {}>(function (
-    _,
-    ref) {
+export default function (props: {
+    onInitialized: CreditCardInitializedCallback
+}) {
     const stripe = useStripe();
     const elements = useElements();
+    useEffect(
+        () => {
+            stripe && elements && props.onInitialized({ stripe, elements });
+        },
+        [stripe, elements]);
 
-    useImperativeHandle(ref, () => ({
-        async createPaymentDetails() {
-            console.log("on-submit");
+    const [errors, setErrors] = useState<{ [key in StripeElementType]?: string }>({});
 
-            if (!stripe || !elements)
-                return null;
+    const onChange = (event: StripeElementChangeEvent) => {
+        if (!stripe || !elements)
+            return;
 
-            const cardElement = elements.getElement(CardElement);
-            if (!cardElement)
-                return null;
+        setErrors({
+            ...errors,
+            [event.elementType]: event.error?.message
+        });
 
-            const { error, paymentMethod } = await stripe.createPaymentMethod({
-                type: 'card',
-                card: cardElement,
-            });
+        const cardElement = elements.getElement(CardNumberElement);
+        console.log("card", cardElement);
+    };
 
-            if (error) {
-                console.log('[error]', error);
-            } else {
-                console.log('[PaymentMethod]', paymentMethod);
-            }
-
-            return paymentMethod || null;
-        }
-    }));
-
-    return <>
-        <Grid container>
-            <Grid item xs={12}>
-                <ElementWrapper label="Card number" component={CardNumberElement as any} />
-            </Grid>
-            <Grid item xs={7}>
-                <ElementWrapper label="Expiry (MM / YY)" component={CardExpiryElement as any} />
-            </Grid>
-            <Grid item xs={5} style={{
-                paddingLeft: 18
-            }}>
-                <ElementWrapper 
-                    label="CVC" 
-                    component={CardCvcElement as any} />
-            </Grid>
+    return <Grid container style={{
+        width: '100%'
+    }}>
+        <Grid item xs={12}>
+            <StripeTextField
+                error={Boolean(errors.cardNumber)}
+                helperText={errors.cardNumber}
+                label="Card number"
+                inputProps={{
+                    options: {
+                        showIcon: true
+                    }
+                }}
+                onChange={onChange}
+                stripeElement={CardNumberElement}
+                variant="outlined"
+            />
         </Grid>
-    </>;
-});
+        <Grid item xs={7}>
+            <StripeTextField
+                error={Boolean(errors.cardExpiry)}
+                helperText={errors.cardExpiry}
+                label="Expiry"
+                onChange={onChange}
+                stripeElement={CardExpiryElement}
+                variant="outlined"
+            />
+        </Grid>
+        <Grid item xs={5} style={{
+            paddingLeft: 18
+        }}>
+            <StripeTextField
+                error={Boolean(errors.cardCvc)}
+                helperText={errors.cardCvc}
+                label="CVC"
+                onChange={onChange}
+                stripeElement={CardCvcElement}
+                variant="outlined"
+            />
+        </Grid>
+    </Grid>;
+}

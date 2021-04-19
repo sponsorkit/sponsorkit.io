@@ -1,36 +1,57 @@
-import React, { ChangeEvent, ChangeEventHandler, Component, EventHandler, FocusEvent, FocusEventHandler } from 'react';
-import theme from '../../theme';
-import * as classes from './input.module.scss';
+import { InputBaseComponentProps } from '@material-ui/core/InputBase'
+import { fade, useTheme } from '@material-ui/core/styles'
+import React from 'react'
 
-export default function StripeInput(props: {
-    onFocus?: FocusEventHandler<HTMLInputElement>,
-    onBlur?: any,
-    onChange?: ChangeEventHandler<HTMLInputElement>,
-    component?: React.FunctionComponent<{
-        className: string,
-        onFocus: FocusEventHandler<HTMLInputElement>,
-        onChange: ChangeEventHandler<HTMLInputElement>,
-        onBlur: any,
-        placeholder: string
-        style: any
-    }>
-}) {
-    const PropsComponent = props.component;
-    if(!PropsComponent)
-        return null;
+export const StripeInput: React.FC<InputBaseComponentProps> = (props) => {
+  const {
+    component: Component,
+    inputRef,
+    'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribeBy,
+    defaultValue,
+    required,
+    onKeyDown,
+    onKeyUp,
+    readOnly,
+    autoComplete,
+    autoFocus,
+    type,
+    name,
+    rows,
+    options,
+    ...other
+  } = props
+  const theme = useTheme()
+  const [mountNode, setMountNode] = React.useState<typeof Component | null>(null)
 
-    return <PropsComponent
-        className={classes.root}
-        onFocus={(e: FocusEvent<HTMLInputElement>) => props.onFocus && props.onFocus(e)}
-        onBlur={(e: any) => props.onBlur && props.onBlur(e)}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => props.onChange && props.onChange(e)}
-        placeholder=""
-        style={{
-            // base: {
-            //     fontSize: `${theme.typography.fontSize}px`,
-            //     fontFamily: theme.typography.fontFamily,
-            //     color: '#000000de'
-            // }
-        }}
+  React.useImperativeHandle(
+    inputRef,
+    () => ({
+      focus: () => mountNode.focus(),
+    }),
+    [mountNode]
+  )
+
+  return (
+    <Component
+      onReady={setMountNode}
+      options={{
+        ...options,
+        style: {
+          base: {
+            color: theme.palette.text.primary,
+            fontSize: `${theme.typography.fontSize}px`,
+            fontFamily: theme.typography.fontFamily,
+            '::placeholder': {
+              color: fade(theme.palette.text.primary, 0.42),
+            },
+          },
+          invalid: {
+            color: theme.palette.text.primary,
+          },
+        },
+      }}
+      {...other}
     />
+  )
 }

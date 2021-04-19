@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button, Step, StepContent, StepLabel, Stepper } from "@material-ui/core";
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
@@ -14,6 +14,7 @@ type Step = {
 
 export default function VerticalLinearStepper(props: {
     steps: Step[],
+    onChanged?: (index: number) => void,
     onCompleted?: () => Promise<void> | void
 }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,10 @@ export default function VerticalLinearStepper(props: {
     const activeStep = useMemo(
         () => props.steps[activeStepIndex],
         [activeStepIndex, props.steps]);
+
+    useEffect(
+        () => props.onChanged && props.onChanged(activeStepIndex),
+        [activeStep]);
 
     const wrapInLoading = async (action: () => Promise<void>|void) => {
         if(isLoading)
