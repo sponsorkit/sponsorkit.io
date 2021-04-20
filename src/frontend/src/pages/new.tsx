@@ -1,5 +1,5 @@
 import { Avatar, Box, Button, CircularProgress, Container, InputAdornment, Paper, TextField, Typography } from "@material-ui/core";
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import VerticalLinearStepper from "../components/vertical-linear-stepper"
 import theme from "../theme";
 import { 
@@ -10,7 +10,7 @@ import {
 } from './new.module.scss';
 import StripeCreditCard from '../components/stripe/credit-card';
 
-import { Stripe, StripeElements } from "@stripe/stripe-js";
+import { Stripe, StripeCardNumberElement, StripeElements } from "@stripe/stripe-js";
 import Elements from "../components/stripe/elements";
 
 function SponsorshipOptions(props: {
@@ -121,18 +121,45 @@ function SponsorDetails(props: {
   </>;
 }
 
-type StripeContext = {
-  stripe: Stripe,
-  elements: StripeElements
-}
+export type PaymentDetails = {
+  stripe: Stripe|undefined,
+  cardNumberElement: StripeCardNumberElement|undefined,
+  email: string|undefined
+};
 
 function PaymentDetails(props: {
-  amount: number
+  amount: number,
+  onChange: (details: PaymentDetails) => void
 }) {
-  const [stripe, setStripe] = useState<StripeContext>();
-  
+  const [stripe, setStripe] = useState<Stripe>();
+  const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement|undefined>();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string|undefined>(undefined);
+  const emailError = useMemo(
+    () => {
+      if(email === undefined)
+        return null;
+
+      if(!email)
+        return "Your e-mail address is imcomplete.";
+
+      if(email.indexOf('@') === -1 || email.indexOf('.') === -1)
+        return "Your e-mail address doesn't look correct.";
+
+      return null;
+    },
+    [email]);
+
+  useEffect(
+    () => {
+      props.onChange({
+        cardNumberElement,
+        email,
+        stripe
+      });
+    },
+    [cardNumberElement, email, stripe]);
+
   return <>
     <TextField 
       label="E-mail address"
@@ -141,19 +168,21 @@ function PaymentDetails(props: {
       fullWidth
       type="email"
       value={email}
+      error={!!emailError}
+      helperText={emailError}
       onChange={e => setEmail(e.target.value)} 
     />
     <StripeCreditCard 
-      onInitialized={setStripe} 
+      onInitialized={context => setStripe(context.stripe)} 
+      onChanged={setCardNumberElement}
     />
     <ChargeSummary amount={props.amount} />
   </>
 }
 
 export default function NewPage() {
-
   const [amount, setAmount] = useState(0);
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>();
 
   return <Container maxWidth="md" style={{
     display: 'flex'
@@ -163,7 +192,6 @@ export default function NewPage() {
       flexGrow: 1
     }}>
       <VerticalLinearStepper 
-        onChanged={setActiveStepIndex}
         steps={[
           {
             title: 'Monthly sponsorship amount',
@@ -176,11 +204,23 @@ export default function NewPage() {
             component: 
               <Elements>
                 <PaymentDetails 
-                  amount={amount} />
+                  amount={amount}
+                  onChange={setPaymentDetails} 
+                />
               </Elements>,
             onCompleted: async () => {
-              // const paymentMethod = await paymentDetailsContract?.createPaymentDetails();
-              // console.log("outer create!", paymentDetailsContract, paymentMethod);
+              console.log("payment-details", paymentDetails);
+              if(!paymentDetails?.cardNumberElement)
+                return;
+
+              const paymentMethod = await paymentDetails?.stripe?.createPaymentMethod({
+                card: paymentDetails.cardNumberElement,
+                type: "card"
+              });
+              if(paymentMethod?.error)
+                return alert(paymentMethod?.error.message);
+
+              console.log("outer create!", paymentMethod);
             }
           }
         ]} 

@@ -1,16 +1,16 @@
 import { Grid } from "@material-ui/core";
-import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { CardCvcElement, CardElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { StripeElementChangeEvent, StripeElements, StripeElementType } from "@stripe/stripe-js";
+import { StripeCardNumberElement } from "@stripe/stripe-js";
 import { Stripe } from "@stripe/stripe-js";
 import React, { useState } from "react";
 import { useEffect } from "react";
 
 import { StripeTextField } from "./text-field";
 
-export type CreditCardInitializedCallback = (context: { stripe: Stripe, elements: StripeElements }) => void;
-
 export default function (props: {
-    onInitialized: CreditCardInitializedCallback
+    onInitialized: (context: { stripe: Stripe, elements: StripeElements }) => void,
+    onChanged: (cardNumberElement: StripeCardNumberElement|undefined) => void
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -31,8 +31,8 @@ export default function (props: {
             [event.elementType]: event.error?.message
         });
 
-        const cardElement = elements.getElement(CardNumberElement);
-        console.log("card", cardElement);
+        const cardNumberElement = elements.getElement(CardNumberElement);
+        props.onChanged(cardNumberElement);
     };
 
     return <Grid container style={{
