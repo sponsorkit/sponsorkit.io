@@ -10,7 +10,7 @@ import { StripeTextField } from "./text-field";
 
 export default function (props: {
     onInitialized: (context: { stripe: Stripe, elements: StripeElements }) => void,
-    onChanged: (cardNumberElement: StripeCardNumberElement|undefined) => void
+    onChanged: (cardNumberElement: StripeCardNumberElement|null) => void
 }) {
     const stripe = useStripe();
     const elements = useElements();

@@ -123,7 +123,7 @@ function SponsorDetails(props: {
 
 export type PaymentDetails = {
   stripe: Stripe|undefined,
-  cardNumberElement: StripeCardNumberElement|undefined,
+  cardNumberElement: StripeCardNumberElement|null,
   email: string|undefined
 };
 
@@ -132,7 +132,7 @@ function PaymentDetails(props: {
   onChange: (details: PaymentDetails) => void
 }) {
   const [stripe, setStripe] = useState<Stripe>();
-  const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement|undefined>();
+  const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement|null>(null);
 
   const [email, setEmail] = useState<string|undefined>(undefined);
   const emailError = useMemo(
