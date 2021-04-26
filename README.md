@@ -16,6 +16,9 @@
 2. Sign up (redirect to Auth0).
 3. Get redirected to `sponsorkit.io/new?token={token}` (S3).
 4. Fill in Stripe information.
+- `POST sponsorkit.io/api/sponsor/{beneficiary}/{token}` with email, amount and card payment details.
+- `POST stripe.com/create-customer`
+
 5. Get redirected to `sponsorkit.io/dashboard` (S3).
 
 # Payment flow
