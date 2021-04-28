@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Sponsorkit.Domain.Api.Sponsors.Models
+namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models
 {
     public class SponsorResponse
     {

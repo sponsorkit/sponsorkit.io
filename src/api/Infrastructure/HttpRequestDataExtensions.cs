@@ -10,10 +10,13 @@ namespace Sponsorkit.Infrastructure
         private static async Task<HttpResponseData> CreateStatusCodeResponseAsync<T>(
             this HttpRequestData request,
             HttpStatusCode statusCode,
-            T content)
+            T? content)
         {
             var response = request.CreateResponse(statusCode);
-            await response.WriteAsJsonAsync(content);
+            if (!Equals(content, default(T)))
+            {
+                await response.WriteAsJsonAsync(content);
+            }
 
             return response;
         }
@@ -26,6 +29,15 @@ namespace Sponsorkit.Infrastructure
                 request,
                 HttpStatusCode.OK,
                 content);
+        }
+        
+        public static async Task<HttpResponseData> CreateOkResponseAsync(
+            this HttpRequestData request)
+        {
+            return await CreateStatusCodeResponseAsync<object>(
+                request,
+                HttpStatusCode.OK,
+                null);
         }
         
         public static async Task<HttpResponseData> CreateBadRequestResponseAsync<T>(

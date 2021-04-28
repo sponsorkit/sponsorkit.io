@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Sponsorkit.Domain.Api.Sponsors.Models;
+using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models;
 using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
 

@@ -30,6 +30,8 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.0.12" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.2.1" />
+    <PackageReference Include="Stripe.net" Version="39.45.0" />
+    <PackageReference Include="System.Linq.Async" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

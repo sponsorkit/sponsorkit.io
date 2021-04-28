@@ -1,31 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Api.Sponsors.Models;
+using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaries;
 using Sponsorkit.Domain.Queries.GetBeneficiarySponsorshipSummaryByReference;
 using Sponsorkit.Domain.Queries.GetBeneficiaryStatistics;
 using Sponsorkit.Domain.Queries.GetSponsorshipSummaries;
-using Sponsorkit.Domain.Queries.GetUserDetails;
 using Sponsorkit.Infrastructure;
 
-namespace Sponsorkit.Domain.Api.Sponsors
+namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet
 {
-    public class Function
+    public class SponsorBeneficiaryReferenceGet
     {
         private readonly IMediator _mediator;
         private readonly IMapper _mapper;
 
-        public Function(
+        public SponsorBeneficiaryReferenceGet(
             IMediator mediator,
             IMapper mapper)
         {
@@ -34,26 +30,10 @@ namespace Sponsorkit.Domain.Api.Sponsors
         }
 
         /// <summary>
-        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32"/>
-        /// </summary>
-        [Function("SponsorGet")]
-        public async Task<HttpResponseData?> SponsorBeneficiaryGet(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}")]
-            HttpRequestData request,
-            string beneficiary)
-        {
-            if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
-
-            var details = await _mediator.Send(new GetUserDetailsQuery(beneficiaryId));
-            return await request.CreateOkResponseAsync(details);
-        }
-
-        /// <summary>
         /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
         /// </summary>
-        [Function("BeneficiaryReferenceGet")]
-        public async Task<HttpResponseData> SponsorBeneficiaryReferenceGet(
+        [Function(nameof(SponsorBeneficiaryReferenceGet))]
+        public async Task<HttpResponseData> Execute(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
             HttpRequestData request,
             string beneficiary,
