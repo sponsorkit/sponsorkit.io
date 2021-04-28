@@ -10,16 +10,17 @@ namespace Sponsorkit.Domain.Models
     {
         [Key]
         public Guid Id { get; set; }
+        
+        public string EncryptedEmail { get; set; } = null!;
 
-        public string Name { get; set; } = null!;
+        public string StripeCustomerId { get; set; } = null!;
 
-        public string StripeId { get; set; } = null!;
+        public string? StripeConnectId { get; set; }
 
         public string? GitHubId { get; set; }
 
         public DateTime CreatedAtUtc { get; set; }
         
-        public List<Identity> Identities { get; set; } = new();
         public List<Repository> Repositories { get; set; } = new();
         
         public List<Bounty> CreatedBounties { get; set; } = new();

@@ -5,6 +5,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure;
 using Stripe;
 
@@ -18,19 +19,22 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferencePost
         private readonly CustomerService _customerService;
         private readonly PaymentMethodService _paymentMethodService;
         private readonly ChargeService _chargeService;
+        private readonly DataContext _dataContext;
 
         public SponsorsBeneficiaryReferencePost(
             IMediator mediator,
             IMapper mapper,
             CustomerService customerService,
             PaymentMethodService paymentMethodService,
-            ChargeService chargeService)
+            ChargeService chargeService,
+            DataContext dataContext)
         {
             _mediator = mediator;
             _mapper = mapper;
             _customerService = customerService;
             _paymentMethodService = paymentMethodService;
             _chargeService = chargeService;
+            _dataContext = dataContext;
         }
 
         /// <summary>
@@ -55,6 +59,8 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferencePost
             
             if (requestObject.StripeCardId == null)
                 return await request.CreateBadRequestResponseAsync("Stripe card ID not specified.");
+            
+            //TODO: we should create the sign-up function first.
 
             var customersByEmail = await _customerService.ListAsync(new CustomerListOptions()
             {
@@ -67,6 +73,19 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferencePost
                 {
                     Email = requestObject.Email
                 });
+
+            var sponsorship = new Sponsorship()
+            {
+                Beneficiary = 
+            };
+
+            var user = new User()
+            {
+                StripeCustomerId = customer.Id,
+                CreatedAtUtc = DateTime.UtcNow,
+                EncryptedEmail = requestObject.Email,
+                
+            };
 
             var existingPaymentMethods = await _paymentMethodService
                 .ListAutoPagingAsync(
