@@ -10,7 +10,6 @@ namespace Sponsorkit.Domain.Models
     public class DataContext : DbContext
     {
         public DbSet<Bounty> Bounties { get; set; }
-        public DbSet<Identity> Identities { get; set; }
         public DbSet<Issue> Issues { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Repository> Repositories { get; set; }
@@ -85,16 +84,13 @@ namespace Sponsorkit.Domain.Models
                     new User()
                     {
                         Id = beneficiaryUserId,
-                        Name = "the-beneficiary",
-                        StripeId = "foo",
+                        StripeCustomerId = "foo",
                         CreatedAtUtc = DateTime.UtcNow,
                         GitHubId = "ffMathy"
                     },
                     new User()
                     {
                         Id = sponsorUserId,
-                        Name = "the-sponsor",
-                        StripeId = "foo",
                         CreatedAtUtc = DateTime.UtcNow
                     });
 

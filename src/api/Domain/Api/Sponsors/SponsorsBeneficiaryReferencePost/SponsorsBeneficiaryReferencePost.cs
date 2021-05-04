@@ -66,6 +66,7 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferencePost
             {
                 Email = requestObject.Email
             });
+
             
             var customer = 
                 customersByEmail.SingleOrDefault() ?? 
@@ -74,17 +75,27 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferencePost
                     Email = requestObject.Email
                 });
 
-            var sponsorship = new Sponsorship()
-            {
-                Beneficiary = 
-            };
-
             var user = new User()
             {
                 StripeCustomerId = customer.Id,
                 CreatedAtUtc = DateTime.UtcNow,
-                EncryptedEmail = requestObject.Email,
-                
+                EncryptedEmail = requestObject.Email
+            };
+
+            var beneficiaryUser = await _dataContext.Users.SingleAsync(x => x.Id == beneficiaryId);
+            var sponsorship = new Sponsorship()
+            {
+                Beneficiary = beneficiaryUser,
+                Sponsor = user,
+                MonthlyAmountInHundreds = requestObject.AmountInHundreds,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            var payment = new Payment()
+            {
+                Sponsorship = sponsorship,
+                CreatedAtUtc = DateTime.UtcNow,
+                AmountInHundreds = requestObject.AmountInHundreds.Value
             };
 
             var existingPaymentMethods = await _paymentMethodService

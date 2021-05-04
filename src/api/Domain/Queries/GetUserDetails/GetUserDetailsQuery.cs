@@ -35,8 +35,7 @@ namespace Sponsorkit.Domain.Queries.GetUserDetails
                     x => x.Id == request.UserId,
                     cancellationToken);
             return new GetUserDetailsResponse(
-                user.Id,
-                user.Name)
+                user.Id)
             {
                 GitHubId = user.GitHubId
             };

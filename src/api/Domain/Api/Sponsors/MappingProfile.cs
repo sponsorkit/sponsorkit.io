@@ -11,7 +11,6 @@ namespace Sponsorkit.Domain.Api.Sponsors
         {
             CreateMap<GetSponsorshipSummaryResponse, SponsorResponse>()
                 .ConvertUsing(x => new SponsorResponse(
-                    x.Beneficiary.Name,
                     x.Sponsorship.MonthlyAmountInHundreds,
                     x.TotalDonationsInHundreds,
                     x.Sponsorship.CreatedAtUtc));
