@@ -18,6 +18,8 @@ namespace Sponsorkit.Domain.Models
         public string? StripeConnectId { get; set; }
 
         public string? GitHubId { get; set; }
+        
+        public string? EncryptedGitHubAccessToken { get; set; }
 
         public DateTime CreatedAtUtc { get; set; }
         
