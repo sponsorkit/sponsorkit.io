@@ -61,11 +61,17 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
             var request = await requestData.ReadFromJsonAsync<Request>();
             if (request == null)
                 return await requestData.CreateBadRequestResponseAsync("Request data was incorrect.");
-
-            var token = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(request.GitHubAuthenticationCode);
-            var currentGitHubUser = await GetCurrentGitHubUserFromTokenAsync(token);
             
             var email = request.Email;
+            if(email == null)
+                return await requestData.CreateBadRequestResponseAsync("Email is required.");
+
+            var gitHubCode = request.GitHubAuthenticationCode;
+            if(gitHubCode == null)
+                return await requestData.CreateBadRequestResponseAsync("GitHub OAuth code is required.");
+            
+            var token = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(gitHubCode);
+            var currentGitHubUser = await GetCurrentGitHubUserFromTokenAsync(token);
 
             await dataContext.ExecuteInTransactionAsync(
                 async () =>
