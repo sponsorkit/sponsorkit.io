@@ -1,4 +1,4 @@
-﻿namespace Sponsorkit.Domain.Queries.GetSponsorshipSummaries
+﻿namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models
 {
     public enum SortDirection
     {

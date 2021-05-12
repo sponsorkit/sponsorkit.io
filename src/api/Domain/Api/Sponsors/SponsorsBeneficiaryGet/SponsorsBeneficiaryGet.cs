@@ -4,22 +4,26 @@ using AutoMapper;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Sponsorkit.Domain.Queries.GetUserDetails;
+using Microsoft.EntityFrameworkCore;
+using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet
 {
     public class SponsorsBeneficiaryGet
     {
-        private readonly IMediator _mediator;
-        private readonly IMapper _mapper;
+        private readonly IMediator mediator;
+        private readonly IMapper mapper;
+        private readonly DataContext dataContext;
 
         public SponsorsBeneficiaryGet(
             IMediator mediator,
-            IMapper mapper)
+            IMapper mapper,
+            DataContext dataContext)
         {
-            _mediator = mediator;
-            _mapper = mapper;
+            this.mediator = mediator;
+            this.mapper = mapper;
+            this.dataContext = dataContext;
         }
 
         /// <summary>
@@ -34,8 +38,13 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
                 return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
 
-            var details = await _mediator.Send(new GetUserDetailsQuery(beneficiaryId));
-            return await request.CreateOkResponseAsync(details);
+            var user = await dataContext.Users.SingleOrDefaultAsync(x => x.Id == beneficiaryId);
+            var response = new Response(user.Id)
+            {
+                GitHubId = user.GitHubId
+            };
+            
+            return await request.CreateOkResponseAsync(response);
         }
     }
 }

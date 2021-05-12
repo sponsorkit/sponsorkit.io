@@ -11,15 +11,15 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
         
-        public string EncryptedEmail { get; set; } = null!;
+        public byte[] EncryptedEmail { get; set; } = null!;
 
         public string StripeCustomerId { get; set; } = null!;
 
         public string? StripeConnectId { get; set; }
 
-        public string? GitHubId { get; set; }
+        public long? GitHubId { get; set; }
         
-        public string? EncryptedGitHubAccessToken { get; set; }
+        public byte[]? EncryptedGitHubAccessToken { get; set; }
 
         public DateTime CreatedAtUtc { get; set; }
         

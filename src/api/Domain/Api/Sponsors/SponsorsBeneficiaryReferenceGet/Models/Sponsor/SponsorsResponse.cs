@@ -1,4 +1,4 @@
-﻿namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models
+﻿namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models.Sponsor
 {
     public class SponsorsResponse
     {

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Data;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Sponsorkit.Infrastructure;
@@ -16,12 +18,53 @@ namespace Sponsorkit.Domain.Models
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
         
-        private readonly IOptions<SqlServerOptions> _sqlServerOptions;
+        private readonly IOptions<SqlServerOptions> sqlServerOptions;
 
         public DataContext(
             IOptions<SqlServerOptions> sqlServerOptions) 
         {
-            _sqlServerOptions = sqlServerOptions;
+            this.sqlServerOptions = sqlServerOptions;
+        }
+
+        public async Task ExecuteInTransactionAsync(
+            Func<Task> action,
+            IsolationLevel? isolationLevel = IsolationLevel.ReadUncommitted)
+        {
+            await ExecuteInTransactionAsync<object?>(
+                async () =>
+                {
+                    await action();
+                    return null;
+                },
+                isolationLevel);
+        }
+
+        public async Task<T> ExecuteInTransactionAsync<T>(
+            Func<Task<T>> action,
+            IsolationLevel? isolationLevel = IsolationLevel.ReadUncommitted)
+        {
+            if (this.Database.CurrentTransaction != null)
+                return await action();
+
+            var strategy = this.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await this.Database.BeginTransactionAsync(
+                    isolationLevel ?? IsolationLevel.ReadUncommitted);
+
+                try
+                {
+                    var result = await action();
+                    await transaction.CommitAsync();
+
+                    return result;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
         }
         
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -29,7 +72,7 @@ namespace Sponsorkit.Domain.Models
             optionsBuilder.EnableSensitiveDataLogging();
             optionsBuilder.EnableDetailedErrors();
 
-            var connectionString = _sqlServerOptions.Value.ConnectionString;
+            var connectionString = sqlServerOptions.Value.ConnectionString;
             optionsBuilder.UseSqlServer(connectionString);
         }
 
@@ -86,7 +129,7 @@ namespace Sponsorkit.Domain.Models
                         Id = beneficiaryUserId,
                         StripeCustomerId = "foo",
                         CreatedAtUtc = DateTime.UtcNow,
-                        GitHubId = "ffMathy"
+                        GitHubId = 2824010
                     },
                     new User()
                     {
