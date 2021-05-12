@@ -97,18 +97,10 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
                     user.StripeConnectId = account.Id;
                     await dataContext.SaveChangesAsync();
 
-                    // var linkResponse = await accountLinkService.CreateAsync(
-                    //     new AccountLinkCreateOptions()
-                    //     {
-                    //         Account = account.Id,
-                    //         RefreshUrl = $"https://sponsorkit.io/api/signup/activate-stripe-account/{account.Id}",
-                    //         ReturnUrl = $"https://sponsorkit.io/api/signup/completed",
-                    //         Type = "account_onboarding"
-                    //     });
                     await SendMailAsync(
                         email,
                         "Fill in your information with Stripe",
-                        $"Yada yada: https://sponsorkit.io/api/signup/activate-stripe-account/{account.Id}");
+                        $"Yada yada: https://sponsorkit.io/api/signup/activate-stripe-account/{user.Id}");
                 });
 
             return await requestData.CreateOkResponseAsync();

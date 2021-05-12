@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -15,16 +14,13 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet
 {
     public class Function
     {
-        private readonly IMediator mediator;
         private readonly IMapper mapper;
         private readonly DataContext dataContext;
 
         public Function(
-            IMediator mediator,
             IMapper mapper,
             DataContext dataContext)
         {
-            this.mediator = mediator;
             this.mapper = mapper;
             this.dataContext = dataContext;
         }

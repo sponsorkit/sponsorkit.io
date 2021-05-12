@@ -32,11 +32,11 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet
         [Function(nameof(SponsorsBeneficiaryGet))]
         public async Task<HttpResponseData?> Execute(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}")]
-            HttpRequestData request,
+            HttpRequestData requestData,
             string beneficiary)
         {
             if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
+                return await requestData.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
 
             var user = await dataContext.Users.SingleOrDefaultAsync(x => x.Id == beneficiaryId);
             var response = new Response(user.Id)
@@ -44,7 +44,7 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet
                 GitHubId = user.GitHubId
             };
             
-            return await request.CreateOkResponseAsync(response);
+            return await requestData.CreateOkResponseAsync(response);
         }
     }
 }

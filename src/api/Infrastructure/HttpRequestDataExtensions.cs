@@ -50,7 +50,7 @@ namespace Sponsorkit.Infrastructure
                 content);
         }
 
-        public static HttpResponseData CreateRedirectResponseAsync(
+        public static HttpResponseData CreateRedirectResponse(
             this HttpRequestData request,
             string location)
         {

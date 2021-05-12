@@ -1,23 +1,21 @@
-using System.Net;
+using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Net.Http.Headers;
+using Sponsorkit.Infrastructure;
 
-namespace Sponsorkit.Domain.Api
+namespace Sponsorkit.Domain.Api.Browser.BrowserGet
 {
-    public class Browser
+    public class Function
     {
-        [Function("BrowserGet")]
+        [Function(nameof(BrowserGet))]
         public HttpResponseData Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "browser/{beneficiary}/{reference}")] 
             HttpRequestData request,
             string beneficiary,
             string reference)
         {
-            var response = request.CreateResponse(HttpStatusCode.Redirect);
-            response.Headers.Add(HeaderNames.Location, $"/{beneficiary}?reference={reference}");
-
-            return response;
+            return request.CreateRedirectResponse(
+                $"/{beneficiary}?reference={reference}");
         }
     }
 }
