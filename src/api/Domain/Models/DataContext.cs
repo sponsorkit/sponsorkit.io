@@ -140,6 +140,16 @@ namespace Sponsorkit.Domain.Models
                         StripeCustomerId = "foo"
                     });
 
+            var repositoryId = Guid.NewGuid();
+            modelBuilder
+                .Entity<Repository>()
+                .HasData(
+                    new Repository()
+                    {
+                        Id = repositoryId,
+                        GitHubId = 1337
+                    });
+
             var sponsorshipId = Guid.NewGuid();
             modelBuilder
                 .Entity<Sponsorship>()
@@ -148,7 +158,8 @@ namespace Sponsorkit.Domain.Models
                     Id = sponsorshipId,
                     Reference = "sponsorship-foo",
                     SponsorId = sponsorUserId,
-                    BeneficiaryId = beneficiaryUserId
+                    BeneficiaryId = beneficiaryUserId,
+                    RepositoryId = repositoryId
                 });
 
             modelBuilder
