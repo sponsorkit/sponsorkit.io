@@ -129,12 +129,15 @@ namespace Sponsorkit.Domain.Models
                         Id = beneficiaryUserId,
                         StripeCustomerId = "foo",
                         CreatedAtUtc = DateTime.UtcNow,
-                        GitHubId = 2824010
+                        GitHubId = 2824010,
+                        EncryptedEmail = Array.Empty<byte>()
                     },
                     new User()
                     {
                         Id = sponsorUserId,
-                        CreatedAtUtc = DateTime.UtcNow
+                        CreatedAtUtc = DateTime.UtcNow,
+                        EncryptedEmail = Array.Empty<byte>(),
+                        StripeCustomerId = "foo"
                     });
 
             var sponsorshipId = Guid.NewGuid();

@@ -28,7 +28,6 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
         
         private readonly CustomerService customerService;
         private readonly AccountService accountService;
-        private readonly AccountLinkService accountLinkService;
 
         public Function(
             IGitHubClientFactory gitHubClientFactory,
@@ -37,8 +36,7 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
             IAesEncryptionHelper aesEncryptionHelper,
             DataContext dataContext,
             CustomerService customerService,
-            AccountService accountService,
-            AccountLinkService accountLinkService)
+            AccountService accountService)
         {
             this.gitHubClientFactory = gitHubClientFactory;
             this.gitHubClient = gitHubClient;
@@ -47,7 +45,6 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
             this.aesEncryptionHelper = aesEncryptionHelper;
             this.customerService = customerService;
             this.accountService = accountService;
-            this.accountLinkService = accountLinkService;
         }
 
         /// <summary>
