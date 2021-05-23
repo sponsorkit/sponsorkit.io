@@ -6,6 +6,7 @@ using AspNet.Security.OAuth.GitHub;
 using Azure.Core.Serialization;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,26 +22,36 @@ namespace Sponsorkit.Infrastructure
             var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults(
                     (_, _) => { },
-                    options => options.Serializer = new JsonObjectSerializer(
-                        new JsonSerializerOptions()
-                        {
-                            IgnoreNullValues = true,
-                            WriteIndented = false,
-                            PropertyNameCaseInsensitive = false,
-                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
-                        }))
-                .ConfigureAppConfiguration((_, builder) => builder
-                    .AddUserSecrets("sponsorkit-secrets")
-                    .AddJsonFile("local.settings.json", true)
-                    .Build())
+                    options => ConfigureDefaults(options))
+                .ConfigureAppConfiguration((_, builder) => 
+                    ConfigureConfiguration(builder).Build())
                 .ConfigureServices(ConfigureServices)
                 .Build();
 
             await host.RunAsync();
         }
 
-        private static void ConfigureServices(IServiceCollection services)
+        public static ObjectSerializer ConfigureDefaults(WorkerOptions options)
+        {
+            return options.Serializer = new JsonObjectSerializer(
+                new JsonSerializerOptions()
+                {
+                    IgnoreNullValues = true,
+                    WriteIndented = false,
+                    PropertyNameCaseInsensitive = false,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+                });
+        }
+
+        public static IConfigurationBuilder ConfigureConfiguration(IConfigurationBuilder builder)
+        {
+            return builder
+                .AddUserSecrets("sponsorkit-secrets")
+                .AddJsonFile("local.settings.json", true);
+        }
+
+        public static void ConfigureServices(IServiceCollection services)
         {
             ConfigureOptions(services);
             
