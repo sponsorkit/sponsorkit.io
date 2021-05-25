@@ -20,6 +20,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Domain\Api\Signup" />
+      <Folder Include="Domain\Api\Sponsors" />
       <Folder Include="TestHelpers\Builders\Stripe" />
     </ItemGroup>
 
