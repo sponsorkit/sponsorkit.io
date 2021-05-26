@@ -1,6 +1,13 @@
 ﻿using System;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.Domain.Api.Browser.BrowserGet;
+using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Browser
 {
@@ -8,9 +15,21 @@ namespace Sponsorkit.Tests.Domain.Api.Browser
     public class BrowserGetTest
     {
         [TestMethod]
-        public async Task BrowserGet_NoParametersGiven_CanFetchFunction()
+        public void BrowserGet_NoParametersGiven_CanFetchFunction()
         {
-            throw new NotImplementedException();
+            //Arrange
+            var function = new Function();
+            
+            //Act
+            var result = function.Run(
+                null!,
+                "some-beneficiary",
+                "some-reference");
+            
+            //Assert
+            Assert.AreEqual(
+                "/some-beneficiary?reference=some-reference", 
+                result.Headers.GetValues("Location").Single());
         }
     }
 }
