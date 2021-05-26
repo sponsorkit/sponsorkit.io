@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Api.Browser.BrowserGet;
 using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Azure;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Browser
@@ -22,7 +23,7 @@ namespace Sponsorkit.Tests.Domain.Api.Browser
             
             //Act
             var result = function.Run(
-                null!,
+                HttpRequestMessageFactory.Empty,
                 "some-beneficiary",
                 "some-reference");
             
