@@ -124,6 +124,12 @@ namespace Sponsorkit.Infrastructure
         {
             var name = typeof(TOptions).Name;
 
+            const string OptionsSuffix = "Options";
+            if (name.EndsWith(OptionsSuffix))
+            {
+                name = name.Substring(0, name.LastIndexOf(OptionsSuffix, StringComparison.Ordinal));
+            }
+
             services
                 .AddOptions<TOptions>()
                 .Configure<IConfiguration>((settings, configuration) =>
