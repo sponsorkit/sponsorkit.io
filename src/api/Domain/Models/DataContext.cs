@@ -19,10 +19,10 @@ namespace Sponsorkit.Domain.Models
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
         
-        private readonly IOptions<SqlServerOptions> sqlServerOptions;
+        private readonly IOptions<SqlOptions> sqlServerOptions;
 
         public DataContext(
-            IOptions<SqlServerOptions> sqlServerOptions) 
+            IOptions<SqlOptions> sqlServerOptions) 
         {
             this.sqlServerOptions = sqlServerOptions;
         }

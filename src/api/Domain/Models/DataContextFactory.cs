@@ -14,11 +14,11 @@ namespace Sponsorkit.Domain.Models
                 .AddJsonFile("local.settings.json", false)
                 .Build();
 
-            var sqlServerOptions = new SqlServerOptions();
+            var sqlServerOptions = new SqlOptions();
             configuration.GetSection("Values:SqlServerOptions").Bind(sqlServerOptions);
 
             return new DataContext(
-                new OptionsWrapper<SqlServerOptions>(sqlServerOptions));
+                new OptionsWrapper<SqlOptions>(sqlServerOptions));
         }
     }
 }

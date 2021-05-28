@@ -2,7 +2,7 @@
 
 namespace Sponsorkit.Infrastructure.Options
 {
-    public class SqlServerOptions
+    public class SqlOptions
     {
         [NotLogged]
         public string ConnectionString { get; set; } = null!;

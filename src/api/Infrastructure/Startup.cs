@@ -117,7 +117,7 @@ namespace Sponsorkit.Infrastructure
 
         private static void ConfigureOptions(IServiceCollection services)
         {
-            AddOptions<SqlServerOptions>(services);
+            AddOptions<SqlOptions>(services);
         }
 
         private static void AddOptions<TOptions>(IServiceCollection services) where TOptions: class
