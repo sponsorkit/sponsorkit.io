@@ -21,8 +21,11 @@
 
     <ItemGroup>
       <Folder Include="Domain\Api\Signup" />
-      <Folder Include="Domain\Api\Sponsors" />
       <Folder Include="TestHelpers\Builders\Stripe" />
+        <None Include="..\..\src\api\local.settings.json">
+            <Link>local.settings.json</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

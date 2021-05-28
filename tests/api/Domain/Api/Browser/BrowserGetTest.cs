@@ -16,14 +16,14 @@ namespace Sponsorkit.Tests.Domain.Api.Browser
     public class BrowserGetTest
     {
         [TestMethod]
-        public void BrowserGet_NoParametersGiven_CanFetchFunction()
+        public void BrowserGet_BeneficiaryAndReferenceGiven_RedirectsToProperUrl()
         {
             //Arrange
             var function = new Function();
             
             //Act
             var result = function.Run(
-                HttpRequestMessageFactory.Empty,
+                HttpRequestDataFactory.Empty,
                 "some-beneficiary",
                 "some-reference");
             

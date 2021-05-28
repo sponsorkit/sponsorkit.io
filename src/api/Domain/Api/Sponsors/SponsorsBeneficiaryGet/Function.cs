@@ -10,19 +10,13 @@ using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet
 {
-    public class SponsorsBeneficiaryGet
+    public class Function
     {
-        private readonly IMediator mediator;
-        private readonly IMapper mapper;
         private readonly DataContext dataContext;
 
-        public SponsorsBeneficiaryGet(
-            IMediator mediator,
-            IMapper mapper,
+        public Function(
             DataContext dataContext)
         {
-            this.mediator = mediator;
-            this.mapper = mapper;
             this.dataContext = dataContext;
         }
 

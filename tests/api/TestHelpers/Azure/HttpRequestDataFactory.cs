@@ -5,7 +5,7 @@ using NSubstitute;
 
 namespace Sponsorkit.Tests.TestHelpers.Azure
 {
-    public static class HttpRequestMessageFactory
+    public static class HttpRequestDataFactory
     {
         public static HttpRequestData Empty => 
             new HttpRequestDataMock(

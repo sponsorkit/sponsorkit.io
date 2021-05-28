@@ -30,30 +30,26 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
             this.cancellationTokenSource = new CancellationTokenSource();
 
             this.host = new HostBuilder()
-                .ConfigureAppConfiguration(builder => TestConfigurationFactory.ConfigureBuilder(builder))
-                .UseEnvironment(options.EnvironmentName ?? Microsoft.Extensions.Hosting.Environments.Development)
+                // .ConfigureWebHostDefaults(builder => builder
+                //         .UseKestrel()
+                //     //NGROK is currently disabled.
+                //     // .UseNGrok(new NgrokOptions()
+                //     // {
+                //     //     ShowNGrokWindow = false,
+                //     //     Disable = false,
+                //     //     ApplicationHttpUrl = "http://localhost:14568"
+                //     // })
+                // )
+                .UseEnvironment(
+                    options.EnvironmentName ?? 
+                    Microsoft.Extensions.Hosting.Environments.Development)
                 .ConfigureFunctionsWorkerDefaults(
-                    (_, _) => { },
-                    workerOptions => Program.ConfigureDefaults(workerOptions))
-                .ConfigureAppConfiguration((_, builder) => 
-                    Program.ConfigureConfiguration(builder).Build())
-                .ConfigureServices(services =>
-                {
-                    Program.ConfigureServices(services);
-                    
-                    TestServiceProviderFactory.ConfigureServicesForTesting(services);
-                    options.IocConfiguration?.Invoke(services);
-                })
-                .ConfigureWebHostDefaults(builder => builder
-                    .UseKestrel()
-                    //NGROK is currently disabled.
-                    // .UseNGrok(new NgrokOptions()
-                    // {
-                    //     ShowNGrokWindow = false,
-                    //     Disable = false,
-                    //     ApplicationHttpUrl = "http://localhost:14568"
-                    // })
-                )
+                    (_, _) => {},
+                    Program.ConfigureDefaults)
+                .ConfigureAppConfiguration((_, builder) => Program
+                    .ConfigureConfiguration(builder)
+                    .Build())
+                .ConfigureServices(Program.ConfigureServices)
                 .Build();
 
             this.RootProvider = this.host.Services;

@@ -22,18 +22,20 @@ namespace Sponsorkit.Infrastructure
             var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults(
                     (_, _) => { },
-                    options => ConfigureDefaults(options))
+                    ConfigureDefaults)
                 .ConfigureAppConfiguration((_, builder) => 
-                    ConfigureConfiguration(builder).Build())
+                    ConfigureConfiguration(builder)
+                        .AddUserSecrets("sponsorkit-secrets")
+                        .Build())
                 .ConfigureServices(ConfigureServices)
                 .Build();
 
             await host.RunAsync();
         }
 
-        public static ObjectSerializer ConfigureDefaults(WorkerOptions options)
+        public static void ConfigureDefaults(WorkerOptions options)
         {
-            return options.Serializer = new JsonObjectSerializer(
+            options.Serializer = new JsonObjectSerializer(
                 new JsonSerializerOptions()
                 {
                     IgnoreNullValues = true,
@@ -44,10 +46,9 @@ namespace Sponsorkit.Infrastructure
                 });
         }
 
-        public static IConfigurationBuilder ConfigureConfiguration(IConfigurationBuilder builder)
+        public static IConfigurationBuilder ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
         {
-            return builder
-                .AddUserSecrets("sponsorkit-secrets")
+            return configurationBuilder
                 .AddJsonFile("local.settings.json", true);
         }
 
