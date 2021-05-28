@@ -18,6 +18,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
         where TOptions : class, new()
     {
         private readonly IIntegrationTestEntrypoint entrypoint;
+        private static DockerDependencyService dockerDependencyService;
 
         public IServiceProvider ServiceProvider { get; }
 
@@ -40,6 +41,9 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         protected async Task InitializeAsync()
         {
+            dockerDependencyService ??= new DockerDependencyService(this.ServiceProvider);
+            await dockerDependencyService.StartAsync();
+            
             await this.entrypoint.WaitUntilReadyAsync();
         }
 
