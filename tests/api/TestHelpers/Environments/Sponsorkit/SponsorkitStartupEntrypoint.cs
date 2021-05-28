@@ -49,7 +49,8 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
                 .ConfigureAppConfiguration((_, builder) => Program
                     .ConfigureConfiguration(builder)
                     .Build())
-                .ConfigureServices(Program.ConfigureServices)
+                .ConfigureServices((context, services) => Program
+                    .ConfigureServices(services, context.Configuration))
                 .Build();
 
             this.RootProvider = this.host.Services;

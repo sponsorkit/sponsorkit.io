@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Sponsorkit.Infrastructure;
+using Sponsorkit.Infrastructure.Options;
 
 #pragma warning disable 8618
 

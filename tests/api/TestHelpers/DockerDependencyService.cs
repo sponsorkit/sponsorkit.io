@@ -26,8 +26,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private const string SqlPassword = "hNxX9Qz2";
 
-        private bool isStarted;
-
         private DataContext dataContext;
         private CustomerService customerService;
         private PlanService planService;
@@ -55,13 +53,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         public async Task StartAsync()
         {
-            if (isStarted)
-                return;
-
-            isStarted = true;
-            
-            KillOldNodeProcesses();
-
             using var scope = this.serviceProvider.CreateScope();
 
             dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -85,30 +76,6 @@ namespace Sponsorkit.Tests.TestHelpers
             await Task.WhenAll(
                 CleanupStripeCustomersAsync(),
                 CleanupStripePlansAsync());
-        }
-
-        private static void KillOldNodeProcesses()
-        {
-            if (EnvironmentHelper.IsRunningInTest)
-                return;
-
-            var processesToKill = Process.GetProcessesByName("node")
-                .Where(x => (DateTime.Now - x.StartTime).TotalMinutes > 30)
-                .ToArray();
-            try
-            {
-                foreach (var process in processesToKill)
-                {
-                    process.Kill(true);
-                }
-            }
-            finally
-            {
-                foreach (var process in processesToKill)
-                {
-                    process.Dispose();
-                }
-            }
         }
 
         private async void SetupStripeWebhooksAsync(IEnumerable<FluffySpoon.AspNet.NGrok.NGrokModels.Tunnel> tunnels)

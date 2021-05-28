@@ -12,6 +12,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Infrastructure.Options;
+using Stripe;
 
 namespace Sponsorkit.Infrastructure
 {
@@ -27,7 +29,7 @@ namespace Sponsorkit.Infrastructure
                     ConfigureConfiguration(builder)
                         .AddUserSecrets("sponsorkit-secrets")
                         .Build())
-                .ConfigureServices(ConfigureServices)
+                .ConfigureServices((context, services) => ConfigureServices(services, context.Configuration))
                 .Build();
 
             await host.RunAsync();
@@ -52,9 +54,12 @@ namespace Sponsorkit.Infrastructure
                 .AddJsonFile("local.settings.json", true);
         }
 
-        public static void ConfigureServices(IServiceCollection services)
+        public static void ConfigureServices(
+            IServiceCollection services,
+            IConfiguration configuration)
         {
             ConfigureOptions(services);
+            ConfigureStripe(services, configuration);
             
             services.AddDbContext<DataContext>();
             services.AddMediatR(typeof(Program).Assembly);
@@ -84,17 +89,30 @@ namespace Sponsorkit.Infrastructure
                         }
                     };
                 });
-
-            HandleDatabaseCreationIfDebugging(services);
         }
 
-        private static void HandleDatabaseCreationIfDebugging(IServiceCollection services)
+        private static void ConfigureStripe(
+            IServiceCollection services,
+            IConfiguration configuration)
         {
-            var provider = services.BuildServiceProvider();
-            var dataContext = provider.GetRequiredService<DataContext>();
+            var stripeConfiguration = configuration.GetSection<StripeOptions>();
 
-            dataContext.Database.EnsureDeleted();
-            dataContext.Database.Migrate();
+            var secretKey = stripeConfiguration?.SecretKey;
+            var publishableKey = stripeConfiguration?.PublishableKey;
+
+            services.AddSingleton<CustomerService>();
+            services.AddSingleton<PaymentMethodService>();
+            services.AddSingleton<SubscriptionService>();
+            services.AddSingleton<WebhookEndpointService>();
+            services.AddSingleton<PromotionCodeService>();
+            services.AddSingleton<CouponService>();
+            services.AddSingleton<CustomerBalanceTransactionService>();
+            services.AddSingleton<PlanService>();
+
+            services.AddSingleton<IStripeClient, StripeClient>(
+                _ => new StripeClient(
+                    apiKey: secretKey,
+                    clientId: publishableKey));
         }
 
         private static void ConfigureOptions(IServiceCollection services)
