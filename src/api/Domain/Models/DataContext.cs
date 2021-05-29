@@ -2,6 +2,7 @@
 using System.Data;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.Options;
@@ -19,12 +20,12 @@ namespace Sponsorkit.Domain.Models
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
         
-        private readonly IOptions<SqlOptions> sqlServerOptions;
+        private readonly SqlOptions sqlServerOptions;
 
         public DataContext(
-            IOptions<SqlOptions> sqlServerOptions) 
+            IConfiguration configuration) 
         {
-            this.sqlServerOptions = sqlServerOptions;
+            this.sqlServerOptions = configuration.GetOptions<SqlOptions>();
         }
 
         public async Task ExecuteInTransactionAsync(
@@ -73,7 +74,7 @@ namespace Sponsorkit.Domain.Models
             optionsBuilder.EnableSensitiveDataLogging();
             optionsBuilder.EnableDetailedErrors();
 
-            var connectionString = sqlServerOptions.Value.ConnectionString;
+            var connectionString = sqlServerOptions.ConnectionString;
             optionsBuilder.UseSqlServer(connectionString);
         }
 

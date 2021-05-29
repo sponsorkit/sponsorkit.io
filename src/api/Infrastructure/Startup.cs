@@ -62,9 +62,15 @@ namespace Sponsorkit.Infrastructure
             ConfigureOptions(services);
             ConfigureStripe(services, configuration);
             
-            services.AddDbContext<DataContext>();
+            ConfigureEntityFramework(services);
+            ConfigureAuthentication(services);
+
             services.AddMediatR(typeof(Program).Assembly);
             services.AddAutoMapper(x => x.AddMaps(typeof(Program).Assembly));
+        }
+
+        private static void ConfigureAuthentication(IServiceCollection services)
+        {
             services
                 .AddAuthentication()
                 .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
@@ -72,7 +78,7 @@ namespace Sponsorkit.Infrastructure
                     //TODO: add secrets and stuff.
                     options.ClientId = "TODO";
                     options.ClientSecret = "TODO";
-                    
+
                     options.Scope.Add("user:email");
                     options.Events = new OAuthEvents()
                     {
@@ -90,6 +96,11 @@ namespace Sponsorkit.Infrastructure
                         }
                     };
                 });
+        }
+
+        private static void ConfigureEntityFramework(IServiceCollection services)
+        {
+            services.AddDbContext<DataContext>();
         }
 
         private static void ConfigureStripe(
