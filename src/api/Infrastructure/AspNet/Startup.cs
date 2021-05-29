@@ -69,32 +69,32 @@ namespace Sponsorkit.Infrastructure.AspNet
         private static void ConfigureAuthentication(IServiceCollection services)
         {
             services
-                .AddAuthentication()
-                .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
-                {
-                    //TODO: add secrets and stuff.
-                    options.ClientId = "TODO";
-                    options.ClientSecret = "TODO";
-
-                    options.Scope.Add("user:email");
-                    options.Events = new OAuthEvents()
-                    {
-                        OnCreatingTicket = async context =>
-                        {
-                            throw new NotImplementedException("Not implemented yet.");
-                            
-                            var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
-                            if (email == null)
-                                throw new InvalidOperationException("E-mail was not sent by GitHub.");
-
-                            var userId = context.User.GetProperty("id").GetString();
-                            if (userId == null)
-                                throw new InvalidOperationException("User ID was not sent by GitHub.");
-
-                            throw new NotImplementedException("Not implemented!");
-                        }
-                    };
-                });
+                .AddAuthentication();
+            //     .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
+            //     {
+            //         //TODO: add secrets and stuff.
+            //         options.ClientId = "TODO";
+            //         options.ClientSecret = "TODO";
+            //
+            //         options.Scope.Add("user:email");
+            //         options.Events = new OAuthEvents()
+            //         {
+            //             OnCreatingTicket = async context =>
+            //             {
+            //                 throw new NotImplementedException("Not implemented yet.");
+            //                 
+            //                 var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
+            //                 if (email == null)
+            //                     throw new InvalidOperationException("E-mail was not sent by GitHub.");
+            //
+            //                 var userId = context.User.GetProperty("id").GetString();
+            //                 if (userId == null)
+            //                     throw new InvalidOperationException("User ID was not sent by GitHub.");
+            //
+            //                 throw new NotImplementedException("Not implemented!");
+            //             }
+            //         };
+            //     });
         }
 
         private static void ConfigureAspNetCore(IServiceCollection services)

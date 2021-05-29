@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore.Design;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Sponsorkit.Infrastructure.Options;
 
 namespace Sponsorkit.Domain.Models
 {
@@ -10,8 +12,12 @@ namespace Sponsorkit.Domain.Models
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", false)
                 .Build();
+            var options = configuration.GetOptions<SqlOptions>();
 
-            return new DataContext(configuration);
+            return new DataContext(
+                new DbContextOptionsBuilder<DataContext>()
+                    .UseSqlServer(options.ConnectionString)
+                    .Options);
         }
     }
 }

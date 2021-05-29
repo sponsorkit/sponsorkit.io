@@ -17,13 +17,9 @@ namespace Sponsorkit.Domain.Models
         public DbSet<Repository> Repositories { get; set; }
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
-        
-        private readonly SqlOptions sqlServerOptions;
 
-        public DataContext(
-            IConfiguration configuration)
+        public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
-            this.sqlServerOptions = configuration.GetOptions<SqlOptions>();
         }
 
         public async Task ExecuteInTransactionAsync(
@@ -65,15 +61,6 @@ namespace Sponsorkit.Domain.Models
                     throw;
                 }
             });
-        }
-        
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.EnableSensitiveDataLogging();
-            optionsBuilder.EnableDetailedErrors();
-
-            var connectionString = sqlServerOptions.ConnectionString;
-            optionsBuilder.UseSqlServer(connectionString);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,4 +1,5 @@
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Sponsorkit.Domain
@@ -7,6 +8,7 @@ namespace Sponsorkit.Domain
         .WithoutRequest
         .WithoutResponse
     {
+        [AllowAnonymous]
         [HttpGet("/health")]
         public override ActionResult Handle()
         {
