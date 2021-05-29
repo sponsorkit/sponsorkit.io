@@ -1,5 +1,10 @@
 ﻿{
   "IsEncrypted": false,
+  "host": "127.0.0.1",
+  "port": "50906",
+  "workerId": "6c297583-3941-4e5c-b56c-0d09f54ddebe",
+  "requestId": "d8cb620a-b6d5-497c-b90b-75b3b42c3486",
+  "grpcMaxMessageLength": 2147483647,
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",

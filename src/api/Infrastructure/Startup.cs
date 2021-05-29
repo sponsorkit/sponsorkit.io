@@ -25,7 +25,10 @@ namespace Sponsorkit.Infrastructure
         {
             var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults(
-                    (_, _) => { },
+                    (a, b) =>
+                    {
+                        
+                    },
                     ConfigureDefaults)
                 .ConfigureLogging(c => c.SetMinimumLevel(LogLevel.Error))
                 .ConfigureAppConfiguration((_, builder) => 

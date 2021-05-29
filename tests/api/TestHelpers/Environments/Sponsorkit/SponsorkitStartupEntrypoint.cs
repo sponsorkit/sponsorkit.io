@@ -44,15 +44,15 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
                 .UseEnvironment(
                     options.EnvironmentName ?? 
                     Microsoft.Extensions.Hosting.Environments.Development)
+                .ConfigureHostConfiguration((builder) => Program
+                    .ConfigureConfiguration(builder)
+                    .Build())
                 .ConfigureFunctionsWorkerDefaults(
                     (a, b) =>
                     {
                         
                     },
                     Program.ConfigureDefaults)
-                .ConfigureAppConfiguration((_, builder) => Program
-                    .ConfigureConfiguration(builder)
-                    .Build())
                 .ConfigureServices((context, services) => Program
                     .ConfigureServices(services, context.Configuration))
                 .Build();
