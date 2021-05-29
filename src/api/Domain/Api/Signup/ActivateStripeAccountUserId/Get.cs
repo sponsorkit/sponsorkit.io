@@ -4,14 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Infrastructure;
 using Stripe;
 
-namespace Sponsorkit.Domain.Api.Signup.ActivateStripeAccountUser
+namespace Sponsorkit.Domain.Api.Signup.ActivateStripeAccountUserId
 {
     public record Request(
         [FromRoute] Guid UserId);
@@ -32,7 +29,7 @@ namespace Sponsorkit.Domain.Api.Signup.ActivateStripeAccountUser
         }
 
         [HttpGet("/api/signup/activate-stripe-account/{userId}")]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             var accountId = await dataContext.Users
                 .AsQueryable()

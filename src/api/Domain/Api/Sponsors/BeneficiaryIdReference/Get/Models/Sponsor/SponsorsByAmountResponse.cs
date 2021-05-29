@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models.Sponsor
+namespace Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor
 {
     public class SponsorsByAmountResponse
     {

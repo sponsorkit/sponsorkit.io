@@ -24,7 +24,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
         public IMediator Mediator => this.ServiceProvider.GetRequiredService<Mediator>();
         public DataContext DataContext => this.ServiceProvider.GetRequiredService<DataContext>();
         public IConfiguration Configuration => this.ServiceProvider.GetRequiredService<IConfiguration>();
-        public StripeEnvironmentContext Stripe => new StripeEnvironmentContext(this.ServiceProvider);
+        public StripeEnvironmentContext Stripe => new(this.ServiceProvider);
 
         protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 

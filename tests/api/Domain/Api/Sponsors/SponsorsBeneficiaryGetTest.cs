@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryGet;
+using Sponsorkit.Domain.Api.Sponsors.Beneficiary;
 using Sponsorkit.Tests.TestHelpers.Azure;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
@@ -16,7 +16,7 @@ namespace Sponsorkit.Tests.Domain.Api.Sponsors
             //Arrange
             await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-            var function = environment.ServiceProvider.GetRequiredService<Function>();
+            var function = environment.ServiceProvider.GetRequiredService<Get>();
             
             //Act
             var response = await function.Execute(

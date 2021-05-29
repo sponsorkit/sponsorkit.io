@@ -371,7 +371,7 @@ namespace Sponsorkit.Tests.TestHelpers
                             "1433/tcp",
                             new List<PortBinding>()
                             {
-                                new PortBinding()
+                                new()
                                 {
                                     HostPort = GetDockerSqlServerPort()
                                 }

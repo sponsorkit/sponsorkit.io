@@ -57,7 +57,7 @@ namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary
         }
 
         [HttpPost("/api/signup/as-beneficiary")]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             if (request == null)
                 return new BadRequestObjectResult("Request data was incorrect.");

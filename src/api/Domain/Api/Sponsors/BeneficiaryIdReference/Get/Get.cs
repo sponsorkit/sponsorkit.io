@@ -1,23 +1,33 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Ardalis.ApiEndpoints;
 using AutoMapper;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models;
-using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models.Sponsor;
+using Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get.Models;
+using Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Infrastructure;
 
-namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet
+namespace Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get
 {
-    public class Function
+    public record Request(
+        [FromRoute] Guid BeneficiaryId,
+        [FromRoute] string Reference);
+    
+    public record Response(
+        DonationsResponse Donations,
+        SponsorsResponse Sponsors);
+    
+    public class Get : BaseAsyncEndpoint
+        .WithRequest<Request>
+        .WithResponse<Response>
     {
         private readonly IMapper mapper;
         private readonly DataContext dataContext;
 
-        public Function(
+        public Get(
             IMapper mapper,
             DataContext dataContext)
         {
@@ -25,62 +35,52 @@ namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet
             this.dataContext = dataContext;
         }
 
-        /// <summary>
-        /// <see cref="http://localhost:7071/api/sponsors/681c2d58-7a3f-49fb-ada8-697c06708d32/sponsorship-foo"/>
-        /// </summary>
-        [Function(nameof(SponsorsBeneficiaryReferenceGet))]
-        public async Task<HttpResponseData> Execute(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sponsors/{beneficiary}/{reference}")] 
-            HttpRequestData request,
-            string beneficiary,
-            string reference)
+        [HttpGet("/api/sponsors/{beneficiaryId}/{reference}")]
+        public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
         {
-            if (!Guid.TryParse(beneficiary, out var beneficiaryId))
-                return await request.CreateBadRequestResponseAsync("Invalid beneficiary ID.");
-            
             var currentSponsor = await GetBeneficiarySponsorshipSummary(
-                beneficiaryId,
-                reference);
+                request.BeneficiaryId,
+                request.Reference);
 
             var donationStatistics = await GetDonationsResponse();
 
             var leastAmountSponsors = await mapper
                 .ProjectTo<SponsorResponse>(
                     TakeSomeBeneficiarySponsorshipSummaries(
-                        beneficiaryId,
+                        request.BeneficiaryId,
                         new SummarySortOptions(
                             SummarySortProperty.ByAmount,
                             SortDirection.Ascending)))
-                .ToArrayAsync();
+                .ToArrayAsync(cancellationToken: cancellationToken);
 
             var mostAmountSponsors = await mapper
                 .ProjectTo<SponsorResponse>(
                     TakeSomeBeneficiarySponsorshipSummaries(
-                        beneficiaryId,
+                        request.BeneficiaryId,
                         new SummarySortOptions(
                             SummarySortProperty.ByAmount,
                             SortDirection.Descending)))
-                .ToArrayAsync();
+                .ToArrayAsync(cancellationToken: cancellationToken);
 
             var earliestSponsors = await mapper
                 .ProjectTo<SponsorResponse>(
                     TakeSomeBeneficiarySponsorshipSummaries(
-                        beneficiaryId,
+                        request.BeneficiaryId,
                         new SummarySortOptions(
                             SummarySortProperty.ByDate,
                             SortDirection.Ascending)))
-                .ToArrayAsync();
+                .ToArrayAsync(cancellationToken: cancellationToken);
 
             var latestSponsors = await mapper
                 .ProjectTo<SponsorResponse>(
                     TakeSomeBeneficiarySponsorshipSummaries(
-                        beneficiaryId,
+                        request.BeneficiaryId,
                         new SummarySortOptions(
                             SummarySortProperty.ByDate,
                             SortDirection.Descending)))
-                .ToArrayAsync();
+                .ToArrayAsync(cancellationToken: cancellationToken);
 
-            return await request.CreateOkResponseAsync(
+            return new OkObjectResult(
                 new Response(
                     donationStatistics,
                     new SponsorsResponse(

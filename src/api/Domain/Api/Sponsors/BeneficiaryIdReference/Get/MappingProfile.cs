@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 using AutoMapper;
-using Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet.Models.Sponsor;
+using Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor;
 using Sponsorkit.Domain.Models;
 
-namespace Sponsorkit.Domain.Api.Sponsors.SponsorsBeneficiaryReferenceGet
+namespace Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Get
 {
     public class MappingProfile : Profile
     {
