@@ -5,7 +5,7 @@ using Octokit;
 using Octokit.Internal;
 using Serilog;
 
-namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.GitHub
+namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub
 {
     public class GitHubClientFactory : IGitHubClientFactory
     {

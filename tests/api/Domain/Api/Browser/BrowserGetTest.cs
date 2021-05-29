@@ -19,7 +19,7 @@ namespace Sponsorkit.Tests.Domain.Api.Browser
         public void BrowserGet_BeneficiaryAndReferenceGiven_RedirectsToProperUrl()
         {
             //Arrange
-            var function = new Function();
+            var function = new Get();
             
             //Act
             var result = function.Run(

@@ -1,23 +1,32 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.Encryption;
-using Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.GitHub;
+using Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption;
+using Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure;
 using Stripe;
 using SponsorkitUser = Sponsorkit.Domain.Models.User;
 using GitHubUser = Octokit.User;
 
-namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
+namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary
 {
     //https://haacked.com/archive/2014/04/24/octokit-oauth/
     //https://contentlab.io/using-c-code-to-access-the-github-api/
 
-    public class Function
+    public record Request(
+        string? Email,
+        string? GitHubAuthenticationCode);
+
+    public class Post : BaseAsyncEndpoint
+        .WithRequest<Request>
+        .WithoutResponse
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly IGitHubClient gitHubClient;
@@ -29,7 +38,7 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
         private readonly CustomerService customerService;
         private readonly AccountService accountService;
 
-        public Function(
+        public Post(
             IGitHubClientFactory gitHubClientFactory,
             IGitHubClient gitHubClient,
             IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor,
@@ -47,25 +56,19 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
             this.accountService = accountService;
         }
 
-        /// <summary>
-        /// <see cref="http://localhost:7071/api/signup/as-beneficiary"/>
-        /// </summary>
-        [Function(nameof(SignupAsBeneficiaryPost))]
-        public async Task<HttpResponseData?> Execute(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "signup/as-beneficiary")]
-            HttpRequestData requestData)
+        [HttpPost("/api/signup/as-beneficiary")]
+        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
         {
-            var request = await requestData.ReadFromJsonAsync<Request>();
             if (request == null)
-                return await requestData.CreateBadRequestResponseAsync("Request data was incorrect.");
+                return new BadRequestObjectResult("Request data was incorrect.");
             
             var email = request.Email;
             if(email == null)
-                return await requestData.CreateBadRequestResponseAsync("Email is required.");
+                return new BadRequestObjectResult("Email is required.");
 
             var gitHubCode = request.GitHubAuthenticationCode;
             if(gitHubCode == null)
-                return await requestData.CreateBadRequestResponseAsync("GitHub OAuth code is required.");
+                return new BadRequestObjectResult("GitHub OAuth code is required.");
             
             var token = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(gitHubCode);
             var currentGitHubUser = await GetCurrentGitHubUserFromTokenAsync(token);
@@ -80,25 +83,11 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
                         GitHubId = currentGitHubUser.Id,
                         CreatedAtUtc = DateTime.UtcNow
                     };
-                    await dataContext.Users.AddAsync(user);
-                    await dataContext.SaveChangesAsync();
+                    await dataContext.Users.AddAsync(user, cancellationToken);
+                    await dataContext.SaveChangesAsync(cancellationToken);
 
-                    var customer = await customerService.CreateAsync(
-                        new CustomerCreateOptions()
-                        {
-                            Email = email
-                        });
-                    user.StripeCustomerId = customer.Id;
-                    await dataContext.SaveChangesAsync();
-
-                    var account = await accountService.CreateAsync(
-                        new AccountCreateOptions()
-                        {
-                            Email = email,
-                            Type = "standard"
-                        });
-                    user.StripeConnectId = account.Id;
-                    await dataContext.SaveChangesAsync();
+                    await CreateStripeCustomerAsync(user, email, cancellationToken);
+                    await CreateStripeAccountAsync(user, email, cancellationToken);
 
                     await SendMailAsync(
                         email,
@@ -106,7 +95,34 @@ namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost
                         $"Yada yada: https://sponsorkit.io/api/signup/activate-stripe-account/{user.Id}");
                 });
 
-            return await requestData.CreateOkResponseAsync();
+            return new OkResult();
+        }
+
+        private async Task CreateStripeCustomerAsync(SponsorkitUser user, string email, CancellationToken cancellationToken)
+        {
+            var customer = await customerService.CreateAsync(
+                new CustomerCreateOptions()
+                {
+                    Email = email
+                },
+                cancellationToken: cancellationToken);
+
+            user.StripeCustomerId = customer.Id;
+            await dataContext.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task CreateStripeAccountAsync(SponsorkitUser user, string email, CancellationToken cancellationToken)
+        {
+            var account = await accountService.CreateAsync(
+                new AccountCreateOptions()
+                {
+                    Email = email,
+                    Type = "standard"
+                },
+                cancellationToken: cancellationToken);
+
+            user.StripeConnectId = account.Id;
+            await dataContext.SaveChangesAsync(cancellationToken);
         }
 
         private async Task SendMailAsync(

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.Encryption;
+using Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;

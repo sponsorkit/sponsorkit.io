@@ -1,21 +1,29 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure;
 using Stripe;
 
-namespace Sponsorkit.Domain.Api.Signup.SignupActivateStripeAccountGet
+namespace Sponsorkit.Domain.Api.Signup.ActivateStripeAccountUser
 {
-    public class Function
+    public record Request(
+        [FromRoute] Guid UserId);
+    
+    public class Get : BaseAsyncEndpoint
+        .WithRequest<Request>
+        .WithoutResponse
     {
         private readonly AccountLinkService accountLinkService;
         private readonly DataContext dataContext;
 
-        public Function(
+        public Get(
             AccountLinkService accountLinkService,
             DataContext dataContext)
         {
@@ -23,30 +31,28 @@ namespace Sponsorkit.Domain.Api.Signup.SignupActivateStripeAccountGet
             this.dataContext = dataContext;
         }
 
-        [Function(nameof(SignupActivateStripeAccountGet))]
-        public async Task<HttpResponseData?> Execute(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "signup/activate-stripe-account/{user}")]
-            HttpRequestData requestData,
-            string user)
+        [HttpGet("/api/signup/activate-stripe-account/{userId}")]
+        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
         {
-            if (!Guid.TryParse(user, out var userId))
-                return await requestData.CreateBadRequestResponseAsync("Invalid user ID.");
-            
             var accountId = await dataContext.Users
                 .AsQueryable()
-                .Where(x => x.Id == userId)
+                .Where(x => x.Id == request.UserId)
                 .Select(x => x.StripeConnectId)
-                .SingleOrDefaultAsync();
+                .SingleOrDefaultAsync(cancellationToken);
             
             var linkResponse = await accountLinkService.CreateAsync(
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = $"https://sponsorkit.io/api/signup/activate-stripe-account/{userId}",
+                    RefreshUrl = $"https://sponsorkit.io/api/signup/activate-stripe-account/{request.UserId}",
                     ReturnUrl = $"https://sponsorkit.io/api/signup/completed",
                     Type = "account_onboarding"
-                });
-            return requestData.CreateRedirectResponse(linkResponse.Url);
+                }, 
+                cancellationToken: cancellationToken);
+            return new RedirectResult(
+                linkResponse.Url,
+                true,
+                false);
         }
     }
 }

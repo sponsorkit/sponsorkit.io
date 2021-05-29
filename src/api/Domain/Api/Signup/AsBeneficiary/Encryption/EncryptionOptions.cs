@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Destructurama.Attributed;
 
-namespace Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.Encryption
+namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption
 {
     [ExcludeFromCodeCoverage]
     public class EncryptionOptions
