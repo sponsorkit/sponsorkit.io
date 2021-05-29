@@ -7,16 +7,16 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # checkout the repo
     - name: 'Checkout Github Action'
       uses: actions/checkout@master
-
 
     - name: Set up .NET Core
       uses: actions/setup-dotnet@v1
@@ -31,8 +31,17 @@ jobs:
       working-directory: src/api
       run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
-    - name: Run Azure webapp deploy action using publish profile credentials
+    - name: Deploy staging
       uses: azure/webapps-deploy@v2
+      with:
+        app-name: sponsorkit-app-service
+        slot-name: staging
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3D07F688220E42A185C6E641CC11BC7C }}
+        package: ${{env.DOTNET_ROOT}}/sponsorkit
+
+    - name: Deploy production
+      uses: azure/webapps-deploy@v2
+      if: github.ref == 'refs/heads/master'
       with:
         app-name: sponsorkit-app-service
         slot-name: Production
