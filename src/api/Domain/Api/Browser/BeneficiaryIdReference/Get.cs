@@ -11,7 +11,7 @@ namespace Sponsorkit.Domain.Api.Browser.BeneficiaryIdReference
         .WithRequest<Request>
         .WithoutResponse
     {
-        [HttpGet("/api/browser/{beneficiary}/{reference}")]
+        [HttpGet("/api/browser/{beneficiaryId}/{reference}")]
         public override ActionResult Handle(Request request)
         {
             return new RedirectResult(

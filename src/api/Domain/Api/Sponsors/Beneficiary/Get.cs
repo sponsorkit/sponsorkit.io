@@ -3,11 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Domain.Api.Sponsors.Beneficiary
 {

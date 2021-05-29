@@ -1,11 +1,8 @@
 using System;
-using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Sponsorkit.Domain.Models;
 using Stripe;
 

@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
-using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.Options;
 
 #pragma warning disable 8618

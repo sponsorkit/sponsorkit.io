@@ -1,9 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
+﻿using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
-using Sponsorkit.Infrastructure;
-using Sponsorkit.Infrastructure.Options;
 
 namespace Sponsorkit.Domain.Models
 {

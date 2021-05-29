@@ -12,16 +12,15 @@ using Docker.DotNet.Models;
 using FluffySpoon.AspNet.NGrok;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Infrastructure;
 using Stripe;
 
-namespace Sponsorkit.Tests.TestHelpers
+namespace Sponsorkit.Infrastructure.AspNet
 {
     [ExcludeFromCodeCoverage]
-    public class DockerDependencyService
+    public class DockerDependencyService : IDockerDependencyService, IHostedService
     {
         private readonly IServiceProvider serviceProvider;
 
@@ -52,7 +51,7 @@ namespace Sponsorkit.Tests.TestHelpers
             this.docker = dockerConfiguration.CreateClient();
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             using var scope = this.serviceProvider.CreateScope();
 
@@ -81,9 +80,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async void SetupStripeWebhooksAsync(IEnumerable<FluffySpoon.AspNet.NGrok.NGrokModels.Tunnel> tunnels)
         {
-            if (this.webhookEndpointService == null)
-                return;
-
             if (this.ngrokHostedService == null)
                 throw new InvalidOperationException("NGrok service has not been initialized yet.");
 
@@ -103,7 +99,7 @@ namespace Sponsorkit.Tests.TestHelpers
             }
         }
 
-        public async Task StopAsync()
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             this.docker?.Dispose();
             await CleanupStripeWebhooksAsync();
@@ -111,9 +107,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async Task CleanupStripeWebhooksAsync()
         {
-            if (this.webhookEndpointService == null)
-                return;
-
             var existingEndpoints = await this.webhookEndpointService
                 .ListAutoPagingAsync()
                 .ToListAsync();
@@ -132,9 +125,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async Task CleanupStripePlansAsync()
         {
-            if (this.planService == null)
-                return;
-
             if (!ShouldDeleteExistingData())
                 return;
 
@@ -161,9 +151,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async Task CleanupStripeCustomersAsync()
         {
-            if (this.customerService == null)
-                return;
-
             if (!ShouldDeleteExistingData())
                 return;
 
@@ -297,9 +284,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async Task<IList<ContainerListResponse>> GetAllDockerContainersAsync()
         {
-            if (this.docker == null)
-                return new List<ContainerListResponse>();
-
             try
             {
                 return await this.docker.Containers.ListContainersAsync(new ContainersListParameters()
@@ -320,9 +304,6 @@ namespace Sponsorkit.Tests.TestHelpers
 
         private async Task InitializeDockerAsync()
         {
-            if (this.docker == null)
-                return;
-
             var containers = await GetAllDockerContainersAsync();
 
             var containerConfigurations = new[] {
@@ -390,6 +371,20 @@ namespace Sponsorkit.Tests.TestHelpers
                 Name = hostname,
                 Hostname = hostname
             };
+        }
+
+        public static void InjectInto(
+            IServiceCollection services)
+        {
+            services.AddSingleton<DockerDependencyService>();
+            services.AddSingleton<IDockerDependencyService>(p => p.GetRequiredService<DockerDependencyService>());
+
+            services.AddHostedService(p => p.GetRequiredService<DockerDependencyService>());
+
+            services.AddDbContextPool<DataContext>(optionsBuilder =>
+            {
+                optionsBuilder.UseSqlServer(GetSqlConnectionStringForDatabase("sponsorkit"));
+            });
         }
     }
 }

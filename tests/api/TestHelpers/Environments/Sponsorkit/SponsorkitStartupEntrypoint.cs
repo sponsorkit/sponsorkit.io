@@ -5,11 +5,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FluffySpoon.AspNet.NGrok;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit

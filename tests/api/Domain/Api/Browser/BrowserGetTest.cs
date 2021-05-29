@@ -1,14 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Api.Browser.BrowserGet;
-using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Azure;
-using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sponsorkit.Tests.Domain.Api.Browser
 {
