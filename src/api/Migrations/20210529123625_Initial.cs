@@ -154,37 +154,7 @@ namespace Sponsorkit.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
-
-            migrationBuilder.InsertData(
-                table: "Repositories",
-                columns: new[] { "Id", "CreatedAtUtc", "GitHubId", "OwnerId" },
-                values: new object[] { new Guid("f2df9806-3801-4e8f-bf0a-93ed6383d209"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1337L, null });
-
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "CreatedAtUtc", "EncryptedEmail", "EncryptedGitHubAccessToken", "GitHubId", "StripeConnectId", "StripeCustomerId" },
-                values: new object[] { new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(2021, 5, 13, 7, 35, 19, 63, DateTimeKind.Utc).AddTicks(4244), new byte[0], null, 2824010L, null, "foo" });
-
-            migrationBuilder.InsertData(
-                table: "Users",
-                columns: new[] { "Id", "CreatedAtUtc", "EncryptedEmail", "EncryptedGitHubAccessToken", "GitHubId", "StripeConnectId", "StripeCustomerId" },
-                values: new object[] { new Guid("bce0dc8b-32da-4702-8569-2a80a09a8feb"), new DateTime(2021, 5, 13, 7, 35, 19, 63, DateTimeKind.Utc).AddTicks(5555), new byte[0], null, null, null, "foo" });
-
-            migrationBuilder.InsertData(
-                table: "Sponsorships",
-                columns: new[] { "Id", "BeneficiaryId", "CreatedAtUtc", "MonthlyAmountInHundreds", "Reference", "RepositoryId", "SponsorId" },
-                values: new object[] { new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"), new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "sponsorship-foo", new Guid("f2df9806-3801-4e8f-bf0a-93ed6383d209"), new Guid("bce0dc8b-32da-4702-8569-2a80a09a8feb") });
-
-            migrationBuilder.InsertData(
-                table: "Payments",
-                columns: new[] { "Id", "AmountInHundreds", "BountyId", "CreatedAtUtc", "SponsorshipId", "StripeId" },
-                values: new object[] { new Guid("4478c085-4209-4990-ae83-c62300b850c3"), 100, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"), "foo" });
-
-            migrationBuilder.InsertData(
-                table: "Payments",
-                columns: new[] { "Id", "AmountInHundreds", "BountyId", "CreatedAtUtc", "SponsorshipId", "StripeId" },
-                values: new object[] { new Guid("a536ae35-a1ad-47f7-8f67-0d9919482776"), 250, null, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"), "foo" });
-
+            
             migrationBuilder.CreateIndex(
                 name: "IX_Bounties_AwardedToId",
                 table: "Bounties",

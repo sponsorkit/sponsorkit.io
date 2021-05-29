@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.Encryption;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
@@ -95,7 +96,7 @@ namespace Sponsorkit.Infrastructure
             IServiceCollection services,
             IConfiguration configuration)
         {
-            var stripeConfiguration = configuration.GetSection<StripeOptions>();
+            var stripeConfiguration = configuration.GetOptions<StripeOptions>();
 
             var secretKey = stripeConfiguration?.SecretKey;
             var publishableKey = stripeConfiguration?.PublishableKey;
@@ -118,24 +119,17 @@ namespace Sponsorkit.Infrastructure
         private static void ConfigureOptions(IServiceCollection services)
         {
             AddOptions<SqlOptions>(services);
+            AddOptions<EncryptionOptions>(services);
+            AddOptions<StripeOptions>(services);
         }
 
         private static void AddOptions<TOptions>(IServiceCollection services) where TOptions: class
         {
-            var name = typeof(TOptions).Name;
-
-            const string OptionsSuffix = "Options";
-            if (name.EndsWith(OptionsSuffix))
-            {
-                name = name.Substring(0, name.LastIndexOf(OptionsSuffix, StringComparison.Ordinal));
-            }
-
             services
                 .AddOptions<TOptions>()
                 .Configure<IConfiguration>((settings, configuration) =>
                 {
-                    var valuesSection = configuration.GetSection("Values");
-                    var configurationSection = valuesSection.GetSection(name);
+                    var configurationSection = configuration.GetNestedConfigurationSection<TOptions>();
                     configurationSection.Bind(settings);
                 });
         }

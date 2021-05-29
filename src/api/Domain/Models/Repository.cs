@@ -14,6 +14,7 @@ namespace Sponsorkit.Domain.Models
         public DateTime CreatedAtUtc { get; set; }
         
         public User? Owner { get; set; }
+        public Guid? OwnerId { get; set; }
         
         public List<Issue> Issues { get; set; } = new();
         

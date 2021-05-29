@@ -26,12 +26,21 @@ namespace Microsoft.Extensions.Configuration
             return GetSectionNameFor<TOptions>();
         }
 
-        public static TOptions GetSection<TOptions>(this IConfiguration configuration, string? name = null) where TOptions : new()
+        public static TOptions GetOptions<TOptions>(this IConfiguration configuration, string? name = null) where TOptions : new()
         {
-            return configuration
-                .GetSection(name ?? GetSectionNameFor<TOptions>(configuration))
-                .Get<TOptions>() ?? 
-                new TOptions();
+            return 
+                GetNestedConfigurationSection<TOptions>(configuration, name)
+                   .Get<TOptions>() ?? 
+               new TOptions();
+        }
+
+        public static IConfigurationSection GetNestedConfigurationSection<TOptions>(this IConfiguration configuration, string? name = null)
+        {
+            var valuesSection = configuration.GetSection("Values");
+            var valuesConfigurationSection = valuesSection.GetSection(name);
+            return valuesConfigurationSection.GetSection(
+                name ?? 
+                GetSectionNameFor<TOptions>(configuration));
         }
     }
 }

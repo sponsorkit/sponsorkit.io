@@ -120,66 +120,67 @@ namespace Sponsorkit.Domain.Models
 
         private static void ConfigureSeeding(ModelBuilder modelBuilder)
         {
-            var beneficiaryUserId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32");
-            var sponsorUserId = Guid.NewGuid();
-            modelBuilder
-                .Entity<User>()
-                .HasData(
-                    new User()
-                    {
-                        Id = beneficiaryUserId,
-                        StripeCustomerId = "foo",
-                        CreatedAtUtc = DateTime.UtcNow,
-                        GitHubId = 2824010,
-                        EncryptedEmail = Array.Empty<byte>()
-                    },
-                    new User()
-                    {
-                        Id = sponsorUserId,
-                        CreatedAtUtc = DateTime.UtcNow,
-                        EncryptedEmail = Array.Empty<byte>(),
-                        StripeCustomerId = "foo"
-                    });
-
-            var repositoryId = Guid.NewGuid();
-            modelBuilder
-                .Entity<Repository>()
-                .HasData(
-                    new Repository()
-                    {
-                        Id = repositoryId,
-                        GitHubId = 1337
-                    });
-
-            var sponsorshipId = Guid.NewGuid();
-            modelBuilder
-                .Entity<Sponsorship>()
-                .HasData(new Sponsorship()
-                {
-                    Id = sponsorshipId,
-                    Reference = "sponsorship-foo",
-                    SponsorId = sponsorUserId,
-                    BeneficiaryId = beneficiaryUserId,
-                    RepositoryId = repositoryId
-                });
-
-            modelBuilder
-                .Entity<Payment>()
-                .HasData(
-                    new Payment()
-                    {
-                        Id = Guid.NewGuid(),
-                        StripeId = "foo",
-                        SponsorshipId = sponsorshipId,
-                        AmountInHundreds = 1_00
-                    },
-                    new Payment()
-                    {
-                        Id = Guid.NewGuid(),
-                        StripeId = "foo",
-                        SponsorshipId = sponsorshipId,
-                        AmountInHundreds = 2_50
-                    });
+            // var beneficiaryUserId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32");
+            // var sponsorUserId = Guid.NewGuid();
+            // modelBuilder
+            //     .Entity<User>()
+            //     .HasData(
+            //         new User()
+            //         {
+            //             Id = beneficiaryUserId,
+            //             StripeCustomerId = "foo",
+            //             CreatedAtUtc = DateTime.UtcNow,
+            //             GitHubId = 2824010,
+            //             EncryptedEmail = Array.Empty<byte>()
+            //         },
+            //         new User()
+            //         {
+            //             Id = sponsorUserId,
+            //             CreatedAtUtc = DateTime.UtcNow,
+            //             EncryptedEmail = Array.Empty<byte>(),
+            //             StripeCustomerId = "foo"
+            //         });
+            //
+            // var repositoryId = Guid.NewGuid();
+            // modelBuilder
+            //     .Entity<Repository>()
+            //     .HasData(
+            //         new Repository()
+            //         {
+            //             Id = repositoryId,
+            //             OwnerId = beneficiaryUserId,
+            //             GitHubId = 1337
+            //         });
+            //
+            // var sponsorshipId = Guid.NewGuid();
+            // modelBuilder
+            //     .Entity<Sponsorship>()
+            //     .HasData(new Sponsorship()
+            //     {
+            //         Id = sponsorshipId,
+            //         Reference = "sponsorship-foo",
+            //         SponsorId = sponsorUserId,
+            //         BeneficiaryId = beneficiaryUserId,
+            //         RepositoryId = repositoryId
+            //     });
+            //
+            // modelBuilder
+            //     .Entity<Payment>()
+            //     .HasData(
+            //         new Payment()
+            //         {
+            //             Id = Guid.NewGuid(),
+            //             StripeId = "foo",
+            //             SponsorshipId = sponsorshipId,
+            //             AmountInHundreds = 1_00
+            //         },
+            //         new Payment()
+            //         {
+            //             Id = Guid.NewGuid(),
+            //             StripeId = "foo",
+            //             SponsorshipId = sponsorshipId,
+            //             AmountInHundreds = 2_50
+            //         });
         }
     }
 }

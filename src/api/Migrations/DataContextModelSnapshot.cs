@@ -106,18 +106,18 @@ namespace Sponsorkit.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("4478c085-4209-4990-ae83-c62300b850c3"),
+                            Id = new Guid("e9330719-df2b-4714-844c-c9cfd96ad669"),
                             AmountInHundreds = 100,
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"),
+                            SponsorshipId = new Guid("e98f8b26-fa2d-4349-9241-08d7cff04c48"),
                             StripeId = "foo"
                         },
                         new
                         {
-                            Id = new Guid("a536ae35-a1ad-47f7-8f67-0d9919482776"),
+                            Id = new Guid("4f4f6750-9fcf-4194-96c6-ffc7cd68af70"),
                             AmountInHundreds = 250,
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"),
+                            SponsorshipId = new Guid("e98f8b26-fa2d-4349-9241-08d7cff04c48"),
                             StripeId = "foo"
                         });
                 });
@@ -146,7 +146,7 @@ namespace Sponsorkit.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("f2df9806-3801-4e8f-bf0a-93ed6383d209"),
+                            Id = new Guid("bd498a73-7708-4ed4-80d9-9d836a80e955"),
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             GitHubId = 1337L
                         });
@@ -188,12 +188,12 @@ namespace Sponsorkit.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("d6b85542-37b1-4c59-8154-86339f78eb14"),
+                            Id = new Guid("e98f8b26-fa2d-4349-9241-08d7cff04c48"),
                             BeneficiaryId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
                             CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Reference = "sponsorship-foo",
-                            RepositoryId = new Guid("f2df9806-3801-4e8f-bf0a-93ed6383d209"),
-                            SponsorId = new Guid("bce0dc8b-32da-4702-8569-2a80a09a8feb")
+                            RepositoryId = new Guid("bd498a73-7708-4ed4-80d9-9d836a80e955"),
+                            SponsorId = new Guid("2a8d7ca7-5414-46e5-898e-2bfff309d3a5")
                         });
                 });
 
@@ -231,15 +231,15 @@ namespace Sponsorkit.Migrations
                         new
                         {
                             Id = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
-                            CreatedAtUtc = new DateTime(2021, 5, 13, 7, 35, 19, 63, DateTimeKind.Utc).AddTicks(4244),
+                            CreatedAtUtc = new DateTime(2021, 5, 29, 12, 36, 24, 892, DateTimeKind.Utc).AddTicks(1711),
                             EncryptedEmail = new byte[0],
                             GitHubId = 2824010L,
                             StripeCustomerId = "foo"
                         },
                         new
                         {
-                            Id = new Guid("bce0dc8b-32da-4702-8569-2a80a09a8feb"),
-                            CreatedAtUtc = new DateTime(2021, 5, 13, 7, 35, 19, 63, DateTimeKind.Utc).AddTicks(5555),
+                            Id = new Guid("2a8d7ca7-5414-46e5-898e-2bfff309d3a5"),
+                            CreatedAtUtc = new DateTime(2021, 5, 29, 12, 36, 24, 892, DateTimeKind.Utc).AddTicks(2463),
                             EncryptedEmail = new byte[0],
                             StripeCustomerId = "foo"
                         });
