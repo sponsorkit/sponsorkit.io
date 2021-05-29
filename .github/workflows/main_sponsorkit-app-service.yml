@@ -24,10 +24,12 @@ jobs:
         dotnet-version: '5.0.x'
 
     - name: Build with dotnet
+      working-directory: src/api
       run: dotnet build --configuration Release
 
     - name: dotnet publish
-      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+      working-directory: src/api
+      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Run Azure webapp deploy action using publish profile credentials
       uses: azure/webapps-deploy@v2
@@ -35,5 +37,5 @@ jobs:
         app-name: sponsorkit-app-service
         slot-name: Production
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3D07F688220E42A185C6E641CC11BC7C }}
-        package: ${{env.DOTNET_ROOT}}/myapp
+        package: ${{env.DOTNET_ROOT}}/sponsorkit
 
