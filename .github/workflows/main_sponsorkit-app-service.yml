@@ -36,7 +36,7 @@ jobs:
       with:
         app-name: sponsorkit-app-service
         slot-name: staging
-        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3D07F688220E42A185C6E641CC11BC7C }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_703d035de8c040339e751925f7b952ca }}
         package: ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Deploy production
