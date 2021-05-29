@@ -36,10 +36,8 @@ namespace Microsoft.Extensions.Configuration
 
         public static IConfigurationSection GetNestedConfigurationSection<TOptions>(this IConfiguration configuration, string? name = null)
         {
-            var valuesSection = configuration.GetSection("Values");
-            
             var nameToUse = name ?? GetSectionNameFor<TOptions>(configuration);
-            var valuesConfigurationSection = valuesSection.GetSection(nameToUse);
+            var valuesConfigurationSection = configuration.GetSection(nameToUse);
             return valuesConfigurationSection;
         }
     }
