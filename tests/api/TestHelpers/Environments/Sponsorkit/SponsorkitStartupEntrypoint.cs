@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
@@ -44,7 +45,10 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
                     options.EnvironmentName ?? 
                     Microsoft.Extensions.Hosting.Environments.Development)
                 .ConfigureFunctionsWorkerDefaults(
-                    (_, _) => {},
+                    (a, b) =>
+                    {
+                        
+                    },
                     Program.ConfigureDefaults)
                 .ConfigureAppConfiguration((_, builder) => Program
                     .ConfigureConfiguration(builder)
@@ -64,7 +68,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
             Console.WriteLine("Initializing integration test environment.");
 
             var hostStartTask = this.host.StartAsync(this.cancellationTokenSource.Token);
-            await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
+            await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:7071/api/health");
 
             var ngrokService = this.RootProvider.GetService<INGrokHostedService>();
             if (ngrokService != null)

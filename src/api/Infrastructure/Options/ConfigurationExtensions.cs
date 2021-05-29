@@ -12,10 +12,10 @@ namespace Microsoft.Extensions.Configuration
             var configurationKey = typeof(TOptions).Name;
             if (configurationKey.EndsWith(optionsSuffix, StringComparison.InvariantCulture))
             {
-                configurationKey = configurationKey.Replace(
-                    optionsSuffix,
-                    string.Empty,
-                    StringComparison.InvariantCulture);
+                configurationKey = configurationKey[
+                    ..configurationKey.LastIndexOf(
+                        optionsSuffix,
+                        StringComparison.InvariantCulture)];
             }
 
             return configurationKey;
@@ -28,19 +28,19 @@ namespace Microsoft.Extensions.Configuration
 
         public static TOptions GetOptions<TOptions>(this IConfiguration configuration, string? name = null) where TOptions : new()
         {
-            return 
-                GetNestedConfigurationSection<TOptions>(configuration, name)
-                   .Get<TOptions>() ?? 
-               new TOptions();
+            var nestedConfigurationSection = GetNestedConfigurationSection<TOptions>(configuration, name);
+            return
+                nestedConfigurationSection.Get<TOptions>() ??
+                new TOptions();
         }
 
         public static IConfigurationSection GetNestedConfigurationSection<TOptions>(this IConfiguration configuration, string? name = null)
         {
             var valuesSection = configuration.GetSection("Values");
-            var valuesConfigurationSection = valuesSection.GetSection(name);
-            return valuesConfigurationSection.GetSection(
-                name ?? 
-                GetSectionNameFor<TOptions>(configuration));
+            
+            var nameToUse = name ?? GetSectionNameFor<TOptions>(configuration);
+            var valuesConfigurationSection = valuesSection.GetSection(nameToUse);
+            return valuesConfigurationSection;
         }
     }
 }

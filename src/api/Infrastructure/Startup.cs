@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sponsorkit.Domain.Api.Signup.SignupAsBeneficiaryPost.Encryption;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.Options;
@@ -26,11 +27,13 @@ namespace Sponsorkit.Infrastructure
                 .ConfigureFunctionsWorkerDefaults(
                     (_, _) => { },
                     ConfigureDefaults)
+                .ConfigureLogging(c => c.SetMinimumLevel(LogLevel.Error))
                 .ConfigureAppConfiguration((_, builder) => 
                     ConfigureConfiguration(builder)
                         .AddUserSecrets("sponsorkit-secrets")
                         .Build())
-                .ConfigureServices((context, services) => ConfigureServices(services, context.Configuration))
+                .ConfigureServices((context, services) => 
+                    ConfigureServices(services, context.Configuration))
                 .Build();
 
             await host.RunAsync();

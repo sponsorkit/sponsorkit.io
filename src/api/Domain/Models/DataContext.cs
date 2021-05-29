@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,7 +24,7 @@ namespace Sponsorkit.Domain.Models
         private readonly SqlOptions sqlServerOptions;
 
         public DataContext(
-            IConfiguration configuration) 
+            IConfiguration configuration)
         {
             this.sqlServerOptions = configuration.GetOptions<SqlOptions>();
         }
