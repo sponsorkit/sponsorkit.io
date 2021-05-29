@@ -24,8 +24,8 @@
     <ItemGroup>
       <Folder Include="Domain\Api\Signup" />
       <Folder Include="TestHelpers\Builders\Stripe" />
-        <None Include="..\..\src\api\local.settings.json">
-            <Link>local.settings.json</Link>
+        <None Include="..\..\src\api\appsettings.json">
+            <Link>appsettings.json</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

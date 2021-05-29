@@ -8,7 +8,7 @@ namespace Sponsorkit.Domain.Models
         public DataContext CreateDbContext(string[] args)
         {
             var configuration = new ConfigurationBuilder()
-                .AddJsonFile("local.settings.json", false)
+                .AddJsonFile("appsettings.json", false)
                 .Build();
 
             return new DataContext(configuration);
