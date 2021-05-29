@@ -1,10 +1,11 @@
+using System;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Sponsorkit.Domain.Api.Browser.BeneficiaryIdReference
 {
     public record Request(
-        [FromRoute] string BeneficiaryId,
+        [FromRoute] Guid BeneficiaryId,
         [FromRoute] string Reference);
     
     public class Get : BaseEndpoint

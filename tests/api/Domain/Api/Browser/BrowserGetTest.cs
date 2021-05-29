@@ -1,4 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.Domain.Api.Browser.BeneficiaryIdReference;
 
 namespace Sponsorkit.Tests.Domain.Api.Browser
 {
@@ -9,18 +12,21 @@ namespace Sponsorkit.Tests.Domain.Api.Browser
         public void BrowserGet_BeneficiaryAndReferenceGiven_RedirectsToProperUrl()
         {
             //Arrange
-            var function = new Get();
+            var endpoint = new Get();
+
+            var beneficiaryId = Guid.NewGuid();
             
             //Act
-            var result = function.Run(
-                HttpRequestDataFactory.Empty,
-                "some-beneficiary",
-                "some-reference");
+            var result = endpoint.Handle(new Request(
+                beneficiaryId,
+                "some-reference"));
             
             //Assert
+            var redirectResult = result as RedirectResult;
+            
             Assert.AreEqual(
-                "/some-beneficiary?reference=some-reference", 
-                result.Headers.GetValues("Location").Single());
+                $"/{beneficiaryId}?reference=some-reference", 
+                redirectResult?.Url);
         }
     }
 }

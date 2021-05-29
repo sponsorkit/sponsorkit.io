@@ -5,9 +5,12 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FluffySpoon.AspNet.NGrok;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sponsorkit.Infrastructure;
+using Sponsorkit.Infrastructure.AspNet;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 {
@@ -27,31 +30,28 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
         {
             this.cancellationTokenSource = new CancellationTokenSource();
 
-            this.host = new HostBuilder()
-                // .ConfigureWebHostDefaults(builder => builder
-                //         .UseKestrel()
-                //     //NGROK is currently disabled.
-                //     // .UseNGrok(new NgrokOptions()
-                //     // {
-                //     //     ShowNGrokWindow = false,
-                //     //     Disable = false,
-                //     //     ApplicationHttpUrl = "http://localhost:14568"
-                //     // })
-                // )
-                .UseEnvironment(
-                    options.EnvironmentName ?? 
-                    Microsoft.Extensions.Hosting.Environments.Development)
-                .ConfigureHostConfiguration((builder) => Program
-                    .ConfigureConfiguration(builder)
-                    .Build())
-                .ConfigureFunctionsWorkerDefaults(
-                    (a, b) =>
+            this.host = Host.CreateDefaultBuilder()
+                .ConfigureAppConfiguration(builder => TestConfigurationFactory.ConfigureBuilder(builder))
+                .UseEnvironment(options.EnvironmentName ?? Microsoft.Extensions.Hosting.Environments.Development)
+                .ConfigureWebHostDefaults(webBuilder => webBuilder
+                    .UseStartup<Startup>()
+                    .UseKestrel()
+                    .UseUrls("https://*:14569;http://*:14568")
+                    .UseNGrok(new NgrokOptions()
                     {
-                        
-                    },
-                    Program.ConfigureDefaults)
-                .ConfigureServices((context, services) => Program
-                    .ConfigureServices(services, context.Configuration))
+                        ShowNGrokWindow = false,
+                        Disable = false,
+                        ApplicationHttpUrl = "http://localhost:14568"
+                    }))
+                .ConfigureServices(services =>
+                {
+                    TestServiceProviderFactory.ConfigureServicesForTesting(
+                        services,
+                        TestConfigurationFactory
+                            .ConfigureBuilder(new ConfigurationBuilder())
+                            .Build());
+                    options.IocConfiguration?.Invoke(services);
+                })
                 .Build();
 
             this.RootProvider = this.host.Services;

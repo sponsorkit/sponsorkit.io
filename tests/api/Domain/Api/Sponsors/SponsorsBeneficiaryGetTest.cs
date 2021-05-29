@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Api.Sponsors.Beneficiary;
+using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Sponsors
@@ -15,15 +17,17 @@ namespace Sponsorkit.Tests.Domain.Api.Sponsors
             //Arrange
             await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-            var function = environment.ServiceProvider.GetRequiredService<Get>();
+            var endpoint = environment.ServiceProvider.GetRequiredService<Get>();
+
+            var beneficiaryId = Guid.NewGuid();
             
             //Act
-            var response = await function.Execute(
-                HttpRequestDataFactory.Empty,
-                "some-beneficiary");
+            var response = await endpoint.HandleAsync(
+                new Request(beneficiaryId),
+                default);
             
             //Assert
-            var responseObject = await response.ToObject<Response>();
+            var responseObject = response.Value;
 
             Assert.AreEqual("some-user-id", responseObject.Id);
             Assert.AreEqual("some-github-id", responseObject.GitHubId);

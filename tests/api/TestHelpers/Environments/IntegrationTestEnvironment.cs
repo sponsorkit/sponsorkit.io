@@ -42,7 +42,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
         protected async Task InitializeAsync()
         {
             var dockerDependencyService = new DockerDependencyService(this.ServiceProvider);
-            await dockerDependencyService.StartAsync();
+            await dockerDependencyService.StartAsync(default);
             
             await this.entrypoint.WaitUntilReadyAsync();
         }
