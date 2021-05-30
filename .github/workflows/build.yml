@@ -29,7 +29,8 @@ jobs:
       run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Generate deployment package
-      run: zip -r api.zip ${{env.DOTNET_ROOT}}/sponsorkit
+      working-directory: ${{env.DOTNET_ROOT}}/sponsorkit
+      run: zip -r api.zip .
 
     - name: Archive API deployment package as artifact
       uses: actions/upload-artifact@v2
