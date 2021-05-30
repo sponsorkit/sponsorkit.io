@@ -9,6 +9,7 @@ on:
 
 jobs:
   build-api:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +54,7 @@ jobs:
         path: ${{env.DOTNET_ROOT}}/sponsorkit/api.zip
 
   build-frontend:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -86,6 +88,7 @@ jobs:
         path: src/frontend/public/frontend.zip
       
   deploy:
+    timeout-minutes: 30
     needs: [build-api, build-frontend]
     runs-on: ubuntu-latest
 
@@ -113,6 +116,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-north-1
 
+    - uses: n1hility/cancel-previous-runs@v2
+      with: 
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Deploy frontend
+      working-directory: frontend
+      run: npx gatsby-plugin-s3 deploy
+
     - name: Deploy API
       uses: einaregilsson/beanstalk-deploy@v16
       with:
@@ -125,7 +136,3 @@ jobs:
         use_existing_version_if_available: true
         region: eu-north-1
         deployment_package: api.zip
-
-    - name: Deploy frontend
-      working-directory: frontend
-      run: npx gatsby-plugin-s3 deploy
