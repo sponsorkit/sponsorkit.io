@@ -38,6 +38,7 @@ jobs:
         path: api.zip
       
   deploy:
+    needs: [build-api]
     runs-on: ubuntu-latest
 
     steps:
