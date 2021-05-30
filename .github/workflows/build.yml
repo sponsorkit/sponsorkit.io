@@ -78,14 +78,16 @@ jobs:
       run: npm run build
 
     - name: Generate deployment package
-      working-directory: src/frontend/public
-      run: zip -r frontend.zip .
+      run: |
+        zip -r frontend.zip src/frontend/public
+        zip -r frontend.zip src/frontend/node_modules
+        zip -r frontend.zip src/frontend/.cache
 
     - name: Archive API deployment package as artifact
       uses: actions/upload-artifact@v2
       with:
         name: frontend
-        path: src/frontend/public/frontend.zip
+        path: frontend.zip
       
   deploy:
     timeout-minutes: 30
@@ -105,9 +107,8 @@ jobs:
 
     - name: Unpack frontend deployment package artifact
       run: |
-        mkdir frontend
-        unzip frontend.zip -d frontend
-        ls
+        unzip frontend.zip
+        ls -l -R
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
