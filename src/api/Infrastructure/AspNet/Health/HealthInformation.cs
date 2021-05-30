@@ -4,11 +4,11 @@ namespace Sponsorkit.Infrastructure.AspNet.Health
 {
     public class HealthInformation
     {
-        public string? Key { get; set; }
-        public string? Description { get; set; }
-        public TimeSpan? Duration { get; set; }
-        public string? Status { get; set; }
-        public string? Error { get; set; }
+        public string? Key { get; init; }
+        public string? Description { get; init; }
+        public TimeSpan? Duration { get; init; }
+        public string? Status { get; init; }
+        public string? Error { get; init; }
     }
 
 }

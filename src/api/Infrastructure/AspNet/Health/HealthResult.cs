@@ -5,8 +5,8 @@ namespace Sponsorkit.Infrastructure.AspNet.Health
 {
     public class HealthResult
     {
-        public string? Status { get; set; }
-        public TimeSpan? Duration { get; set; }
-        public ICollection<HealthInformation>? Information { get; set; }
+        public string? Status { get; init; }
+        public TimeSpan? Duration { get; init; }
+        public ICollection<HealthInformation>? Information { get; init; }
     }
 }

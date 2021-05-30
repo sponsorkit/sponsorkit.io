@@ -12,9 +12,9 @@ namespace Sponsorkit.Domain.Api.Sponsors.BeneficiaryIdReference.Post
         [FromRoute] Guid BeneficiaryId,
         [FromRoute] string Reference)
     {
-        public int? AmountInHundreds { get; set; }
-        public string? Email { get; set; }
-        public string? StripeCardId { get; set; }
+        public int? AmountInHundreds { get; init; }
+        public string? Email { get; init; }
+        public string? StripeCardId { get; init; }
     }
     
     public class Post : BaseEndpoint

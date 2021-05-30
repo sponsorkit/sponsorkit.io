@@ -7,26 +7,26 @@ namespace Sponsorkit.Domain.Models
     public class Sponsorship
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; init; }
 
-        public DateTime CreatedAtUtc { get; set; } = new();
+        public DateTime CreatedAtUtc { get; init; } = new();
 
         /// <summary>
         /// The repository that this sponsorship is regarding.
         /// </summary>
-        public Repository? Repository { get; set; }
-        public Guid? RepositoryId { get; set; }
+        public Repository? Repository { get; init; }
+        public Guid? RepositoryId { get; init; }
 
-        public int? MonthlyAmountInHundreds { get; set; }
+        public int? MonthlyAmountInHundreds { get; init; }
         
-        public string Reference { get; set; } = null!;
+        public string Reference { get; init; } = null!;
 
-        public List<Payment> Payments { get; set; } = new();
+        public List<Payment> Payments { get; init; } = new();
         
-        public User Beneficiary { get; set; } = null!;
-        public Guid BeneficiaryId { get; set; }
+        public User Beneficiary { get; init; } = null!;
+        public Guid BeneficiaryId { get; init; }
         
-        public User Sponsor { get; set; } = null!;
-        public Guid SponsorId { get; set; }
+        public User Sponsor { get; init; } = null!;
+        public Guid SponsorId { get; init; }
     }
 }

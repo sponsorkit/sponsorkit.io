@@ -6,16 +6,16 @@ namespace Sponsorkit.Domain.Models
     public class Payment
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; init; }
         
-        public Bounty? Bounty { get; set; }
-        public Guid? BountyId { get; set; }
+        public Bounty? Bounty { get; init; }
+        public Guid? BountyId { get; init; }
         
-        public Sponsorship? Sponsorship { get; set; }
-        public Guid? SponsorshipId { get; set; }
+        public Sponsorship? Sponsorship { get; init; }
+        public Guid? SponsorshipId { get; init; }
         
-        public int AmountInHundreds { get; set; }
-        public string StripeId { get; set; } = null!;
-        public DateTime CreatedAtUtc { get; set; }
+        public int AmountInHundreds { get; init; }
+        public string StripeId { get; init; } = null!;
+        public DateTime CreatedAtUtc { get; init; }
     }
 }

@@ -11,12 +11,12 @@ namespace Sponsorkit.Domain.Models
 {
     public class DataContext : DbContext
     {
-        public DbSet<Bounty> Bounties { get; set; }
-        public DbSet<Issue> Issues { get; set; }
-        public DbSet<Payment> Payments { get; set; }
-        public DbSet<Repository> Repositories { get; set; }
-        public DbSet<Sponsorship> Sponsorships { get; set; }
-        public DbSet<User> Users { get; set; }
+        public DbSet<Bounty> Bounties { get; init; }
+        public DbSet<Issue> Issues { get; init; }
+        public DbSet<Payment> Payments { get; init; }
+        public DbSet<Repository> Repositories { get; init; }
+        public DbSet<Sponsorship> Sponsorships { get; init; }
+        public DbSet<User> Users { get; init; }
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {

@@ -6,19 +6,19 @@ namespace Sponsorkit.Domain.Models
     public class Bounty
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; init; }
         
-        public int AmountInHundreds { get; set; }
-        public DateTime CreatedAtUtc { get; set; }
+        public int AmountInHundreds { get; init; }
+        public DateTime CreatedAtUtc { get; init; }
 
-        public User Creator { get; set; } = null!;
-        public Guid CreatorId { get; set; }
+        public User Creator { get; init; } = null!;
+        public Guid CreatorId { get; init; }
         
-        public User? AwardedTo { get; set; }
-        public Guid AwardedToId { get; set; }
+        public User? AwardedTo { get; init; }
+        public Guid AwardedToId { get; init; }
 
-        public Issue Issue { get; set; } = null!;
+        public Issue Issue { get; init; } = null!;
 
-        public Payment? Payment { get; set; }
+        public Payment? Payment { get; init; }
     }
 }

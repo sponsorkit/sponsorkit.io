@@ -7,9 +7,9 @@ namespace Sponsorkit.Infrastructure.Options
     public class StripeOptions
     {
         [NotLogged]
-        public string? SecretKey { get; set; }
+        public string? SecretKey { get; init; }
 
         [NotLogged]
-        public string? PublishableKey { get; set; }
+        public string? PublishableKey { get; init; }
     }
 }
