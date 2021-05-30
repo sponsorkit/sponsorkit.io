@@ -20,6 +20,10 @@ jobs:
       with:
         dotnet-version: '5.0.x'
 
+    - name: Restore with dotnet
+      working-directory: src/api
+      run: dotnet restore --configuration Release
+
     - name: Build with dotnet
       working-directory: src/api
       run: dotnet build --no-restore --configuration Release
