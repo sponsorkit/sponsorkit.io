@@ -22,7 +22,7 @@ namespace Sponsorkit.Infrastructure
 
             try
             {
-                var host = CreateDoggerHostBuilder(configuration, args).Build();
+                var host = CreateSponsorkitHostBuilder(configuration, args).Build();
                 await DatabaseMigrator.MigrateDatabaseForHostAsync(host);
 
                 await host.RunAsync();
@@ -40,7 +40,7 @@ namespace Sponsorkit.Infrastructure
             }
         }
 
-        public static IHostBuilder CreateDoggerHostBuilder(IConfiguration? configuration, string[] args) =>
+        public static IHostBuilder CreateSponsorkitHostBuilder(IConfiguration? configuration, string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder =>
@@ -52,7 +52,8 @@ namespace Sponsorkit.Infrastructure
                     webBuilder.UseNGrok(new NgrokOptions()
                     {
                         Disable = !Debugger.IsAttached,
-                        ShowNGrokWindow = false
+                        ShowNGrokWindow = false,
+                        ApplicationHttpUrl = "http://localhost:5000"
                     });
                 });
 
@@ -60,6 +61,6 @@ namespace Sponsorkit.Infrastructure
             "CodeQuality", 
             "IDE0051:Remove unused private members", 
             Justification = "This is used for Entity Framework when running console commands for migrations etc. It must have this signature.")]
-        private static IHostBuilder CreateHostBuilder(string[] args) => CreateDoggerHostBuilder(null, args);
+        private static IHostBuilder CreateHostBuilder(string[] args) => CreateSponsorkitHostBuilder(null, args);
     }
 }
