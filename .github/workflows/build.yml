@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: api
-        path: api.zip
+        path: ${{env.DOTNET_ROOT}}/sponsorkit/api.zip
       
   deploy:
     needs: [build-api]
