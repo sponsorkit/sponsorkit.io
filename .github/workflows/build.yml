@@ -103,7 +103,7 @@ jobs:
     - name: Unpack frontend deployment package artifact
       run: |
         mkdir frontend
-        unzip frontend.zip ./frontend
+        unzip frontend.zip -d frontend
         ls
 
     - name: Configure AWS credentials
