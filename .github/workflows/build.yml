@@ -54,6 +54,6 @@ jobs:
         aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         application_name: Sponsorkit
         environment_name: sponsorkit-prod
-        version_label: "$GITHUB_SHA"
+        version_label: ${{ github.sha }}
         region: eu-north-1
         deployment_package: api.zip
