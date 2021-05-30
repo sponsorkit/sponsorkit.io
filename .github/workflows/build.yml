@@ -22,7 +22,7 @@ jobs:
 
     - name: Restore with dotnet
       working-directory: src/api
-      run: dotnet restore --configuration Release
+      run: dotnet restore
 
     - name: Build with dotnet
       working-directory: src/api
