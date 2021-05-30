@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using FluffySpoon.AspNet.NGrok;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using Sponsorkit.Domain.Models;
 using Stripe;
 
@@ -26,13 +26,13 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private const string SqlPassword = "hNxX9Qz2";
 
-        private DataContext dataContext;
-        private CustomerService customerService;
-        private PlanService planService;
-        private WebhookEndpointService webhookEndpointService;
-        private INGrokHostedService ngrokHostedService;
+        private DataContext? dataContext;
+        private CustomerService? customerService;
+        private PlanService? planService;
+        private WebhookEndpointService? webhookEndpointService;
+        private INGrokHostedService? ngrokHostedService;
 
-        private DockerClient docker;
+        private DockerClient? docker;
 
         public DockerDependencyService(
             IServiceProvider serviceProvider)
@@ -83,6 +83,9 @@ namespace Sponsorkit.Infrastructure.AspNet
             if (this.ngrokHostedService == null)
                 throw new InvalidOperationException("NGrok service has not been initialized yet.");
 
+            if (this.webhookEndpointService == null)
+                throw new InvalidOperationException("Webhook endpoint service not initialized.");
+
             await CleanupStripeWebhooksAsync();
 
             var sslTunnels = tunnels.Where(x => x.PublicUrl.StartsWith("https://", StringComparison.InvariantCulture));
@@ -107,6 +110,9 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async Task CleanupStripeWebhooksAsync()
         {
+            if (this.webhookEndpointService == null)
+                throw new InvalidOperationException("Webhook endpoint service not initialized.");
+            
             var existingEndpoints = await this.webhookEndpointService
                 .ListAutoPagingAsync()
                 .ToListAsync();
@@ -127,6 +133,9 @@ namespace Sponsorkit.Infrastructure.AspNet
         {
             if (!ShouldDeleteExistingData())
                 return;
+
+            if (this.planService == null)
+                throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
             var plansToDelete = await this.planService
                 .ListAutoPagingAsync()
@@ -153,6 +162,9 @@ namespace Sponsorkit.Infrastructure.AspNet
         {
             if (!ShouldDeleteExistingData())
                 return;
+
+            if (this.customerService == null)
+                throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
             var customersToDelete = await this.customerService
                 .ListAutoPagingAsync()
@@ -218,34 +230,29 @@ namespace Sponsorkit.Infrastructure.AspNet
             Console.WriteLine("Docker dependencies are healthy.");
         }
 
-        private static async Task<object> ExecuteMasterDatabaseCommandAsync(string commandText)
+        private static async Task<object?> ExecuteMasterDatabaseCommandAsync(string commandText)
         {
-            await using var connection = new SqlConnection(
+            await using var connection = new NpgsqlConnection(
                 GetSqlConnectionStringForMasterDatabase());
 
             await connection.OpenAsync();
 
-            await using var command = connection.CreateCommand();
-            command.CommandText = commandText;
+            var command = connection.CreateCommand();
+            if (command == null)
+                throw new InvalidOperationException("Command could not be created.");
 
-            return await command.ExecuteScalarAsync();
+            await using (command)
+            {
+                command.CommandText = commandText;
+
+                return await command.ExecuteScalarAsync();
+            }
         }
 
         private static async Task<bool> GetIsSqlServerHealthyAsync()
         {
-            try
-            {
-                var result = (int?)await ExecuteMasterDatabaseCommandAsync("select 1");
-                if (result == 1)
-                    return true;
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine("SQL is still unhealthy: " + ex.Message);
-                //ignored.
-            }
-
-            return false;
+            var result = (int?)await ExecuteMasterDatabaseCommandAsync("select 1");
+            return result == 1;
         }
 
         private static string AppendDockerContainerNameSuffix(string containerName)
@@ -271,11 +278,11 @@ namespace Sponsorkit.Infrastructure.AspNet
         private static string GetSqlConnectionStringForDatabase(string database)
         {
             var server = EnvironmentHelper.IsRunningInContainer ?
-                AppendDockerContainerNameSuffix("mssql") :
+                AppendDockerContainerNameSuffix("postgres") :
                 "localhost";
 
             var sqlServerPort = GetDockerSqlServerPort();
-            var connectionString = $@"Server={server},{sqlServerPort};Database={database};User Id=SA;Password={SqlPassword}";
+            var connectionString = $@"Server={server};Port={sqlServerPort};Database={database};User Id=postgres;Password={SqlPassword};";
 
             Console.WriteLine("Using connection string " + connectionString);
 
@@ -284,6 +291,9 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async Task<IList<ContainerListResponse>> GetAllDockerContainersAsync()
         {
+            if (this.docker == null)
+                throw new InvalidOperationException("Docker not initialized.");
+            
             try
             {
                 return await this.docker.Containers.ListContainersAsync(new ContainersListParameters()
@@ -299,11 +309,14 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private static string GetSqlConnectionStringForMasterDatabase()
         {
-            return GetSqlConnectionStringForDatabase("master");
+            return GetSqlConnectionStringForDatabase(string.Empty);
         }
 
         private async Task InitializeDockerAsync()
         {
+            if (this.docker == null)
+                throw new InvalidOperationException("Docker client not initialized.");
+
             var containers = await GetAllDockerContainersAsync();
 
             var containerConfigurations = new[] {
@@ -341,7 +354,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private static CreateContainerParameters GetSqlServerDockerConfig()
         {
-            var hostname = AppendDockerContainerNameSuffix("mssql");
+            var hostname = AppendDockerContainerNameSuffix("postgres");
             return new CreateContainerParameters()
             {
                 HostConfig = new HostConfig()
@@ -349,7 +362,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                     PortBindings = new Dictionary<string, IList<PortBinding>>()
                     {
                         {
-                            "1433/tcp",
+                            "5432/tcp",
                             new List<PortBinding>()
                             {
                                 new()
@@ -358,16 +371,10 @@ namespace Sponsorkit.Infrastructure.AspNet
                                 }
                             }
                         }
-                    },
-                    Tmpfs = EnvironmentHelper.IsRunningInTest ?
-                        new Dictionary<string, string>()
-                        {
-                            { "/var/lib/mssql:rw,exec,suid,dev", "" }
-                        } :
-                        null
+                    }
                 },
-                Env = new List<string>() { "ACCEPT_EULA=Y", $"SA_PASSWORD={SqlPassword}" },
-                Image = "mcr.microsoft.com/mssql/server:2019-latest",
+                Env = new List<string>() { $"POSTGRES_PASSWORD={SqlPassword}" },
+                Image = "postgres:latest",
                 Name = hostname,
                 Hostname = hostname
             };
@@ -383,7 +390,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             services.AddDbContextPool<DataContext>(optionsBuilder =>
             {
-                optionsBuilder.UseSqlServer(GetSqlConnectionStringForDatabase("sponsorkit"));
+                optionsBuilder.UseNpgsql(GetSqlConnectionStringForDatabase("sponsorkit"));
             });
         }
     }

@@ -109,8 +109,10 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddSingleton<WebhookEndpointService>();
             Services.AddSingleton<PromotionCodeService>();
             Services.AddSingleton<CouponService>();
+            Services.AddSingleton<AccountLinkService>();
             Services.AddSingleton<CustomerBalanceTransactionService>();
             Services.AddSingleton<PlanService>();
+            Services.AddSingleton<ChargeService>();
 
             Services.AddSingleton<IStripeClient, StripeClient>(
                 _ => new StripeClient(
@@ -127,10 +129,13 @@ namespace Sponsorkit.Infrastructure.Ioc
                     var sqlOptions = this.Configuration.GetOptions<SqlOptions>();
                     var connectionString = sqlOptions.ConnectionString;
 
-                    optionsBuilder.UseSqlServer(
+                    optionsBuilder.UseNpgsql(
                         connectionString,
                         options => options
-                            .EnableRetryOnFailure(3, TimeSpan.FromSeconds(1), Array.Empty<int>()));
+                            .EnableRetryOnFailure(
+                                3, 
+                                TimeSpan.FromSeconds(1), 
+                                Array.Empty<string>()));
                 },
                 1);
         }

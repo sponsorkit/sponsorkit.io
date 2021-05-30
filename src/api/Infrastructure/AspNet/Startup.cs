@@ -17,7 +17,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Logging;
 using Microsoft.OpenApi.Models;
 using Sponsorkit.Infrastructure.AspNet.Health;
 using Sponsorkit.Infrastructure.Ioc;
@@ -34,8 +33,6 @@ namespace Sponsorkit.Infrastructure.AspNet
         {
             this.Configuration = configuration;
             this.Environment = environment;
-
-            IdentityModelEventSource.ShowPII = environment.IsDevelopment();
         }
 
         public IConfiguration Configuration

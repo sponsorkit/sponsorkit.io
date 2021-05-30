@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using MediatR;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
@@ -74,16 +73,9 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         private async Task DowngradeDatabaseAsync()
         {
-            try
-            {
-                await WithFreshDataContext(async dataContext => await dataContext
-                    .GetService<IMigrator>()
-                    .MigrateAsync(Migration.InitialDatabase));
-            }
-            catch (SqlException)
-            {
-                //ignored.
-            }
+            await WithFreshDataContext(async dataContext => await dataContext
+                .GetService<IMigrator>()
+                .MigrateAsync(Migration.InitialDatabase));
         }
     }
 }

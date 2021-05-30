@@ -11,12 +11,13 @@ namespace Sponsorkit.Domain.Models
         {
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", false)
+                .AddJsonFile("appsettings.Development.json", false)
                 .Build();
             var options = configuration.GetOptions<SqlOptions>();
 
             return new DataContext(
                 new DbContextOptionsBuilder<DataContext>()
-                    .UseSqlServer(options.ConnectionString)
+                    .UseNpgsql(options.ConnectionString)
                     .Options);
         }
     }
