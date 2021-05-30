@@ -55,5 +55,6 @@ jobs:
         application_name: Sponsorkit
         environment_name: sponsorkit-prod
         version_label: ${{ github.sha }}
+        use_existing_version_if_available: true
         region: eu-north-1
         deployment_package: api.zip
