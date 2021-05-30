@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Octokit;
 using Serilog;
 using Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption;
 using Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub;
@@ -42,6 +43,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             ConfigureAutoMapper();
             ConfigureMediatr(typeof(IocRegistry).Assembly);
 
+            ConfigureGitHub();
             ConfigureEntityFramework();
 
             ConfigureStripe();
@@ -51,6 +53,14 @@ namespace Sponsorkit.Infrastructure.Ioc
             ConfigureFlurl();
 
             ConfigureLogging();
+        }
+
+        private void ConfigureGitHub()
+        {
+            Services.AddScoped<IGitHubClient>(c => 
+                new GitHubClient(
+                    GitHubClientFactory.GetProductHeaderValue()));
+            Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
         }
 
         private void ConfigureLogging()
@@ -104,6 +114,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             var publishableKey = stripeConfiguration?.PublishableKey;
 
             Services.AddSingleton<CustomerService>();
+            Services.AddSingleton<AccountService>();
             Services.AddSingleton<PaymentMethodService>();
             Services.AddSingleton<SubscriptionService>();
             Services.AddSingleton<WebhookEndpointService>();

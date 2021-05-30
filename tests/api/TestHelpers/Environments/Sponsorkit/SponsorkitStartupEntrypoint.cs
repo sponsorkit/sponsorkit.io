@@ -65,7 +65,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
             Console.WriteLine("Initializing integration test environment.");
 
             var hostStartTask = this.host.StartAsync(this.cancellationTokenSource.Token);
-            await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:7071/health");
+            await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
 
             var ngrokService = this.RootProvider.GetService<INGrokHostedService>();
             if (ngrokService != null)
@@ -86,7 +86,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 
             var isAvailable = false;
             var stopwatch = Stopwatch.StartNew();
-            while (!isAvailable && stopwatch.Elapsed < TimeSpan.FromSeconds(60))
+            while (!isAvailable && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
             {
                 isAvailable = true;
 

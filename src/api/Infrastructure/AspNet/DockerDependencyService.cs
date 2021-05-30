@@ -251,8 +251,15 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private static async Task<bool> GetIsSqlServerHealthyAsync()
         {
-            var result = (int?)await ExecuteMasterDatabaseCommandAsync("select 1");
-            return result == 1;
+            try
+            {
+                var result = (int?) await ExecuteMasterDatabaseCommandAsync("select 1");
+                return result == 1;
+            }
+            catch (NpgsqlException)
+            {
+                return false;
+            }
         }
 
         private static string AppendDockerContainerNameSuffix(string containerName)
