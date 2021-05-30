@@ -26,9 +26,9 @@ namespace Sponsorkit.Tests.TestHelpers
                 await entry.ReloadAsync();
         }
 
-        public static TResponse ToObject<TResponse>(this IActionResult httpResponseMessage) where TResponse : class
+        public static TResponse ToObject<TResponse>(this ActionResult<TResponse> httpResponseMessage) where TResponse : class
         {
-            var objectResult = httpResponseMessage as ObjectResult;
+            var objectResult = httpResponseMessage.Result as ObjectResult;
             var value = objectResult?.Value as TResponse;
             if (objectResult == null || (value == null && objectResult?.Value != null))
             {
@@ -37,11 +37,6 @@ namespace Sponsorkit.Tests.TestHelpers
             }
 
             return value;
-        }
-
-        public static ValidationProblemDetails GetValidationProblemDetails(this IActionResult httpResponseMessage)
-        {
-            return httpResponseMessage.ToObject<ValidationProblemDetails>();
         }
 
         public static int? GetStatusCode(this IActionResult httpResponseMessage)

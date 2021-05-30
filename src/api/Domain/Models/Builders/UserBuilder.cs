@@ -71,6 +71,9 @@ namespace Sponsorkit.Domain.Models.Builders
         {
             if (encryptedEmail == null)
                 throw new InvalidOperationException("E-mail must be specified.");
+            
+            if (encryptedPassword == null)
+                throw new InvalidOperationException("Password must be specified.");
 
             if (stripeCustomerId == null)
                 throw new InvalidOperationException("Stripe customer ID must be specified.");
@@ -79,6 +82,7 @@ namespace Sponsorkit.Domain.Models.Builders
             {
                 Id = id,
                 EncryptedEmail = encryptedEmail,
+                EncryptedPassword = encryptedPassword,
                 StripeCustomerId = stripeCustomerId,
                 StripeConnectId = stripeConnectId,
                 GitHubId = gitHubId,

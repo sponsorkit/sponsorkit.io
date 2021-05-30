@@ -34,7 +34,7 @@ namespace Sponsorkit.Tests.Domain.Api.Sponsors
                 default);
             
             //Assert
-            var responseObject = response.Value;
+            var responseObject = response.ToObject();
 
             Assert.AreEqual("some-user-id", responseObject.Id);
             Assert.AreEqual("some-github-id", responseObject.GitHubId);
