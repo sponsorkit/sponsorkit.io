@@ -39,6 +39,12 @@ module.exports = {
         icon: `src/images/gatsby-icon.png`
       },
     },
-    `gatsby-plugin-gatsby-cloud`
+    `gatsby-plugin-gatsby-cloud`,
+    {
+      resolve: `gatsby-plugin-s3`,
+      options: {
+        bucketName: "sponsorkit.io",
+      },
+    }
   ],
 }

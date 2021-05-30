@@ -22,11 +22,11 @@ jobs:
 
     - name: Build with dotnet
       working-directory: src/api
-      run: dotnet build --configuration Release
+      run: dotnet build --no-restore --configuration Release
 
     - name: Publish with dotnet
       working-directory: src/api
-      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
+      run: dotnet publish --no-restore -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Generate deployment package
       working-directory: ${{env.DOTNET_ROOT}}/sponsorkit
@@ -37,9 +37,34 @@ jobs:
       with:
         name: api
         path: ${{env.DOTNET_ROOT}}/sponsorkit/api.zip
+
+  build-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Checkout Github Action'
+      uses: actions/checkout@master
+
+    - name: Install packages
+      working-directory: src/frontend
+      run: npm i
+
+    - name: Build output
+      working-directory: src/frontend
+      run: npm run build
+
+    - name: Generate deployment package
+      working-directory: src/frontend/public
+      run: zip -r frontend.zip .
+
+    - name: Archive API deployment package as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: frontend
+        path: src/frontend/public/frontend.zip
       
   deploy:
-    needs: [build-api]
+    needs: [build-api, build-frontend]
     runs-on: ubuntu-latest
 
     steps:
@@ -47,6 +72,21 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: api
+
+    - name: Download frontend deployment package artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: frontend
+
+    - name: Unpack frontend deployment package artifact
+      run: unzip frontend.zip frontend
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
 
     - name: Deploy API
       uses: einaregilsson/beanstalk-deploy@v16
@@ -60,3 +100,7 @@ jobs:
         use_existing_version_if_available: true
         region: eu-north-1
         deployment_package: api.zip
+
+    - name: Deploy frontend
+      working-directory: frontend
+      run: npx gatsby-plugin-s3 deploy
