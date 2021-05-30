@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption;
 
 namespace Sponsorkit.Domain.Models.Builders
 {
     public class UserBuilder : ModelBuilder<User>
     {
+        private readonly IAesEncryptionHelper aesEncryptionHelper;
         private Guid id;
         private byte[]? encryptedEmail;
         private string? stripeCustomerId;
@@ -22,9 +24,23 @@ namespace Sponsorkit.Domain.Models.Builders
         
         private DateTime createdAtUtc;
         
-        public UserBuilder()
+        public UserBuilder(
+            IAesEncryptionHelper aesEncryptionHelper)
         {
+            this.aesEncryptionHelper = aesEncryptionHelper;
+            
             createdAtUtc = DateTime.UtcNow;
+        }
+
+        public UserBuilder WithId(Guid id)
+        {
+            this.id = id;
+            return this;
+        }
+
+        public UserBuilder WithEmail(string email)
+        {
+            var encryptedEmail = await aesEncryptionHelper.EncryptAsync()
         }
         
         public override User Build()
