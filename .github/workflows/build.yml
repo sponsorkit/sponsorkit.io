@@ -121,7 +121,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Deploy frontend
-      working-directory: frontend
+      working-directory: src/frontend
       run: npx gatsby-plugin-s3 deploy
 
     - name: Deploy API
