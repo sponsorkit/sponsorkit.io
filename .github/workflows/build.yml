@@ -99,7 +99,10 @@ jobs:
         name: frontend
 
     - name: Unpack frontend deployment package artifact
-      run: unzip frontend.zip frontend
+      run: |
+        mkdir frontend
+        unzip frontend.zip ./frontend
+        ls
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
