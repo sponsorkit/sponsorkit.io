@@ -80,7 +80,6 @@ jobs:
     - name: Generate deployment package
       run: |
         zip -r frontend.zip src/frontend/public
-        zip -r frontend.zip src/frontend/node_modules
         zip -r frontend.zip src/frontend/.cache
 
     - name: Archive API deployment package as artifact
