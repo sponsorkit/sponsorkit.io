@@ -11,7 +11,7 @@ namespace Sponsorkit.Domain.Api.Sponsors.Beneficiary
     public record Response(
         Guid Id)
     {
-        public long? GitHubId { get; init; }
+        public long? GitHubId { get; set; }
     }
 
     public record Request(

@@ -175,6 +175,10 @@ namespace Sponsorkit.Migrations
                     b.Property<byte[]>("EncryptedGitHubAccessToken")
                         .HasColumnType("bytea");
 
+                    b.Property<byte[]>("EncryptedPassword")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
                     b.Property<long?>("GitHubId")
                         .HasColumnType("bigint");
 

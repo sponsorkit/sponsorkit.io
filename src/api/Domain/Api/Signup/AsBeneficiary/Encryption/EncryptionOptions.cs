@@ -7,6 +7,6 @@ namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption
     public class EncryptionOptions
     {
         [NotLogged]
-        public string? Pepper { get; init; }
+        public string? Pepper { get; set; }
     }
 }

@@ -7,20 +7,20 @@ namespace Sponsorkit.Domain.Models
     public class Repository
     {
         [Key]
-        public Guid Id { get; init; }
+        public Guid Id { get; set; }
 
-        public long GitHubId { get; init; }
+        public long GitHubId { get; set; }
         
-        public DateTime CreatedAtUtc { get; init; }
+        public DateTime CreatedAtUtc { get; set; }
         
-        public User? Owner { get; init; }
-        public Guid? OwnerId { get; init; }
+        public User? Owner { get; set; }
+        public Guid? OwnerId { get; set; }
         
-        public List<Issue> Issues { get; init; } = new();
+        public List<Issue> Issues { get; set; } = new();
         
         /// <summary>
         /// The sponsorships that have been made on the basis of this repository.
         /// </summary>
-        public List<Sponsorship> Sponsorships { get; init; } = new();
+        public List<Sponsorship> Sponsorships { get; set; } = new();
     }
 }

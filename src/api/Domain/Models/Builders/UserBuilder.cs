@@ -8,7 +8,10 @@ namespace Sponsorkit.Domain.Models.Builders
     {
         private readonly IAesEncryptionHelper aesEncryptionHelper;
         private Guid id;
+        
         private byte[]? encryptedEmail;
+        private byte[]? encryptedPassword;
+        
         private string? stripeCustomerId;
         private string? stripeConnectId;
         private long? gitHubId;
@@ -38,9 +41,34 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public UserBuilder WithEmail(string email)
+        public UserBuilder WithCredentials(
+            byte[] encryptedEmail,
+            byte[] encryptedPassword)
         {
-            var encryptedEmail = await aesEncryptionHelper.EncryptAsync()
+            this.encryptedEmail = encryptedEmail;
+            this.encryptedPassword = encryptedPassword;
+            return this;
+        }
+
+        public UserBuilder WithStripeCustomerId(string stripeCustomerId)
+        {
+            this.stripeCustomerId = stripeCustomerId;
+            return this;
+        }
+
+        public UserBuilder WithStripeConnectId(string stripeConnectId)
+        {
+            this.stripeConnectId = stripeConnectId;
+            return this;
+        }
+
+        public UserBuilder WithGitHubCredentials(
+            long gitHubId,
+            byte[] encryptedAccessToken)
+        {
+            this.gitHubId = gitHubId;
+            this.encryptedGitHubAccessToken = encryptedAccessToken;
+            return this;
         }
         
         public override User Build()

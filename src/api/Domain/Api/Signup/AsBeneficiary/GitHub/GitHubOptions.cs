@@ -5,10 +5,10 @@ namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub
     public class GitHubOptions
     {
         [NotLogged]
-        public string? ClientId { get; init; }
+        public string? ClientId { get; set; }
 
         [NotLogged]
-        public string? ClientSecret { get; init; }
+        public string? ClientSecret { get; set; }
     }
 
 }

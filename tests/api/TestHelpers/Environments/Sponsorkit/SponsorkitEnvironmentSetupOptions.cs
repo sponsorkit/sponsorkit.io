@@ -5,8 +5,8 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 {
     class SponsorkitEnvironmentSetupOptions
     {
-        public string EnvironmentName { get; init; }
-        public Action<IServiceCollection> IocConfiguration { get; init; }
-        public bool IncludeWebServer { get; init; }
+        public string EnvironmentName { get; set; }
+        public Action<IServiceCollection> IocConfiguration { get; set; }
+        public bool IncludeWebServer { get; set; }
     }
 }
