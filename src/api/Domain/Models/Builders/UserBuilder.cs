@@ -6,7 +6,6 @@ namespace Sponsorkit.Domain.Models.Builders
 {
     public class UserBuilder : ModelBuilder<User>
     {
-        private readonly IAesEncryptionHelper aesEncryptionHelper;
         private Guid id;
         
         private byte[]? encryptedEmail;
@@ -27,11 +26,8 @@ namespace Sponsorkit.Domain.Models.Builders
         
         private DateTime createdAtUtc;
         
-        public UserBuilder(
-            IAesEncryptionHelper aesEncryptionHelper)
+        public UserBuilder()
         {
-            this.aesEncryptionHelper = aesEncryptionHelper;
-            
             createdAtUtc = DateTime.UtcNow;
         }
 

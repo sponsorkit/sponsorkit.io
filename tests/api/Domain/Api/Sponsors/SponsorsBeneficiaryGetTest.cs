@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Api.Sponsors.Beneficiary;
 using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Builders.Models;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Sponsors
@@ -20,6 +21,12 @@ namespace Sponsorkit.Tests.Domain.Api.Sponsors
             var endpoint = environment.ServiceProvider.GetRequiredService<Get>();
 
             var beneficiaryId = Guid.NewGuid();
+
+            await environment.WithFreshDataContext(async dataContext =>
+            {
+                await dataContext.Users.AddAsync(new TestUserBuilder()
+                    .WithId(beneficiaryId));
+            });
             
             //Act
             var response = await endpoint.HandleAsync(
