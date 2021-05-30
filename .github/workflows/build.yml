@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-deploy:
+  build-api:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +24,29 @@ jobs:
       working-directory: src/api
       run: dotnet build --configuration Release
 
-    - name: dotnet publish
+    - name: Publish with dotnet
       working-directory: src/api
       run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Generate deployment package
-      run: zip -r deploy.zip . -x '${{env.DOTNET_ROOT}}/sponsorkit'
+      run: zip -r api.zip . -x '${{env.DOTNET_ROOT}}/sponsorkit'
+
+    - name: Archive API deployment package as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: api
+        path: api.zip
       
-    - name: Deploy to EB
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download API deployment package artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: api
+
+    - name: Deploy API
       uses: einaregilsson/beanstalk-deploy@v16
       with:
         aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -40,4 +55,4 @@ jobs:
         environment_name: sponsorkit-prod
         version_label: ${{ GITHUB_SHA }}
         region: eu-north-1
-        deployment_package: deploy.zip
+        deployment_package: api.zip
