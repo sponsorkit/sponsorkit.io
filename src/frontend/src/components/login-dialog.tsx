@@ -6,7 +6,7 @@ import { newGuid } from '../utils/guid';
 export default function LoginDialog(props: {
     open: boolean,
     redirectUrl?: string,
-    onCodeAcquired: (code: string) => void
+    onCodeAcquired: (code: string) => Promise<void>|void
 }) {
     const location = useLocation();
     const state = useMemo(newGuid, []);

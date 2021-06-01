@@ -13,7 +13,7 @@ namespace Sponsorkit.Domain.Models
                 .AddJsonFile("appsettings.json", false)
                 .AddJsonFile("appsettings.Development.json", false)
                 .Build();
-            var options = configuration.GetOptions<SqlOptions>();
+            var options = configuration.Get<SqlOptions>();
 
             return new DataContext(
                 new DbContextOptionsBuilder<DataContext>()

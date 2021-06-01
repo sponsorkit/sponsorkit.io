@@ -5,6 +5,8 @@
   "version": "0.1.0",
   "author": "Mathias Lorenzen",
   "dependencies": {
+    "@azure/core-client": "^1.1.2",
+    "@azure/core-http": "^1.2.4",
     "@material-ui/core": "^4.11.3",
     "@material-ui/styles": "^4.11.3",
     "@octokit/rest": "^18.5.2",
@@ -50,7 +52,8 @@
     "start": "npm run develop",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
-    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
+    "swagger:local": "autorest --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
   },
   "repository": {
     "type": "git",

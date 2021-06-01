@@ -9,15 +9,15 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
     {
         private readonly IServiceProvider serviceProvider;
 
-        public SubscriptionService SubscriptionService => this.serviceProvider.GetRequiredService<SubscriptionService>();
+        public SubscriptionService SubscriptionService => serviceProvider.GetRequiredService<SubscriptionService>();
         public TestSubscriptionBuilder SubscriptionBuilder => new(SubscriptionService);
 
-        public TestPlanBuilder PlanBuilder => new(this.serviceProvider.GetRequiredService<PlanService>());
+        public TestPlanBuilder PlanBuilder => new(serviceProvider.GetRequiredService<PlanService>());
 
-        public CustomerService CustomerService => this.serviceProvider.GetRequiredService<CustomerService>();
+        public CustomerService CustomerService => serviceProvider.GetRequiredService<CustomerService>();
         public TestCustomerBuilder CustomerBuilder => new(CustomerService);
 
-        public TestPaymentMethodBuilder PaymentMethodBuilder => new(this.serviceProvider.GetRequiredService<PaymentMethodService>());
+        public TestPaymentMethodBuilder PaymentMethodBuilder => new(serviceProvider.GetRequiredService<PaymentMethodService>());
 
         public StripeEnvironmentContext(
             IServiceProvider serviceProvider)

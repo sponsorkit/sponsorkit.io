@@ -16,7 +16,7 @@ namespace Sponsorkit.Infrastructure.Logging
 
         public void Emit(LogEvent logEvent)
         {
-            this.inner.Emit(logEvent);
+            inner.Emit(logEvent);
         }
 
         public void Dispose()

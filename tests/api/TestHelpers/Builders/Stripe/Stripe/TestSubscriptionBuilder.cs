@@ -40,16 +40,16 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
 
         public TestSubscriptionBuilder WithCanceledState()
         {
-            this.shouldCancel = true;
+            shouldCancel = true;
             return this;
         }
 
         public async Task<Subscription> BuildAsync()
         {
-            var subscription = await this.subscriptionService.CreateAsync(new SubscriptionCreateOptions()
+            var subscription = await subscriptionService.CreateAsync(new SubscriptionCreateOptions()
             {
-                Customer = this.customer.Id,
-                DefaultPaymentMethod = this.paymentMethod?.Id,
+                Customer = customer.Id,
+                DefaultPaymentMethod = paymentMethod?.Id,
                 Items = plans
                     .Select(plan => new SubscriptionItemOptions()
                     {
@@ -58,9 +58,9 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
                     .ToList()
             });
 
-            if (this.shouldCancel)
+            if (shouldCancel)
             {
-                await this.subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions());
+                await subscriptionService.CancelAsync(subscription.Id, new SubscriptionCancelOptions());
             }
 
             return subscription;

@@ -19,20 +19,20 @@ using Stripe;
 
 namespace Sponsorkit.Infrastructure.Ioc
 {
-    public class IocRegistry
+    public sealed class IocRegistry
     {
-        protected IServiceCollection Services { get; }
-        protected IConfiguration Configuration { get; }
+        private IServiceCollection Services { get; }
+        private IConfiguration Configuration { get; }
 
         public IocRegistry(
             IServiceCollection services,
             IConfiguration configuration)
         {
-            this.Services = services;
-            this.Configuration = configuration;
+            Services = services;
+            Configuration = configuration;
         }
 
-        public virtual void Register()
+        public void Register()
         {
             ConfigureOptions();
 
@@ -65,17 +65,17 @@ namespace Sponsorkit.Infrastructure.Ioc
 
         private void ConfigureLogging()
         {
-            this.Services.AddTransient(p => Log.Logger);
+            Services.AddTransient(p => Log.Logger);
         }
 
         private void ConfigureFlurl()
         {
-            this.Services.AddSingleton<IFlurlClientFactory, PerBaseUrlFlurlClientFactory>();
+            Services.AddSingleton<IFlurlClientFactory, PerBaseUrlFlurlClientFactory>();
         }
 
         private void ConfigureHealthChecks()
         {
-            this.Services.AddHealthChecks();
+            Services.AddHealthChecks();
         }
 
         private void ConfigureOptions()
@@ -83,10 +83,10 @@ namespace Sponsorkit.Infrastructure.Ioc
             void Configure<TOptions>() where TOptions : class
             {
                 var configurationKey = Configuration.GetSectionNameFor<TOptions>();
-                this.Services.Configure<TOptions>(this.Configuration.GetSection(configurationKey));
+                Services.Configure<TOptions>(Configuration.GetSection(configurationKey));
             }
 
-            this.Services.AddOptions();
+            Services.AddOptions();
 
             Configure<GitHubOptions>();
             Configure<SqlOptions>();
@@ -103,7 +103,7 @@ namespace Sponsorkit.Infrastructure.Ioc
                 return;
 
             DockerDependencyService.InjectInto(
-                this.Services);
+                Services);
         }
 
         private void ConfigureStripe()
@@ -134,10 +134,10 @@ namespace Sponsorkit.Infrastructure.Ioc
         [ExcludeFromCodeCoverage]
         private void ConfigureEntityFramework()
         {
-            this.Services.AddDbContextPool<DataContext>(
+            Services.AddDbContextPool<DataContext>(
                 optionsBuilder =>
                 {
-                    var sqlOptions = this.Configuration.GetOptions<SqlOptions>();
+                    var sqlOptions = Configuration.Get<SqlOptions>();
                     var connectionString = sqlOptions.ConnectionString;
 
                     optionsBuilder.UseNpgsql(
@@ -153,23 +153,23 @@ namespace Sponsorkit.Infrastructure.Ioc
 
         private void ConfigureInfrastructure()
         {
-            this.Services.AddSingleton<IAesEncryptionHelper, AesEncryptionHelper>();
+            Services.AddSingleton<IAesEncryptionHelper, AesEncryptionHelper>();
 
-            this.Services.AddLogging(builder => builder
+            Services.AddLogging(builder => builder
                 .SetMinimumLevel(LogLevel.Debug)
                 .AddConsole());
 
-            this.Services.AddSingleton(this.Configuration);
+            Services.AddSingleton(Configuration);
         }
 
         public void ConfigureMediatr(params Assembly[] assemblies)
         {
-            this.Services.AddMediatR(x => x.AsTransient(), assemblies);
+            Services.AddMediatR(x => x.AsTransient(), assemblies);
         }
 
         private void ConfigureAutoMapper()
         {
-            this.Services.AddAutoMapper(typeof(IocRegistry).Assembly);
+            Services.AddAutoMapper(typeof(IocRegistry).Assembly);
         }
     }
 }

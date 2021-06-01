@@ -1,5 +1,6 @@
 import { Button, Container, Paper } from "@material-ui/core";
 import React, { useState } from "react"
+import { apiClient } from "../api";
 import LoginDialog from "../components/login-dialog";
 
 export default function LoginPage(props: {
@@ -23,10 +24,15 @@ export default function LoginPage(props: {
 
       <LoginDialog 
         open={isDialogOpen}
-        onCodeAcquired={code => {
+        onCodeAcquired={async code => {
           setIsDialogOpen(false);
 
-          alert("code is " + code);
+          const response = await apiClient.apiSignupFromGithubPost({
+            body: {
+              gitHubAuthenticationCode: code
+            }
+          });
+          localStorage.setItem("token", response.token ?? "");
         }} />
     </Paper>
   </Container>

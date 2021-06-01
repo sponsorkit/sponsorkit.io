@@ -203,7 +203,6 @@ export default function NewPage() {
                 />
               </Elements>,
             onCompleted: async () => {
-              console.log("payment-details", paymentDetails);
               if(!paymentDetails?.cardNumberElement)
                 return;
 

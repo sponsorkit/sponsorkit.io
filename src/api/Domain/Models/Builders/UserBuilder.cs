@@ -62,7 +62,7 @@ namespace Sponsorkit.Domain.Models.Builders
             byte[] encryptedAccessToken)
         {
             this.gitHubId = gitHubId;
-            this.encryptedGitHubAccessToken = encryptedAccessToken;
+            encryptedGitHubAccessToken = encryptedAccessToken;
             return this;
         }
         

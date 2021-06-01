@@ -4,10 +4,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Mime;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AspNet.Security.OAuth.GitHub;
 using FluffySpoon.AspNet.NGrok;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -17,9 +20,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Sponsorkit.Infrastructure.AspNet.Health;
 using Sponsorkit.Infrastructure.Ioc;
+using Sponsorkit.Infrastructure.Options;
 
 namespace Sponsorkit.Infrastructure.AspNet
 {
@@ -31,8 +36,8 @@ namespace Sponsorkit.Infrastructure.AspNet
             IConfiguration configuration,
             IHostEnvironment environment)
         {
-            this.Configuration = configuration;
-            this.Environment = environment;
+            Configuration = configuration;
+            Environment = environment;
         }
 
         public IConfiguration Configuration
@@ -63,35 +68,23 @@ namespace Sponsorkit.Infrastructure.AspNet
             services.AddNGrok();
         }
 
-        private static void ConfigureAuthentication(IServiceCollection services)
+        private void ConfigureAuthentication(IServiceCollection services)
         {
+            var jwtOptions = Configuration.Get<JwtOptions>();
             services
-                .AddAuthentication();
-            //     .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
-            //     {
-            //         //TODO: add secrets and stuff.
-            //         options.ClientId = "TODO";
-            //         options.ClientSecret = "TODO";
-            //
-            //         options.Scope.Add("user:email");
-            //         options.Events = new OAuthEvents()
-            //         {
-            //             OnCreatingTicket = async context =>
-            //             {
-            //                 throw new NotImplementedException("Not implemented yet.");
-            //                 
-            //                 var email = context.Identity.FindFirst(ClaimTypes.Email)?.Value;
-            //                 if (email == null)
-            //                     throw new InvalidOperationException("E-mail was not sent by GitHub.");
-            //
-            //                 var userId = context.User.GetProperty("id").GetString();
-            //                 if (userId == null)
-            //                     throw new InvalidOperationException("User ID was not sent by GitHub.");
-            //
-            //                 throw new NotImplementedException("Not implemented!");
-            //             }
-            //         };
-            //     });
+                .AddAuthentication()
+                .AddJwtBearer(options =>
+                {
+                    options.Audience = "http://localhost:5000/";
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        ValidateIssuer = true,
+                        ValidIssuer = "http://localhost:5000/",
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(jwtOptions.JwtPrivateKey)),
+                    };
+                });
         }
 
         private static void ConfigureAspNetCore(IServiceCollection services)
@@ -161,7 +154,12 @@ namespace Sponsorkit.Infrastructure.AspNet
                 c.SupportNonNullableReferenceTypes();
                 
                 c.DescribeAllParametersInCamelCase();
-                c.CustomOperationIds(x => x.RelativePath);
+                c.CustomOperationIds(x =>
+                {
+                    var httpMethod = x.HttpMethod?.ToString() ?? "GET";
+                    var httpMethodPascalCase = char.ToUpper(httpMethod[0]) + httpMethod.Substring(1);
+                    return x.RelativePath + httpMethodPascalCase;
+                });
                 c.CustomSchemaIds(x => x.FullName);
             });
         }

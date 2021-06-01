@@ -21,10 +21,10 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         public IServiceProvider ServiceProvider { get; }
 
-        public IMediator Mediator => this.ServiceProvider.GetRequiredService<Mediator>();
-        public DataContext DataContext => this.ServiceProvider.GetRequiredService<DataContext>();
-        public IConfiguration Configuration => this.ServiceProvider.GetRequiredService<IConfiguration>();
-        public StripeEnvironmentContext Stripe => new(this.ServiceProvider);
+        public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
+        public DataContext DataContext => ServiceProvider.GetRequiredService<DataContext>();
+        public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
+        public StripeEnvironmentContext Stripe => new(ServiceProvider);
 
         protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 
@@ -34,16 +34,16 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
             EnvironmentHelper.SetRunningInTestFlag();
 
-            this.entrypoint = GetEntrypoint(options);
-            this.ServiceProvider = this.entrypoint.ScopeProvider;
+            entrypoint = GetEntrypoint(options);
+            ServiceProvider = entrypoint.ScopeProvider;
         }
 
         protected async Task InitializeAsync()
         {
-            var dockerDependencyService = new DockerDependencyService(this.ServiceProvider);
+            var dockerDependencyService = new DockerDependencyService(ServiceProvider);
             await dockerDependencyService.StartAsync(default);
             
-            await this.entrypoint.WaitUntilReadyAsync();
+            await entrypoint.WaitUntilReadyAsync();
         }
 
         public async Task WithFreshDataContext(Func<DataContext, Task> action)
@@ -57,7 +57,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         public async Task<T> WithFreshDataContext<T>(Func<DataContext, Task<T>> action)
         {
-            using var freshScope = this.entrypoint.RootProvider.CreateScope();
+            using var freshScope = entrypoint.RootProvider.CreateScope();
             await using var dataContext = freshScope.ServiceProvider.GetRequiredService<DataContext>();
 
             var result = await action(dataContext);
@@ -68,7 +68,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
         public async ValueTask DisposeAsync()
         {
             await DowngradeDatabaseAsync();
-            await this.entrypoint.DisposeAsync();
+            await entrypoint.DisposeAsync();
         }
 
         private async Task DowngradeDatabaseAsync()

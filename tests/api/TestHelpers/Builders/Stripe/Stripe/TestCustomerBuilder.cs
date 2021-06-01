@@ -23,17 +23,17 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
 
         public async Task<Customer> BuildAsync()
         {
-            var customer = await this.customerService.CreateAsync(new CustomerCreateOptions());
+            var customer = await customerService.CreateAsync(new CustomerCreateOptions());
 
-            var paymentMethod = this.paymentMethodBuilder != null ? 
-                await this.paymentMethodBuilder
+            var paymentMethod = paymentMethodBuilder != null ? 
+                await paymentMethodBuilder
                     .WithCustomer(customer)
                     .BuildAsync() :
                 null;
 
             if (paymentMethod != null)
             {
-                await this.customerService.UpdateAsync(
+                await customerService.UpdateAsync(
                     customer.Id,
                     new CustomerUpdateOptions()
                     {

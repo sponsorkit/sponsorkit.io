@@ -35,25 +35,25 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
 
         public TestPlanBuilder WithInterval(PlanInterval value)
         {
-            this.interval = value;
+            interval = value;
             return this;
         }
 
         public TestPlanBuilder WithCurrency(PlanCurrency value)
         {
-            this.currency = value;
+            currency = value;
             return this;
         }
 
         public TestPlanBuilder WithAmountInHundreds(int value)
         {
-            this.amountInHundreds = value;
+            amountInHundreds = value;
             return this;
         }
 
         public TestPlanBuilder WithId(string value)
         {
-            this.id = value;
+            id = value;
             return this;
         }
 
@@ -61,10 +61,10 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
         {
             return await planService.CreateAsync(new PlanCreateOptions()
             {
-                Id = this.id,
-                Interval = this.interval.ToString().ToLower(),
-                Currency = this.currency.ToString().ToLower(),
-                Amount = this.amountInHundreds,
+                Id = id,
+                Interval = interval.ToString().ToLower(),
+                Currency = currency.ToString().ToLower(),
+                Amount = amountInHundreds,
                 Product = new PlanProductOptions()
                 {
                     Name = Guid.NewGuid().ToString()

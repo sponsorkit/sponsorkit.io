@@ -22,15 +22,15 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
         private readonly IServiceScope scope;
 
         public IServiceProvider RootProvider { get; }
-        public IServiceProvider ScopeProvider => this.scope.ServiceProvider;
+        public IServiceProvider ScopeProvider => scope.ServiceProvider;
 
         private readonly CancellationTokenSource cancellationTokenSource;
 
         public SponsorkitStartupEntrypoint(SponsorkitEnvironmentSetupOptions options)
         {
-            this.cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource = new CancellationTokenSource();
 
-            this.host = Host.CreateDefaultBuilder()
+            host = Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration(builder => TestConfigurationFactory.ConfigureBuilder(builder))
                 .UseEnvironment(options.EnvironmentName ?? Microsoft.Extensions.Hosting.Environments.Development)
                 .ConfigureWebHostDefaults(webBuilder => webBuilder
@@ -54,20 +54,20 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
                 })
                 .Build();
 
-            this.RootProvider = this.host.Services;
+            RootProvider = host.Services;
 
-            var serviceScope = this.RootProvider.CreateScope();
-            this.scope = serviceScope;
+            var serviceScope = RootProvider.CreateScope();
+            scope = serviceScope;
         }
 
         public async Task WaitUntilReadyAsync()
         {
             Console.WriteLine("Initializing integration test environment.");
 
-            var hostStartTask = this.host.StartAsync(this.cancellationTokenSource.Token);
+            var hostStartTask = host.StartAsync(cancellationTokenSource.Token);
             await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
 
-            var ngrokService = this.RootProvider.GetService<INGrokHostedService>();
+            var ngrokService = RootProvider.GetService<INGrokHostedService>();
             if (ngrokService != null)
                 await WaitForTunnelsToOpenAsync(ngrokService);
 
@@ -111,10 +111,10 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 
         public async ValueTask DisposeAsync()
         {
-            this.cancellationTokenSource.Cancel();
+            cancellationTokenSource.Cancel();
 
-            this.scope.Dispose();
-            this.host.Dispose();
+            scope.Dispose();
+            host.Dispose();
         }
     }
 

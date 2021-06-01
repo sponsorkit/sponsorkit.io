@@ -24,7 +24,7 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
 
         public async Task<PaymentMethod> BuildAsync()
         {
-            var paymentMethod = await this.paymentMethodService.CreateAsync(new PaymentMethodCreateOptions()
+            var paymentMethod = await paymentMethodService.CreateAsync(new PaymentMethodCreateOptions()
             {
                 Type = "card",
                 Card = new PaymentMethodCardOptions()
@@ -36,13 +36,13 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe
                 }
             });
 
-            if (this.customer != null)
+            if (customer != null)
             {
-                await this.paymentMethodService.AttachAsync(
+                await paymentMethodService.AttachAsync(
                     paymentMethod.Id,
                     new PaymentMethodAttachOptions()
                     {
-                        Customer = this.customer.Id
+                        Customer = customer.Id
                     });
             }
 

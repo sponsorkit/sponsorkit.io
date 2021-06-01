@@ -45,7 +45,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub.Encryption
 
         public async Task<byte[]> EncryptAsync(string plainText)
         {
-            var key = this.encryptionOptionsMonitor.CurrentValue.Pepper;
+            var key = encryptionOptionsMonitor.CurrentValue.Pepper;
             if (key == null)
                 throw new InvalidOperationException("Could not find a pepper in the configuration of the application.");
 
@@ -71,7 +71,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub.Encryption
 
         public async Task<string> DecryptAsync(byte[] cipherText)
         {
-            var key = this.encryptionOptionsMonitor.CurrentValue.Pepper;
+            var key = encryptionOptionsMonitor.CurrentValue.Pepper;
             if (key == null)
                 throw new InvalidOperationException("Could not find a pepper in the configuration of the application.");
 

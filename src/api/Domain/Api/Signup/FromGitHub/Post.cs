@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Octokit;
@@ -73,9 +74,15 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
 
             var email = currentGitHubUser.Email;
 
-            var createdUser = await dataContext.ExecuteInTransactionAsync(
+            var authenticatedUser = await dataContext.ExecuteInTransactionAsync(
                 async () =>
                 {
+                    var existingUser = await dataContext.Users.SingleOrDefaultAsync(
+                        x => x.GitHubId == currentGitHubUser.Id,
+                        cancellationToken);
+                    if (existingUser != null)
+                        return existingUser;
+                        
                     var user = new SponsorkitUser()
                     {
                         EncryptedGitHubAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken),
@@ -93,7 +100,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                     return user;
                 });
 
-            var jwtToken = GenerateJwtTokenForUser(createdUser.Id);
+            var jwtToken = GenerateJwtTokenForUser(authenticatedUser.Id);
             return new Response(jwtToken);
         }
 
@@ -141,7 +148,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
 
         private async Task<string> ExchangeGitHubAuthenticationCodeForAccessTokenAsync(string code)
         {
-            var options = this.gitHubOptionsMonitor.CurrentValue;
+            var options = gitHubOptionsMonitor.CurrentValue;
 
             var tokenResponse = await gitHubClient.Oauth.CreateAccessToken(
                 new OauthTokenRequest(

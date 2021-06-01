@@ -48,12 +48,12 @@ namespace Sponsorkit.Infrastructure.AspNet
                 return;
 
             using var dockerConfiguration = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine"));
-            this.docker = dockerConfiguration.CreateClient();
+            docker = dockerConfiguration.CreateClient();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            using var scope = this.serviceProvider.CreateScope();
+            using var scope = serviceProvider.CreateScope();
 
             dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
             customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
@@ -62,7 +62,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             ngrokHostedService = scope.ServiceProvider.GetService<INGrokHostedService>();
 
-            if(this.ngrokHostedService != null)
+            if(ngrokHostedService != null)
                 ngrokHostedService.Ready += SetupStripeWebhooksAsync;
 
             await InitializeDockerAsync();
@@ -80,10 +80,10 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async void SetupStripeWebhooksAsync(IEnumerable<FluffySpoon.AspNet.NGrok.NGrokModels.Tunnel> tunnels)
         {
-            if (this.ngrokHostedService == null)
+            if (ngrokHostedService == null)
                 throw new InvalidOperationException("NGrok service has not been initialized yet.");
 
-            if (this.webhookEndpointService == null)
+            if (webhookEndpointService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
             await CleanupStripeWebhooksAsync();
@@ -94,7 +94,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 var webhookUrl = $"{tunnel.PublicUrl}/stripe";
                 Console.WriteLine($"Created Stripe webhook towards {webhookUrl}");
 
-                await this.webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
+                await webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
                 {
                     Url = webhookUrl,
                     EnabledEvents = new List<string>() { "*" }
@@ -104,23 +104,23 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            this.docker?.Dispose();
+            docker?.Dispose();
             await CleanupStripeWebhooksAsync();
         }
 
         private async Task CleanupStripeWebhooksAsync()
         {
-            if (this.webhookEndpointService == null)
+            if (webhookEndpointService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
             
-            var existingEndpoints = await this.webhookEndpointService
+            var existingEndpoints = await webhookEndpointService
                 .ListAutoPagingAsync()
                 .ToListAsync();
             foreach (var endpoint in existingEndpoints)
             {
                 try
                 {
-                    await this.webhookEndpointService.DeleteAsync(endpoint.Id);
+                    await webhookEndpointService.DeleteAsync(endpoint.Id);
                 }
                 catch (StripeException)
                 {
@@ -134,10 +134,10 @@ namespace Sponsorkit.Infrastructure.AspNet
             if (!ShouldDeleteExistingData())
                 return;
 
-            if (this.planService == null)
+            if (planService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
-            var plansToDelete = await this.planService
+            var plansToDelete = await planService
                 .ListAutoPagingAsync()
                 .ToListAsync();
             foreach (var plan in plansToDelete)
@@ -148,7 +148,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 Console.WriteLine($"Deleting customer {plan.Id}");
                 try
                 {
-                    await this.planService.DeleteAsync(plan.Id);
+                    await planService.DeleteAsync(plan.Id);
                 }
                 catch (StripeException ex)
                 {
@@ -163,10 +163,10 @@ namespace Sponsorkit.Infrastructure.AspNet
             if (!ShouldDeleteExistingData())
                 return;
 
-            if (this.customerService == null)
+            if (customerService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
-            var customersToDelete = await this.customerService
+            var customersToDelete = await customerService
                 .ListAutoPagingAsync()
                 .ToListAsync();
             foreach (var customer in customersToDelete)
@@ -180,7 +180,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 Console.WriteLine($"Deleting customer {customer.Id}");
                 try
                 {
-                    await this.customerService.DeleteAsync(customer.Id);
+                    await customerService.DeleteAsync(customer.Id);
                 }
                 catch (StripeException ex)
                 {
@@ -192,13 +192,13 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async Task PrepareDatabaseAsync()
         {
-            if (this.dataContext == null)
+            if (dataContext == null)
                 throw new InvalidOperationException("Could not prepare database - data context was not initialized.");
 
             if (ShouldDeleteExistingData())
-                await this.dataContext.Database.EnsureDeletedAsync();
+                await dataContext.Database.EnsureDeletedAsync();
 
-            await this.dataContext.Database.MigrateAsync();
+            await dataContext.Database.MigrateAsync();
         }
 
         private static bool ShouldDeleteExistingData()
@@ -298,12 +298,12 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async Task<IList<ContainerListResponse>> GetAllDockerContainersAsync()
         {
-            if (this.docker == null)
+            if (docker == null)
                 throw new InvalidOperationException("Docker not initialized.");
             
             try
             {
-                return await this.docker.Containers.ListContainersAsync(new ContainersListParameters()
+                return await docker.Containers.ListContainersAsync(new ContainersListParameters()
                 {
                     All = true
                 });
@@ -321,7 +321,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private async Task InitializeDockerAsync()
         {
-            if (this.docker == null)
+            if (docker == null)
                 throw new InvalidOperationException("Docker client not initialized.");
 
             var containers = await GetAllDockerContainersAsync();
@@ -340,7 +340,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 if (existingContainer == null)
                 {
                     var imageNames = containerConfiguration.Image.Split(":");
-                    await this.docker.Images.CreateImageAsync(
+                    await docker.Images.CreateImageAsync(
                         new ImagesCreateParameters
                         {
                             FromImage = imageNames[0],
@@ -349,11 +349,11 @@ namespace Sponsorkit.Infrastructure.AspNet
                         new AuthConfig(),
                         new Progress<JSONMessage>());
 
-                    var newContainer = await this.docker.Containers.CreateContainerAsync(containerConfiguration);
+                    var newContainer = await docker.Containers.CreateContainerAsync(containerConfiguration);
                     containerId = newContainer.ID;
                 }
 
-                await this.docker.Containers.StartContainerAsync(
+                await docker.Containers.StartContainerAsync(
                     containerId,
                     new ContainerStartParameters());
             }

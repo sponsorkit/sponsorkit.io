@@ -39,13 +39,13 @@ namespace Sponsorkit.Domain.Models
             Func<Task<T>> action,
             IsolationLevel? isolationLevel = IsolationLevel.ReadUncommitted)
         {
-            if (this.Database.CurrentTransaction != null)
+            if (Database.CurrentTransaction != null)
                 return await action();
 
-            var strategy = this.Database.CreateExecutionStrategy();
+            var strategy = Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await this.Database.BeginTransactionAsync(
+                await using var transaction = await Database.BeginTransactionAsync(
                     isolationLevel ?? IsolationLevel.ReadUncommitted);
 
                 try
