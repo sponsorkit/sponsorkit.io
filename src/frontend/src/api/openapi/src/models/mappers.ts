@@ -298,7 +298,6 @@ export const SponsorkitDomainApiSignupFromGitHubRequest: coreClient.CompositeMap
     modelProperties: {
       gitHubAuthenticationCode: {
         serializedName: "gitHubAuthenticationCode",
-        nullable: true,
         type: {
           name: "String"
         }

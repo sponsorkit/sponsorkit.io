@@ -21,7 +21,7 @@ using GitHubUser = Octokit.User;
 namespace Sponsorkit.Domain.Api.Signup.FromGitHub
 {
     public record Request(
-        string? GitHubAuthenticationCode);
+        string GitHubAuthenticationCode);
 
     public record Response(
         string Token);

@@ -53,7 +53,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "autorest --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
+    "swagger:local": "autorest --v3 --ignore-nullable-on-optional --hide-client --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
   },
   "repository": {
     "type": "git",
