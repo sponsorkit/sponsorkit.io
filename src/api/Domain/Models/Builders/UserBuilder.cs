@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption;
 
 namespace Sponsorkit.Domain.Models.Builders
 {

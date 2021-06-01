@@ -1,6 +1,6 @@
 ﻿using Destructurama.Attributed;
 
-namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub
+namespace Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub
 {
     public class GitHubOptions
     {

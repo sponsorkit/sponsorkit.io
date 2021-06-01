@@ -25,8 +25,8 @@ export default function LoginPage(props: {
         open={isDialogOpen}
         onCodeAcquired={code => {
           setIsDialogOpen(false);
-          
-          alert("code is " + JSON.stringify(code));
+
+          alert("code is " + code);
         }} />
     </Paper>
   </Container>

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
-namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption
+namespace Sponsorkit.Domain.Api.Signup.FromGitHub.Encryption
 {
 
     public class AesEncryptionHelper : IAesEncryptionHelper

@@ -1,6 +1,6 @@
 ﻿using Octokit;
 
-namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub
+namespace Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub
 {
     public interface IGitHubClientFactory
     {

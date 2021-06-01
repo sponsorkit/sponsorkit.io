@@ -1,11 +1,8 @@
 ﻿using System;
-using MediatR;
-using Microsoft.Extensions.Options;
 using Octokit;
 using Octokit.Internal;
-using Serilog;
 
-namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.GitHub
+namespace Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub
 {
     public class GitHubClientFactory : IGitHubClientFactory
     {

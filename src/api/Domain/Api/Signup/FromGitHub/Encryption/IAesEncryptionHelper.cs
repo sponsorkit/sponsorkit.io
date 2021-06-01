@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary.Encryption
+namespace Sponsorkit.Domain.Api.Signup.FromGitHub.Encryption
 {
     public interface IAesEncryptionHelper
     {

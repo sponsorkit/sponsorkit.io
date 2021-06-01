@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import IframeDialog from './iframe-dialog';
 import { useLocation, useParams } from '@reach/router';
+import { newGuid } from '../utils/guid';
 
 export default function LoginDialog(props: {
     open: boolean,
@@ -8,16 +9,19 @@ export default function LoginDialog(props: {
     onCodeAcquired: (code: string) => void
 }) {
     const location = useLocation();
+    const state = useMemo(newGuid, []);
 
     if(location.search) {
         const searchParams = new URLSearchParams(location.search);
         const code = searchParams.get("code");
+        const stateFromRedirect = searchParams.get("state");
         if(code) {
             useEffect(() => {
                 window.postMessage(
                     {
                         type: "sponsorkit",
-                        code
+                        code,
+                        state: stateFromRedirect
                     }, 
                     location.origin);
                 window.close();
@@ -29,6 +33,7 @@ export default function LoginDialog(props: {
     const url = new URL("https://github.com/login/oauth/authorize");
     url.searchParams.set("client_id", "72e8a446cc32814bd9c2");
     url.searchParams.set("scope", "user:email");
+    url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", props.redirectUrl ?? location.href);
     
     return <IframeDialog 
@@ -39,6 +44,9 @@ export default function LoginDialog(props: {
                 return;
 
             if(e.type !== "sponsorkit")
+                return;
+
+            if(e.state !== state)
                 return;
             
             props.onCodeAcquired(e.code);
