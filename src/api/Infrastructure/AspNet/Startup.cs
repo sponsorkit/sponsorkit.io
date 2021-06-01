@@ -154,6 +154,15 @@ namespace Sponsorkit.Infrastructure.AspNet
                 });
 
                 c.TagActionsBy(x => new[] { "General" });
+                
+                c.IgnoreObsoleteActions();
+                c.IgnoreObsoleteProperties();
+                
+                c.SupportNonNullableReferenceTypes();
+                
+                c.DescribeAllParametersInCamelCase();
+                c.CustomOperationIds(x => x.RelativePath);
+                c.CustomSchemaIds(x => x.FullName);
             });
         }
 
@@ -176,6 +185,7 @@ namespace Sponsorkit.Infrastructure.AspNet
             app.UseAuthorization();
 
             app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseWhen(
                 IsWebhookRequest,
@@ -215,6 +225,8 @@ namespace Sponsorkit.Infrastructure.AspNet
                         await context.Response.WriteAsync(result);
                     }
                 });
+
+                endpoints.MapSwagger();
 
                 endpoints
                     .MapControllers()

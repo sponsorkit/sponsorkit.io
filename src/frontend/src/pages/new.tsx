@@ -10,8 +10,9 @@ import {
 } from './new.module.scss';
 import StripeCreditCard from '../components/stripe/credit-card';
 
-import { Stripe, StripeCardNumberElement, StripeElements } from "@stripe/stripe-js";
+import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import Elements from "../components/stripe/elements";
+import { useOctokit } from "../hooks/clients";
 
 function SponsorshipOptions(props: {
   options: number[],
@@ -77,19 +78,12 @@ function ChargeSummary(props: {
 function SponsorDetails(props: {
   gitHubUsername: string
 }) {
-  // const user = useOctokit((octokit, signal) => octokit.users.getByUsername({
-  //   username: props.gitHubUsername,
-  //   request: {
-  //     signal
-  //   }
-  // }));
-  const user = {
-    data: {
-      avatar_url: "https://avatars.githubusercontent.com/u/2824010?v=4",
-      name: "Mathias Lykkegaard Lorenzen",
-      public_repos: 1337
+  const user = useOctokit((octokit, signal) => octokit.users.getByUsername({
+    username: props.gitHubUsername,
+    request: {
+      signal
     }
-  };
+  }));
   if(!user?.data)
     return <CircularProgress />;
 
