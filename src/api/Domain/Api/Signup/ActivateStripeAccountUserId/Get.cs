@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
@@ -28,6 +29,7 @@ namespace Sponsorkit.Domain.Api.Signup.ActivateStripeAccountUserId
             this.dataContext = dataContext;
         }
 
+        [AllowAnonymous]
         [HttpGet("/api/signup/activate-stripe-account/{userId}")]
         public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {

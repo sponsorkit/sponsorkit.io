@@ -55,7 +55,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "autorest --reset && autorest --clear-output-folder --use-core-v2 --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --use=@autorest/typescript@6.0.0-alpha.20210527.9 --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm i && npm run build && npm link && cd ../ && npm link @sponsorkit/client"
+    "swagger:local": "autorest --reset && autorest --clear-output-folder --use-core-v2 --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
   },
   "repository": {
     "type": "git",

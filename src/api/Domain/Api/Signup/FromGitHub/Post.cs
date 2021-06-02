@@ -66,8 +66,6 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                 return new BadRequestObjectResult("Request data was incorrect.");
 
             var gitHubCode = request.GitHubAuthenticationCode;
-            if(gitHubCode == null)
-                return new BadRequestObjectResult("GitHub OAuth code is required.");
             
             var gitHubAccessToken = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(gitHubCode);
             var currentGitHubUser = await GetCurrentGitHubUserFromTokenAsync(gitHubAccessToken);
@@ -118,8 +116,8 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                     new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.JwtPrivateKey)),
                     SecurityAlgorithms.HmacSha512Signature),
-                Audience = "reshopper.com",
-                Issuer = "reshopper.com"
+                Audience = "sponsorkit.io",
+                Issuer = "sponsorkit.io"
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);

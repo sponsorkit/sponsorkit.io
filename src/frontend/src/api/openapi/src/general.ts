@@ -15,7 +15,9 @@ import {
   GeneralApiSignupFromGithubPostResponse,
   GeneralApiSignupAsBeneficiaryPostOptionalParams,
   GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
-  GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
+  GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
+  GeneralApiAccountGetOptionalParams,
+  GeneralApiAccountGetResponse
 } from "./models";
 
 export class General extends GeneralContext {
@@ -133,6 +135,13 @@ export class General extends GeneralContext {
       apiBrowserBeneficiaryIdReferenceGetOperationSpec
     );
   }
+
+  /** @param options The options parameters. */
+  apiAccountGet(
+    options?: GeneralApiAccountGetOptionalParams
+  ): Promise<GeneralApiAccountGetResponse> {
+    return this.sendOperationRequest({ options }, apiAccountGetOperationSpec);
+  }
 }
 // Operation Specifications
 const serializer = coreClient.createSerializer(Mappers, /* isXml */ false);
@@ -230,5 +239,17 @@ const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec
   ],
   headerParameters: [Parameters.contentType],
   mediaType: "json",
+  serializer
+};
+const apiAccountGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/account",
+  httpMethod: "GET",
+  responses: {
+    200: {
+      bodyMapper: Mappers.SponsorkitDomainApiAccountResponse
+    }
+  },
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.accept],
   serializer
 };

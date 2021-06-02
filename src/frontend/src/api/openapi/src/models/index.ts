@@ -80,6 +80,13 @@ export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
   reference?: string;
 }
 
+export interface SponsorkitDomainApiAccountResponse {
+  /** Any object */
+  beneficiary?: any;
+  /** Any object */
+  sponsor?: any;
+}
+
 /** Optional parameters. */
 export interface GeneralHealthGetOptionalParams
   extends coreClient.OperationOptions {}
@@ -132,6 +139,13 @@ export interface GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest;
 }
+
+/** Optional parameters. */
+export interface GeneralApiAccountGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiAccountGet operation. */
+export type GeneralApiAccountGetResponse = SponsorkitDomainApiAccountResponse;
 
 /** Optional parameters. */
 export interface GeneralOptionalParams extends coreClient.ServiceClientOptions {

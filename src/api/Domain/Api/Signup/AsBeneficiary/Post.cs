@@ -70,7 +70,7 @@ namespace Sponsorkit.Domain.Api.Signup.AsBeneficiary
             throw new NotImplementedException();
         }
 
-        private async Task<Account> CreateStripeAccountForUserAsync(
+        private async Task<Stripe.Account> CreateStripeAccountForUserAsync(
             User user, 
             CancellationToken cancellationToken)
         {

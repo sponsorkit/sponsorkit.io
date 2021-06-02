@@ -356,3 +356,24 @@ export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreClient
     }
   }
 };
+
+export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiAccountResponse",
+    modelProperties: {
+      beneficiary: {
+        serializedName: "beneficiary",
+        type: {
+          name: "any"
+        }
+      },
+      sponsor: {
+        serializedName: "sponsor",
+        type: {
+          name: "any"
+        }
+      }
+    }
+  }
+};

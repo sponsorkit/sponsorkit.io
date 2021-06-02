@@ -8,7 +8,7 @@ import { useEffect } from "react";
 
 import { StripeTextField } from "./text-field";
 
-export default function (props: {
+export default function StripeCreditCard(props: {
     onInitialized: (context: { stripe: Stripe, elements: StripeElements }) => void,
     onChanged: (cardNumberElement: StripeCardNumberElement|null) => void
 }) {

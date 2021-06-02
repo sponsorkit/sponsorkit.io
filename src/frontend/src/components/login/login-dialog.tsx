@@ -1,15 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import IframeDialog from './iframe-dialog';
-import { useLocation, useParams } from '@reach/router';
-import { newGuid } from '../utils/guid';
+import React, { useEffect, useMemo } from 'react';
+import IframeDialog from '../iframe-dialog';
+import { useLocation } from '@reach/router';
+import { newGuid } from '../../utils/guid';
+import { useToken } from '../../hooks/token';
+import { createApi } from '../../hooks/clients';
 
 export default function LoginDialog(props: {
     open: boolean,
     redirectUrl?: string,
-    onCodeAcquired: (code: string) => Promise<void>|void
+    onLoggedIn?: () => Promise<void>|void
 }) {
     const location = useLocation();
     const state = useMemo(newGuid, []);
+    const [_, setToken] = useToken();
 
     if(location.search) {
         const searchParams = new URLSearchParams(location.search);
@@ -39,7 +42,7 @@ export default function LoginDialog(props: {
     return <IframeDialog 
         open={props.open} 
         url={url.toString()}
-        onMessageReceived={e => {
+        onMessageReceived={async e => {
             if(typeof e !== "object")
                 return;
 
@@ -49,7 +52,15 @@ export default function LoginDialog(props: {
             if(e.state !== state)
                 return;
             
-            props.onCodeAcquired(e.code);
+            const code = e.code;
+            const response = await createApi().apiSignupFromGithubPost({
+                body: {
+                  gitHubAuthenticationCode: code
+                }
+              });
+            setToken(response.token ?? "");
+
+            props.onLoggedIn && await Promise.resolve(props.onLoggedIn());
         }}
         options={{
             width: 500,

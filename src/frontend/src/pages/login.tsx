@@ -1,14 +1,25 @@
 import { Button, Container, Paper } from "@material-ui/core";
-import React, { useState } from "react"
-import { apiClient } from "../api";
-import LoginDialog from "../components/login-dialog";
-import { useLocalStorage } from "../hooks/local-storage";
+import React, { useState } from "react";
+import LoginDialog from "../components/login/login-dialog";
+import { useToken } from "../hooks/token";
+import { useLocation, useParams } from "@reach/router";
 
-export default function LoginPage(props: {
-  redirectTo?: string
-}) {
+export default function LoginPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [token, setToken] = useLocalStorage("token");
+  const [token] = useToken();
+  const location = useLocation();
+  const params = useParams();
+
+  const redirectTo = params?.redirectTo;
+
+  const onLogin = () => {
+    location.href = redirectTo ?? "/";
+  };
+
+  if(token) {
+    onLogin();
+    return null;
+  }
 
   return <Container maxWidth="md" style={{
     display: 'flex'
@@ -17,7 +28,7 @@ export default function LoginPage(props: {
       margin: 32,
       flexGrow: 1
     }}>
-      <h1>Sign up{props.redirectTo && " to continue"}</h1>
+      <h1>Sign up{redirectTo && " to continue"}</h1>
       <p>Sponsorkit helps open-source developers get paid for their precious work.</p>
 
       <Button onClick={() => setIsDialogOpen(true)}>
@@ -26,15 +37,9 @@ export default function LoginPage(props: {
 
       <LoginDialog 
         open={isDialogOpen}
-        onCodeAcquired={async code => {
+        onLoggedIn={async () => {
           setIsDialogOpen(false);
-
-          const response = await apiClient.apiSignupFromGithubPost({
-            body: {
-              gitHubAuthenticationCode: code
-            }
-          });
-          setToken(response.token ?? "");
+          onLogin();
         }} />
     </Paper>
   </Container>
