@@ -2,11 +2,13 @@ import { Button, Container, Paper } from "@material-ui/core";
 import React, { useState } from "react"
 import { apiClient } from "../api";
 import LoginDialog from "../components/login-dialog";
+import { useLocalStorage } from "../hooks/local-storage";
 
 export default function LoginPage(props: {
   redirectTo?: string
 }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [token, setToken] = useLocalStorage("token");
 
   return <Container maxWidth="md" style={{
     display: 'flex'
@@ -32,7 +34,7 @@ export default function LoginPage(props: {
               gitHubAuthenticationCode: code
             }
           });
-          localStorage.setItem("token", response.token ?? "");
+          setToken(response.token ?? "");
         }} />
     </Paper>
   </Container>
