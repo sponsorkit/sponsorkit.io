@@ -71,6 +71,10 @@ export interface SponsorkitDomainApiSignupFromGitHubResponse {
   token?: string;
 }
 
+export interface SponsorkitDomainApiSignupAsSponsorRequest {
+  stripePaymentMethodId?: string;
+}
+
 export interface SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest {
   userId?: string;
 }
@@ -123,6 +127,12 @@ export interface GeneralApiSignupFromGithubPostOptionalParams
 
 /** Contains response data for the apiSignupFromGithubPost operation. */
 export type GeneralApiSignupFromGithubPostResponse = SponsorkitDomainApiSignupFromGitHubResponse;
+
+/** Optional parameters. */
+export interface GeneralApiSignupAsSponsorPostOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiSignupAsSponsorRequest;
+}
 
 /** Optional parameters. */
 export interface GeneralApiSignupAsBeneficiaryPostOptionalParams

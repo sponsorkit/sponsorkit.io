@@ -4,6 +4,7 @@ import {
   SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest as SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequestMapper,
   SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest as SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequestMapper,
   SponsorkitDomainApiSignupFromGitHubRequest as SponsorkitDomainApiSignupFromGitHubRequestMapper,
+  SponsorkitDomainApiSignupAsSponsorRequest as SponsorkitDomainApiSignupAsSponsorRequestMapper,
   SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest as SponsorkitDomainApiSignupActivateStripeAccountUserIdRequestMapper,
   SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest as SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper
 } from "../models/mappers";
@@ -88,6 +89,11 @@ export const body3: OperationParameter = {
 
 export const body4: OperationParameter = {
   parameterPath: ["options", "body"],
+  mapper: SponsorkitDomainApiSignupAsSponsorRequestMapper
+};
+
+export const body5: OperationParameter = {
+  parameterPath: ["options", "body"],
   mapper: SponsorkitDomainApiSignupActivateStripeAccountUserIdRequestMapper
 };
 
@@ -102,7 +108,7 @@ export const userId: OperationURLParameter = {
   }
 };
 
-export const body5: OperationParameter = {
+export const body6: OperationParameter = {
   parameterPath: ["options", "body"],
   mapper: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper
 };

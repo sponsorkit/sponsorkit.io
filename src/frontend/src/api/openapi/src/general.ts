@@ -13,6 +13,7 @@ import {
   GeneralApiSponsorsBeneficiaryIdReferenceGetResponse,
   GeneralApiSignupFromGithubPostOptionalParams,
   GeneralApiSignupFromGithubPostResponse,
+  GeneralApiSignupAsSponsorPostOptionalParams,
   GeneralApiSignupAsBeneficiaryPostOptionalParams,
   GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
   GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
@@ -93,6 +94,16 @@ export class General extends GeneralContext {
     return this.sendOperationRequest(
       { options },
       apiSignupFromGithubPostOperationSpec
+    );
+  }
+
+  /** @param options The options parameters. */
+  apiSignupAsSponsorPost(
+    options?: GeneralApiSignupAsSponsorPostOptionalParams
+  ): Promise<void> {
+    return this.sendOperationRequest(
+      { options },
+      apiSignupAsSponsorPostOperationSpec
     );
   }
 
@@ -209,6 +220,16 @@ const apiSignupFromGithubPostOperationSpec: coreClient.OperationSpec = {
   requestBody: Parameters.body3,
   urlParameters: [Parameters.$host],
   headerParameters: [Parameters.contentType, Parameters.accept],
+  mediaType: "json",
+  serializer
+};
+const apiSignupAsSponsorPostOperationSpec: coreClient.OperationSpec = {
+  path: "/api/signup/as-sponsor",
+  httpMethod: "POST",
+  responses: { 200: {} },
+  requestBody: Parameters.body4,
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.contentType],
   mediaType: "json",
   serializer
 };

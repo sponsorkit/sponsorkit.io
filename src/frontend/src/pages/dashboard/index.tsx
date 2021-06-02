@@ -3,7 +3,7 @@ import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useState } from "react";
 import PrivateRoute from "../../components/login/private-route";
 import StripeCreditCard from "../../components/stripe/credit-card";
-import { useApi } from "../../hooks/clients";
+import { createApi, useApi } from "../../hooks/clients";
 
 function DashboardPage() {
     const account = useApi(async client => await client.apiAccountGet());
@@ -29,7 +29,16 @@ function BeneficiarySection(props: {
     if(props.isSetup)
         return <p>Your beneficiary account has already been set up</p>;
 
-    return <></>
+    const onSignUpClicked = async () => {
+        await createApi().apiSignupAsBeneficiaryPost();
+        alert("Done! Check your e-mail.");
+    };
+
+    return <>
+        <Button onClick={onSignUpClicked}>
+            Sign up
+        </Button>
+    </>
 }
 
 function SponsorSection(props: {
@@ -52,7 +61,13 @@ function SponsorSection(props: {
         if(paymentMethodResponse.error)
           return alert(paymentMethodResponse.error.message);
           
-        
+        await createApi().apiSignupAsSponsorPost({
+            body: {
+                stripePaymentMethodId: paymentMethodResponse.paymentMethod.id
+            }
+        });
+
+        alert("Sponsorship updated!");
     };
 
     return <>

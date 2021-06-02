@@ -321,6 +321,21 @@ export const SponsorkitDomainApiSignupFromGitHubResponse: coreClient.CompositeMa
   }
 };
 
+export const SponsorkitDomainApiSignupAsSponsorRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiSignupAsSponsorRequest",
+    modelProperties: {
+      stripePaymentMethodId: {
+        serializedName: "stripePaymentMethodId",
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
 export const SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
