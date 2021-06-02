@@ -81,17 +81,17 @@ export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
 }
 
 /** Optional parameters. */
-export interface GeneralHealthGETOptionalParams
+export interface GeneralHealthGetOptionalParams
   extends coreClient.OperationOptions {}
 
 /** Optional parameters. */
-export interface GeneralApiSponsorsBeneficiaryIdGETOptionalParams
+export interface GeneralApiSponsorsBeneficiaryIdGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiSponsorsBeneficiaryRequest;
 }
 
-/** Contains response data for the apiSponsorsBeneficiaryIdGET operation. */
-export type GeneralApiSponsorsBeneficiaryIdGETResponse = SponsorkitDomainApiSponsorsBeneficiaryResponse;
+/** Contains response data for the apiSponsorsBeneficiaryIdGet operation. */
+export type GeneralApiSponsorsBeneficiaryIdGetResponse = SponsorkitDomainApiSponsorsBeneficiaryResponse;
 
 /** Optional parameters. */
 export interface GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams
@@ -100,13 +100,13 @@ export interface GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams
 }
 
 /** Optional parameters. */
-export interface GeneralApiSponsorsBeneficiaryIdReferenceGETOptionalParams
+export interface GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest;
 }
 
-/** Contains response data for the apiSponsorsBeneficiaryIdReferenceGET operation. */
-export type GeneralApiSponsorsBeneficiaryIdReferenceGETResponse = SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse;
+/** Contains response data for the apiSponsorsBeneficiaryIdReferenceGet operation. */
+export type GeneralApiSponsorsBeneficiaryIdReferenceGetResponse = SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse;
 
 /** Optional parameters. */
 export interface GeneralApiSignupFromGithubPostOptionalParams
@@ -122,13 +122,13 @@ export interface GeneralApiSignupAsBeneficiaryPostOptionalParams
   extends coreClient.OperationOptions {}
 
 /** Optional parameters. */
-export interface GeneralApiSignupActivateStripeAccountUserIdGETOptionalParams
+export interface GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest;
 }
 
 /** Optional parameters. */
-export interface GeneralApiBrowserBeneficiaryIdReferenceGETOptionalParams
+export interface GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest;
 }

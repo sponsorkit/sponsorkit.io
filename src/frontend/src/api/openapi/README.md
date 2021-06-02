@@ -1,31 +1,27 @@
-# Service client library for JavaScript
+## Azure General SDK for JavaScript
 
-This package contains an isomorphic SDK (runs both in Node.js and in browsers) for Service client.
-
-
-
-[Package (NPM)](https://www.npmjs.com/package/general) |
-
-## Getting started
+This package contains an isomorphic SDK for General.
 
 ### Currently supported environments
 
-- Node.js version 10.x.x or higher
+- Node.js version 8.x.x or higher
 - Browser JavaScript
 
-
-### Install the `general` package
-
-Install the Service client library for JavaScript with `npm`:
+### How to Install
 
 ```bash
-npm install general
+npm install @sponsorkit/client
 ```
 
+### How to use
 
-## Key concepts
+#### Sample code
 
-### General
+Refer the sample code in the [azure-sdk-for-js/samples](https://github.com/Azure/azure-sdk-for-js/tree/master/samples) folder.
 
-`General` is the primary interface for developers using the Service client library. Explore the methods on this client object to understand the different features of the Service service that you can access.
+## Related projects
 
+- [Microsoft Azure SDK for Javascript](https://github.com/Azure/azure-sdk-for-js)
+
+
+![Impressions](https://azure-sdk-impressions.azurewebsites.net/api/impressions/azure-sdk-for-js%2Fsdk%2Fcdn%2Farm-cdn%2FREADME.png)

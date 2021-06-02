@@ -6,7 +6,7 @@
   "author": "Mathias Lorenzen",
   "dependencies": {
     "@azure/core-client": "^1.1.2",
-    "@azure/core-http": "^1.2.4",
+    "@azure/core-rest-pipeline": "1.0.0-beta.2",
     "@material-ui/core": "^4.11.3",
     "@material-ui/styles": "^4.11.3",
     "@octokit/rest": "^18.5.2",
@@ -26,12 +26,14 @@
     "prop-types": "^15.7.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "react-helmet": "^6.1.0"
+    "react-helmet": "^6.1.0",
+    "tslib": "^1.9.3"
   },
   "devDependencies": {
-    "@azure/static-web-apps-cli": "^0.3.0",
     "@types/react-helmet": "^6.1.1",
+    "autorest": "^3.1.5",
     "babel-plugin-styled-components": "^1.12.0",
+    "babel-preset-gatsby": "^1.6.0",
     "gatsby-plugin-s3": "^0.3.8",
     "gatsby-plugin-sass": "^4.3.0",
     "prettier": "2.2.1",
@@ -53,7 +55,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "autorest --v3 --ignore-nullable-on-optional --hide-client --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
+    "swagger:local": "autorest --reset && autorest --clear-output-folder --use-core-v2 --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --use=@autorest/typescript@6.0.0-alpha.20210527.9 --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm i && npm run build && npm link && cd ../ && npm link @sponsorkit/client"
   },
   "repository": {
     "type": "git",

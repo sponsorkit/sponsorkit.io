@@ -10,16 +10,18 @@
           "rendererOptions": {}
         }
       }],
-      "target": "esnext",
-      "module": "esnext",
+      "target": "es5",
+      "module": "es6",
       "lib": ["dom", "es2017"],
       "moduleResolution": "node",
       "jsx": "react",
       "strict": true,
       "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
       "noEmit": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
+      "importHelpers": true
     }
 }

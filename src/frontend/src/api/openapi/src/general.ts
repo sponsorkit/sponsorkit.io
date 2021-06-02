@@ -5,17 +5,17 @@ import * as Mappers from "./models/mappers";
 import { GeneralContext } from "./generalContext";
 import {
   GeneralOptionalParams,
-  GeneralHealthGETOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdGETOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdGETResponse,
+  GeneralHealthGetOptionalParams,
+  GeneralApiSponsorsBeneficiaryIdGetOptionalParams,
+  GeneralApiSponsorsBeneficiaryIdGetResponse,
   GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdReferenceGETOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdReferenceGETResponse,
+  GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams,
+  GeneralApiSponsorsBeneficiaryIdReferenceGetResponse,
   GeneralApiSignupFromGithubPostOptionalParams,
   GeneralApiSignupFromGithubPostResponse,
   GeneralApiSignupAsBeneficiaryPostOptionalParams,
-  GeneralApiSignupActivateStripeAccountUserIdGETOptionalParams,
-  GeneralApiBrowserBeneficiaryIdReferenceGETOptionalParams
+  GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
+  GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
 } from "./models";
 
 export class General extends GeneralContext {
@@ -34,21 +34,21 @@ export class General extends GeneralContext {
   }
 
   /** @param options The options parameters. */
-  healthGET(options?: GeneralHealthGETOptionalParams): Promise<void> {
-    return this.sendOperationRequest({ options }, healthGETOperationSpec);
+  healthGet(options?: GeneralHealthGetOptionalParams): Promise<void> {
+    return this.sendOperationRequest({ options }, healthGetOperationSpec);
   }
 
   /**
    * @param beneficiaryId
    * @param options The options parameters.
    */
-  apiSponsorsBeneficiaryIdGET(
+  apiSponsorsBeneficiaryIdGet(
     beneficiaryId: string,
-    options?: GeneralApiSponsorsBeneficiaryIdGETOptionalParams
-  ): Promise<GeneralApiSponsorsBeneficiaryIdGETResponse> {
+    options?: GeneralApiSponsorsBeneficiaryIdGetOptionalParams
+  ): Promise<GeneralApiSponsorsBeneficiaryIdGetResponse> {
     return this.sendOperationRequest(
       { beneficiaryId, options },
-      apiSponsorsBeneficiaryIdGETOperationSpec
+      apiSponsorsBeneficiaryIdGetOperationSpec
     );
   }
 
@@ -73,14 +73,14 @@ export class General extends GeneralContext {
    * @param reference
    * @param options The options parameters.
    */
-  apiSponsorsBeneficiaryIdReferenceGET(
+  apiSponsorsBeneficiaryIdReferenceGet(
     beneficiaryId: string,
     reference: string,
-    options?: GeneralApiSponsorsBeneficiaryIdReferenceGETOptionalParams
-  ): Promise<GeneralApiSponsorsBeneficiaryIdReferenceGETResponse> {
+    options?: GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams
+  ): Promise<GeneralApiSponsorsBeneficiaryIdReferenceGetResponse> {
     return this.sendOperationRequest(
       { beneficiaryId, reference, options },
-      apiSponsorsBeneficiaryIdReferenceGETOperationSpec
+      apiSponsorsBeneficiaryIdReferenceGetOperationSpec
     );
   }
 
@@ -108,13 +108,13 @@ export class General extends GeneralContext {
    * @param userId
    * @param options The options parameters.
    */
-  apiSignupActivateStripeAccountUserIdGET(
+  apiSignupActivateStripeAccountUserIdGet(
     userId: string,
-    options?: GeneralApiSignupActivateStripeAccountUserIdGETOptionalParams
+    options?: GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams
   ): Promise<void> {
     return this.sendOperationRequest(
       { userId, options },
-      apiSignupActivateStripeAccountUserIdGETOperationSpec
+      apiSignupActivateStripeAccountUserIdGetOperationSpec
     );
   }
 
@@ -123,28 +123,28 @@ export class General extends GeneralContext {
    * @param reference
    * @param options The options parameters.
    */
-  apiBrowserBeneficiaryIdReferenceGET(
+  apiBrowserBeneficiaryIdReferenceGet(
     beneficiaryId: string,
     reference: string,
-    options?: GeneralApiBrowserBeneficiaryIdReferenceGETOptionalParams
+    options?: GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
   ): Promise<void> {
     return this.sendOperationRequest(
       { beneficiaryId, reference, options },
-      apiBrowserBeneficiaryIdReferenceGETOperationSpec
+      apiBrowserBeneficiaryIdReferenceGetOperationSpec
     );
   }
 }
 // Operation Specifications
 const serializer = coreClient.createSerializer(Mappers, /* isXml */ false);
 
-const healthGETOperationSpec: coreClient.OperationSpec = {
+const healthGetOperationSpec: coreClient.OperationSpec = {
   path: "/health",
   httpMethod: "GET",
   responses: { 200: {} },
   urlParameters: [Parameters.$host],
   serializer
 };
-const apiSponsorsBeneficiaryIdGETOperationSpec: coreClient.OperationSpec = {
+const apiSponsorsBeneficiaryIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/sponsors/{beneficiaryId}",
   httpMethod: "GET",
   responses: {
@@ -171,7 +171,7 @@ const apiSponsorsBeneficiaryIdReferencePostOperationSpec: coreClient.OperationSp
   mediaType: "json",
   serializer
 };
-const apiSponsorsBeneficiaryIdReferenceGETOperationSpec: coreClient.OperationSpec = {
+const apiSponsorsBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/sponsors/{beneficiaryId}/{reference}",
   httpMethod: "GET",
   responses: {
@@ -210,7 +210,7 @@ const apiSignupAsBeneficiaryPostOperationSpec: coreClient.OperationSpec = {
   urlParameters: [Parameters.$host],
   serializer
 };
-const apiSignupActivateStripeAccountUserIdGETOperationSpec: coreClient.OperationSpec = {
+const apiSignupActivateStripeAccountUserIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/signup/activate-stripe-account/{userId}",
   httpMethod: "GET",
   responses: { 200: {} },
@@ -219,7 +219,7 @@ const apiSignupActivateStripeAccountUserIdGETOperationSpec: coreClient.Operation
   mediaType: "json",
   serializer
 };
-const apiBrowserBeneficiaryIdReferenceGETOperationSpec: coreClient.OperationSpec = {
+const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/browser/{beneficiaryId}/{reference}",
   httpMethod: "GET",
   responses: { 200: {} },

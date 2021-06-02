@@ -157,7 +157,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 c.CustomOperationIds(x =>
                 {
                     var httpMethod = x.HttpMethod?.ToString() ?? "GET";
-                    var httpMethodPascalCase = httpMethod[0..1] + httpMethod[1..];
+                    var httpMethodPascalCase = httpMethod[0..1].ToUpperInvariant() + httpMethod[1..].ToLowerInvariant();
                     return x.RelativePath + httpMethodPascalCase;
                 });
                 c.CustomSchemaIds(x => x.FullName);
