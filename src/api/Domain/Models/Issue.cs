@@ -9,7 +9,7 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
         
-        public string GitHubId { get; set; } = null!;
+        public long GitHubId { get; set; }
 
         public Repository Repository { get; set; } = null!;
 

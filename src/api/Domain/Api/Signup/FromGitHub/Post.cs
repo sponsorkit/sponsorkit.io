@@ -13,6 +13,7 @@ using Octokit;
 using Sponsorkit.Domain.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 using SponsorkitUser = Sponsorkit.Domain.Models.User;
@@ -76,18 +77,19 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                 async () =>
                 {
                     var existingUser = await dataContext.Users.SingleOrDefaultAsync(
-                        x => x.GitHubId == currentGitHubUser.Id,
+                        x => x.GitHub!.Id == currentGitHubUser.Id,
                         cancellationToken);
                     if (existingUser != null)
                         return existingUser;
-                        
-                    var user = new SponsorkitUser()
-                    {
-                        EncryptedGitHubAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken),
-                        EncryptedEmail = await aesEncryptionHelper.EncryptAsync(email),
-                        GitHubId = currentGitHubUser.Id,
-                        CreatedAtUtc = DateTime.UtcNow
-                    };
+
+                    var user = new UserBuilder()
+                        .WithEmail(await aesEncryptionHelper.EncryptAsync(email))
+                        .WithGitHub(
+                            currentGitHubUser.Id,
+                            currentGitHubUser.Login,
+                            await aesEncryptionHelper.EncryptAsync(gitHubAccessToken))
+                        .Build();
+                    
                     await dataContext.Users.AddAsync(user, cancellationToken);
                     await dataContext.SaveChangesAsync(cancellationToken);
 

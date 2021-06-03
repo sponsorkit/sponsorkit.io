@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Sponsorkit.Domain.Models
 {
@@ -20,5 +22,23 @@ namespace Sponsorkit.Domain.Models
         public Issue Issue { get; set; } = null!;
 
         public Payment? Payment { get; set; }
+    }
+    
+    public class BountyConfiguration : IEntityTypeConfiguration<Bounty>
+    {
+        public void Configure(EntityTypeBuilder<Bounty> builder)
+        {
+            builder
+                .HasOne(x => x.Creator)
+                .WithMany(x => x.CreatedBounties)
+                .HasForeignKey(x => x.CreatorId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder
+                .HasOne(x => x.AwardedTo)
+                .WithMany(x => x!.AwardedBounties)
+                .HasForeignKey(x => x.AwardedToId)
+                .OnDelete(DeleteBehavior.NoAction);
+        }
     }
 }

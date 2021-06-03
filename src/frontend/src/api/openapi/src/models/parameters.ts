@@ -6,7 +6,8 @@ import {
   SponsorkitDomainApiSignupFromGitHubRequest as SponsorkitDomainApiSignupFromGitHubRequestMapper,
   SponsorkitDomainApiSignupAsSponsorRequest as SponsorkitDomainApiSignupAsSponsorRequestMapper,
   SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest as SponsorkitDomainApiSignupActivateStripeAccountUserIdRequestMapper,
-  SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest as SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper
+  SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest as SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper,
+  SponsorkitDomainApiBountiesByGitHubIssueRequest as SponsorkitDomainApiBountiesByGitHubIssueRequestMapper
 } from "../models/mappers";
 
 export const $host: OperationURLParameter = {
@@ -111,4 +112,9 @@ export const userId: OperationURLParameter = {
 export const body6: OperationParameter = {
   parameterPath: ["options", "body"],
   mapper: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper
+};
+
+export const body7: OperationParameter = {
+  parameterPath: ["options", "body"],
+  mapper: SponsorkitDomainApiBountiesByGitHubIssueRequestMapper
 };

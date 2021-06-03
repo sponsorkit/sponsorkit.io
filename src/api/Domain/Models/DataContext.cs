@@ -65,42 +65,7 @@ namespace Sponsorkit.Domain.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Bounty>(entity =>
-            {
-                entity
-                    .HasOne(x => x.Creator)
-                    .WithMany(x => x.CreatedBounties)
-                    .HasForeignKey(x => x.CreatorId)
-                    .OnDelete(DeleteBehavior.NoAction);
-
-                entity
-                    .HasOne(x => x.AwardedTo)
-                    .WithMany(x => x!.AwardedBounties)
-                    .HasForeignKey(x => x.AwardedToId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-            
-            modelBuilder.Entity<Sponsorship>(entity =>
-            {
-                entity
-                    .HasOne(x => x.Beneficiary)
-                    .WithMany(x => x.AwardedSponsorships)
-                    .HasForeignKey(x => x.BeneficiaryId)
-                    .OnDelete(DeleteBehavior.NoAction);
-                
-                entity
-                    .HasOne(x => x.Sponsor)
-                    .WithMany(x => x.CreatedSponsorships)
-                    .HasForeignKey(x => x.SponsorId)
-                    .OnDelete(DeleteBehavior.NoAction);
-
-                entity
-                    .HasOne(x => x.Repository)
-                    .WithMany(x => x!.Sponsorships)
-                    .HasForeignKey(x => x.SponsorId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);
             ConfigureSeeding(modelBuilder);
         }
 

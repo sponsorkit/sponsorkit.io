@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Sponsorkit.Infrastructure.Options;
@@ -13,7 +14,7 @@ namespace Sponsorkit.Domain.Models
                 .AddJsonFile("appsettings.json", false)
                 .AddJsonFile("appsettings.Development.json", false)
                 .Build();
-            var options = configuration.Get<SqlOptions>();
+            var options = configuration.GetOptions<SqlOptions>();
 
             return new DataContext(
                 new DbContextOptionsBuilder<DataContext>()

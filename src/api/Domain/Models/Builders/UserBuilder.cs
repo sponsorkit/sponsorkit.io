@@ -8,12 +8,11 @@ namespace Sponsorkit.Domain.Models.Builders
         private Guid id;
         
         private byte[]? encryptedEmail;
-        private byte[]? encryptedPassword;
         
         private string? stripeCustomerId;
         private string? stripeConnectId;
-        private long? gitHubId;
-        private byte[]? encryptedGitHubAccessToken;
+
+        private UserGitHubInformation? gitHub;
         
         private List<Repository>? repositories;
         
@@ -36,12 +35,9 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public UserBuilder WithCredentials(
-            byte[] encryptedEmail,
-            byte[] encryptedPassword)
+        public UserBuilder WithEmail(byte[] encryptedEmail)
         {
             this.encryptedEmail = encryptedEmail;
-            this.encryptedPassword = encryptedPassword;
             return this;
         }
 
@@ -57,12 +53,17 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public UserBuilder WithGitHubCredentials(
+        public UserBuilder WithGitHub(
             long gitHubId,
+            string username,
             byte[] encryptedAccessToken)
         {
-            this.gitHubId = gitHubId;
-            encryptedGitHubAccessToken = encryptedAccessToken;
+            this.gitHub = new UserGitHubInformation()
+            {
+                Id = gitHubId,
+                EncryptedAccessToken = encryptedAccessToken,
+                Username = username
+            };
             return this;
         }
         
@@ -70,9 +71,6 @@ namespace Sponsorkit.Domain.Models.Builders
         {
             if (encryptedEmail == null)
                 throw new InvalidOperationException("E-mail must be specified.");
-            
-            if (encryptedPassword == null)
-                throw new InvalidOperationException("Password must be specified.");
 
             if (stripeCustomerId == null)
                 throw new InvalidOperationException("Stripe customer ID must be specified.");
@@ -81,17 +79,15 @@ namespace Sponsorkit.Domain.Models.Builders
             {
                 Id = id,
                 EncryptedEmail = encryptedEmail,
-                EncryptedPassword = encryptedPassword,
                 StripeCustomerId = stripeCustomerId,
                 StripeConnectId = stripeConnectId,
-                GitHubId = gitHubId,
                 CreatedAtUtc = createdAtUtc,
                 Repositories = repositories ?? new List<Repository>(),
                 AwardedBounties = awardedBounties ?? new List<Bounty>(),
                 AwardedSponsorships = awardedSponsorships ?? new List<Sponsorship>(),
                 CreatedBounties = createdBounties ?? new List<Bounty>(),
                 CreatedSponsorships = createdSponsorships ?? new List<Sponsorship>(),
-                EncryptedGitHubAccessToken = encryptedGitHubAccessToken
+                GitHub = gitHub
             };
 
             return user;

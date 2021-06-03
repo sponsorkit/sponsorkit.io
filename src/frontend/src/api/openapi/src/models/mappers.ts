@@ -372,6 +372,95 @@ export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreClient
   }
 };
 
+export const SponsorkitDomainApiBountiesByGitHubIssueRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesByGitHubIssueRequest",
+    modelProperties: {
+      issueId: {
+        serializedName: "issueId",
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesByGitHubIssueResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesByGitHubIssueResponse",
+    modelProperties: {
+      bounties: {
+        serializedName: "bounties",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className:
+                "SponsorkitDomainApiBountiesByGitHubIssueBountyResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesByGitHubIssueBountyResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesByGitHubIssueBountyResponse",
+    modelProperties: {
+      amountInHundreds: {
+        serializedName: "amountInHundreds",
+        type: {
+          name: "Number"
+        }
+      },
+      creatorUser: {
+        serializedName: "creatorUser",
+        type: {
+          name: "Composite",
+          className:
+            "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse"
+        }
+      },
+      awardedUser: {
+        serializedName: "awardedUser",
+        type: {
+          name: "Composite",
+          className:
+            "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse",
+    modelProperties: {
+      id: {
+        serializedName: "id",
+        type: {
+          name: "Number"
+        }
+      },
+      gitHubUsername: {
+        serializedName: "gitHubUsername",
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
 export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Sponsorkit.Domain.Models
 {
@@ -28,5 +30,29 @@ namespace Sponsorkit.Domain.Models
         
         public User Sponsor { get; set; } = null!;
         public Guid SponsorId { get; set; }
+    }
+    
+    public class SponsorshipConfiguration : IEntityTypeConfiguration<Sponsorship>
+    {
+        public void Configure(EntityTypeBuilder<Sponsorship> builder)
+        {
+            builder
+                .HasOne(x => x.Beneficiary)
+                .WithMany(x => x.AwardedSponsorships)
+                .HasForeignKey(x => x.BeneficiaryId)
+                .OnDelete(DeleteBehavior.NoAction);
+                
+            builder
+                .HasOne(x => x.Sponsor)
+                .WithMany(x => x.CreatedSponsorships)
+                .HasForeignKey(x => x.SponsorId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder
+                .HasOne(x => x.Repository)
+                .WithMany(x => x!.Sponsorships)
+                .HasForeignKey(x => x.SponsorId)
+                .OnDelete(DeleteBehavior.NoAction);
+        }
     }
 }

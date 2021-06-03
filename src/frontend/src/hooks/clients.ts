@@ -2,7 +2,10 @@ import { Octokit } from "@octokit/rest";
 import { useEffect, useState } from "react";
 import { General } from "../api/openapi/src";
 
-export function useOctokit<T>(accessor: (octokit: Octokit, abortSignal: AbortSignal) => Promise<T>) {
+export function useOctokit<T>(
+    accessor: (octokit: Octokit, abortSignal: AbortSignal) => Promise<T>,
+    deps: any[]
+) {
     const [result, setResult] = useState<T>();
     useEffect(
         () => {
@@ -16,7 +19,7 @@ export function useOctokit<T>(accessor: (octokit: Octokit, abortSignal: AbortSig
                 abortSignalController.abort();
             }
         },
-        []);
+        deps);
 
     return result;
 }
@@ -29,7 +32,10 @@ export function createApi() {
         "");
 }
 
-export function useApi<T>(accessor: (client: General, abortSignal: AbortSignal) => Promise<T>) {
+export function useApi<T>(
+    accessor: (client: General, abortSignal: AbortSignal) => Promise<T>,
+    deps: any[]
+) {
     const [result, setResult] = useState<T>();
     useEffect(
         () => {
@@ -43,7 +49,7 @@ export function useApi<T>(accessor: (client: General, abortSignal: AbortSignal) 
                 abortSignalController.abort();
             }
         },
-        []);
+        deps);
 
     return result;
 }

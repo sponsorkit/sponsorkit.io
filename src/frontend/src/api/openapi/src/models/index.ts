@@ -84,6 +84,25 @@ export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
   reference?: string;
 }
 
+export interface SponsorkitDomainApiBountiesByGitHubIssueRequest {
+  issueId?: number;
+}
+
+export interface SponsorkitDomainApiBountiesByGitHubIssueResponse {
+  bounties?: SponsorkitDomainApiBountiesByGitHubIssueBountyResponse[];
+}
+
+export interface SponsorkitDomainApiBountiesByGitHubIssueBountyResponse {
+  amountInHundreds?: number;
+  creatorUser?: SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse;
+  awardedUser?: SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse;
+}
+
+export interface SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse {
+  id?: number;
+  gitHubUsername?: string;
+}
+
 export interface SponsorkitDomainApiAccountResponse {
   /** Any object */
   beneficiary?: any;
@@ -149,6 +168,15 @@ export interface GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest;
 }
+
+/** Optional parameters. */
+export interface GeneralApiBountiesByGithubIssuePostOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiBountiesByGitHubIssueRequest;
+}
+
+/** Contains response data for the apiBountiesByGithubIssuePost operation. */
+export type GeneralApiBountiesByGithubIssuePostResponse = SponsorkitDomainApiBountiesByGitHubIssueResponse;
 
 /** Optional parameters. */
 export interface GeneralApiAccountGetOptionalParams

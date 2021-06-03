@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using FluffySpoon.AspNet.NGrok;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using Serilog;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Logging;
@@ -56,11 +58,5 @@ namespace Sponsorkit.Infrastructure
                         ApplicationHttpUrl = "http://localhost:5000"
                     });
                 });
-
-        [SuppressMessage(
-            "CodeQuality", 
-            "IDE0051:Remove unused private members", 
-            Justification = "This is used for Entity Framework when running console commands for migrations etc. It must have this signature.")]
-        private static IHostBuilder CreateHostBuilder(string[] args) => CreateSponsorkitHostBuilder(null, args);
     }
 }

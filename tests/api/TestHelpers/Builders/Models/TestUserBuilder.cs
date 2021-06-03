@@ -7,10 +7,7 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Models
     {
         public TestUserBuilder()
         {
-            WithCredentials(
-                Array.Empty<byte>(),
-                Array.Empty<byte>());
-
+            WithEmail(Array.Empty<byte>());
             WithStripeCustomerId("some-stripe-id");
         }
     }

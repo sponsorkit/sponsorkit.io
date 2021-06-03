@@ -6,22 +6,23 @@ namespace Sponsorkit.Infrastructure
 {
     public static class ConfigurationFactory
     {
-        public static IConfigurationRoot BuildConfiguration(string secretId, string[] args)
+        public static IConfigurationRoot BuildConfiguration(string? secretId, string[] args)
         {
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile("appsettings.json");
             configurationBuilder.AddEnvironmentVariables();
             configurationBuilder.AddCommandLine(args);
-            
 
             if (Debugger.IsAttached && !EnvironmentHelper.IsRunningInTest)
             {
                 configurationBuilder.AddJsonFile("appsettings.Development.json");
-                configurationBuilder.AddUserSecrets(secretId);
+
+                if (secretId != null)
+                    configurationBuilder.AddUserSecrets(secretId);
             }
             else
             {
-                Console.WriteLine("Warning: Debugger not attached - assuming production mode.");
+                Console.WriteLine("Warning: Assuming production mode.");
             }
 
             var configuration = configurationBuilder.Build();

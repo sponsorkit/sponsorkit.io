@@ -10,8 +10,8 @@ using Sponsorkit.Domain.Models;
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20210530151451_EncryptedPasswordToUser")]
-    partial class EncryptedPasswordToUser
+    [Migration("20210603162536_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -59,9 +59,8 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("GitHubId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("GitHubId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("RepositoryId")
                         .HasColumnType("uuid");
@@ -174,16 +173,6 @@ namespace Sponsorkit.Migrations
                         .IsRequired()
                         .HasColumnType("bytea");
 
-                    b.Property<byte[]>("EncryptedGitHubAccessToken")
-                        .HasColumnType("bytea");
-
-                    b.Property<byte[]>("EncryptedPassword")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<long?>("GitHubId")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("StripeConnectId")
                         .HasColumnType("text");
 
@@ -283,6 +272,35 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Repository");
 
                     b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+                {
+                    b.OwnsOne("Sponsorkit.Domain.Models.UserGitHubInformation", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<byte[]>("EncryptedAccessToken")
+                                .IsRequired()
+                                .HasColumnType("bytea");
+
+                            b1.Property<long>("Id")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("Username")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.HasKey("UserId");
+
+                            b1.ToTable("Users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("GitHub");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>

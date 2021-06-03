@@ -17,6 +17,8 @@ import {
   GeneralApiSignupAsBeneficiaryPostOptionalParams,
   GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
   GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
+  GeneralApiBountiesByGithubIssuePostOptionalParams,
+  GeneralApiBountiesByGithubIssuePostResponse,
   GeneralApiAccountGetOptionalParams,
   GeneralApiAccountGetResponse
 } from "./models";
@@ -148,6 +150,16 @@ export class General extends GeneralContext {
   }
 
   /** @param options The options parameters. */
+  apiBountiesByGithubIssuePost(
+    options?: GeneralApiBountiesByGithubIssuePostOptionalParams
+  ): Promise<GeneralApiBountiesByGithubIssuePostResponse> {
+    return this.sendOperationRequest(
+      { options },
+      apiBountiesByGithubIssuePostOperationSpec
+    );
+  }
+
+  /** @param options The options parameters. */
   apiAccountGet(
     options?: GeneralApiAccountGetOptionalParams
   ): Promise<GeneralApiAccountGetResponse> {
@@ -259,6 +271,20 @@ const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec
     Parameters.reference
   ],
   headerParameters: [Parameters.contentType],
+  mediaType: "json",
+  serializer
+};
+const apiBountiesByGithubIssuePostOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties/by-github-issue",
+  httpMethod: "POST",
+  responses: {
+    200: {
+      bodyMapper: Mappers.SponsorkitDomainApiBountiesByGitHubIssueResponse
+    }
+  },
+  requestBody: Parameters.body7,
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.contentType, Parameters.accept],
   mediaType: "json",
   serializer
 };

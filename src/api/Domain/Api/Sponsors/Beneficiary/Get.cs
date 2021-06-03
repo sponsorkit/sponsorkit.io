@@ -38,7 +38,7 @@ namespace Sponsorkit.Domain.Api.Sponsors.Beneficiary
 
             return new OkObjectResult(new Response(user.Id)
             {
-                GitHubId = user.GitHubId
+                GitHubId = user.GitHub?.Id
             });
         }
     }

@@ -15,8 +15,9 @@ namespace Sponsorkit.Migrations
                     EncryptedEmail = table.Column<byte[]>(type: "bytea", nullable: false),
                     StripeCustomerId = table.Column<string>(type: "text", nullable: false),
                     StripeConnectId = table.Column<string>(type: "text", nullable: true),
-                    GitHubId = table.Column<long>(type: "bigint", nullable: true),
-                    EncryptedGitHubAccessToken = table.Column<byte[]>(type: "bytea", nullable: true),
+                    GitHub_Id = table.Column<long>(type: "bigint", nullable: true),
+                    GitHub_Username = table.Column<string>(type: "text", nullable: true),
+                    GitHub_EncryptedAccessToken = table.Column<byte[]>(type: "bytea", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
@@ -49,7 +50,7 @@ namespace Sponsorkit.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    GitHubId = table.Column<string>(type: "text", nullable: false),
+                    GitHubId = table.Column<long>(type: "bigint", nullable: false),
                     RepositoryId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
