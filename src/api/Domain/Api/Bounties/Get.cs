@@ -6,12 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
 
-namespace Sponsorkit.Domain.Api.Bounties.ByGitHubIssue
+namespace Sponsorkit.Domain.Api.Bounties
 {
-    public record Request(
-        long IssueId);
+    public record GetRequest(
+        [FromQuery] long GitHubIssueId);
 
-    public record Response(
+    public record GetResponse(
         BountyResponse[] Bounties);
 
     public record BountyResponse(
@@ -24,8 +24,8 @@ namespace Sponsorkit.Domain.Api.Bounties.ByGitHubIssue
         string GitHubUsername);
     
     public class Get : BaseAsyncEndpoint
-        .WithRequest<Request>
-        .WithResponse<Response>
+        .WithRequest<GetRequest>
+        .WithResponse<GetResponse>
     {
         private readonly DataContext dataContext;
 
@@ -35,19 +35,19 @@ namespace Sponsorkit.Domain.Api.Bounties.ByGitHubIssue
             this.dataContext = dataContext;
         }
         
-        [HttpPost("/api/bounties/by-github-issue")]
-        public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        [HttpGet("/api/bounties")]
+        public override async Task<ActionResult<GetResponse>> HandleAsync(GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)
                 .Include(x => x.Bounties).ThenInclude(x => x.AwardedTo)
                 .SingleOrDefaultAsync(
-                    x => x.GitHubId == request.IssueId,
+                    x => x.GitHubId == request.GitHubIssueId,
                     cancellationToken);
             if (issue == null)
                 return NotFound();
 
-            return new Response(issue.Bounties
+            return new GetResponse(issue.Bounties
                 .Select(x => new BountyResponse(
                     x.AmountInHundreds,
                     new BountyUserResponse(

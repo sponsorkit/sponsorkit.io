@@ -54,5 +54,8 @@
     <None Update="..\frontend\src\pages\bounties\create.tsx">
       <Link>Frontend\src\pages\bounties\create.tsx</Link>
     </None>
+    <None Update="..\frontend\src\pages\bounties\index.tsx">
+      <Link>Frontend\src\pages\bounties\index.tsx</Link>
+    </None>
   </ItemGroup>
 </Project>
