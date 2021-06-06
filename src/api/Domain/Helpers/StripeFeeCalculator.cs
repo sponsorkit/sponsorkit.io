@@ -18,5 +18,14 @@ namespace Sponsorkit.Domain.Helpers
             
             return (int)Math.Round(totalFeeAmount * 100);
         }
+
+        public static int GetAmountInHundredsIncludingStripeFeeOnTop(int amountInHundreds)
+        {
+            var feeBeforeAddition = GetStripeFeeInHundreds(amountInHundreds);
+            var amountInHundredsWithFee = feeBeforeAddition + amountInHundreds;
+
+            var feeAfterAddition = GetStripeFeeInHundreds(amountInHundredsWithFee);
+            return amountInHundreds + feeAfterAddition;
+        }
     }
 }

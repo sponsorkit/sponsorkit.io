@@ -21,5 +21,18 @@ namespace Sponsorkit.Tests.Domain.Helpers
             //Assert
             Assert.AreEqual(15_86, fees);
         }
+        
+        [TestMethod]
+        public void GetAmountInHundredsIncludingStripeFeeOnTop_StraightNumberGiven_CalculatesResult()
+        {
+            //Arrange
+            var gross = 100_00;
+
+            //Act
+            var fees = StripeFeeCalculator.GetAmountInHundredsIncludingStripeFeeOnTop(gross);
+            
+            //Assert
+            Assert.AreEqual(104_84, fees);
+        }
     }
 }
