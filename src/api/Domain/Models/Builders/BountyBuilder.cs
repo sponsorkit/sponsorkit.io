@@ -7,7 +7,7 @@ namespace Sponsorkit.Domain.Models.Builders
         private User? creator;
         private Issue? issue;
 
-        private int? amountInHundreds;
+        private long? amountInHundreds;
 
         private DateTime createdAtUtc;
 
@@ -28,7 +28,7 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public BountyBuilder WithAmountInHundreds(int amountInHundreds)
+        public BountyBuilder WithAmountInHundreds(long amountInHundreds)
         {
             this.amountInHundreds = amountInHundreds;
             return this;

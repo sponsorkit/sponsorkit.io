@@ -16,7 +16,7 @@ namespace Sponsorkit.Tests.Domain.Helpers
             var gross = 484_98;
 
             //Act
-            var fees = StripeFeeCalculator.GetStripeFeeInHundreds(gross);
+            var fees = FeeCalculator.GetStripeFeeInHundreds(gross);
             
             //Assert
             Assert.AreEqual(15_86, fees);
@@ -29,7 +29,7 @@ namespace Sponsorkit.Tests.Domain.Helpers
             var gross = 100_00;
 
             //Act
-            var fees = StripeFeeCalculator.GetAmountInHundredsIncludingStripeFeeOnTop(gross);
+            var fees = FeeCalculator.GetAmountWithAllFeesOnTop(gross);
             
             //Assert
             Assert.AreEqual(104_84, fees);

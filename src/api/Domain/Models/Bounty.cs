@@ -10,7 +10,7 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
         
-        public int AmountInHundreds { get; set; }
+        public long AmountInHundreds { get; set; }
         public DateTime CreatedAtUtc { get; set; }
 
         public User Creator { get; set; } = null!;
