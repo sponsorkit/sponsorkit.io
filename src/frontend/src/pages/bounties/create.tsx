@@ -4,7 +4,7 @@ import {createApi, useApi, useOctokit} from "../../hooks/clients";
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { sum } from 'lodash';
 import { AmountPicker } from '../../components/financial/amount-picker';
-import { useStripe } from '@stripe/react-stripe-js';
+import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -58,31 +58,20 @@ export default function CreateBountyPage() {
 function CreateBounty(props: {
     gitHubIssueId: number
 }) {
-    const stripe = useStripe();
     const [amount, setAmount] = useState(0);
+    const [shouldCreate, setShouldCreate] = useState(false);
 
-    const onCreate = async () => {
-        if(!stripe)
-            return;
+    const onCreateClicked = () => setShouldCreate(true);
 
-        const intentResponse = await createApi().apiBountiesIntentGet({
-            body: {
-                gitHubIssueId: props.gitHubIssueId,
-                amountInHundreds: amount * 100
-            }
-        });
-        if(!intentResponse.paymentIntentClientSecret)
-            throw new Error("No intent secret.");
-
-        const result = await stripe.confirmCardPayment(intentResponse.paymentIntentClientSecret);
-        if(result.error)
-            throw result.error;
-
-        await createApi().apiBountiesIntentPost({
-            body: {
-                paymentIntentId: result.paymentIntent.id
-            }
-        });
+    const onPaymentMethodAcquired = async () => {
+        const amountInHundreds = amount * 100;
+        await createApi().apiBountiesGitHubIssueIdPost(
+            props.gitHubIssueId.toString(),
+            {
+                body: {
+                    amountInHundreds
+                }
+            });
 
         alert("Your bounty has been created!");
     }
@@ -92,9 +81,13 @@ function CreateBounty(props: {
         <AmountPicker
             options={[10, 25, 50, 100]}
             onAmountChanged={setAmount} />
-        <Button onClick={onCreate}>
+        <Button onClick={onCreateClicked}>
             Create
         </Button>
+        {shouldCreate && 
+            <PaymentMethodModal>
+                {onPaymentMethodAcquired}
+            </PaymentMethodModal>}
     </>;
 }
 
@@ -105,7 +98,9 @@ function Bounties(props: {
         async (client, abortSignal) => {
             const response = await client.apiBountiesGitHubIssueIdGet(
                 props.issue.id.toString(), 
-                { abortSignal });
+                { 
+                    abortSignal 
+                });
             return response?.bounties;
         },
         []);

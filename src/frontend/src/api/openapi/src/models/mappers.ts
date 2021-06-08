@@ -420,57 +420,6 @@ export const SponsorkitDomainApiBountiesBountyResponse: coreClient.CompositeMapp
   }
 };
 
-export const SponsorkitDomainApiBountiesIntentRequest: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentRequest",
-    modelProperties: {
-      gitHubIssueId: {
-        serializedName: "gitHubIssueId",
-        type: {
-          name: "Number"
-        }
-      },
-      amountInHundreds: {
-        serializedName: "amountInHundreds",
-        type: {
-          name: "Number"
-        }
-      }
-    }
-  }
-};
-
-export const SponsorkitDomainApiBountiesIntentResponse: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentResponse",
-    modelProperties: {
-      paymentIntentClientSecret: {
-        serializedName: "paymentIntentClientSecret",
-        type: {
-          name: "String"
-        }
-      }
-    }
-  }
-};
-
-export const SponsorkitDomainApiBountiesIntentPostRequest: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentPostRequest",
-    modelProperties: {
-      paymentIntentId: {
-        serializedName: "paymentIntentId",
-        type: {
-          name: "String"
-        }
-      }
-    }
-  }
-};
-
 export const SponsorkitDomainApiBountiesGitHubIssueIdGetRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
@@ -560,6 +509,27 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreCli
   }
 };
 
+export const SponsorkitDomainApiBountiesGitHubIssueIdPostRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdPostRequest",
+    modelProperties: {
+      gitHubIssueId: {
+        serializedName: "gitHubIssueId",
+        type: {
+          name: "Number"
+        }
+      },
+      amountInHundreds: {
+        serializedName: "amountInHundreds",
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
 export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
@@ -575,6 +545,37 @@ export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
         serializedName: "sponsor",
         type: {
           name: "any"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiAccountPaymentMethodIntentResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiAccountPaymentMethodIntentResponse",
+    modelProperties: {
+      setupIntentClientSecret: {
+        serializedName: "setupIntentClientSecret",
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse",
+    modelProperties: {
+      availability: {
+        serializedName: "availability",
+        type: {
+          name: "Enum",
+          allowedValues: ["notAvailable", "available"]
         }
       }
     }

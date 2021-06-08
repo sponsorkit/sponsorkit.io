@@ -7,9 +7,8 @@ import {
   SponsorkitDomainApiSignupAsSponsorRequest as SponsorkitDomainApiSignupAsSponsorRequestMapper,
   SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest as SponsorkitDomainApiSignupActivateStripeAccountUserIdRequestMapper,
   SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest as SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper,
-  SponsorkitDomainApiBountiesIntentRequest as SponsorkitDomainApiBountiesIntentRequestMapper,
-  SponsorkitDomainApiBountiesIntentPostRequest as SponsorkitDomainApiBountiesIntentPostRequestMapper,
-  SponsorkitDomainApiBountiesGitHubIssueIdGetRequest as SponsorkitDomainApiBountiesGitHubIssueIdGetRequestMapper
+  SponsorkitDomainApiBountiesGitHubIssueIdGetRequest as SponsorkitDomainApiBountiesGitHubIssueIdGetRequestMapper,
+  SponsorkitDomainApiBountiesGitHubIssueIdPostRequest as SponsorkitDomainApiBountiesGitHubIssueIdPostRequestMapper
 } from "../models/mappers";
 
 export const $host: OperationURLParameter = {
@@ -118,16 +117,6 @@ export const body6: OperationParameter = {
 
 export const body7: OperationParameter = {
   parameterPath: ["options", "body"],
-  mapper: SponsorkitDomainApiBountiesIntentRequestMapper
-};
-
-export const body8: OperationParameter = {
-  parameterPath: ["options", "body"],
-  mapper: SponsorkitDomainApiBountiesIntentPostRequestMapper
-};
-
-export const body9: OperationParameter = {
-  parameterPath: ["options", "body"],
   mapper: SponsorkitDomainApiBountiesGitHubIssueIdGetRequestMapper
 };
 
@@ -140,4 +129,9 @@ export const gitHubIssueId: OperationURLParameter = {
       name: "String"
     }
   }
+};
+
+export const body8: OperationParameter = {
+  parameterPath: ["options", "body"],
+  mapper: SponsorkitDomainApiBountiesGitHubIssueIdPostRequestMapper
 };

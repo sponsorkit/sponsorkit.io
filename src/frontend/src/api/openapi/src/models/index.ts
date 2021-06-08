@@ -94,19 +94,6 @@ export interface SponsorkitDomainApiBountiesBountyResponse {
   bountyCount?: number;
 }
 
-export interface SponsorkitDomainApiBountiesIntentRequest {
-  gitHubIssueId?: number;
-  amountInHundreds?: number;
-}
-
-export interface SponsorkitDomainApiBountiesIntentResponse {
-  paymentIntentClientSecret?: string;
-}
-
-export interface SponsorkitDomainApiBountiesIntentPostRequest {
-  paymentIntentId?: string;
-}
-
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetRequest {
   gitHubIssueId?: number;
 }
@@ -126,12 +113,28 @@ export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse {
   gitHubUsername?: string;
 }
 
+export interface SponsorkitDomainApiBountiesGitHubIssueIdPostRequest {
+  gitHubIssueId?: number;
+  amountInHundreds?: number;
+}
+
 export interface SponsorkitDomainApiAccountResponse {
   /** Any object */
   beneficiary?: any;
   /** Any object */
   sponsor?: any;
 }
+
+export interface SponsorkitDomainApiAccountPaymentMethodIntentResponse {
+  setupIntentClientSecret?: string;
+}
+
+export interface SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse {
+  availability?: PaymentMethodAvailability;
+}
+
+/** Defines values for PaymentMethodAvailability. */
+export type PaymentMethodAvailability = "notAvailable" | "available";
 
 /** Optional parameters. */
 export interface GeneralHealthGetOptionalParams
@@ -200,21 +203,6 @@ export interface GeneralApiBountiesGetOptionalParams
 export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse;
 
 /** Optional parameters. */
-export interface GeneralApiBountiesIntentGetOptionalParams
-  extends coreClient.OperationOptions {
-  body?: SponsorkitDomainApiBountiesIntentRequest;
-}
-
-/** Contains response data for the apiBountiesIntentGet operation. */
-export type GeneralApiBountiesIntentGetResponse = SponsorkitDomainApiBountiesIntentResponse;
-
-/** Optional parameters. */
-export interface GeneralApiBountiesIntentPostOptionalParams
-  extends coreClient.OperationOptions {
-  body?: SponsorkitDomainApiBountiesIntentPostRequest;
-}
-
-/** Optional parameters. */
 export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiBountiesGitHubIssueIdGetRequest;
@@ -224,11 +212,31 @@ export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
 export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse;
 
 /** Optional parameters. */
+export interface GeneralApiBountiesGitHubIssueIdPostOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiBountiesGitHubIssueIdPostRequest;
+}
+
+/** Optional parameters. */
 export interface GeneralApiAccountGetOptionalParams
   extends coreClient.OperationOptions {}
 
 /** Contains response data for the apiAccountGet operation. */
 export type GeneralApiAccountGetResponse = SponsorkitDomainApiAccountResponse;
+
+/** Optional parameters. */
+export interface GeneralApiAccountPaymentMethodIntentGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiAccountPaymentMethodIntentGet operation. */
+export type GeneralApiAccountPaymentMethodIntentGetResponse = SponsorkitDomainApiAccountPaymentMethodIntentResponse;
+
+/** Optional parameters. */
+export interface GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiAccountPaymentMethodAvailabilityGet operation. */
+export type GeneralApiAccountPaymentMethodAvailabilityGetResponse = SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse;
 
 /** Optional parameters. */
 export interface GeneralOptionalParams extends coreClient.ServiceClientOptions {

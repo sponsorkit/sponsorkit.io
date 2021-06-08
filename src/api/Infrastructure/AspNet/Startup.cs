@@ -140,6 +140,8 @@ namespace Sponsorkit.Infrastructure.AspNet
         {
             services.AddSwaggerGen(c =>
             {
+                c.SchemaFilter<AutoRestOpenApiFilter>();
+                
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "General",
