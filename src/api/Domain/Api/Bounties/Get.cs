@@ -8,24 +8,17 @@ using Sponsorkit.Domain.Models;
 
 namespace Sponsorkit.Domain.Api.Bounties
 {
-    public record GetRequest(
-        [FromQuery] long GitHubIssueId);
-
-    public record GetResponse(
+    public record Response(
         BountyResponse[] Bounties);
 
     public record BountyResponse(
-        int AmountInHundreds,
-        BountyUserResponse CreatorUser,
-        BountyUserResponse? AwardedUser);
-
-    public record BountyUserResponse(
-        long Id,
-        string GitHubUsername);
+        long AmountInHundreds,
+        long GitHubIssueId,
+        int BountyCount);
     
     public class Get : BaseAsyncEndpoint
-        .WithRequest<GetRequest>
-        .WithResponse<GetResponse>
+        .WithoutRequest
+        .WithResponse<Response>
     {
         private readonly DataContext dataContext;
 
@@ -36,27 +29,18 @@ namespace Sponsorkit.Domain.Api.Bounties
         }
         
         [HttpGet("/api/bounties")]
-        public override async Task<ActionResult<GetResponse>> HandleAsync(GetRequest request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
-            var issue = await dataContext.Issues
-                .Include(x => x.Bounties).ThenInclude(x => x.Creator)
-                .Include(x => x.Bounties).ThenInclude(x => x.AwardedTo)
-                .SingleOrDefaultAsync(
-                    x => x.GitHubId == request.GitHubIssueId,
-                    cancellationToken);
-            if (issue == null)
-                return NotFound();
-
-            return new GetResponse(issue.Bounties
+            var groupedResponse = await dataContext.Bounties
+                .AsQueryable()
+                .GroupBy(x => x.Issue)
                 .Select(x => new BountyResponse(
-                    x.AmountInHundreds,
-                    new BountyUserResponse(
-                        x.Creator.GitHub!.Id,
-                        x.Creator.GitHub.Username),
-                    x.AwardedTo == null ? null : new BountyUserResponse(
-                        x.AwardedTo.GitHub!.Id,
-                        x.AwardedTo.GitHub.Username)))
-                .ToArray());
+                    x.Sum(b => b.AmountInHundreds),
+                    x.Key.GitHubId,
+                    x.Count()))
+                .OrderByDescending(x => x.AmountInHundreds)
+                .ToArrayAsync(cancellationToken);
+            return new Response(groupedResponse);
         }
     }
 }

@@ -2,11 +2,13 @@ import { Button, Container, Paper } from "@material-ui/core";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useState } from "react";
 import PrivateRoute from "../../components/login/private-route";
-import StripeCreditCard from "../../components/stripe/credit-card";
+import StripeCreditCard from "../../components/financial/stripe/credit-card";
 import { createApi, useApi } from "../../hooks/clients";
 
 function DashboardPage() {
-    const account = useApi(async client => await client.apiAccountGet());
+    const account = useApi(
+        async client => await client.apiAccountGet(),
+        []);
     if(!account)
         return null;
 

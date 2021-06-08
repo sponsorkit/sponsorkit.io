@@ -17,8 +17,13 @@ import {
   GeneralApiSignupAsBeneficiaryPostOptionalParams,
   GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
   GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
-  GeneralApiBountiesByGithubIssuePostOptionalParams,
-  GeneralApiBountiesByGithubIssuePostResponse,
+  GeneralApiBountiesGetOptionalParams,
+  GeneralApiBountiesGetResponse,
+  GeneralApiBountiesIntentGetOptionalParams,
+  GeneralApiBountiesIntentGetResponse,
+  GeneralApiBountiesIntentPostOptionalParams,
+  GeneralApiBountiesGitHubIssueIdGetOptionalParams,
+  GeneralApiBountiesGitHubIssueIdGetResponse,
   GeneralApiAccountGetOptionalParams,
   GeneralApiAccountGetResponse
 } from "./models";
@@ -150,12 +155,43 @@ export class General extends GeneralContext {
   }
 
   /** @param options The options parameters. */
-  apiBountiesByGithubIssuePost(
-    options?: GeneralApiBountiesByGithubIssuePostOptionalParams
-  ): Promise<GeneralApiBountiesByGithubIssuePostResponse> {
+  apiBountiesGet(
+    options?: GeneralApiBountiesGetOptionalParams
+  ): Promise<GeneralApiBountiesGetResponse> {
+    return this.sendOperationRequest({ options }, apiBountiesGetOperationSpec);
+  }
+
+  /** @param options The options parameters. */
+  apiBountiesIntentGet(
+    options?: GeneralApiBountiesIntentGetOptionalParams
+  ): Promise<GeneralApiBountiesIntentGetResponse> {
     return this.sendOperationRequest(
       { options },
-      apiBountiesByGithubIssuePostOperationSpec
+      apiBountiesIntentGetOperationSpec
+    );
+  }
+
+  /** @param options The options parameters. */
+  apiBountiesIntentPost(
+    options?: GeneralApiBountiesIntentPostOptionalParams
+  ): Promise<void> {
+    return this.sendOperationRequest(
+      { options },
+      apiBountiesIntentPostOperationSpec
+    );
+  }
+
+  /**
+   * @param gitHubIssueId
+   * @param options The options parameters.
+   */
+  apiBountiesGitHubIssueIdGet(
+    gitHubIssueId: string,
+    options?: GeneralApiBountiesGitHubIssueIdGetOptionalParams
+  ): Promise<GeneralApiBountiesGitHubIssueIdGetResponse> {
+    return this.sendOperationRequest(
+      { gitHubIssueId, options },
+      apiBountiesGitHubIssueIdGetOperationSpec
     );
   }
 
@@ -274,16 +310,50 @@ const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec
   mediaType: "json",
   serializer
 };
-const apiBountiesByGithubIssuePostOperationSpec: coreClient.OperationSpec = {
-  path: "/api/bounties/by-github-issue",
-  httpMethod: "POST",
+const apiBountiesGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties",
+  httpMethod: "GET",
   responses: {
     200: {
-      bodyMapper: Mappers.SponsorkitDomainApiBountiesByGitHubIssueResponse
+      bodyMapper: Mappers.SponsorkitDomainApiBountiesResponse
     }
   },
-  requestBody: Parameters.body7,
   urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.accept],
+  serializer
+};
+const apiBountiesIntentGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties/intent",
+  httpMethod: "GET",
+  responses: {
+    200: {
+      bodyMapper: Mappers.SponsorkitDomainApiBountiesIntentResponse
+    }
+  },
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.contentType, Parameters.accept],
+  mediaType: "json",
+  serializer
+};
+const apiBountiesIntentPostOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties/intent",
+  httpMethod: "POST",
+  responses: { 200: {} },
+  requestBody: Parameters.body8,
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.contentType],
+  mediaType: "json",
+  serializer
+};
+const apiBountiesGitHubIssueIdGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties/{gitHubIssueId}",
+  httpMethod: "GET",
+  responses: {
+    200: {
+      bodyMapper: Mappers.SponsorkitDomainApiBountiesGitHubIssueIdGetResponse
+    }
+  },
+  urlParameters: [Parameters.$host, Parameters.gitHubIssueId],
   headerParameters: [Parameters.contentType, Parameters.accept],
   mediaType: "json",
   serializer

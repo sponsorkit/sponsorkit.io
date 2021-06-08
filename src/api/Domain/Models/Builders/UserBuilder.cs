@@ -58,7 +58,7 @@ namespace Sponsorkit.Domain.Models.Builders
             string username,
             byte[] encryptedAccessToken)
         {
-            this.gitHub = new UserGitHubInformation()
+            gitHub = new UserGitHubInformation()
             {
                 Id = gitHubId,
                 EncryptedAccessToken = encryptedAccessToken,

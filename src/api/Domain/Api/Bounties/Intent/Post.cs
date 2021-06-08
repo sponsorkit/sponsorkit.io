@@ -1,69 +1,82 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
-using Flurl.Util;
 using Microsoft.AspNetCore.Mvc;
-using Sponsorkit.Domain.Helpers;
+using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Builders;
+using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
 namespace Sponsorkit.Domain.Api.Bounties.Intent
 {
-    public record Request(
-        [FromQuery] long GitHubIssueId,
-        [FromBody] int AmountInHundreds);
-
-    public record Response(
-        string PaymentIntentClientSecret,
-        string PaymentIntentId);
-
+    public record PostRequest(
+        [FromBody] string PaymentIntentId);
+    
     public class Post : BaseAsyncEndpoint
-        .WithRequest<Request>
-        .WithResponse<Response>
+        .WithRequest<PostRequest>
+        .WithoutResponse
     {
+        private readonly DataContext dataContext;
         private readonly PaymentIntentService paymentIntentService;
 
-        public const string GitHubIssueIdStripeMetadataKey = "GITHUB_ISSUE_ID";
-        public const string BountyAmountStripeMetadataKey = "BOUNTY_AMOUNT";
-
         public Post(
+            DataContext dataContext,
             PaymentIntentService paymentIntentService)
         {
+            this.dataContext = dataContext;
             this.paymentIntentService = paymentIntentService;
         }
-
+        
         [HttpPost("/api/bounties/intent")]
-        public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            var amountInHundredsIncludingFee = FeeCalculator.GetAmountWithAllFeesOnTop(request.AmountInHundreds);
-            var paymentIntent = await paymentIntentService.CreateAsync(
-                new PaymentIntentCreateOptions()
-                {
-                    Amount = amountInHundredsIncludingFee,
-                    Confirm = true,
-                    Currency = "DKK",
-                    CaptureMethod = "manual",
-                    Metadata = new Dictionary<string, string>()
-                    {
-                        {
-                            GitHubIssueIdStripeMetadataKey, request.GitHubIssueId.ToInvariantString()
-                        },
-                        {
-                            BountyAmountStripeMetadataKey, request.AmountInHundreds.ToInvariantString()
-                        }
-                    }
-                },
+            var userId = User.GetRequiredId();
+
+            var paymentIntent = await paymentIntentService.GetAsync(
+                request.PaymentIntentId,
                 cancellationToken: cancellationToken);
+            if (paymentIntent == null)
+                return new NotFoundResult();
 
-            var charges = paymentIntent.Charges.Data;
-            if (charges.Count != 1)
-                throw new InvalidOperationException("Expected a single charge to be created.");
+            var gitHubIssueIdString = paymentIntent.Metadata[Get.GitHubIssueIdStripeMetadataKey];
+            if (!long.TryParse(gitHubIssueIdString, out var gitHubIssueId))
+                throw new InvalidOperationException("No GitHub issue ID associated with Stripe payment intent.");
 
-            return new Response(
-                paymentIntent.ClientSecret,
-                paymentIntent.Id);
+            var bountyAmountString = paymentIntent.Metadata[Get.BountyAmountStripeMetadataKey];
+            if (!long.TryParse(bountyAmountString, out var bountyAmountInHundreds))
+                throw new InvalidOperationException("No bounty amount associated with Stripe payment intent.");
+            
+            await dataContext.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    var issue = await dataContext.Issues.SingleAsync(
+                        x => x.GitHubId == gitHubIssueId,
+                        cancellationToken);
+
+                    var user = await dataContext.Users.SingleAsync(
+                        x => x.Id == userId,
+                        cancellationToken);
+
+                    var bounty = new BountyBuilder()
+                        .WithAmountInHundreds(bountyAmountInHundreds)
+                        .WithCreator(user)
+                        .WithIssue(issue)
+                        .Build();
+                    dataContext.Bounties.Add(bounty);
+                    await dataContext.SaveChangesAsync(cancellationToken);
+
+                    await paymentIntentService.ConfirmAsync(
+                        paymentIntent.Id, 
+                        cancellationToken: cancellationToken);
+
+                    //TODO: use payment intents.
+                    //TODO: charge first, then transfer later: https://stripe.com/docs/connect/charges-transfers
+                    //TODO: use source_transaction instead of transfer destination groups.
+                });
+
+            throw new Exception();
         }
     }
 }

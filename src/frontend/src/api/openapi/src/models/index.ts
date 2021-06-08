@@ -84,21 +84,44 @@ export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
   reference?: string;
 }
 
-export interface SponsorkitDomainApiBountiesByGitHubIssueRequest {
-  issueId?: number;
+export interface SponsorkitDomainApiBountiesResponse {
+  bounties?: SponsorkitDomainApiBountiesBountyResponse[];
 }
 
-export interface SponsorkitDomainApiBountiesByGitHubIssueResponse {
-  bounties?: SponsorkitDomainApiBountiesByGitHubIssueBountyResponse[];
-}
-
-export interface SponsorkitDomainApiBountiesByGitHubIssueBountyResponse {
+export interface SponsorkitDomainApiBountiesBountyResponse {
   amountInHundreds?: number;
-  creatorUser?: SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse;
-  awardedUser?: SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse;
+  gitHubIssueId?: number;
+  bountyCount?: number;
 }
 
-export interface SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse {
+export interface SponsorkitDomainApiBountiesIntentRequest {
+  gitHubIssueId?: number;
+  amountInHundreds?: number;
+}
+
+export interface SponsorkitDomainApiBountiesIntentResponse {
+  paymentIntentClientSecret?: string;
+}
+
+export interface SponsorkitDomainApiBountiesIntentPostRequest {
+  paymentIntentId?: string;
+}
+
+export interface SponsorkitDomainApiBountiesGitHubIssueIdGetRequest {
+  gitHubIssueId?: number;
+}
+
+export interface SponsorkitDomainApiBountiesGitHubIssueIdGetResponse {
+  bounties?: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
+}
+
+export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse {
+  amountInHundreds?: number;
+  creatorUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  awardedUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+}
+
+export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse {
   id?: number;
   gitHubUsername?: string;
 }
@@ -170,13 +193,35 @@ export interface GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
 }
 
 /** Optional parameters. */
-export interface GeneralApiBountiesByGithubIssuePostOptionalParams
+export interface GeneralApiBountiesGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiBountiesGet operation. */
+export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse;
+
+/** Optional parameters. */
+export interface GeneralApiBountiesIntentGetOptionalParams
   extends coreClient.OperationOptions {
-  body?: SponsorkitDomainApiBountiesByGitHubIssueRequest;
+  body?: SponsorkitDomainApiBountiesIntentRequest;
 }
 
-/** Contains response data for the apiBountiesByGithubIssuePost operation. */
-export type GeneralApiBountiesByGithubIssuePostResponse = SponsorkitDomainApiBountiesByGitHubIssueResponse;
+/** Contains response data for the apiBountiesIntentGet operation. */
+export type GeneralApiBountiesIntentGetResponse = SponsorkitDomainApiBountiesIntentResponse;
+
+/** Optional parameters. */
+export interface GeneralApiBountiesIntentPostOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiBountiesIntentPostRequest;
+}
+
+/** Optional parameters. */
+export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiBountiesGitHubIssueIdGetRequest;
+}
+
+/** Contains response data for the apiBountiesGitHubIssueIdGet operation. */
+export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse;
 
 /** Optional parameters. */
 export interface GeneralApiAccountGetOptionalParams

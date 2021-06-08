@@ -372,13 +372,46 @@ export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreClient
   }
 };
 
-export const SponsorkitDomainApiBountiesByGitHubIssueRequest: coreClient.CompositeMapper = {
+export const SponsorkitDomainApiBountiesResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
-    className: "SponsorkitDomainApiBountiesByGitHubIssueRequest",
+    className: "SponsorkitDomainApiBountiesResponse",
     modelProperties: {
-      issueId: {
-        serializedName: "issueId",
+      bounties: {
+        serializedName: "bounties",
+        type: {
+          name: "Sequence",
+          element: {
+            type: {
+              name: "Composite",
+              className: "SponsorkitDomainApiBountiesBountyResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesBountyResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesBountyResponse",
+    modelProperties: {
+      amountInHundreds: {
+        serializedName: "amountInHundreds",
+        type: {
+          name: "Number"
+        }
+      },
+      gitHubIssueId: {
+        serializedName: "gitHubIssueId",
+        type: {
+          name: "Number"
+        }
+      },
+      bountyCount: {
+        serializedName: "bountyCount",
         type: {
           name: "Number"
         }
@@ -387,10 +420,76 @@ export const SponsorkitDomainApiBountiesByGitHubIssueRequest: coreClient.Composi
   }
 };
 
-export const SponsorkitDomainApiBountiesByGitHubIssueResponse: coreClient.CompositeMapper = {
+export const SponsorkitDomainApiBountiesIntentRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
-    className: "SponsorkitDomainApiBountiesByGitHubIssueResponse",
+    className: "SponsorkitDomainApiBountiesIntentRequest",
+    modelProperties: {
+      gitHubIssueId: {
+        serializedName: "gitHubIssueId",
+        type: {
+          name: "Number"
+        }
+      },
+      amountInHundreds: {
+        serializedName: "amountInHundreds",
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesIntentResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesIntentResponse",
+    modelProperties: {
+      paymentIntentClientSecret: {
+        serializedName: "paymentIntentClientSecret",
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesIntentPostRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesIntentPostRequest",
+    modelProperties: {
+      paymentIntentId: {
+        serializedName: "paymentIntentId",
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesGitHubIssueIdGetRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdGetRequest",
+    modelProperties: {
+      gitHubIssueId: {
+        serializedName: "gitHubIssueId",
+        type: {
+          name: "Number"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdGetResponse",
     modelProperties: {
       bounties: {
         serializedName: "bounties",
@@ -400,7 +499,7 @@ export const SponsorkitDomainApiBountiesByGitHubIssueResponse: coreClient.Compos
             type: {
               name: "Composite",
               className:
-                "SponsorkitDomainApiBountiesByGitHubIssueBountyResponse"
+                "SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse"
             }
           }
         }
@@ -409,10 +508,10 @@ export const SponsorkitDomainApiBountiesByGitHubIssueResponse: coreClient.Compos
   }
 };
 
-export const SponsorkitDomainApiBountiesByGitHubIssueBountyResponse: coreClient.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
-    className: "SponsorkitDomainApiBountiesByGitHubIssueBountyResponse",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse",
     modelProperties: {
       amountInHundreds: {
         serializedName: "amountInHundreds",
@@ -425,7 +524,7 @@ export const SponsorkitDomainApiBountiesByGitHubIssueBountyResponse: coreClient.
         type: {
           name: "Composite",
           className:
-            "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse"
+            "SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse"
         }
       },
       awardedUser: {
@@ -433,17 +532,17 @@ export const SponsorkitDomainApiBountiesByGitHubIssueBountyResponse: coreClient.
         type: {
           name: "Composite",
           className:
-            "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse"
+            "SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse"
         }
       }
     }
   }
 };
 
-export const SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse: coreClient.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
-    className: "SponsorkitDomainApiBountiesByGitHubIssueBountyUserResponse",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse",
     modelProperties: {
       id: {
         serializedName: "id",
