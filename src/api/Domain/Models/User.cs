@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 // ReSharper disable CollectionNeverUpdated.Global
 
@@ -11,19 +13,39 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
         
-        public string Name { get; set; }
+        public byte[] EncryptedEmail { get; set; } = null!;
 
-        public string StripeId { get; set; } = null!;
-        
+        public string StripeCustomerId { get; set; } = null!;
+
+        public string? StripeConnectId { get; set; }
+
+        public UserGitHubInformation? GitHub { get; set; }
+
         public DateTime CreatedAtUtc { get; set; }
         
-        public List<Identity> Identities { get; set; } = new List<Identity>();
-        public List<Repository> Repositories { get; set; } = new List<Repository>();
+        public List<Repository> Repositories { get; set; } = new();
         
-        public List<Bounty> CreatedBounties { get; set; } = new List<Bounty>();
-        public List<Bounty> AwardedBounties { get; set; } = new List<Bounty>();
+        public List<Bounty> CreatedBounties { get; set; } = new();
+        public List<Bounty> AwardedBounties { get; set; } = new();
 
-        public List<Sponsorship> CreatedSponsorships { get; set; } = new List<Sponsorship>();
-        public List<Sponsorship> AwardedSponsorships { get; set; } = new List<Sponsorship>();
+        public List<Sponsorship> CreatedSponsorships { get; set; } = new();
+        public List<Sponsorship> AwardedSponsorships { get; set; } = new();
+    }
+
+    public class UserGitHubInformation
+    {
+        public long Id { get; set; }
+        
+        public string Username { get; set; }
+
+        public byte[] EncryptedAccessToken { get; set; } = null!;
+    }
+    
+    public class UserConfiguration : IEntityTypeConfiguration<User>
+    {
+        public void Configure(EntityTypeBuilder<User> builder)
+        {
+            builder.OwnsOne(x => x.GitHub);
+        }
     }
 }

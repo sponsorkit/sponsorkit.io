@@ -9,10 +9,10 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
         
-        public string GitHubId { get; set; } = null!;
+        public long GitHubId { get; set; }
 
         public Repository Repository { get; set; } = null!;
 
-        public List<Bounty> Bounties { get; set; } = new List<Bounty>();
+        public List<Bounty> Bounties { get; set; } = new();
     }
 }

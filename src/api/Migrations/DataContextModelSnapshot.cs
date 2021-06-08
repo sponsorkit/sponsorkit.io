@@ -2,7 +2,8 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sponsorkit.Domain.Models;
 
 namespace Sponsorkit.Migrations
@@ -14,30 +15,30 @@ namespace Sponsorkit.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.14")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63)
+                .HasAnnotation("ProductVersion", "5.0.6")
+                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("AmountInHundreds")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("AwardedToId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("CreatorId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("IssueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -50,44 +51,17 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Bounties");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Identity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("EncryptedEmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EncryptedPassword")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GitHubUserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("OwnerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("Identities");
-                });
-
             modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("GitHubId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<long>("GitHubId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("RepositoryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -100,68 +74,48 @@ namespace Sponsorkit.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("AmountInHundreds")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("BountyId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid?>("SponsorshipId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("StripeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("BountyId")
-                        .IsUnique()
-                        .HasFilter("[BountyId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("SponsorshipId");
 
                     b.ToTable("Payments");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("8d5d4bc2-8b18-45c0-b48e-5d81773c2eb3"),
-                            AmountInHundreds = 100,
-                            CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
-                            StripeId = "foo"
-                        },
-                        new
-                        {
-                            Id = new Guid("b5e19f7a-2dff-4da2-9801-19a4fc8fe460"),
-                            AmountInHundreds = 250,
-                            CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            SponsorshipId = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
-                            StripeId = "foo"
-                        });
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("GitHubId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<long>("GitHubId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid?>("OwnerId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -174,23 +128,26 @@ namespace Sponsorkit.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("BeneficiaryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("MonthlyAmountInHundreds")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Reference")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("RepositoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("SponsorId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -199,54 +156,31 @@ namespace Sponsorkit.Migrations
                     b.HasIndex("SponsorId");
 
                     b.ToTable("Sponsorships");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("43029511-840f-472d-aec5-3ae45787308b"),
-                            BeneficiaryId = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
-                            CreatedAtUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Reference = "sponsorship-foo",
-                            SponsorId = new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d")
-                        });
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("Name")
+                    b.Property<byte[]>("EncryptedEmail")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("bytea");
 
-                    b.Property<string>("StripeId")
+                    b.Property<string>("StripeConnectId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StripeCustomerId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("681c2d58-7a3f-49fb-ada8-697c06708d32"),
-                            CreatedAtUtc = new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2006),
-                            Name = "the-beneficiary",
-                            StripeId = "foo"
-                        },
-                        new
-                        {
-                            Id = new Guid("9f64c8d0-d69a-4f52-a257-1332f51f4e4d"),
-                            CreatedAtUtc = new DateTime(2021, 4, 11, 1, 28, 29, 327, DateTimeKind.Utc).AddTicks(2377),
-                            Name = "the-sponsor",
-                            StripeId = "foo"
-                        });
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
@@ -268,15 +202,12 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Identity", b =>
-                {
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Owner")
-                        .WithMany("Identities")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("AwardedTo");
+
+                    b.Navigation("Creator");
+
+                    b.Navigation("Issue");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
@@ -286,6 +217,8 @@ namespace Sponsorkit.Migrations
                         .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Repository");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Payment", b =>
@@ -297,6 +230,10 @@ namespace Sponsorkit.Migrations
                     b.HasOne("Sponsorkit.Domain.Models.Sponsorship", "Sponsorship")
                         .WithMany("Payments")
                         .HasForeignKey("SponsorshipId");
+
+                    b.Navigation("Bounty");
+
+                    b.Navigation("Sponsorship");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
@@ -304,6 +241,8 @@ namespace Sponsorkit.Migrations
                     b.HasOne("Sponsorkit.Domain.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
@@ -314,11 +253,87 @@ namespace Sponsorkit.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("Sponsorkit.Domain.Models.Repository", "Repository")
+                        .WithMany("Sponsorships")
+                        .HasForeignKey("SponsorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("Sponsorkit.Domain.Models.User", "Sponsor")
                         .WithMany("CreatedSponsorships")
                         .HasForeignKey("SponsorId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Beneficiary");
+
+                    b.Navigation("Repository");
+
+                    b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+                {
+                    b.OwnsOne("Sponsorkit.Domain.Models.UserGitHubInformation", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<byte[]>("EncryptedAccessToken")
+                                .IsRequired()
+                                .HasColumnType("bytea");
+
+                            b1.Property<long>("Id")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("Username")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.HasKey("UserId");
+
+                            b1.ToTable("Users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("GitHub");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
+                {
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
+                {
+                    b.Navigation("Bounties");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+                {
+                    b.Navigation("Issues");
+
+                    b.Navigation("Sponsorships");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+                {
+                    b.Navigation("AwardedBounties");
+
+                    b.Navigation("AwardedSponsorships");
+
+                    b.Navigation("CreatedBounties");
+
+                    b.Navigation("CreatedSponsorships");
+
+                    b.Navigation("Repositories");
                 });
 #pragma warning restore 612, 618
         }
