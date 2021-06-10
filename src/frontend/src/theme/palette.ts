@@ -50,11 +50,11 @@ declare module '@material-ui/core' {
 
 // SETUP COLORS
 const PRIMARY = {
-  lighter: '#C8FACD',
-  light: '#5BE584',
-  main: '#00AB55',
-  dark: '#007B55',
-  darker: '#005249'
+  lighter: '#CCDFFF',
+  light: '#6697FF',
+  main: '#0045FF',
+  dark: '#0027B7',
+  darker: '#00137A'
 };
 const SECONDARY = {
   lighter: '#D6E4FF',
