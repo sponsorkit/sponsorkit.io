@@ -1,136 +1,136 @@
 import * as coreClient from "@azure/core-client";
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryRequest {
-  beneficiaryId?: string;
+  beneficiaryId: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryResponse {
-  id?: string;
+  id: string;
   gitHubId?: number;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
   amountInHundreds?: number;
   email?: string;
   stripeCardId?: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse {
-  donations?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse;
-  sponsors?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse;
+  donations: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse;
+  sponsors: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly totalInHundreds?: number;
+  readonly totalInHundreds: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly monthlyInHundreds?: number;
+  readonly monthlyInHundreds: number;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse {
-  current?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
-  byAmount?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse;
-  byDate?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse;
+  current: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
+  byAmount: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse;
+  byDate: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
   readonly monthlyAmountInHundreds?: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly totalAmountInHundreds?: number;
+  readonly totalAmountInHundreds: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly startedAtUtc?: Date;
+  readonly startedAtUtc: Date;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly most?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly most: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly least?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly least: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly latest?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly latest: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly oldest?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly oldest: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
 }
 
 export interface SponsorkitDomainApiSignupFromGitHubRequest {
-  gitHubAuthenticationCode?: string;
+  gitHubAuthenticationCode: string;
 }
 
 export interface SponsorkitDomainApiSignupFromGitHubResponse {
-  token?: string;
+  token: string;
 }
 
 export interface SponsorkitDomainApiSignupAsSponsorRequest {
-  stripePaymentMethodId?: string;
+  stripePaymentMethodId: string;
 }
 
 export interface SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest {
-  userId?: string;
+  userId: string;
 }
 
 export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
 }
 
 export interface SponsorkitDomainApiBountiesResponse {
-  bounties?: SponsorkitDomainApiBountiesBountyResponse[];
+  bounties: SponsorkitDomainApiBountiesBountyResponse[];
 }
 
 export interface SponsorkitDomainApiBountiesBountyResponse {
-  amountInHundreds?: number;
-  gitHubIssueId?: number;
-  bountyCount?: number;
+  amountInHundreds: number;
+  gitHubIssueId: number;
+  bountyCount: number;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetRequest {
-  gitHubIssueId?: number;
+  gitHubIssueId: number;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetResponse {
-  bounties?: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
+  bounties: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse {
-  amountInHundreds?: number;
-  creatorUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
-  awardedUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  amountInHundreds: number;
+  creatorUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  awardedUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse {
-  id?: number;
-  gitHubUsername?: string;
+  id: number;
+  gitHubUsername: string;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdPostRequest {
-  gitHubIssueId?: number;
-  amountInHundreds?: number;
+  gitHubIssueId: number;
+  amountInHundreds: number;
 }
 
 export interface SponsorkitDomainApiAccountResponse {
   /** Any object */
-  beneficiary?: any;
+  beneficiary: any;
   /** Any object */
-  sponsor?: any;
+  sponsor: any;
 }
 
 export interface SponsorkitDomainApiAccountPaymentMethodIntentResponse {
-  setupIntentClientSecret?: string;
+  setupIntentClientSecret: string;
 }
 
 export interface SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse {
-  availability?: PaymentMethodAvailability;
+  availability: PaymentMethodAvailability;
 }
 
 /** Defines values for PaymentMethodAvailability. */

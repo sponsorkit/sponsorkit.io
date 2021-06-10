@@ -69,7 +69,8 @@ function CreateBounty(props: {
             props.gitHubIssueId.toString(),
             {
                 body: {
-                    amountInHundreds
+                    amountInHundreds,
+                    gitHubIssueId: props.gitHubIssueId
                 }
             });
 

@@ -1,15 +1,14 @@
 import * as React from "react"
 import { Link } from "gatsby"
+import { Button } from "@material-ui/core"
 
 const IndexPage = () => (
   <>
-    <h1>Hi people</h1>
-    <p>Welcome to your new Gatsby site.</p>
-    <p>Now go build something great.</p>
-    <p>
-      <Link to="/page-2/">Go to page 2</Link> <br />
-      <Link to="/using-typescript/">Go to "Using TypeScript"</Link>
-    </p>
+    <Button color="primary" variant="contained" style={{
+      margin: 16
+    }}>
+      Click me, and get disappointed
+    </Button>
   </>
 )
 
