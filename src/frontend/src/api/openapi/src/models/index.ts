@@ -1,137 +1,140 @@
 import * as coreClient from "@azure/core-client";
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryRequest {
-  beneficiaryId?: string;
+  beneficiaryId: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryResponse {
-  id?: string;
+  id: string;
   gitHubId?: number;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
   amountInHundreds?: number;
   email?: string;
   stripeCardId?: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse {
-  donations?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse;
-  sponsors?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse;
+  donations: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse;
+  sponsors: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly totalInHundreds?: number;
+  readonly totalInHundreds: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly monthlyInHundreds?: number;
+  readonly monthlyInHundreds: number;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse {
-  current?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
-  byAmount?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse;
-  byDate?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse;
+  current: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
+  byAmount: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse;
+  byDate: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
   readonly monthlyAmountInHundreds?: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly totalAmountInHundreds?: number;
+  readonly totalAmountInHundreds: number;
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly startedAtUtc?: Date;
+  readonly startedAtUtc: Date;
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly most?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly most: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly least?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly least: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse {
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly latest?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly latest: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
   /** NOTE: This property will not be serialized. It can only be populated by the server. */
-  readonly oldest?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
+  readonly oldest: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse[];
 }
 
 export interface SponsorkitDomainApiSignupFromGitHubRequest {
-  gitHubAuthenticationCode?: string;
+  gitHubAuthenticationCode: string;
 }
 
 export interface SponsorkitDomainApiSignupFromGitHubResponse {
-  token?: string;
+  token: string;
 }
 
 export interface SponsorkitDomainApiSignupAsSponsorRequest {
-  stripePaymentMethodId?: string;
+  stripePaymentMethodId: string;
 }
 
 export interface SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest {
-  userId?: string;
+  userId: string;
 }
 
 export interface SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest {
-  beneficiaryId?: string;
-  reference?: string;
+  beneficiaryId: string;
+  reference: string;
 }
 
 export interface SponsorkitDomainApiBountiesResponse {
-  bounties?: SponsorkitDomainApiBountiesBountyResponse[];
+  bounties: SponsorkitDomainApiBountiesBountyResponse[];
 }
 
 export interface SponsorkitDomainApiBountiesBountyResponse {
-  amountInHundreds?: number;
-  gitHubIssueId?: number;
-  bountyCount?: number;
-}
-
-export interface SponsorkitDomainApiBountiesIntentRequest {
-  gitHubIssueId?: number;
-  amountInHundreds?: number;
-}
-
-export interface SponsorkitDomainApiBountiesIntentResponse {
-  paymentIntentClientSecret?: string;
-}
-
-export interface SponsorkitDomainApiBountiesIntentPostRequest {
-  paymentIntentId?: string;
+  amountInHundreds: number;
+  gitHubIssueId: number;
+  bountyCount: number;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetRequest {
-  gitHubIssueId?: number;
+  gitHubIssueId: number;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetResponse {
-  bounties?: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
+  bounties: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse {
-  amountInHundreds?: number;
-  creatorUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
-  awardedUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  amountInHundreds: number;
+  creatorUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  awardedUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse {
-  id?: number;
-  gitHubUsername?: string;
+  id: number;
+  gitHubUsername: string;
+}
+
+export interface SponsorkitDomainApiBountiesGitHubIssueIdPostRequest {
+  gitHubIssueId: number;
+  amountInHundreds: number;
 }
 
 export interface SponsorkitDomainApiAccountResponse {
   /** Any object */
-  beneficiary?: any;
+  beneficiary: any;
   /** Any object */
-  sponsor?: any;
+  sponsor: any;
 }
+
+export interface SponsorkitDomainApiAccountPaymentMethodIntentResponse {
+  setupIntentClientSecret: string;
+}
+
+export interface SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse {
+  availability: PaymentMethodAvailability;
+}
+
+/** Defines values for PaymentMethodAvailability. */
+export type PaymentMethodAvailability = "notAvailable" | "available";
 
 /** Optional parameters. */
 export interface GeneralHealthGetOptionalParams
@@ -200,21 +203,6 @@ export interface GeneralApiBountiesGetOptionalParams
 export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse;
 
 /** Optional parameters. */
-export interface GeneralApiBountiesIntentGetOptionalParams
-  extends coreClient.OperationOptions {
-  body?: SponsorkitDomainApiBountiesIntentRequest;
-}
-
-/** Contains response data for the apiBountiesIntentGet operation. */
-export type GeneralApiBountiesIntentGetResponse = SponsorkitDomainApiBountiesIntentResponse;
-
-/** Optional parameters. */
-export interface GeneralApiBountiesIntentPostOptionalParams
-  extends coreClient.OperationOptions {
-  body?: SponsorkitDomainApiBountiesIntentPostRequest;
-}
-
-/** Optional parameters. */
 export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
   extends coreClient.OperationOptions {
   body?: SponsorkitDomainApiBountiesGitHubIssueIdGetRequest;
@@ -224,11 +212,31 @@ export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
 export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse;
 
 /** Optional parameters. */
+export interface GeneralApiBountiesGitHubIssueIdPostOptionalParams
+  extends coreClient.OperationOptions {
+  body?: SponsorkitDomainApiBountiesGitHubIssueIdPostRequest;
+}
+
+/** Optional parameters. */
 export interface GeneralApiAccountGetOptionalParams
   extends coreClient.OperationOptions {}
 
 /** Contains response data for the apiAccountGet operation. */
 export type GeneralApiAccountGetResponse = SponsorkitDomainApiAccountResponse;
+
+/** Optional parameters. */
+export interface GeneralApiAccountPaymentMethodIntentGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiAccountPaymentMethodIntentGet operation. */
+export type GeneralApiAccountPaymentMethodIntentGetResponse = SponsorkitDomainApiAccountPaymentMethodIntentResponse;
+
+/** Optional parameters. */
+export interface GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams
+  extends coreClient.OperationOptions {}
+
+/** Contains response data for the apiAccountPaymentMethodAvailabilityGet operation. */
+export type GeneralApiAccountPaymentMethodAvailabilityGetResponse = SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse;
 
 /** Optional parameters. */
 export interface GeneralOptionalParams extends coreClient.ServiceClientOptions {

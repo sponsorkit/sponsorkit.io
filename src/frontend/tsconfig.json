@@ -11,10 +11,10 @@
         }
       }],
       "target": "es5",
-      "module": "es6",
+      "module": "esnext",
       "lib": ["dom", "es2017"],
       "moduleResolution": "node",
-      "jsx": "react",
+      "jsx": "react-jsx",
       "strict": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,

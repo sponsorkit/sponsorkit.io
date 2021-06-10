@@ -7,6 +7,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryRequest: coreClient.Composite
     modelProperties: {
       beneficiaryId: {
         serializedName: "beneficiaryId",
+        required: true,
         type: {
           name: "Uuid"
         }
@@ -22,6 +23,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryResponse: coreClient.Composit
     modelProperties: {
       id: {
         serializedName: "id",
+        required: true,
         type: {
           name: "Uuid"
         }
@@ -44,12 +46,14 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest: coreC
     modelProperties: {
       beneficiaryId: {
         serializedName: "beneficiaryId",
+        required: true,
         type: {
           name: "Uuid"
         }
       },
       reference: {
         serializedName: "reference",
+        required: true,
         type: {
           name: "String"
         }
@@ -86,12 +90,14 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest: coreCl
     modelProperties: {
       beneficiaryId: {
         serializedName: "beneficiaryId",
+        required: true,
         type: {
           name: "Uuid"
         }
       },
       reference: {
         serializedName: "reference",
+        required: true,
         type: {
           name: "String"
         }
@@ -133,6 +139,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonations
     modelProperties: {
       totalInHundreds: {
         serializedName: "totalInHundreds",
+        required: true,
         readOnly: true,
         type: {
           name: "Number"
@@ -140,6 +147,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonations
       },
       monthlyInHundreds: {
         serializedName: "monthlyInHundreds",
+        required: true,
         readOnly: true,
         type: {
           name: "Number"
@@ -199,6 +207,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorRe
       },
       totalAmountInHundreds: {
         serializedName: "totalAmountInHundreds",
+        required: true,
         readOnly: true,
         type: {
           name: "Number"
@@ -206,6 +215,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorRe
       },
       startedAtUtc: {
         serializedName: "startedAtUtc",
+        required: true,
         readOnly: true,
         type: {
           name: "DateTime"
@@ -223,6 +233,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
     modelProperties: {
       most: {
         serializedName: "most",
+        required: true,
         readOnly: true,
         type: {
           name: "Sequence",
@@ -237,6 +248,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
       },
       least: {
         serializedName: "least",
+        required: true,
         readOnly: true,
         type: {
           name: "Sequence",
@@ -261,6 +273,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
     modelProperties: {
       latest: {
         serializedName: "latest",
+        required: true,
         readOnly: true,
         type: {
           name: "Sequence",
@@ -275,6 +288,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
       },
       oldest: {
         serializedName: "oldest",
+        required: true,
         readOnly: true,
         type: {
           name: "Sequence",
@@ -298,6 +312,7 @@ export const SponsorkitDomainApiSignupFromGitHubRequest: coreClient.CompositeMap
     modelProperties: {
       gitHubAuthenticationCode: {
         serializedName: "gitHubAuthenticationCode",
+        required: true,
         type: {
           name: "String"
         }
@@ -313,6 +328,7 @@ export const SponsorkitDomainApiSignupFromGitHubResponse: coreClient.CompositeMa
     modelProperties: {
       token: {
         serializedName: "token",
+        required: true,
         type: {
           name: "String"
         }
@@ -328,6 +344,7 @@ export const SponsorkitDomainApiSignupAsSponsorRequest: coreClient.CompositeMapp
     modelProperties: {
       stripePaymentMethodId: {
         serializedName: "stripePaymentMethodId",
+        required: true,
         type: {
           name: "String"
         }
@@ -343,6 +360,7 @@ export const SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest: coreCl
     modelProperties: {
       userId: {
         serializedName: "userId",
+        required: true,
         type: {
           name: "Uuid"
         }
@@ -358,12 +376,14 @@ export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreClient
     modelProperties: {
       beneficiaryId: {
         serializedName: "beneficiaryId",
+        required: true,
         type: {
           name: "Uuid"
         }
       },
       reference: {
         serializedName: "reference",
+        required: true,
         type: {
           name: "String"
         }
@@ -379,6 +399,7 @@ export const SponsorkitDomainApiBountiesResponse: coreClient.CompositeMapper = {
     modelProperties: {
       bounties: {
         serializedName: "bounties",
+        required: true,
         type: {
           name: "Sequence",
           element: {
@@ -400,71 +421,23 @@ export const SponsorkitDomainApiBountiesBountyResponse: coreClient.CompositeMapp
     modelProperties: {
       amountInHundreds: {
         serializedName: "amountInHundreds",
+        required: true,
         type: {
           name: "Number"
         }
       },
       gitHubIssueId: {
         serializedName: "gitHubIssueId",
+        required: true,
         type: {
           name: "Number"
         }
       },
       bountyCount: {
         serializedName: "bountyCount",
+        required: true,
         type: {
           name: "Number"
-        }
-      }
-    }
-  }
-};
-
-export const SponsorkitDomainApiBountiesIntentRequest: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentRequest",
-    modelProperties: {
-      gitHubIssueId: {
-        serializedName: "gitHubIssueId",
-        type: {
-          name: "Number"
-        }
-      },
-      amountInHundreds: {
-        serializedName: "amountInHundreds",
-        type: {
-          name: "Number"
-        }
-      }
-    }
-  }
-};
-
-export const SponsorkitDomainApiBountiesIntentResponse: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentResponse",
-    modelProperties: {
-      paymentIntentClientSecret: {
-        serializedName: "paymentIntentClientSecret",
-        type: {
-          name: "String"
-        }
-      }
-    }
-  }
-};
-
-export const SponsorkitDomainApiBountiesIntentPostRequest: coreClient.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesIntentPostRequest",
-    modelProperties: {
-      paymentIntentId: {
-        serializedName: "paymentIntentId",
-        type: {
-          name: "String"
         }
       }
     }
@@ -478,6 +451,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdGetRequest: coreClient.Comp
     modelProperties: {
       gitHubIssueId: {
         serializedName: "gitHubIssueId",
+        required: true,
         type: {
           name: "Number"
         }
@@ -493,6 +467,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreClient.Com
     modelProperties: {
       bounties: {
         serializedName: "bounties",
+        required: true,
         type: {
           name: "Sequence",
           element: {
@@ -515,6 +490,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreClient.
     modelProperties: {
       amountInHundreds: {
         serializedName: "amountInHundreds",
+        required: true,
         type: {
           name: "Number"
         }
@@ -546,14 +522,39 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreCli
     modelProperties: {
       id: {
         serializedName: "id",
+        required: true,
         type: {
           name: "Number"
         }
       },
       gitHubUsername: {
         serializedName: "gitHubUsername",
+        required: true,
         type: {
           name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiBountiesGitHubIssueIdPostRequest: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiBountiesGitHubIssueIdPostRequest",
+    modelProperties: {
+      gitHubIssueId: {
+        serializedName: "gitHubIssueId",
+        required: true,
+        type: {
+          name: "Number"
+        }
+      },
+      amountInHundreds: {
+        serializedName: "amountInHundreds",
+        required: true,
+        type: {
+          name: "Number"
         }
       }
     }
@@ -567,14 +568,49 @@ export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
     modelProperties: {
       beneficiary: {
         serializedName: "beneficiary",
+        required: true,
         type: {
           name: "any"
         }
       },
       sponsor: {
         serializedName: "sponsor",
+        required: true,
         type: {
           name: "any"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiAccountPaymentMethodIntentResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiAccountPaymentMethodIntentResponse",
+    modelProperties: {
+      setupIntentClientSecret: {
+        serializedName: "setupIntentClientSecret",
+        required: true,
+        type: {
+          name: "String"
+        }
+      }
+    }
+  }
+};
+
+export const SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse: coreClient.CompositeMapper = {
+  type: {
+    name: "Composite",
+    className: "SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse",
+    modelProperties: {
+      availability: {
+        serializedName: "availability",
+        required: true,
+        type: {
+          name: "Enum",
+          allowedValues: ["notAvailable", "available"]
         }
       }
     }

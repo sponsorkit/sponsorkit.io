@@ -9,10 +9,9 @@ import * as React from "react"
 
 import Helmet from 'react-helmet';
 
-import "./layout.css"
-import { ThemeProvider } from "@material-ui/core/styles";
-import { CssBaseline } from "@material-ui/core";
-import theme from "../../src/theme";
+import "./layout.scss";
+import ThemeConfig from '../../src/theme';
+
 export default function ({ children }: any) {
   return (<>
     <Helmet>
@@ -22,9 +21,8 @@ export default function ({ children }: any) {
       />
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;display=swap" />
     </Helmet>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeConfig>
       {children}
-    </ThemeProvider>
+    </ThemeConfig>
   </>)
 }

@@ -19,13 +19,15 @@ import {
   GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
   GeneralApiBountiesGetOptionalParams,
   GeneralApiBountiesGetResponse,
-  GeneralApiBountiesIntentGetOptionalParams,
-  GeneralApiBountiesIntentGetResponse,
-  GeneralApiBountiesIntentPostOptionalParams,
   GeneralApiBountiesGitHubIssueIdGetOptionalParams,
   GeneralApiBountiesGitHubIssueIdGetResponse,
+  GeneralApiBountiesGitHubIssueIdPostOptionalParams,
   GeneralApiAccountGetOptionalParams,
-  GeneralApiAccountGetResponse
+  GeneralApiAccountGetResponse,
+  GeneralApiAccountPaymentMethodIntentGetOptionalParams,
+  GeneralApiAccountPaymentMethodIntentGetResponse,
+  GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams,
+  GeneralApiAccountPaymentMethodAvailabilityGetResponse
 } from "./models";
 
 export class General extends GeneralContext {
@@ -161,26 +163,6 @@ export class General extends GeneralContext {
     return this.sendOperationRequest({ options }, apiBountiesGetOperationSpec);
   }
 
-  /** @param options The options parameters. */
-  apiBountiesIntentGet(
-    options?: GeneralApiBountiesIntentGetOptionalParams
-  ): Promise<GeneralApiBountiesIntentGetResponse> {
-    return this.sendOperationRequest(
-      { options },
-      apiBountiesIntentGetOperationSpec
-    );
-  }
-
-  /** @param options The options parameters. */
-  apiBountiesIntentPost(
-    options?: GeneralApiBountiesIntentPostOptionalParams
-  ): Promise<void> {
-    return this.sendOperationRequest(
-      { options },
-      apiBountiesIntentPostOperationSpec
-    );
-  }
-
   /**
    * @param gitHubIssueId
    * @param options The options parameters.
@@ -195,11 +177,45 @@ export class General extends GeneralContext {
     );
   }
 
+  /**
+   * @param gitHubIssueId
+   * @param options The options parameters.
+   */
+  apiBountiesGitHubIssueIdPost(
+    gitHubIssueId: string,
+    options?: GeneralApiBountiesGitHubIssueIdPostOptionalParams
+  ): Promise<void> {
+    return this.sendOperationRequest(
+      { gitHubIssueId, options },
+      apiBountiesGitHubIssueIdPostOperationSpec
+    );
+  }
+
   /** @param options The options parameters. */
   apiAccountGet(
     options?: GeneralApiAccountGetOptionalParams
   ): Promise<GeneralApiAccountGetResponse> {
     return this.sendOperationRequest({ options }, apiAccountGetOperationSpec);
+  }
+
+  /** @param options The options parameters. */
+  apiAccountPaymentMethodIntentGet(
+    options?: GeneralApiAccountPaymentMethodIntentGetOptionalParams
+  ): Promise<GeneralApiAccountPaymentMethodIntentGetResponse> {
+    return this.sendOperationRequest(
+      { options },
+      apiAccountPaymentMethodIntentGetOperationSpec
+    );
+  }
+
+  /** @param options The options parameters. */
+  apiAccountPaymentMethodAvailabilityGet(
+    options?: GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams
+  ): Promise<GeneralApiAccountPaymentMethodAvailabilityGetResponse> {
+    return this.sendOperationRequest(
+      { options },
+      apiAccountPaymentMethodAvailabilityGetOperationSpec
+    );
   }
 }
 // Operation Specifications
@@ -322,29 +338,6 @@ const apiBountiesGetOperationSpec: coreClient.OperationSpec = {
   headerParameters: [Parameters.accept],
   serializer
 };
-const apiBountiesIntentGetOperationSpec: coreClient.OperationSpec = {
-  path: "/api/bounties/intent",
-  httpMethod: "GET",
-  responses: {
-    200: {
-      bodyMapper: Mappers.SponsorkitDomainApiBountiesIntentResponse
-    }
-  },
-  urlParameters: [Parameters.$host],
-  headerParameters: [Parameters.contentType, Parameters.accept],
-  mediaType: "json",
-  serializer
-};
-const apiBountiesIntentPostOperationSpec: coreClient.OperationSpec = {
-  path: "/api/bounties/intent",
-  httpMethod: "POST",
-  responses: { 200: {} },
-  requestBody: Parameters.body8,
-  urlParameters: [Parameters.$host],
-  headerParameters: [Parameters.contentType],
-  mediaType: "json",
-  serializer
-};
 const apiBountiesGitHubIssueIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/bounties/{gitHubIssueId}",
   httpMethod: "GET",
@@ -358,12 +351,47 @@ const apiBountiesGitHubIssueIdGetOperationSpec: coreClient.OperationSpec = {
   mediaType: "json",
   serializer
 };
+const apiBountiesGitHubIssueIdPostOperationSpec: coreClient.OperationSpec = {
+  path: "/api/bounties/{gitHubIssueId}",
+  httpMethod: "POST",
+  responses: { 200: {} },
+  requestBody: Parameters.body8,
+  urlParameters: [Parameters.$host, Parameters.gitHubIssueId],
+  headerParameters: [Parameters.contentType],
+  mediaType: "json",
+  serializer
+};
 const apiAccountGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/account",
   httpMethod: "GET",
   responses: {
     200: {
       bodyMapper: Mappers.SponsorkitDomainApiAccountResponse
+    }
+  },
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.accept],
+  serializer
+};
+const apiAccountPaymentMethodIntentGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/account/payment-method/intent",
+  httpMethod: "GET",
+  responses: {
+    200: {
+      bodyMapper: Mappers.SponsorkitDomainApiAccountPaymentMethodIntentResponse
+    }
+  },
+  urlParameters: [Parameters.$host],
+  headerParameters: [Parameters.accept],
+  serializer
+};
+const apiAccountPaymentMethodAvailabilityGetOperationSpec: coreClient.OperationSpec = {
+  path: "/api/account/payment-method/availability",
+  httpMethod: "GET",
+  responses: {
+    200: {
+      bodyMapper:
+        Mappers.SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse
     }
   },
   urlParameters: [Parameters.$host],

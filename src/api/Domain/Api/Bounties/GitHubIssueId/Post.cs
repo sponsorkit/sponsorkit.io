@@ -9,50 +9,34 @@ using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
-namespace Sponsorkit.Domain.Api.Bounties.Intent
+namespace Sponsorkit.Domain.Api.Bounties.GitHubIssueId
 {
     public record PostRequest(
-        [FromBody] string PaymentIntentId);
+        [FromRoute] long GitHubIssueId,
+        [FromQuery] int AmountInHundreds);
     
     public class Post : BaseAsyncEndpoint
         .WithRequest<PostRequest>
         .WithoutResponse
     {
         private readonly DataContext dataContext;
-        private readonly PaymentIntentService paymentIntentService;
 
         public Post(
-            DataContext dataContext,
-            PaymentIntentService paymentIntentService)
+            DataContext dataContext)
         {
             this.dataContext = dataContext;
-            this.paymentIntentService = paymentIntentService;
         }
         
-        [HttpPost("/api/bounties/intent")]
+        [HttpPost("/api/bounties/{gitHubIssueId}")]
         public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();
 
-            var paymentIntent = await paymentIntentService.GetAsync(
-                request.PaymentIntentId,
-                cancellationToken: cancellationToken);
-            if (paymentIntent == null)
-                return new NotFoundResult();
-
-            var gitHubIssueIdString = paymentIntent.Metadata[Get.GitHubIssueIdStripeMetadataKey];
-            if (!long.TryParse(gitHubIssueIdString, out var gitHubIssueId))
-                throw new InvalidOperationException("No GitHub issue ID associated with Stripe payment intent.");
-
-            var bountyAmountString = paymentIntent.Metadata[Get.BountyAmountStripeMetadataKey];
-            if (!long.TryParse(bountyAmountString, out var bountyAmountInHundreds))
-                throw new InvalidOperationException("No bounty amount associated with Stripe payment intent.");
-            
             await dataContext.ExecuteInTransactionAsync(
                 async () =>
                 {
                     var issue = await dataContext.Issues.SingleAsync(
-                        x => x.GitHubId == gitHubIssueId,
+                        x => x.GitHubId == request.GitHubIssueId,
                         cancellationToken);
 
                     var user = await dataContext.Users.SingleAsync(
@@ -60,16 +44,12 @@ namespace Sponsorkit.Domain.Api.Bounties.Intent
                         cancellationToken);
 
                     var bounty = new BountyBuilder()
-                        .WithAmountInHundreds(bountyAmountInHundreds)
+                        .WithAmountInHundreds(request.AmountInHundreds)
                         .WithCreator(user)
                         .WithIssue(issue)
                         .Build();
                     dataContext.Bounties.Add(bounty);
                     await dataContext.SaveChangesAsync(cancellationToken);
-
-                    await paymentIntentService.ConfirmAsync(
-                        paymentIntent.Id, 
-                        cancellationToken: cancellationToken);
 
                     //TODO: use payment intents.
                     //TODO: charge first, then transfer later: https://stripe.com/docs/connect/charges-transfers

@@ -138,17 +138,7 @@ export default function NewPage() {
                 />
               </Elements>,
             onCompleted: async () => {
-              if(!paymentDetails?.cardNumberElement)
-                return;
-
-              const paymentMethod = await paymentDetails?.stripe?.createPaymentMethod({
-                card: paymentDetails.cardNumberElement,
-                type: "card"
-              });
-              if(paymentMethod?.error)
-                return alert(paymentMethod?.error.message);
-
-              console.log("outer create!", paymentMethod);
+              //TODO: use payment-method-modal.tsx
             }
           }
         ]} 

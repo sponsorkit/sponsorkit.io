@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 
 export function useLocalStorage(key: string): [string, (value: string) => void] {
-    const [currentValue, setCurrentValue] = useState(() => localStorage?.getItem(key) ?? "");
+    const [currentValue, setCurrentValue] = useState(() => 
+        typeof localStorage === "undefined" ? 
+            "" : 
+            (localStorage?.getItem(key) ?? ""));
     const setLocalStorage = useCallback(
-        (value: string) => localStorage.setItem(key, value),
+        (value: string) => typeof localStorage !== "undefined" && localStorage.setItem(key, value),
         []);
 
     useEffect(
         () => {
+            if(typeof localStorage === "undefined")
+                return;
+
             const onStorage = (e: StorageEvent) => {
-                const newValue = localStorage?.getItem(key) ?? "";
+                if(e.key !== key)
+                    return;
+                    
+                const newValue = e.newValue;
                 if(newValue === currentValue)
                     return;
 
-                setCurrentValue(newValue);
+                setCurrentValue(newValue ?? "");
             };
             window.addEventListener("storage", onStorage);
 

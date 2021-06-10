@@ -4,6 +4,6 @@
  * See: https://www.gatsbyjs.com/docs/node-apis/
  */
 
- exports.onCreatePage = async ({ page, actions }) => {
-    const { createPage } = actions;
-  }
+exports.onCreatePage = async ({ page, actions }) => {
+  const { createPage } = actions;
+}

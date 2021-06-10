@@ -7,14 +7,6 @@ module.exports = {
   plugins: [
     `gatsby-plugin-sass`,
     'gatsby-plugin-top-layout',
-    {
-      resolve: `gatsby-plugin-material-ui`,
-      options: {
-        stylesProvider: {
-          injectFirst: true,
-        },
-      },
-    },
     `gatsby-plugin-styled-components`,
     `gatsby-plugin-react-helmet`,
     `gatsby-plugin-image`,
@@ -39,12 +31,6 @@ module.exports = {
         icon: `src/images/gatsby-icon.png`
       },
     },
-    `gatsby-plugin-gatsby-cloud`,
-    {
-      resolve: `gatsby-plugin-s3`,
-      options: {
-        bucketName: "sponsorkit.io",
-      },
-    }
+    `gatsby-plugin-gatsby-cloud`
   ],
 }
