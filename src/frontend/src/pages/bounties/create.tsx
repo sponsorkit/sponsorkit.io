@@ -15,7 +15,14 @@ export default function CreateBountyPage() {
             if(!issueLink)
                 return null;
             
-            const [owner, repo, type, issueNumberString] = new URL(issueLink).pathname.split('/');
+            let url: URL;
+            try {
+                url = new URL(issueLink);
+            } catch {
+                return null;
+            }
+
+            const [owner, repo, type, issueNumberString] = url.pathname.substr(1).split('/');
             if(type !== "issues")
                 return null;
             

@@ -1,7 +1,7 @@
 import { Box, Button, InputAdornment, TextField } from "@material-ui/core";
 import React, { useEffect, useState } from "react";
+import palette from "../../theme/palette";
 import { sponsorshipOptions, amountButton, separator } from "./amount-picker.module.scss";
-import theme from "../../theme";
 import { FeeDisplay } from "./fee-display";
 
 export function AmountPicker(props: {
@@ -24,7 +24,7 @@ export function AmountPicker(props: {
             className={amountButton}
             style={{
               backgroundColor: selectedOption == option.toString() ?
-                theme.palette.primary.main :
+                palette.light.primary.main :
                 "",
               color: selectedOption == option.toString() ?
                 "white" :
