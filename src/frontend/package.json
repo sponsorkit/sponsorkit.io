@@ -6,6 +6,7 @@
   "author": "Mathias Lorenzen",
   "dependencies": {
     "@azure/core-client": "^1.1.2",
+    "@azure/core-http": "^1.2.5",
     "@azure/core-rest-pipeline": "1.0.0-beta.2",
     "@emotion/cache": "^11.4.0",
     "@emotion/react": "^11.4.0",
@@ -24,6 +25,8 @@
     "@octokit/rest": "^18.5.2",
     "@stripe/react-stripe-js": "^1.4.0",
     "@stripe/stripe-js": "^1.13.2",
+    "@types/dompurify": "^2.2.2",
+    "dompurify": "^2.2.9",
     "gatsby": "^3.1.2",
     "gatsby-plugin-gatsby-cloud": "^2.1.0",
     "gatsby-plugin-image": "^1.1.2",
@@ -35,14 +38,17 @@
     "gatsby-source-filesystem": "^3.1.0",
     "gatsby-transformer-sharp": "^3.1.0",
     "lodash": "^4.17.21",
+    "marked": "^2.0.7",
     "prop-types": "^15.7.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-helmet": "^6.1.0",
-    "tslib": "^1.9.3"
+    "tslib": "^1.9.3",
+    "uri-tag": "^1.4.0"
   },
   "devDependencies": {
     "@babel/plugin-transform-react-jsx": "^7.14.5",
+    "@types/marked": "^2.0.3",
     "@types/react-helmet": "^6.1.1",
     "autorest": "^3.1.5",
     "babel-plugin-styled-components": "^1.12.0",
@@ -66,7 +72,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "autorest --reset && autorest --clear-output-folder --use-core-v2 --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
+    "swagger:local": "autorest --reset && autorest --clear-output-folder --use-core-v2=false --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
   },
   "repository": {
     "type": "git",

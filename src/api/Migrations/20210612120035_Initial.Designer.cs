@@ -10,7 +10,7 @@ using Sponsorkit.Domain.Models;
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20210603162536_Initial")]
+    [Migration("20210612120035_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,8 +27,8 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AmountInHundreds")
-                        .HasColumnType("integer");
+                    b.Property<long>("AmountInHundreds")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("AwardedToId")
                         .HasColumnType("uuid");

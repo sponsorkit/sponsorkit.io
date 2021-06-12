@@ -1,8 +1,10 @@
-import * as coreClient from "@azure/core-client";
-import * as coreAuth from "@azure/core-auth";
+import * as coreHttp from "@azure/core-http";
 import { GeneralOptionalParams } from "./models";
 
-export class GeneralContext extends coreClient.ServiceClient {
+const packageName = "@sponsorkit/client";
+const packageVersion = "1.0.0-beta.1";
+
+export class GeneralContext extends coreHttp.ServiceClient {
   $host: string;
 
   /**
@@ -12,7 +14,7 @@ export class GeneralContext extends coreClient.ServiceClient {
    * @param options The parameter options
    */
   constructor(
-    credentials: coreAuth.TokenCredential,
+    credentials: coreHttp.TokenCredential | coreHttp.ServiceClientCredentials,
     $host: string,
     options?: GeneralOptionalParams
   ) {
@@ -27,17 +29,16 @@ export class GeneralContext extends coreClient.ServiceClient {
     if (!options) {
       options = {};
     }
-    const defaults: GeneralOptionalParams = {
-      requestContentType: "application/json; charset=utf-8",
-      credential: credentials
-    };
 
-    const optionsWithDefaults = {
-      ...defaults,
-      ...options,
-      baseUri: options.endpoint || "{$host}"
-    };
-    super(optionsWithDefaults);
+    if (!options.userAgent) {
+      const defaultUserAgent = coreHttp.getDefaultUserAgentValue();
+      options.userAgent = `${packageName}/${packageVersion} ${defaultUserAgent}`;
+    }
+
+    super(credentials, options);
+
+    this.requestContentType = "application/json; charset=utf-8";
+    this.baseUri = options.endpoint || "{$host}";
     // Parameter assignments
     this.$host = $host;
   }

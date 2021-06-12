@@ -70,9 +70,12 @@ namespace Sponsorkit.Infrastructure.AspNet
 
         private void ConfigureAuthentication(IServiceCollection services)
         {
-            var jwtOptions = Configuration.Get<JwtOptions>();
+            var jwtOptions = Configuration.GetOptions<JwtOptions>();
             services
-                .AddAuthentication()
+                .AddAuthentication(options =>
+                {
+                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
                 .AddJwtBearer(options =>
                 {
                     options.Audience = "http://localhost:5000/";
@@ -127,7 +130,8 @@ namespace Sponsorkit.Infrastructure.AspNet
                                 "https://sponsorkit.io"
                             })
                         .AllowAnyHeader()
-                        .AllowAnyMethod());
+                        .AllowAnyMethod()
+                        .AllowCredentials());
             });
 
             services.AddResponseCompression(options =>

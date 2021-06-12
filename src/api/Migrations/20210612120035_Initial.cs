@@ -101,7 +101,7 @@ namespace Sponsorkit.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AmountInHundreds = table.Column<int>(type: "integer", nullable: false),
+                    AmountInHundreds = table.Column<long>(type: "bigint", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     CreatorId = table.Column<Guid>(type: "uuid", nullable: false),
                     AwardedToId = table.Column<Guid>(type: "uuid", nullable: false),

@@ -1,41 +1,19 @@
-import React, {useMemo, useState} from 'react';
-import {Button, TextField} from "@material-ui/core";
-import {createApi, useApi, useOctokit} from "../../hooks/clients";
-import { RestEndpointMethodTypes } from '@octokit/rest';
-import { sum } from 'lodash';
-import { AmountPicker } from '../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
+import {useEffect, useMemo, useState} from 'react';
+import {CardContent, TextField} from "@material-ui/core";
+import {useOctokit} from "../../hooks/clients";
+import uri from 'uri-tag';
 
-type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
+import { extractIssueLinkDetails } from '../../helpers/github-url-extraction';
+import { navigate } from 'gatsby';
+import { Container } from '@material-ui/core';
+
+import * as classes from './create.module.scss';
+import { Card } from '@material-ui/core';
 
 export default function CreateBountyPage() {
     const [issueLink, setIssueLink] = useState("");
     const issueDetails = useMemo(
-        () => {
-            if(!issueLink)
-                return null;
-            
-            let url: URL;
-            try {
-                url = new URL(issueLink);
-            } catch {
-                return null;
-            }
-
-            const [owner, repo, type, issueNumberString] = url.pathname.substr(1).split('/');
-            if(type !== "issues")
-                return null;
-            
-            const parsedNumber = parseInt(issueNumberString);
-            if(isNaN(parsedNumber))
-                return null;
-            
-            return {
-                owner,
-                repo,
-                issueNumber: parsedNumber
-            };
-        },
+        () => extractIssueLinkDetails(issueLink),
         [issueLink]);
     const issue = useOctokit(
         async (client, abortSignal) => {
@@ -43,7 +21,7 @@ export default function CreateBountyPage() {
                 return null;
             
             const issueResponse = await client.issues.get({
-                issue_number: issueDetails.issueNumber,
+                issue_number: issueDetails.number,
                 owner: issueDetails.owner,
                 repo: issueDetails.repo,
                 request: {
@@ -53,78 +31,26 @@ export default function CreateBountyPage() {
             return issueResponse.data;
         },
         [issueDetails]);
-    
-    return <>
-        <TextField 
-            value={issueLink}
-            onChange={e => setIssueLink(e.target.value)} />
-        {issue && <Bounties issue={issue} />}
-    </>
-}
 
-function CreateBounty(props: {
-    gitHubIssueId: number
-}) {
-    const [amount, setAmount] = useState(0);
-    const [shouldCreate, setShouldCreate] = useState(false);
+    useEffect(
+        () => {
+            if(!issue || !issueDetails)
+                return;
 
-    const onCreateClicked = () => setShouldCreate(true);
-
-    const onPaymentMethodAcquired = async () => {
-        const amountInHundreds = amount * 100;
-        await createApi().apiBountiesGitHubIssueIdPost(
-            props.gitHubIssueId.toString(),
-            {
-                body: {
-                    amountInHundreds,
-                    gitHubIssueId: props.gitHubIssueId
-                }
-            });
-
-        alert("Your bounty has been created!");
-    }
-
-    return <>
-        <h1>Create bounty</h1>
-        <AmountPicker
-            options={[10, 25, 50, 100]}
-            onAmountChanged={setAmount} />
-        <Button onClick={onCreateClicked}>
-            Create
-        </Button>
-        {shouldCreate && 
-            <PaymentMethodModal>
-                {onPaymentMethodAcquired}
-            </PaymentMethodModal>}
-    </>;
-}
-
-function Bounties(props: { 
-    issue: OctokitIssueResponse
-}) {
-    const bounties = useApi(
-        async (client, abortSignal) => {
-            const response = await client.apiBountiesGitHubIssueIdGet(
-                props.issue.id.toString(), 
-                { 
-                    abortSignal 
-                });
-            return response?.bounties;
+            navigate(uri`/bounties/view?number=${issueDetails.number}&owner=${issueDetails.owner}&repo=${issueDetails.repo}`);
         },
-        []);
+        [issueDetails, issue]);
     
-    const totalAmountInHundreds = useMemo(
-        () => !bounties ? 0 : sum(bounties.map(x => x.amountInHundreds)),
-        []);
-    
-    return <>
-        <h1>{totalAmountInHundreds}</h1>
-        {bounties?.map(bounty => <div>
-            <p>{bounty.amountInHundreds}</p>
-            <p>{bounty.creatorUser?.gitHubUsername}</p>
-            <p>{bounty.awardedUser?.gitHubUsername}</p>
-        </div>)}
-
-        <CreateBounty gitHubIssueId={props.issue.id} />
-    </>
+    return <Container className={classes.root}>
+        <Card className={classes.card}>
+            <CardContent className={classes.cardContent}>
+                <TextField 
+                    className={classes.textField}
+                    label="GitHub issue URL"
+                    placeholder="https://github.com/foo/bar/issues/1337"
+                    value={issueLink}
+                    onChange={e => setIssueLink(e.target.value)} />
+            </CardContent>
+        </Card>
+    </Container>
 }

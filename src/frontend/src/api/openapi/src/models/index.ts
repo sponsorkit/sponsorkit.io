@@ -1,4 +1,4 @@
-import * as coreClient from "@azure/core-client";
+import * as coreHttp from "@azure/core-http";
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryRequest {
   beneficiaryId: string;
@@ -138,108 +138,180 @@ export type PaymentMethodAvailability = "notAvailable" | "available";
 
 /** Optional parameters. */
 export interface GeneralHealthGetOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Optional parameters. */
 export interface GeneralApiSponsorsBeneficiaryIdGetOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSponsorsBeneficiaryRequest;
 }
 
 /** Contains response data for the apiSponsorsBeneficiaryIdGet operation. */
-export type GeneralApiSponsorsBeneficiaryIdGetResponse = SponsorkitDomainApiSponsorsBeneficiaryResponse;
+export type GeneralApiSponsorsBeneficiaryIdGetResponse = SponsorkitDomainApiSponsorsBeneficiaryResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiSponsorsBeneficiaryResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest;
 }
 
 /** Optional parameters. */
 export interface GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest;
 }
 
 /** Contains response data for the apiSponsorsBeneficiaryIdReferenceGet operation. */
-export type GeneralApiSponsorsBeneficiaryIdReferenceGetResponse = SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse;
+export type GeneralApiSponsorsBeneficiaryIdReferenceGetResponse = SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiSignupFromGithubPostOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSignupFromGitHubRequest;
 }
 
 /** Contains response data for the apiSignupFromGithubPost operation. */
-export type GeneralApiSignupFromGithubPostResponse = SponsorkitDomainApiSignupFromGitHubResponse;
+export type GeneralApiSignupFromGithubPostResponse = SponsorkitDomainApiSignupFromGitHubResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiSignupFromGitHubResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiSignupAsSponsorPostOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSignupAsSponsorRequest;
 }
 
 /** Optional parameters. */
 export interface GeneralApiSignupAsBeneficiaryPostOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Optional parameters. */
 export interface GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest;
 }
 
 /** Optional parameters. */
 export interface GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest;
 }
 
 /** Optional parameters. */
 export interface GeneralApiBountiesGetOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Contains response data for the apiBountiesGet operation. */
-export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse;
+export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiBountiesResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiBountiesGitHubIssueIdGetRequest;
 }
 
 /** Contains response data for the apiBountiesGitHubIssueIdGet operation. */
-export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse;
+export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiBountiesGitHubIssueIdGetResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiBountiesGitHubIssueIdPostOptionalParams
-  extends coreClient.OperationOptions {
+  extends coreHttp.OperationOptions {
   body?: SponsorkitDomainApiBountiesGitHubIssueIdPostRequest;
 }
 
 /** Optional parameters. */
 export interface GeneralApiAccountGetOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Contains response data for the apiAccountGet operation. */
-export type GeneralApiAccountGetResponse = SponsorkitDomainApiAccountResponse;
+export type GeneralApiAccountGetResponse = SponsorkitDomainApiAccountResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiAccountResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiAccountPaymentMethodIntentGetOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Contains response data for the apiAccountPaymentMethodIntentGet operation. */
-export type GeneralApiAccountPaymentMethodIntentGetResponse = SponsorkitDomainApiAccountPaymentMethodIntentResponse;
+export type GeneralApiAccountPaymentMethodIntentGetResponse = SponsorkitDomainApiAccountPaymentMethodIntentResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiAccountPaymentMethodIntentResponse;
+  };
+};
 
 /** Optional parameters. */
 export interface GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams
-  extends coreClient.OperationOptions {}
+  extends coreHttp.OperationOptions {}
 
 /** Contains response data for the apiAccountPaymentMethodAvailabilityGet operation. */
-export type GeneralApiAccountPaymentMethodAvailabilityGetResponse = SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse;
+export type GeneralApiAccountPaymentMethodAvailabilityGetResponse = SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse & {
+  /** The underlying HTTP response. */
+  _response: coreHttp.HttpResponse & {
+    /** The response body as text (string format) */
+    bodyAsText: string;
+
+    /** The response body as parsed JSON or XML */
+    parsedBody: SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse;
+  };
+};
 
 /** Optional parameters. */
-export interface GeneralOptionalParams extends coreClient.ServiceClientOptions {
+export interface GeneralOptionalParams extends coreHttp.ServiceClientOptions {
   /** Overrides client endpoint. */
   endpoint?: string;
 }

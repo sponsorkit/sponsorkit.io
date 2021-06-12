@@ -1,4 +1,4 @@
-import { OperationURLParameter, OperationParameter } from "@azure/core-client";
+import { OperationURLParameter, OperationParameter } from "@azure/core-http";
 import {
   SponsorkitDomainApiSponsorsBeneficiaryRequest as SponsorkitDomainApiSponsorsBeneficiaryRequestMapper,
   SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest as SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequestMapper,

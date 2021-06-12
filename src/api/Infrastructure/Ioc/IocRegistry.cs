@@ -94,6 +94,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             Configure<SqlOptions>();
             Configure<StripeOptions>();
             Configure<EncryptionOptions>();
+            Configure<JwtOptions>();
         }
 
         private void ConfigureDebugHelpers()

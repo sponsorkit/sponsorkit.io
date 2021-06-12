@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
@@ -29,6 +30,7 @@ namespace Sponsorkit.Domain.Api.Bounties
         }
         
         [HttpGet("/api/bounties")]
+        [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var groupedResponse = await dataContext.Bounties

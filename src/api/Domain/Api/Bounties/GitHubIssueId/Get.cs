@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
@@ -36,7 +37,8 @@ namespace Sponsorkit.Domain.Api.Bounties.GitHubIssueId
         }
         
         [HttpGet("/api/bounties/{gitHubIssueId}")]
-        public override async Task<ActionResult<GetResponse>> HandleAsync(GetRequest request, CancellationToken cancellationToken = new CancellationToken())
+        [AllowAnonymous]
+        public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)

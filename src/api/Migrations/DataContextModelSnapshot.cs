@@ -25,8 +25,8 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AmountInHundreds")
-                        .HasColumnType("integer");
+                    b.Property<long>("AmountInHundreds")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("AwardedToId")
                         .HasColumnType("uuid");
