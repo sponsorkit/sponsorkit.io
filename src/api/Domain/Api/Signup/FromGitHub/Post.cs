@@ -116,7 +116,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                 Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.JwtPrivateKey)),
+                        Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
                     SecurityAlgorithms.HmacSha512Signature),
                 Audience = "sponsorkit.io",
                 Issuer = "sponsorkit.io"

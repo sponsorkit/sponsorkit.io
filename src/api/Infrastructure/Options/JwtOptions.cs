@@ -4,6 +4,6 @@ namespace Sponsorkit.Infrastructure.Options
 {
     public class JwtOptions
     {
-        [NotLogged] public string JwtPrivateKey { get; set; } = null!;
+        [NotLogged] public string PrivateKey { get; set; } = null!;
     }
 }

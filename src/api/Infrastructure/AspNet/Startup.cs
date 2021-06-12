@@ -82,7 +82,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                         ValidateIssuer = true,
                         ValidIssuer = "http://localhost:5000/",
                         IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(jwtOptions.JwtPrivateKey)),
+                            Encoding.UTF8.GetBytes(jwtOptions.PrivateKey)),
                     };
                 });
         }
