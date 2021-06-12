@@ -96,12 +96,12 @@ function Bounties(props: {
         []);
     
     return <>
-        <h1>{totalAmountInHundreds}</h1>
+        {/* <h1>{totalAmountInHundreds}</h1>
         {bounties?.map(bounty => <div>
             <p>{bounty.amountInHundreds}</p>
             <p>{bounty.creatorUser?.gitHubUsername}</p>
             <p>{bounty.awardedUser?.gitHubUsername}</p>
-        </div>)}
+        </div>)} */}
 
         <CreateBounty gitHubIssueId={props.issue.id} />
     </>
