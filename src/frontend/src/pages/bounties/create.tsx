@@ -73,7 +73,7 @@ export default function CreateBountyPage() {
                     label="GitHub issue URL"
                     error={!!errorMessage}
                     helperText={errorMessage}
-                    focused
+                    autoFocus
                     disabled={isLoading}
                     placeholder="https://github.com/foo/bar/issues/1337"
                     value={issueLink}
