@@ -12,6 +12,6 @@ export function FeeDisplay(props: {
         (props.amount * 0.029) + 0.30;
 
     return <Typography className={summary}>
-        ${(props.amount + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged monthly (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
+        ${(props.amount + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
     </Typography>
 }

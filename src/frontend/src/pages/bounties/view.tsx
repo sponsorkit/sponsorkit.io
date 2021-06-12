@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Button, CardContent, Typography, Card, CircularProgress} from "@material-ui/core";
+import {Button, CardContent, Typography, Card, CircularProgress, Container} from "@material-ui/core";
 
 import * as classes from './view.module.scss';
 import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
@@ -47,9 +47,9 @@ export default function IssueByIdPage(props: {
     if(issue === null)
         throw new Error("Issue not found.");
 
-    return <>
+    return <Container className={classes.root}>
         <Issue issue={issue} />
-    </>
+    </Container>
 }
 
 function Issue(props: {
@@ -129,17 +129,21 @@ function CreateBounty(props: {
         alert("Your bounty has been created!");
     }
 
-    return <>
-        <h1>Create bounty</h1>
-        <AmountPicker
-            options={[10, 25, 50, 100]}
-            onAmountChanged={setAmount} />
-        <Button onClick={onCreateClicked}>
-            Create
-        </Button>
-        {shouldCreate && 
-            <PaymentMethodModal>
-                {onPaymentMethodAcquired}
-            </PaymentMethodModal>}
-    </>;
+    return <Card className={classes.createBounty}>
+        <CardContent>
+            <Typography variant="h4" component="h3" className={classes.title}>
+                Add bounty
+            </Typography>
+            <AmountPicker
+                options={[10, 25, 50, 100]}
+                onAmountChanged={setAmount} />
+            <Button onClick={onCreateClicked}>
+                Create
+            </Button>
+            {shouldCreate && 
+                <PaymentMethodModal>
+                    {onPaymentMethodAcquired}
+                </PaymentMethodModal>}
+        </CardContent>
+    </Card>;
 }

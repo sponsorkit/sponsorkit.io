@@ -1,35 +1,49 @@
-.issue {
-    width: 846px;
+.root {
+    padding-top: 20px;
 
-    .issue-title {
-        text-transform: uppercase;
-        font-size: 14px;
-    }
+    .issue {
+        max-width: 846px;
+        width: 100%;
 
-    .issue-number {
-        opacity: 0.3;
-        font-weight: 100;
-        padding-left: 5px;
-    }
-
-    .markdown {
-        font-size: 14px;
-        line-height: 21px;
-
-        p {
-            margin-bottom: 16px;
-            margin-block-end: 16px;
+        .issue-title {
+            text-transform: uppercase;
+            font-size: 14px;
         }
 
-        li {
-            list-style-type: none;
+        .issue-number {
+            opacity: 0.3;
+            font-weight: 100;
+            padding-left: 5px;
+        }
 
-            input[type=checkbox] {
-                display: inline-block;
-                margin-bottom: 3.5px;
-                position: relative;
-                top: 1px;
+        .markdown {
+            font-size: 14px;
+            line-height: 21px;
+
+            p {
+                margin-bottom: 16px;
+                margin-block-end: 16px;
             }
+
+            li {
+                list-style-type: none;
+
+                input[type=checkbox] {
+                    display: inline-block;
+                    margin-bottom: 3.5px;
+                    position: relative;
+                    top: 1px;
+                }
+            }
+        }
+    }
+
+    .create-bounty {
+        width: 340px;
+
+        .title {
+            text-align: center;
+            margin-bottom: 10px;
         }
     }
 }
