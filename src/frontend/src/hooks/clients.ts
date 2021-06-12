@@ -7,14 +7,20 @@ export function useOctokit<T>(
     accessor: (octokit: Octokit, abortSignal: AbortSignal) => Promise<T | null>,
     deps: any[]
 ) {
-    const [result, setResult] = useState<T>();
+    const [result, setResult] = useState<T | null | undefined>();
     useEffect(
         () => {
             const abortSignalController = new AbortController();
 
             const client = createOctokit();
             accessor(client, abortSignalController.signal)
-                .then(setResult as any);
+                .then(setResult)
+                .catch(e => {
+                    if('status' in e && e.status === 404)
+                        return setResult(null);
+
+                    throw e;
+                });
 
             return () => {
                 abortSignalController.abort();

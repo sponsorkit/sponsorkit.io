@@ -3,11 +3,11 @@ import { tryCreateUrl } from "./url";
 export function extractIssueLinkDetails(issueLink: string) {
     const [owner, repo, type, issueNumberString] = tryGetPathNames(issueLink);
     if(type !== "issues")
-        return null;
+        return undefined;
             
     const parsedNumber = parseInt(issueNumberString);
     if(isNaN(parsedNumber))
-        return null;
+        return undefined;
 
     return {
         owner,

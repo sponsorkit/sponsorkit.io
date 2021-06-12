@@ -3,7 +3,7 @@
     justify-content: center;
     width: 100%;
     max-width: 700px;
-    padding-top: 60px;
+    padding-top: 20px;
 
     .card {
         width: 100%;
@@ -13,6 +13,10 @@
 
             .text-field {
                 width: 100%;
+            }
+
+            .body {
+                margin-bottom: 30px;
             }
         }
     }
