@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Button, CardContent, Typography, Card, CircularProgress, Container} from "@material-ui/core";
+import {Button, CardContent, Typography, Card, CircularProgress, Container, CardActions, Box, Tooltip} from "@material-ui/core";
 
 import * as classes from './view.module.scss';
 import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
@@ -96,16 +96,39 @@ function Bounties(props: {
     const totalAmountInHundreds = useMemo(
         () => !bounties ? 0 : sum(bounties.map(x => x.amountInHundreds)),
         []);
+
+    const claimError = useMemo(
+        () => {
+            if(totalAmountInHundreds === 0)
+                return "There is no bounty to claim";
+
+            if(props.issue.state === "closed")
+                return "The reward can't be claimed when the issue isn't closed";
+
+            return "";
+        },
+        [props.issue.state, totalAmountInHundreds]);
     
     return <Card className={classes.createBounty}>
         <>
         <CardContent className={classes.bountyAmount}>
-            <Typography component="div" variant="h3" className={classes.amountRaised}>
-                <b>${totalAmountInHundreds}</b> reward
-            </Typography>
-            <Typography component="div" className={classes.amountOfSponsors}>
-                <b>{bounties?.length ?? 0}</b> bounties
-            </Typography>
+            <Box className={classes.labelContainer}>
+                <Typography component="div" variant="h3" className={classes.amountRaised}>
+                    <b>${totalAmountInHundreds}</b> reward
+                </Typography>
+                <Typography component="div" className={classes.amountOfSponsors}>
+                    <b>{bounties?.length ?? 0}</b> bounties
+                </Typography>
+            </Box>
+            <Tooltip title={claimError} className={classes.buttonContainer}>
+                <Button 
+                    className={`${classes.claimButton} ${!!claimError ? classes.disabled : ""}`} 
+                    variant="outlined"
+                    disableRipple={!!claimError}
+                >
+                    Claim
+                </Button>
+            </Tooltip>
         </CardContent>
         <CardContent>
             <CreateBounty 

@@ -47,14 +47,33 @@
         .bounty-amount {
             background-color: #0045ff;
             color: white;
-            text-align: center;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
 
-            .amount-raised {
-                font-weight: 100;
+            .label-container {
+                .amount-raised {
+                    font-weight: 100;
+                }
+
+                .amount-of-sponsors {
+                    opacity: 0.75;
+                }
             }
 
-            .amount-of-sponsors {
-                opacity: 0.75;
+            .button-container {
+                align-self: flex-end;
+            }
+
+            .claim-button {
+                color: rgba(255,255,255,1);
+                border-color: rgba(255,255,255,0.5);
+                background-color: rgba(255,255,255,0.1);
+
+                &.disabled {
+                    color: rgba(255,255,255,0.5);
+                    border-color: rgba(255,255,255,0.1);
+                }
             }
         }
 
