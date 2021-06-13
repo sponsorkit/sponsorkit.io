@@ -262,8 +262,12 @@ function CreateBounty(props: {
         <AmountPicker
             options={[10, 25, 50, 100]}
             onAmountChanged={setAmount} />
-        <Button onClick={onCreateClicked}>
-            Create
+        <Button 
+            className={classes.addButton}
+            variant="contained" 
+            onClick={onCreateClicked}
+        >
+            Add
         </Button>
         {shouldCreate && 
             <PaymentMethodModal>
