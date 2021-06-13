@@ -4,10 +4,13 @@
     .root-wrapper {
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
 
         .issue-box {
             display: flex;
             flex-direction: column;
+            margin: 10px;
 
             .issue {
                 z-index: 11;
@@ -53,6 +56,7 @@
                 z-index: 10;
                 top: -30px;
                 padding-top: 30px;
+                margin-bottom: -20px;
                 background-color: #fbfbfb;
 
                 .date-mark {
@@ -81,53 +85,54 @@
                 }
             }
         }
-    }
 
-    .bounties {
-        width: 340px;
-        margin-left: 20px;
-        align-self: flex-start;
+        .bounties {
+            width: 340px;
+            min-width: 340px;
+            align-self: flex-start;
+            margin: 10px;
 
-        .bounty-amount {
-            background-color: #0045ff;
-            color: white;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
+            .bounty-amount {
+                background-color: #0045ff;
+                color: white;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
 
-            .label-container {
-                .amount-raised {
-                    font-weight: 100;
+                .label-container {
+                    .amount-raised {
+                        font-weight: 100;
+                    }
+
+                    .amount-of-sponsors {
+                        opacity: 0.75;
+                    }
                 }
 
-                .amount-of-sponsors {
-                    opacity: 0.75;
+                .button-container {
+                    align-self: flex-end;
+                }
+
+                .claim-button {
+                    color: rgba(255,255,255,1);
+                    border-color: rgba(255,255,255,0.5);
+                    background-color: rgba(255,255,255,0.1);
+
+                    &.disabled {
+                        color: rgba(255,255,255,0.5);
+                        border-color: rgba(255,255,255,0.1);
+                    }
                 }
             }
 
-            .button-container {
-                align-self: flex-end;
+            .add-button {
+                margin-top: 10px;
             }
 
-            .claim-button {
-                color: rgba(255,255,255,1);
-                border-color: rgba(255,255,255,0.5);
-                background-color: rgba(255,255,255,0.1);
-
-                &.disabled {
-                    color: rgba(255,255,255,0.5);
-                    border-color: rgba(255,255,255,0.1);
-                }
+            .title {
+                text-align: center;
+                margin-bottom: 10px;
             }
-        }
-
-        .add-button {
-            margin-top: 10px;
-        }
-
-        .title {
-            text-align: center;
-            margin-bottom: 10px;
         }
     }
 }
