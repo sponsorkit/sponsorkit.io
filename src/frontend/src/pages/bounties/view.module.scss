@@ -48,28 +48,13 @@
             background-color: #0045ff;
             color: white;
             text-align: center;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-evenly;
 
-            .icon-label {
-                display: flex;
-                flex-direction: row;
+            .amount-raised {
+                font-weight: 100;
+            }
 
-                .typography, .icon {
-                    font-size: 40px;
-                    line-height: 100%;
-                    font-weight: 100;
-                }
-
-                &.amount-raised {
-                }
-
-                &.amount-of-sponsors {
-                    .icon {
-                        margin-right: 5px;
-                    }
-                }
+            .amount-of-sponsors {
+                opacity: 0.75;
             }
         }
 

@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Button, CardContent, Typography, Card, CircularProgress, Container, Box} from "@material-ui/core";
+import {Button, CardContent, Typography, Card, CircularProgress, Container} from "@material-ui/core";
 
 import * as classes from './view.module.scss';
 import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
@@ -100,14 +100,12 @@ function Bounties(props: {
     return <Card className={classes.createBounty}>
         <>
         <CardContent className={classes.bountyAmount}>
-            <Box className={`${classes.amountOfSponsors} ${classes.iconLabel}`}>
-                <GpsNotFixedIcon className={classes.icon} />
-                <Typography className={classes.typography}>{bounties?.length ?? 0}</Typography>
-            </Box>
-            <Box className={`${classes.amountRaised} ${classes.iconLabel}`}>
-                <AttachMoneyIcon className={classes.icon} /> 
-                <Typography className={classes.typography}>{totalAmountInHundreds}</Typography>
-            </Box>
+            <Typography component="div" variant="h3" className={classes.amountRaised}>
+                <b>${totalAmountInHundreds}</b> reward
+            </Typography>
+            <Typography component="div" className={classes.amountOfSponsors}>
+                <b>{bounties?.length ?? 0}</b> bounties
+            </Typography>
         </CardContent>
         <CardContent>
             <CreateBounty 
