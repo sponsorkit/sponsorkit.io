@@ -19,6 +19,7 @@ export function AmountPicker(props: {
           <Button 
             key={`button-${option}`}
             variant="outlined"
+            color="secondary"
             disableElevation
             onClick={() => setSelectedOption(option.toString())}
             className={amountButton}

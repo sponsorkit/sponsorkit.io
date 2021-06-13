@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Button, CardContent, Typography, Card, CircularProgress, Container} from "@material-ui/core";
+import {Button, CardContent, Typography, Card, CircularProgress, Container, Box} from "@material-ui/core";
 
 import * as classes from './view.module.scss';
 import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
@@ -10,6 +10,8 @@ import { createApi, createOctokit, useApi, useOctokit } from '../../hooks/client
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
 import { getUrlParameter } from '../../helpers/url';
+import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
+import GpsNotFixedIcon from '@material-ui/icons/GpsNotFixed';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -95,20 +97,30 @@ function Bounties(props: {
         () => !bounties ? 0 : sum(bounties.map(x => x.amountInHundreds)),
         []);
     
-    return <>
-        {/* <h1>{totalAmountInHundreds}</h1>
-        {bounties?.map(bounty => <div>
-            <p>{bounty.amountInHundreds}</p>
-            <p>{bounty.creatorUser?.gitHubUsername}</p>
-            <p>{bounty.awardedUser?.gitHubUsername}</p>
-        </div>)} */}
-
-        <CreateBounty gitHubIssueId={props.issue.id} />
-    </>
+    return <Card className={classes.createBounty}>
+        <>
+        <CardContent className={classes.bountyAmount}>
+            <Box className={`${classes.amountOfSponsors} ${classes.iconLabel}`}>
+                <GpsNotFixedIcon className={classes.icon} />
+                <Typography className={classes.typography}>{bounties?.length ?? 0}</Typography>
+            </Box>
+            <Box className={`${classes.amountRaised} ${classes.iconLabel}`}>
+                <AttachMoneyIcon className={classes.icon} /> 
+                <Typography className={classes.typography}>{totalAmountInHundreds}</Typography>
+            </Box>
+        </CardContent>
+        <CardContent>
+            <CreateBounty 
+                currentAmount={totalAmountInHundreds / 100}
+                gitHubIssueId={props.issue.id} />
+        </CardContent>
+        </>
+    </Card>
 }
 
 function CreateBounty(props: {
-    gitHubIssueId: number
+    gitHubIssueId: number,
+    currentAmount: number
 }) {
     const [amount, setAmount] = useState(0);
     const [shouldCreate, setShouldCreate] = useState(false);
@@ -129,21 +141,21 @@ function CreateBounty(props: {
         alert("Your bounty has been created!");
     }
 
-    return <Card className={classes.createBounty}>
-        <CardContent>
-            <Typography variant="h4" component="h3" className={classes.title}>
-                Add bounty
-            </Typography>
-            <AmountPicker
-                options={[10, 25, 50, 100]}
-                onAmountChanged={setAmount} />
-            <Button onClick={onCreateClicked}>
-                Create
-            </Button>
-            {shouldCreate && 
-                <PaymentMethodModal>
-                    {onPaymentMethodAcquired}
-                </PaymentMethodModal>}
-        </CardContent>
-    </Card>;
+    return <>
+        <Typography variant="h4" component="h3" className={classes.title}>
+            {props.currentAmount > 0 ?
+                "Increase bounty" :
+                "Add bounty"}
+        </Typography>
+        <AmountPicker
+            options={[10, 25, 50, 100]}
+            onAmountChanged={setAmount} />
+        <Button onClick={onCreateClicked}>
+            Create
+        </Button>
+        {shouldCreate && 
+            <PaymentMethodModal>
+                {onPaymentMethodAcquired}
+            </PaymentMethodModal>}
+    </>;
 }

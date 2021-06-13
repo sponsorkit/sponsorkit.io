@@ -4,6 +4,7 @@
     .issue {
         max-width: 846px;
         width: 100%;
+        float: left;
 
         .issue-title {
             text-transform: uppercase;
@@ -40,7 +41,37 @@
 
     .create-bounty {
         width: 340px;
-        margin-top: 20px;
+        margin-left: 20px;
+        float: left;
+
+        .bounty-amount {
+            background-color: #0045ff;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-evenly;
+
+            .icon-label {
+                display: flex;
+                flex-direction: row;
+
+                .typography, .icon {
+                    font-size: 40px;
+                    line-height: 100%;
+                    font-weight: 100;
+                }
+
+                &.amount-raised {
+                }
+
+                &.amount-of-sponsors {
+                    .icon {
+                        margin-right: 5px;
+                    }
+                }
+            }
+        }
 
         .title {
             text-align: center;
