@@ -23,6 +23,19 @@ namespace Sponsorkit.Infrastructure
                 );
             }
 
+            foreach (var propertyPair in schema.Properties)
+            {
+                if (propertyPair.Value.Reference == null)
+                    continue;
+
+                var pascalCaseName = char.ToUpper(propertyPair.Key[0]) + propertyPair.Key.Substring(1);
+                var property = type.GetProperty(pascalCaseName);
+                if (!property.IsNonNullableReferenceType())
+                {
+                    propertyPair.Value.Nullable = true;
+                }
+            }
+
             schema.AdditionalPropertiesAllowed = true;
             schema.AdditionalProperties = null;
         }

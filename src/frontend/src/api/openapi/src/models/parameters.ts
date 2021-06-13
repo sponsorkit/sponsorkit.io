@@ -7,7 +7,6 @@ import {
   SponsorkitDomainApiSignupAsSponsorRequest as SponsorkitDomainApiSignupAsSponsorRequestMapper,
   SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest as SponsorkitDomainApiSignupActivateStripeAccountUserIdRequestMapper,
   SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest as SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper,
-  SponsorkitDomainApiBountiesGitHubIssueIdGetRequest as SponsorkitDomainApiBountiesGitHubIssueIdGetRequestMapper,
   SponsorkitDomainApiBountiesGitHubIssueIdPostRequest as SponsorkitDomainApiBountiesGitHubIssueIdPostRequestMapper
 } from "../models/mappers";
 
@@ -115,12 +114,23 @@ export const body6: OperationParameter = {
   mapper: SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequestMapper
 };
 
-export const body7: OperationParameter = {
-  parameterPath: ["options", "body"],
-  mapper: SponsorkitDomainApiBountiesGitHubIssueIdGetRequestMapper
+export const gitHubIssueId: OperationURLParameter = {
+  parameterPath: "gitHubIssueId",
+  mapper: {
+    serializedName: "gitHubIssueId",
+    required: true,
+    type: {
+      name: "Number"
+    }
+  }
 };
 
-export const gitHubIssueId: OperationURLParameter = {
+export const body7: OperationParameter = {
+  parameterPath: ["options", "body"],
+  mapper: SponsorkitDomainApiBountiesGitHubIssueIdPostRequestMapper
+};
+
+export const gitHubIssueId1: OperationURLParameter = {
   parameterPath: "gitHubIssueId",
   mapper: {
     serializedName: "gitHubIssueId",
@@ -129,9 +139,4 @@ export const gitHubIssueId: OperationURLParameter = {
       name: "String"
     }
   }
-};
-
-export const body8: OperationParameter = {
-  parameterPath: ["options", "body"],
-  mapper: SponsorkitDomainApiBountiesGitHubIssueIdPostRequestMapper
 };

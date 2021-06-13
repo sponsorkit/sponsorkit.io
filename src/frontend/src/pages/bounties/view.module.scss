@@ -1,48 +1,91 @@
 .root {
     padding-top: 20px;
 
-    .issue {
-        max-width: 846px;
-        width: 100%;
-        float: left;
+    .root-wrapper {
+        display: flex;
+        flex-direction: row;
 
-        .issue-title {
-            text-transform: uppercase;
-            font-size: 14px;
-        }
+        .issue-box {
+            display: flex;
+            flex-direction: column;
 
-        .issue-number {
-            opacity: 0.3;
-            font-weight: 100;
-            padding-left: 5px;
-        }
+            .issue {
+                z-index: 11;
+                max-width: 846px;
+                width: 100%;
 
-        .markdown {
-            font-size: 14px;
-            line-height: 21px;
+                .issue-title {
+                    text-transform: uppercase;
+                    font-size: 14px;
+                }
 
-            p {
-                margin-bottom: 16px;
-                margin-block-end: 16px;
+                .issue-number {
+                    opacity: 0.3;
+                    font-weight: 100;
+                    padding-left: 5px;
+                }
+
+                .markdown {
+                    font-size: 14px;
+                    line-height: 21px;
+
+                    p {
+                        margin-bottom: 16px;
+                        margin-block-end: 16px;
+                    }
+
+                    li {
+                        list-style-type: none;
+
+                        input[type=checkbox] {
+                            display: inline-block;
+                            margin-bottom: 3.5px;
+                            position: relative;
+                            top: 1px;
+                        }
+                    }
+                }
             }
 
-            li {
-                list-style-type: none;
+            .bounty-activity {
+                position: relative;
+                z-index: 10;
+                top: -30px;
+                padding-top: 30px;
+                background-color: #f8f8f8;
 
-                input[type=checkbox] {
-                    display: inline-block;
-                    margin-bottom: 3.5px;
-                    position: relative;
-                    top: 1px;
+                .date-mark {
+                    padding-top: 7px;
+
+                    .date, .time {
+                        display: block;
+                        font-size: 12px;
+                        line-height: 16px;
+                    }
+
+                    .time {
+                        opacity: 0.75;
+                    }
+                }
+
+                .timeline-content {
+                    justify-content: center;
+                    display: flex;
+                    flex-direction: column;
+                    margin-bottom: 12px;
+
+                    p {
+                        justify-self: center;
+                    }
                 }
             }
         }
     }
 
-    .create-bounty {
+    .bounties {
         width: 340px;
         margin-left: 20px;
-        float: left;
+        align-self: flex-start;
 
         .bounty-amount {
             background-color: #0045ff;

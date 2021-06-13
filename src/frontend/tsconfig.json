@@ -11,8 +11,8 @@
         }
       }],
       "target": "es5",
-      "module": "esnext",
-      "lib": ["dom", "es2017"],
+      "module": "es2015",
+      "lib": ["dom", "ES2015", "ES2016", "ES2017"],
       "moduleResolution": "node",
       "jsx": "react-jsx",
       "strict": true,
@@ -22,6 +22,11 @@
       "emitDecoratorMetadata": true,
       "noEmit": true,
       "skipLibCheck": true,
-      "importHelpers": true
+      "importHelpers": true,
+      "noEmitHelpers": false,
+      "baseUrl": ".",
+      "paths": {
+        "tslib" : ["./node_modules/tslib/tslib.d.ts"]
+      }
     }
 }

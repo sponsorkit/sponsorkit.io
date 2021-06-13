@@ -444,22 +444,6 @@ export const SponsorkitDomainApiBountiesBountyResponse: coreHttp.CompositeMapper
   }
 };
 
-export const SponsorkitDomainApiBountiesGitHubIssueIdGetRequest: coreHttp.CompositeMapper = {
-  type: {
-    name: "Composite",
-    className: "SponsorkitDomainApiBountiesGitHubIssueIdGetRequest",
-    modelProperties: {
-      gitHubIssueId: {
-        serializedName: "gitHubIssueId",
-        required: true,
-        type: {
-          name: "Number"
-        }
-      }
-    }
-  }
-};
-
 export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreHttp.CompositeMapper = {
   type: {
     name: "Composite",
@@ -493,6 +477,13 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreHttp.Co
         required: true,
         type: {
           name: "Number"
+        }
+      },
+      createdAtUtc: {
+        serializedName: "createdAtUtc",
+        required: true,
+        type: {
+          name: "DateTime"
         }
       },
       creatorUser: {
@@ -568,14 +559,12 @@ export const SponsorkitDomainApiAccountResponse: coreHttp.CompositeMapper = {
     modelProperties: {
       beneficiary: {
         serializedName: "beneficiary",
-        required: true,
         type: {
           name: "any"
         }
       },
       sponsor: {
         serializedName: "sponsor",
-        required: true,
         type: {
           name: "any"
         }
@@ -607,7 +596,6 @@ export const SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse: coreHt
     modelProperties: {
       availability: {
         serializedName: "availability",
-        required: true,
         type: {
           name: "Enum",
           allowedValues: ["notAvailable", "available"]

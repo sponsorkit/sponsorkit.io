@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -17,6 +18,7 @@ namespace Sponsorkit.Domain.Api.Bounties.GitHubIssueId
 
     public record BountyResponse(
         long AmountInHundreds,
+        DateTime CreatedAtUtc,
         BountyUserResponse CreatorUser,
         BountyUserResponse? AwardedUser);
 
@@ -52,6 +54,7 @@ namespace Sponsorkit.Domain.Api.Bounties.GitHubIssueId
             return new GetResponse(issue.Bounties
                 .Select(x => new BountyResponse(
                     x.AmountInHundreds,
+                    x.CreatedAtUtc,
                     new BountyUserResponse(
                         x.Creator.GitHub!.Id,
                         x.Creator.GitHub.Username),

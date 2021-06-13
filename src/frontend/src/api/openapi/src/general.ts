@@ -213,7 +213,7 @@ export class General extends GeneralContext {
    * @param options The options parameters.
    */
   apiBountiesGitHubIssueIdGet(
-    gitHubIssueId: string,
+    gitHubIssueId: number,
     options?: GeneralApiBountiesGitHubIssueIdGetOptionalParams
   ): Promise<GeneralApiBountiesGitHubIssueIdGetResponse> {
     const operationArguments: coreHttp.OperationArguments = {
@@ -412,16 +412,15 @@ const apiBountiesGitHubIssueIdGetOperationSpec: coreHttp.OperationSpec = {
     }
   },
   urlParameters: [Parameters.$host, Parameters.gitHubIssueId],
-  headerParameters: [Parameters.contentType, Parameters.accept],
-  mediaType: "json",
+  headerParameters: [Parameters.accept],
   serializer
 };
 const apiBountiesGitHubIssueIdPostOperationSpec: coreHttp.OperationSpec = {
   path: "/api/bounties/{gitHubIssueId}",
   httpMethod: "POST",
   responses: { 200: {} },
-  requestBody: Parameters.body8,
-  urlParameters: [Parameters.$host, Parameters.gitHubIssueId],
+  requestBody: Parameters.body7,
+  urlParameters: [Parameters.$host, Parameters.gitHubIssueId1],
   headerParameters: [Parameters.contentType],
   mediaType: "json",
   serializer

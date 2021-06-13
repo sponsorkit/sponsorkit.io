@@ -12,9 +12,11 @@ import * as classes from './create.module.scss';
 export default function CreateBountyPage() {
     const [issueLink, setIssueLink] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    
     const issueDetails = useMemo(
         () => extractIssueLinkDetails(issueLink),
         [issueLink]);
+
     const issue = useOctokit(
         async (client, abortSignal) => {
             if(!issueDetails)
@@ -37,6 +39,7 @@ export default function CreateBountyPage() {
             }
         },
         [issueDetails]);
+
     const errorMessage = useMemo(
         () => {
             if(isLoading)

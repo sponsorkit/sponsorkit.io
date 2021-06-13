@@ -35,7 +35,7 @@ export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonat
 }
 
 export interface SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse {
-  current: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
+  current?: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse;
   byAmount: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse;
   byDate: SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse;
 }
@@ -94,18 +94,15 @@ export interface SponsorkitDomainApiBountiesBountyResponse {
   bountyCount: number;
 }
 
-export interface SponsorkitDomainApiBountiesGitHubIssueIdGetRequest {
-  gitHubIssueId: number;
-}
-
 export interface SponsorkitDomainApiBountiesGitHubIssueIdGetResponse {
   bounties: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[];
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse {
   amountInHundreds: number;
+  createdAtUtc: Date;
   creatorUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
-  awardedUser: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
+  awardedUser?: SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse;
 }
 
 export interface SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse {
@@ -120,9 +117,9 @@ export interface SponsorkitDomainApiBountiesGitHubIssueIdPostRequest {
 
 export interface SponsorkitDomainApiAccountResponse {
   /** Any object */
-  beneficiary: any;
+  beneficiary?: any;
   /** Any object */
-  sponsor: any;
+  sponsor?: any;
 }
 
 export interface SponsorkitDomainApiAccountPaymentMethodIntentResponse {
@@ -130,7 +127,7 @@ export interface SponsorkitDomainApiAccountPaymentMethodIntentResponse {
 }
 
 export interface SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse {
-  availability: PaymentMethodAvailability;
+  availability?: PaymentMethodAvailability;
 }
 
 /** Defines values for PaymentMethodAvailability. */
@@ -240,9 +237,7 @@ export type GeneralApiBountiesGetResponse = SponsorkitDomainApiBountiesResponse 
 
 /** Optional parameters. */
 export interface GeneralApiBountiesGitHubIssueIdGetOptionalParams
-  extends coreHttp.OperationOptions {
-  body?: SponsorkitDomainApiBountiesGitHubIssueIdGetRequest;
-}
+  extends coreHttp.OperationOptions {}
 
 /** Contains response data for the apiBountiesGitHubIssueIdGet operation. */
 export type GeneralApiBountiesGitHubIssueIdGetResponse = SponsorkitDomainApiBountiesGitHubIssueIdGetResponse & {

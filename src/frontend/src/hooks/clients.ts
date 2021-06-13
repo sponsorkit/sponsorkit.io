@@ -1,4 +1,4 @@
-import { HttpResponse, RestError } from "@azure/core-http";
+import { RestError } from "@azure/core-http";
 import { Octokit } from "@octokit/rest";
 import { useEffect, useState } from "react";
 import { General } from "../api/openapi/src";
@@ -12,15 +12,13 @@ export function useOctokit<T>(
         () => {
             const abortSignalController = new AbortController();
 
-            const client = createOctokit();
-            accessor(client, abortSignalController.signal)
-                .then(setResult)
-                .catch(e => {
-                    if('status' in e && e.status === 404)
-                        return setResult(null);
+            async function effect() {
+                const result = await makeOctokitCall(async (client) => 
+                    await accessor(client, abortSignalController.signal));
+                setResult(result);
+            }
 
-                    throw e;
-                });
+            effect();
 
             return () => {
                 abortSignalController.abort();
@@ -45,24 +43,46 @@ export function createApi() {
         });
 }
 
+export async function makeApiCall<T>(action: (client: General) => Promise<T>): Promise<T|null> {
+    try {
+        const client = createApi();
+        return await action(client);
+    } catch(e) {
+        if(e instanceof RestError && e.response?.status === 404)
+            return null;
+
+        throw e;
+    }
+}
+
+export async function makeOctokitCall<T>(action: (client: Octokit) => Promise<T>): Promise<T|null> {
+    try {
+        const client = createOctokit();
+        return await action(client);
+    } catch(e) {
+        if('status' in e && e.status === 404)
+            return null;
+
+        throw e;
+    }
+}
+
 export function useApi<T>(
-    accessor: (client: General, abortSignal: AbortSignal) => Promise<T>,
+    accessor: (client: General, abortSignal: AbortSignal) => Promise<T|null>,
     deps: any[]
 ) {
-    const [result, setResult] = useState<T>();
+    const [result, setResult] = useState<T|null>();
     useEffect(
         () => {
             const abortSignalController = new AbortController();
 
-            const client = createApi();
-            accessor(client, abortSignalController.signal)
-                .then(setResult)
-                .catch(e => {
-                    if(e instanceof RestError && e.response?.status === 404)
-                        return null;
+            async function effect() {
+                const result = await makeApiCall(async (client) => 
+                    await accessor(client, abortSignalController.signal));
+                setResult(result);
+            }
 
-                    throw e;
-                });
+            effect();
 
             return () => {
                 abortSignalController.abort();
