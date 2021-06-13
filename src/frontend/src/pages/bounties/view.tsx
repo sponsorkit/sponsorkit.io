@@ -52,9 +52,10 @@ export default function IssueByIdPage(props: {
                 if(!issue)
                     return;
                 
-                const response = await makeApiCall(async client => 
-                    await client.apiBountiesGitHubIssueIdGet(issue.id));
-                setBounties(response?.bounties ?? null);
+                // const response = await makeApiCall(async client => 
+                //     await client.apiBountiesGitHubIssueIdGet(issue.id));
+                // setBounties(response?.bounties ?? null);
+                setBounties(null);
             }
             
             effect();
