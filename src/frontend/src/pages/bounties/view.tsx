@@ -6,7 +6,7 @@ import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction'
 import { Markdown } from '../../components/markdown';
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { orderBy, sum } from 'lodash';
-import { createApi, makeApiCall, makeOctokitCall } from '../../hooks/clients';
+import { createApi, makeOctokitCall } from '../../hooks/clients';
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
 import { getUrlParameter } from '../../helpers/url';
@@ -14,6 +14,7 @@ import { TimelineItem, TimelineSeparator, TimelineDot, TimelineConnector, Timeli
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '../../api/openapi/src';
+import { BountyhuntTemplate } from '.';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -62,17 +63,20 @@ export default function IssueByIdPage(props: {
         },
         [issue?.id]);
 
-    if(issue === undefined || bounties === undefined)
-        return <CircularProgress />;
+    if(issue === undefined || bounties === undefined) {
+        return <BountyhuntTemplate>
+            <CircularProgress />
+        </BountyhuntTemplate>;
+    }
 
     if(issue === null)
         throw new Error("Issue not found.");
 
-    return <Container className={classes.root}>
+    return <BountyhuntTemplate>
         <Issue 
             issue={issue}
             bounties={bounties} />
-    </Container>
+    </BountyhuntTemplate>
 }
 
 type Event = {
@@ -128,10 +132,10 @@ function Issue(props: {
         <Box className={classes.issueBox}>
             <Card className={classes.issue}>
                 <CardContent>
-                    <Typography color="textSecondary" gutterBottom className={classes.issueTitle}>
+                    <Typography color="textSecondary" gutterBottom className={classes.repoTitle}>
                         {repo.owner}/{repo.name}
                     </Typography>
-                    <Typography variant="h3" component="h1">
+                    <Typography variant="h3" component="h1" className={classes.issueTitle}>
                         {props.issue.title} <span className={classes.issueNumber}>#{props.issue.number}</span>
                     </Typography>
                     <Markdown 
@@ -140,38 +144,36 @@ function Issue(props: {
                 </CardContent>
             </Card>
             <Card className={classes.bountyActivity}>
-                <CardContent>
-                    <Timeline>
-                        {eventsOrdered.map((e, i) => {
-                            if(!e)
-                                return null;
+                <Timeline>
+                    {eventsOrdered.map((e, i) => {
+                        if(!e)
+                            return null;
 
-                            const IconComponent = e.icon;
-                            const isLast = i === events.length - 1;
-                            return <TimelineItem>
-                                <TimelineOppositeContent>
-                                    <Typography variant="body2" color="textSecondary" className={classes.dateMark}>
-                                        <span className={classes.date}>{e.time.toLocaleDateString()}</span>
-                                        <span className={classes.time}>{e.time.toLocaleTimeString()}</span>
-                                    </Typography>
-                                </TimelineOppositeContent>
-                                <TimelineSeparator>
-                                    <TimelineDot>
-                                        <IconComponent />
-                                    </TimelineDot>
-                                    {!isLast && <TimelineConnector />}
-                                </TimelineSeparator>
-                                <TimelineContent className={classes.timelineContent}>
-                                    <Typography fontWeight="bold" color="primary">{e.title}</Typography>
-                                    {e.description && 
-                                        <Typography fontSize="14px" color="textSecondary">
-                                            {e.description}
-                                        </Typography>}
-                                </TimelineContent>
-                            </TimelineItem>;
-                        })}
-                    </Timeline>
-                </CardContent>
+                        const IconComponent = e.icon;
+                        const isLast = i === events.length - 1;
+                        return <TimelineItem>
+                            <TimelineOppositeContent>
+                                <Typography variant="body2" color="textSecondary" className={classes.dateMark}>
+                                    <span className={classes.date}>{e.time.toLocaleDateString()}</span>
+                                    <span className={classes.time}>{e.time.toLocaleTimeString()}</span>
+                                </Typography>
+                            </TimelineOppositeContent>
+                            <TimelineSeparator>
+                                <TimelineDot>
+                                    <IconComponent />
+                                </TimelineDot>
+                                {!isLast && <TimelineConnector />}
+                            </TimelineSeparator>
+                            <TimelineContent className={classes.timelineContent}>
+                                <Typography fontWeight="bold" color="primary" className={classes.title}>{e.title}</Typography>
+                                {e.description && 
+                                    <Typography fontSize="14px" color="textSecondary" className={classes.subtext}>
+                                        {e.description}
+                                    </Typography>}
+                            </TimelineContent>
+                        </TimelineItem>;
+                    })}
+                </Timeline>
             </Card>
         </Box>
         <Bounties 

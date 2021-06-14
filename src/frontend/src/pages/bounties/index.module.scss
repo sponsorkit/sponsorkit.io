@@ -1,0 +1,53 @@
+.content-root {
+    padding-top: 100px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.app-bar {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+
+    .logo {
+        margin: 20px;
+        display: flex;
+        flex-direction: row;
+        color: #0045FF;
+        align-content: center;
+        justify-content: center;
+
+        .text-container {
+            display: flex;
+            flex-direction: column;
+            place-self: flex-end;
+
+            .main-text {
+                font-size: 30px;
+                font-weight: 100;
+                line-height: 30px;
+                letter-spacing: -1px;
+            }
+
+            .secondary-text {
+                font-size: 10px;
+                opacity: 0.4;
+                line-height: 10px;
+                color: black;
+            }
+
+            .main-text, .secondary-text {
+                text-transform: lowercase;
+                display: block;
+                cursor: default;
+            }
+        }
+
+        .image {
+            width: 50px;
+            height: 50px;
+            margin-right: 5px;
+        }
+    }
+}

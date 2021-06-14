@@ -8,6 +8,7 @@ import { navigate } from 'gatsby';
 import { Container } from '@material-ui/core';
 
 import * as classes from './create.module.scss';
+import { BountyhuntTemplate } from '.';
 
 export default function CreateBountyPage() {
     const [issueLink, setIssueLink] = useState("");
@@ -62,26 +63,28 @@ export default function CreateBountyPage() {
         },
         [issueDetails, issue]);
     
-    return <Container className={classes.root}>
-        <Card className={classes.card}>
-            <CardContent className={classes.cardContent}>
-                <Typography variant="h3" component="h1">
-                    Create a new bounty
-                </Typography>
-                <Typography variant="body2" component="p" className={classes.body}>
-                    Paste the full URL of the GitHub issue you want to put a bounty on.
-                </Typography>
-                <TextField 
-                    className={classes.textField}
-                    label="GitHub issue URL"
-                    error={!!errorMessage}
-                    helperText={errorMessage}
-                    autoFocus
-                    disabled={isLoading}
-                    placeholder="https://github.com/foo/bar/issues/1337"
-                    value={issueLink}
-                    onChange={e => setIssueLink(e.target.value)} />
-            </CardContent>
-        </Card>
-    </Container>
+    return <BountyhuntTemplate>
+        <Container className={classes.root}>
+            <Card className={classes.card}>
+                <CardContent className={classes.cardContent}>
+                    <Typography variant="h3" component="h1">
+                        Create a new bounty
+                    </Typography>
+                    <Typography variant="body2" component="p" className={classes.body}>
+                        Paste the full URL of the GitHub issue you want to put a bounty on.
+                    </Typography>
+                    <TextField 
+                        className={classes.textField}
+                        label="GitHub issue URL"
+                        error={!!errorMessage}
+                        helperText={errorMessage}
+                        autoFocus
+                        disabled={isLoading}
+                        placeholder="https://github.com/foo/bar/issues/1337"
+                        value={issueLink}
+                        onChange={e => setIssueLink(e.target.value)} />
+                </CardContent>
+            </Card>
+        </Container>
+    </BountyhuntTemplate>
 }
