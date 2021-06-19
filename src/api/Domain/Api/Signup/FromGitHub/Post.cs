@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -16,6 +17,7 @@ using Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Infrastructure.Options;
+using Sponsorkit.Infrastructure.Options.GitHub;
 using Stripe;
 using SponsorkitUser = Sponsorkit.Domain.Models.User;
 using GitHubUser = Octokit.User;
@@ -35,12 +37,12 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly IGitHubClient gitHubClient;
         private readonly IAesEncryptionHelper aesEncryptionHelper;
-        
+
         private readonly IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor;
         private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
-        
+
         private readonly CustomerService customerService;
-        
+
         private readonly DataContext dataContext;
 
         public Post(
@@ -69,7 +71,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                 return new BadRequestObjectResult("Request data was incorrect.");
 
             var gitHubCode = request.GitHubAuthenticationCode;
-            
+
             var gitHubAccessToken = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(gitHubCode);
             var currentGitHubUser = await GetCurrentGitHubUserFromTokenAsync(gitHubAccessToken);
 
@@ -86,12 +88,13 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
 
                     var user = new UserBuilder()
                         .WithEmail(await aesEncryptionHelper.EncryptAsync(email))
+                        .WithStripeCustomerId(string.Empty)
                         .WithGitHub(
                             currentGitHubUser.Id,
                             currentGitHubUser.Login,
                             await aesEncryptionHelper.EncryptAsync(gitHubAccessToken))
                         .Build();
-                    
+
                     await dataContext.Users.AddAsync(user, cancellationToken);
                     await dataContext.SaveChangesAsync(cancellationToken);
 
@@ -115,7 +118,9 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, userId.ToString())
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(15),
+                Expires = Debugger.IsAttached ? 
+                    DateTime.UtcNow.AddHours(24) : 
+                    DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
@@ -129,7 +134,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
         }
 
         private async Task<Customer> CreateStripeCustomerForUserAsync(
-            string email, 
+            string email,
             CancellationToken cancellationToken)
         {
             return await customerService.CreateAsync(
@@ -154,8 +159,8 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
 
             var tokenResponse = await gitHubClient.Oauth.CreateAccessToken(
                 new OauthTokenRequest(
-                    options.ClientId,
-                    options.ClientSecret,
+                    options.OAuth.ClientId,
+                    options.OAuth.ClientSecret,
                     code));
 
             return

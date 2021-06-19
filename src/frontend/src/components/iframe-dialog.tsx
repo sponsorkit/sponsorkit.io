@@ -1,11 +1,13 @@
 import { useLocation } from '@reach/router';
 import { useEffect, useRef } from 'react';
+import { getMessage, WindowMessages } from '../utils/window-messages';
 
 type Props = {
     url: string,
     open: boolean,
+    onClose?: () => void,
     options?: Partial<Options>,
-    onMessageReceived?: (message: any) => void,
+    onMessageReceived?: (message: WindowMessages) => void,
 };
 
 type StringBoolean = 'yes'|'no';
@@ -28,19 +30,36 @@ export default function IframeDialog(props: Props) {
     useEffect(
         () => {
             const onMessageReceived = (e: MessageEvent<any>) => {
-                console.log('message', e);
-                
                 if(e.origin !== location.origin)
                     return;
 
-                props.onMessageReceived && props.onMessageReceived(e.data);
+                var message = getMessage(e.data);
+                if(!message)
+                    return;
+
+                if(message.type === "on-window-close")
+                    return onClose();
+
+                props.onMessageReceived && props.onMessageReceived(message);
             };
+
+            const removeEventListeners = () => {
+                if(!windowRef.current)
+                    return;
+
+                windowRef.current.removeEventListener("message", onMessageReceived);
+            }
+
+            const onClose = () => {
+                removeEventListeners();
+                props.onClose && props.onClose();
+            }
 
             const close = () => {
                 if(!windowRef.current)
                     return;
                 
-                windowRef.current.removeEventListener("message", onMessageReceived);
+                removeEventListeners();
                 windowRef.current.close();
             }
 
@@ -50,7 +69,10 @@ export default function IframeDialog(props: Props) {
                         props.url, 
                         'sponsorkit-window', 
                         optionsToString(props.options));
-                    windowRef.current?.addEventListener("message", onMessageReceived);
+                    if(!windowRef.current)
+                        throw new Error("Could not create window.");
+
+                    windowRef.current.addEventListener("message", onMessageReceived);
                 }
             } else {
                 close();

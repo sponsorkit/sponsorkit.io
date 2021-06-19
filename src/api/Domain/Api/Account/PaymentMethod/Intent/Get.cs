@@ -41,7 +41,7 @@ namespace Sponsorkit.Domain.Api.Account.PaymentMethod.Intent
             var intent = await setupIntentService.CreateAsync(
                 new SetupIntentCreateOptions()
                 {
-                    Confirm = true,
+                    Confirm = false,
                     Customer = user.StripeCustomerId
                 },
                 cancellationToken: cancellationToken);

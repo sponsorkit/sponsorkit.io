@@ -3,11 +3,11 @@
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 30px;
 
     .issue-box {
         display: flex;
         flex-direction: column;
-        margin: 10px;
 
         .issue {
             z-index: 11;
@@ -97,7 +97,6 @@
         width: 340px;
         min-width: 340px;
         align-self: flex-start;
-        margin: 10px;
 
         .bounty-amount {
             background-color: #0045ff;

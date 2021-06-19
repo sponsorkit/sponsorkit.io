@@ -6,24 +6,29 @@ export function useLocalStorage(key: string): [string, (value: string) => void] 
             "" : 
             (localStorage?.getItem(key) ?? ""));
     const setLocalStorage = useCallback(
-        (value: string) => typeof localStorage !== "undefined" && localStorage.setItem(key, value),
+        (value: string) => {
+            localStorage.setItem(key, value);
+            onStorage({
+                key,
+                newValue: value
+            });
+        },
+        []);
+    const onStorage = useCallback(
+        (e: Partial<StorageEvent>) => {
+            if(e.key !== key)
+                return;
+                
+            const newValue = e.newValue;
+            if(newValue === currentValue)
+                return;
+
+            setCurrentValue(newValue ?? "");
+        },
         []);
 
     useEffect(
         () => {
-            if(typeof localStorage === "undefined")
-                return;
-
-            const onStorage = (e: StorageEvent) => {
-                if(e.key !== key)
-                    return;
-                    
-                const newValue = e.newValue;
-                if(newValue === currentValue)
-                    return;
-
-                setCurrentValue(newValue ?? "");
-            };
             window.addEventListener("storage", onStorage);
 
             return () => {

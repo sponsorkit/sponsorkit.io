@@ -62,11 +62,11 @@ export function createApi() {
         }
     });
     client.pipeline.addPolicy({
-        name: "authentication",
+        name: "authorization",
         sendRequest: async (request, next) => {
             const token = getToken();
             if (token)
-                request.headers.set("Authentication", `Bearer ${token.raw}`);
+                request.headers.set("Authorization", `Bearer ${token.raw}`);
                 
             const response = await next(request);
             return response;

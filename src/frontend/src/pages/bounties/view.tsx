@@ -272,7 +272,7 @@ function CreateBounty(props: {
             Add
         </Button>
         {shouldCreate && 
-            <PaymentMethodModal>
+            <PaymentMethodModal onClose={() => setShouldCreate(false)}>
                 {onPaymentMethodAcquired}
             </PaymentMethodModal>}
     </>;

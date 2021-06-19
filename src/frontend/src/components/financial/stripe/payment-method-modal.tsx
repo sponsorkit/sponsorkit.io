@@ -1,4 +1,4 @@
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide } from "@material-ui/core";
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide, Typography } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions/transition";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
@@ -8,6 +8,7 @@ import { useToken } from "../../../hooks/token";
 import LoginDialog from "../../login/login-dialog";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
+import * as classes from "./payment-method-modal.module.scss";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -17,7 +18,8 @@ const Transition = React.forwardRef(function Transition(
 });
 
 export function PaymentMethodModal(props: {
-    children: () => Promise<void> | void
+    children: () => Promise<void> | void,
+    onClose: () => void
 }) {
     const [stripe, setStripe] = useState<Stripe>();
     const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement | null>(null);
@@ -87,38 +89,48 @@ export function PaymentMethodModal(props: {
         }
     }
 
-    const render = () => <Dialog open={isOpen} TransitionComponent={Transition}>
-        {!isReady ?
-            <CircularProgress /> : 
-            <>
-                <DialogTitle>Enter payment details</DialogTitle>
-                <DialogContent>
-                    <Elements>
-                        <StripeCreditCard
-                            onInitialized={context => setStripe(context.stripe)}
-                            onChanged={setCardNumberElement}
-                        />
-                    </Elements>
-                </DialogContent>
-                <DialogActions>
-                    <Button 
-                        onClick={onCancelClicked}
-                        color="secondary"
-                    >
-                        Cancel
-                    </Button>
-                    <Button 
-                        onClick={onSubmitClicked}
-                        color="primary"
-                    >
-                        Submit
-                    </Button>
-                </DialogActions>
-            </>}
-    </Dialog>;
+    const render = () => (
+        <Dialog 
+            open={isOpen} 
+            TransitionComponent={Transition}
+        >
+            {!isReady ?
+                <CircularProgress /> : 
+                <>
+                    <DialogTitle>Enter payment details</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <Typography className={classes.subtext}>
+                            To continue, we need your payment details. These are stored securely with Stripe.
+                        </Typography>
+                        <Elements>
+                            <StripeCreditCard
+                                onInitialized={context => setStripe(context.stripe)}
+                                onChanged={setCardNumberElement}
+                            />
+                        </Elements>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button 
+                            onClick={onCancelClicked}
+                            color="secondary"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={onSubmitClicked}
+                            variant="contained"
+                        >
+                            Submit
+                        </Button>
+                    </DialogActions>
+                </>}
+        </Dialog>);
 
-    if(!token)
-        return <LoginDialog>{render}</LoginDialog>;
+    if(!token) {
+        return <LoginDialog onClose={props.onClose}>
+            {render}
+        </LoginDialog>;
+    }
 
     return render();
 }

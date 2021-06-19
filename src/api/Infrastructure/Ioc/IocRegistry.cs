@@ -17,6 +17,7 @@ using Sponsorkit.Domain.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
+using Sponsorkit.Infrastructure.Options.GitHub;
 using Stripe;
 
 namespace Sponsorkit.Infrastructure.Ioc
@@ -127,6 +128,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddSingleton<CustomerBalanceTransactionService>();
             Services.AddSingleton<PlanService>();
             Services.AddSingleton<ChargeService>();
+            Services.AddSingleton<SetupIntentService>();
 
             Services.AddSingleton<IStripeClient, StripeClient>(
                 _ => new StripeClient(

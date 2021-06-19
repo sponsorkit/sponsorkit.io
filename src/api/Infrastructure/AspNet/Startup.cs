@@ -72,6 +72,7 @@ namespace Sponsorkit.Infrastructure.AspNet
         {
             var jwtOptions = Configuration.GetOptions<JwtOptions>();
             services
+                .AddAuthorization()
                 .AddAuthentication(options =>
                 {
                     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;

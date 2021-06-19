@@ -1,28 +1,44 @@
 import { RouteComponentProps } from "@reach/router";
 import { useEffect } from "react";
+import { createMessage } from "../utils/window-messages";
 
 export default function LoginPage(props: RouteComponentProps<{}>) {
   useEffect(
     () => {
-      if(!props.location)
+      if (!props.location)
         return;
 
       const uri = new URL(props.location.href);
 
       const code = uri.searchParams.get("code");
       const state = uri.searchParams.get("state");
-      if(!code || !state)
+      if (!code || !state)
         return;
-      
+
       window.postMessage(
-          {
-              type: "sponsorkit",
-              code,
-              state
-          }, 
-          location.origin);
+        createMessage("on-github-code", {
+          code,
+          state
+        }),
+        location.origin);
       window.close();
     });
-  
+
+  useEffect(
+    () => {
+      const onUnload = () => {
+        window.postMessage(
+          createMessage("on-window-close", null),
+          location.origin);
+      };
+
+      window.addEventListener("unload", onUnload);
+
+      return () => {
+        window.removeEventListener("unload", onUnload);
+      }
+    },
+    []);
+
   return null;
 }
