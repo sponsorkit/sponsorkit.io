@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -61,6 +62,7 @@ namespace Sponsorkit.Domain.Api.Signup.FromGitHub
         }
 
         [HttpPost("/api/signup/from-github")]
+        [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             if (request == null)
