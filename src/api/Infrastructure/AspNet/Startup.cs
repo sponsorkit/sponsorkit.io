@@ -78,12 +78,12 @@ namespace Sponsorkit.Infrastructure.AspNet
                 })
                 .AddJwtBearer(options =>
                 {
-                    options.Audience = "http://localhost:5000/";
-                    options.TokenValidationParameters = new TokenValidationParameters
+                    options.Audience = "sponsorkit.io";
+                    options.TokenValidationParameters = new()
                     {
                         ValidateIssuerSigningKey = true,
                         ValidateIssuer = true,
-                        ValidIssuer = "http://localhost:5000/",
+                        ValidIssuer = "sponsorkit.io",
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(jwtOptions.PrivateKey)),
                     };
