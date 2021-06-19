@@ -4,6 +4,7 @@ import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
 import { GeneralApiAccountPaymentMethodIntentGetResponse } from "../../../api/openapi/src";
 import { createApi, useApi } from "../../../hooks/clients";
+import { useToken } from "../../../hooks/token";
 import LoginDialog from "../../login/login-dialog";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
@@ -25,34 +26,7 @@ export function PaymentMethodModal(props: {
     const [isOpen, setIsOpen] = useState(true);
     const [isReady, setIsReady] = useState(false);
 
-    const onCancelClicked = () => setIsOpen(false);
-    const onSubmitClicked = async () => {
-        if(!isReady)
-            return;
-
-        setIsOpen(false);
-        
-        try {
-            if(intentResponse?.setupIntentClientSecret) {
-                if(!cardNumberElement)
-                    throw new Error("Card number element not found.");
-
-                const confirmationResponse = await stripe?.confirmCardSetup(
-                    intentResponse.setupIntentClientSecret,
-                    {
-                        payment_method: {
-                            card: cardNumberElement
-                        }
-                    });
-                if(confirmationResponse?.error)
-                    throw confirmationResponse.error;
-            }
-
-            await Promise.resolve(props.children);
-        } catch {
-            setIsOpen(true);
-        }
-    }
+    const [token] = useToken();
 
     const paymentMethodAvailability = useApi(
         async client => {
@@ -84,35 +58,67 @@ export function PaymentMethodModal(props: {
         },
         [paymentMethodAvailability]);
 
-    return <LoginDialog>
-        {() => <Dialog open={isOpen} TransitionComponent={Transition}>
-            {!isReady ?
-                <CircularProgress /> : 
-                <>
-                    <DialogTitle>Enter payment details</DialogTitle>
-                    <DialogContent>
-                        <Elements>
-                            <StripeCreditCard
-                                onInitialized={context => setStripe(context.stripe)}
-                                onChanged={setCardNumberElement}
-                            />
-                        </Elements>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button 
-                            onClick={onCancelClicked}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={onSubmitClicked}
-                            color="primary"
-                        >
-                            Submit
-                        </Button>
-                    </DialogActions>
-                </>}
-        </Dialog>}
-    </LoginDialog>;
+    const onCancelClicked = () => setIsOpen(false);
+    const onSubmitClicked = async () => {
+        if(!isReady)
+            return;
+
+        setIsOpen(false);
+        
+        try {
+            if(intentResponse?.setupIntentClientSecret) {
+                if(!cardNumberElement)
+                    throw new Error("Card number element not found.");
+
+                const confirmationResponse = await stripe?.confirmCardSetup(
+                    intentResponse.setupIntentClientSecret,
+                    {
+                        payment_method: {
+                            card: cardNumberElement
+                        }
+                    });
+                if(confirmationResponse?.error)
+                    throw confirmationResponse.error;
+            }
+
+            await Promise.resolve(props.children);
+        } catch {
+            setIsOpen(true);
+        }
+    }
+
+    const render = () => <Dialog open={isOpen} TransitionComponent={Transition}>
+        {!isReady ?
+            <CircularProgress /> : 
+            <>
+                <DialogTitle>Enter payment details</DialogTitle>
+                <DialogContent>
+                    <Elements>
+                        <StripeCreditCard
+                            onInitialized={context => setStripe(context.stripe)}
+                            onChanged={setCardNumberElement}
+                        />
+                    </Elements>
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                        onClick={onCancelClicked}
+                        color="secondary"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={onSubmitClicked}
+                        color="primary"
+                    >
+                        Submit
+                    </Button>
+                </DialogActions>
+            </>}
+    </Dialog>;
+
+    if(!token)
+        return <LoginDialog>{render}</LoginDialog>;
+
+    return render();
 }
