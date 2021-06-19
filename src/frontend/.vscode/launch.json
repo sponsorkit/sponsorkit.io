@@ -8,7 +8,7 @@
             "type": "edge",
             "request": "launch",
             "name": "Launch Edge against localhost",
-            "url": "http://localhost:8000",
+            "url": "http://localhost:8000/bounties/view/?number=10121&owner=microsoft&repo=vscode",
             "webRoot": "${workspaceFolder}"
         }
     ]

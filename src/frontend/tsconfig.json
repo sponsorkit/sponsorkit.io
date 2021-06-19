@@ -10,10 +10,13 @@
           "rendererOptions": {}
         }
       }],
-      "module": "es6",
+      "module": "ESNext",
       "moduleResolution": "node",
       "lib": ["dom", "ES2015", "ES2016", "ES2017"],
       "jsx": "react-jsx",
+      "assumeChangesOnlyAffectDirectDependencies": true,
+      "removeComments": true,
+      "target": "ESNext",
       "strict": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,

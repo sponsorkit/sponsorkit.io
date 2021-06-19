@@ -1,36 +1,23 @@
-import * as coreClient from "@azure/core-client";
 import * as coreAuth from "@azure/core-auth";
-import * as Parameters from "./models/parameters";
-import * as Mappers from "./models/mappers";
-import { GeneralContext } from "./generalContext";
+import * as coreClient from "@azure/core-client";
+import { FixedServiceClient } from "../../client";
 import {
-  GeneralOptionalParams,
-  GeneralHealthGetOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdGetOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdGetResponse,
-  GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams,
-  GeneralApiSponsorsBeneficiaryIdReferenceGetResponse,
-  GeneralApiSignupFromGithubPostOptionalParams,
-  GeneralApiSignupFromGithubPostResponse,
-  GeneralApiSignupAsSponsorPostOptionalParams,
-  GeneralApiSignupAsBeneficiaryPostOptionalParams,
-  GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams,
-  GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams,
-  GeneralApiBountiesGetOptionalParams,
+  GeneralApiAccountGetOptionalParams,
+  GeneralApiAccountGetResponse, GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams,
+  GeneralApiAccountPaymentMethodAvailabilityGetResponse, GeneralApiAccountPaymentMethodIntentGetOptionalParams,
+  GeneralApiAccountPaymentMethodIntentGetResponse, GeneralApiBountiesGetOptionalParams,
   GeneralApiBountiesGetResponse,
   GeneralApiBountiesGitHubIssueIdGetOptionalParams,
   GeneralApiBountiesGitHubIssueIdGetResponse,
-  GeneralApiBountiesGitHubIssueIdPostOptionalParams,
-  GeneralApiAccountGetOptionalParams,
-  GeneralApiAccountGetResponse,
-  GeneralApiAccountPaymentMethodIntentGetOptionalParams,
-  GeneralApiAccountPaymentMethodIntentGetResponse,
-  GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams,
-  GeneralApiAccountPaymentMethodAvailabilityGetResponse
+  GeneralApiBountiesGitHubIssueIdPostOptionalParams, GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams, GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams, GeneralApiSignupAsBeneficiaryPostOptionalParams, GeneralApiSignupAsSponsorPostOptionalParams, GeneralApiSignupFromGithubPostOptionalParams,
+  GeneralApiSignupFromGithubPostResponse, GeneralApiSponsorsBeneficiaryIdGetOptionalParams,
+  GeneralApiSponsorsBeneficiaryIdGetResponse, GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams,
+  GeneralApiSponsorsBeneficiaryIdReferenceGetResponse, GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams, GeneralHealthGetOptionalParams, GeneralOptionalParams
 } from "./models";
+import * as Mappers from "./models/mappers";
+import * as Parameters from "./models/parameters";
 
-export class General extends GeneralContext {
+export class General extends FixedServiceClient {
   /**
    * Initializes a new instance of the General class.
    * @param credentials Subscription credentials which uniquely identify client subscription.

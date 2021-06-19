@@ -73,9 +73,6 @@
   "keywords": [
     "gatsby"
   ],
-  "browserslist": [
-    ">1%"
-  ],
   "license": "0BSD",
   "scripts": {
     "build": "gatsby build",
@@ -85,7 +82,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "autorest --reset && autorest --clear-output-folder --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
+    "swagger:local": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=false --clear-output-folder --package-name=@sponsorkit/client --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi"
   },
   "repository": {
     "type": "git",
@@ -96,6 +93,5 @@
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"
-  },
-  "sideEffects": false
+  }
 }
