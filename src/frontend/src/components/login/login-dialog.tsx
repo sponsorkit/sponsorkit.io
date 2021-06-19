@@ -49,7 +49,7 @@ export default function LoginDialog(props: {
 
 function getRedirectUri() {
     if(typeof window === "undefined")
-        return;
+        return "";
 
     const redirectUri = new URL(window.location.href);
     redirectUri.pathname = "/login";
