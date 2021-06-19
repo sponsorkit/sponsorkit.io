@@ -1,4 +1,5 @@
-import * as coreHttp from "@azure/core-http";
+import * as coreClient from "@azure/core-client";
+import * as coreAuth from "@azure/core-auth";
 import * as Parameters from "./models/parameters";
 import * as Mappers from "./models/mappers";
 import { GeneralContext } from "./generalContext";
@@ -37,7 +38,7 @@ export class General extends GeneralContext {
    * @param options The parameter options
    */
   constructor(
-    credentials: coreHttp.TokenCredential | coreHttp.ServiceClientCredentials,
+    credentials: coreAuth.TokenCredential,
     $host: string,
     options?: GeneralOptionalParams
   ) {
@@ -45,16 +46,8 @@ export class General extends GeneralContext {
   }
 
   /** @param options The options parameters. */
-  healthGet(
-    options?: GeneralHealthGetOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
-    return this.sendOperationRequest(
-      operationArguments,
-      healthGetOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+  healthGet(options?: GeneralHealthGetOptionalParams): Promise<void> {
+    return this.sendOperationRequest({ options }, healthGetOperationSpec);
   }
 
   /**
@@ -65,14 +58,10 @@ export class General extends GeneralContext {
     beneficiaryId: string,
     options?: GeneralApiSponsorsBeneficiaryIdGetOptionalParams
   ): Promise<GeneralApiSponsorsBeneficiaryIdGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      beneficiaryId,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { beneficiaryId, options },
       apiSponsorsBeneficiaryIdGetOperationSpec
-    ) as Promise<GeneralApiSponsorsBeneficiaryIdGetResponse>;
+    );
   }
 
   /**
@@ -84,16 +73,11 @@ export class General extends GeneralContext {
     beneficiaryId: string,
     reference: string,
     options?: GeneralApiSponsorsBeneficiaryIdReferencePostOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      beneficiaryId,
-      reference,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { beneficiaryId, reference, options },
       apiSponsorsBeneficiaryIdReferencePostOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /**
@@ -106,54 +90,40 @@ export class General extends GeneralContext {
     reference: string,
     options?: GeneralApiSponsorsBeneficiaryIdReferenceGetOptionalParams
   ): Promise<GeneralApiSponsorsBeneficiaryIdReferenceGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      beneficiaryId,
-      reference,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { beneficiaryId, reference, options },
       apiSponsorsBeneficiaryIdReferenceGetOperationSpec
-    ) as Promise<GeneralApiSponsorsBeneficiaryIdReferenceGetResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiSignupFromGithubPost(
     options?: GeneralApiSignupFromGithubPostOptionalParams
   ): Promise<GeneralApiSignupFromGithubPostResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { options },
       apiSignupFromGithubPostOperationSpec
-    ) as Promise<GeneralApiSignupFromGithubPostResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiSignupAsSponsorPost(
     options?: GeneralApiSignupAsSponsorPostOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { options },
       apiSignupAsSponsorPostOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiSignupAsBeneficiaryPost(
     options?: GeneralApiSignupAsBeneficiaryPostOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { options },
       apiSignupAsBeneficiaryPostOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /**
@@ -163,15 +133,11 @@ export class General extends GeneralContext {
   apiSignupActivateStripeAccountUserIdGet(
     userId: string,
     options?: GeneralApiSignupActivateStripeAccountUserIdGetOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      userId,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { userId, options },
       apiSignupActivateStripeAccountUserIdGetOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /**
@@ -183,29 +149,18 @@ export class General extends GeneralContext {
     beneficiaryId: string,
     reference: string,
     options?: GeneralApiBrowserBeneficiaryIdReferenceGetOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      beneficiaryId,
-      reference,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { beneficiaryId, reference, options },
       apiBrowserBeneficiaryIdReferenceGetOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiBountiesGet(
     options?: GeneralApiBountiesGetOptionalParams
   ): Promise<GeneralApiBountiesGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
-    return this.sendOperationRequest(
-      operationArguments,
-      apiBountiesGetOperationSpec
-    ) as Promise<GeneralApiBountiesGetResponse>;
+    return this.sendOperationRequest({ options }, apiBountiesGetOperationSpec);
   }
 
   /**
@@ -216,14 +171,10 @@ export class General extends GeneralContext {
     gitHubIssueId: number,
     options?: GeneralApiBountiesGitHubIssueIdGetOptionalParams
   ): Promise<GeneralApiBountiesGitHubIssueIdGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      gitHubIssueId,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { gitHubIssueId, options },
       apiBountiesGitHubIssueIdGetOperationSpec
-    ) as Promise<GeneralApiBountiesGitHubIssueIdGetResponse>;
+    );
   }
 
   /**
@@ -233,67 +184,51 @@ export class General extends GeneralContext {
   apiBountiesGitHubIssueIdPost(
     gitHubIssueId: string,
     options?: GeneralApiBountiesGitHubIssueIdPostOptionalParams
-  ): Promise<coreHttp.RestResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      gitHubIssueId,
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
+  ): Promise<void> {
     return this.sendOperationRequest(
-      operationArguments,
+      { gitHubIssueId, options },
       apiBountiesGitHubIssueIdPostOperationSpec
-    ) as Promise<coreHttp.RestResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiAccountGet(
     options?: GeneralApiAccountGetOptionalParams
   ): Promise<GeneralApiAccountGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
-    return this.sendOperationRequest(
-      operationArguments,
-      apiAccountGetOperationSpec
-    ) as Promise<GeneralApiAccountGetResponse>;
+    return this.sendOperationRequest({ options }, apiAccountGetOperationSpec);
   }
 
   /** @param options The options parameters. */
   apiAccountPaymentMethodIntentGet(
     options?: GeneralApiAccountPaymentMethodIntentGetOptionalParams
   ): Promise<GeneralApiAccountPaymentMethodIntentGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { options },
       apiAccountPaymentMethodIntentGetOperationSpec
-    ) as Promise<GeneralApiAccountPaymentMethodIntentGetResponse>;
+    );
   }
 
   /** @param options The options parameters. */
   apiAccountPaymentMethodAvailabilityGet(
     options?: GeneralApiAccountPaymentMethodAvailabilityGetOptionalParams
   ): Promise<GeneralApiAccountPaymentMethodAvailabilityGetResponse> {
-    const operationArguments: coreHttp.OperationArguments = {
-      options: coreHttp.operationOptionsToRequestOptionsBase(options || {})
-    };
     return this.sendOperationRequest(
-      operationArguments,
+      { options },
       apiAccountPaymentMethodAvailabilityGetOperationSpec
-    ) as Promise<GeneralApiAccountPaymentMethodAvailabilityGetResponse>;
+    );
   }
 }
 // Operation Specifications
-const serializer = new coreHttp.Serializer(Mappers, /* isXml */ false);
+const serializer = coreClient.createSerializer(Mappers, /* isXml */ false);
 
-const healthGetOperationSpec: coreHttp.OperationSpec = {
+const healthGetOperationSpec: coreClient.OperationSpec = {
   path: "/health",
   httpMethod: "GET",
   responses: { 200: {} },
   urlParameters: [Parameters.$host],
   serializer
 };
-const apiSponsorsBeneficiaryIdGetOperationSpec: coreHttp.OperationSpec = {
+const apiSponsorsBeneficiaryIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/sponsors/{beneficiaryId}",
   httpMethod: "GET",
   responses: {
@@ -306,7 +241,7 @@ const apiSponsorsBeneficiaryIdGetOperationSpec: coreHttp.OperationSpec = {
   mediaType: "json",
   serializer
 };
-const apiSponsorsBeneficiaryIdReferencePostOperationSpec: coreHttp.OperationSpec = {
+const apiSponsorsBeneficiaryIdReferencePostOperationSpec: coreClient.OperationSpec = {
   path: "/api/sponsors/{beneficiaryId}/{reference}",
   httpMethod: "POST",
   responses: { 200: {} },
@@ -320,7 +255,7 @@ const apiSponsorsBeneficiaryIdReferencePostOperationSpec: coreHttp.OperationSpec
   mediaType: "json",
   serializer
 };
-const apiSponsorsBeneficiaryIdReferenceGetOperationSpec: coreHttp.OperationSpec = {
+const apiSponsorsBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/sponsors/{beneficiaryId}/{reference}",
   httpMethod: "GET",
   responses: {
@@ -338,7 +273,7 @@ const apiSponsorsBeneficiaryIdReferenceGetOperationSpec: coreHttp.OperationSpec 
   mediaType: "json",
   serializer
 };
-const apiSignupFromGithubPostOperationSpec: coreHttp.OperationSpec = {
+const apiSignupFromGithubPostOperationSpec: coreClient.OperationSpec = {
   path: "/api/signup/from-github",
   httpMethod: "POST",
   responses: {
@@ -352,7 +287,7 @@ const apiSignupFromGithubPostOperationSpec: coreHttp.OperationSpec = {
   mediaType: "json",
   serializer
 };
-const apiSignupAsSponsorPostOperationSpec: coreHttp.OperationSpec = {
+const apiSignupAsSponsorPostOperationSpec: coreClient.OperationSpec = {
   path: "/api/signup/as-sponsor",
   httpMethod: "POST",
   responses: { 200: {} },
@@ -362,14 +297,14 @@ const apiSignupAsSponsorPostOperationSpec: coreHttp.OperationSpec = {
   mediaType: "json",
   serializer
 };
-const apiSignupAsBeneficiaryPostOperationSpec: coreHttp.OperationSpec = {
+const apiSignupAsBeneficiaryPostOperationSpec: coreClient.OperationSpec = {
   path: "/api/signup/as-beneficiary",
   httpMethod: "POST",
   responses: { 200: {} },
   urlParameters: [Parameters.$host],
   serializer
 };
-const apiSignupActivateStripeAccountUserIdGetOperationSpec: coreHttp.OperationSpec = {
+const apiSignupActivateStripeAccountUserIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/signup/activate-stripe-account/{userId}",
   httpMethod: "GET",
   responses: { 200: {} },
@@ -378,7 +313,7 @@ const apiSignupActivateStripeAccountUserIdGetOperationSpec: coreHttp.OperationSp
   mediaType: "json",
   serializer
 };
-const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreHttp.OperationSpec = {
+const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/browser/{beneficiaryId}/{reference}",
   httpMethod: "GET",
   responses: { 200: {} },
@@ -391,7 +326,7 @@ const apiBrowserBeneficiaryIdReferenceGetOperationSpec: coreHttp.OperationSpec =
   mediaType: "json",
   serializer
 };
-const apiBountiesGetOperationSpec: coreHttp.OperationSpec = {
+const apiBountiesGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/bounties",
   httpMethod: "GET",
   responses: {
@@ -403,7 +338,7 @@ const apiBountiesGetOperationSpec: coreHttp.OperationSpec = {
   headerParameters: [Parameters.accept],
   serializer
 };
-const apiBountiesGitHubIssueIdGetOperationSpec: coreHttp.OperationSpec = {
+const apiBountiesGitHubIssueIdGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/bounties/{gitHubIssueId}",
   httpMethod: "GET",
   responses: {
@@ -415,7 +350,7 @@ const apiBountiesGitHubIssueIdGetOperationSpec: coreHttp.OperationSpec = {
   headerParameters: [Parameters.accept],
   serializer
 };
-const apiBountiesGitHubIssueIdPostOperationSpec: coreHttp.OperationSpec = {
+const apiBountiesGitHubIssueIdPostOperationSpec: coreClient.OperationSpec = {
   path: "/api/bounties/{gitHubIssueId}",
   httpMethod: "POST",
   responses: { 200: {} },
@@ -425,7 +360,7 @@ const apiBountiesGitHubIssueIdPostOperationSpec: coreHttp.OperationSpec = {
   mediaType: "json",
   serializer
 };
-const apiAccountGetOperationSpec: coreHttp.OperationSpec = {
+const apiAccountGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/account",
   httpMethod: "GET",
   responses: {
@@ -437,7 +372,7 @@ const apiAccountGetOperationSpec: coreHttp.OperationSpec = {
   headerParameters: [Parameters.accept],
   serializer
 };
-const apiAccountPaymentMethodIntentGetOperationSpec: coreHttp.OperationSpec = {
+const apiAccountPaymentMethodIntentGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/account/payment-method/intent",
   httpMethod: "GET",
   responses: {
@@ -449,7 +384,7 @@ const apiAccountPaymentMethodIntentGetOperationSpec: coreHttp.OperationSpec = {
   headerParameters: [Parameters.accept],
   serializer
 };
-const apiAccountPaymentMethodAvailabilityGetOperationSpec: coreHttp.OperationSpec = {
+const apiAccountPaymentMethodAvailabilityGetOperationSpec: coreClient.OperationSpec = {
   path: "/api/account/payment-method/availability",
   httpMethod: "GET",
   responses: {

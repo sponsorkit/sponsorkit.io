@@ -1,6 +1,6 @@
-import * as coreHttp from "@azure/core-http";
+import * as coreClient from "@azure/core-client";
 
-export const SponsorkitDomainApiSponsorsBeneficiaryRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSponsorsBeneficiaryRequest",
@@ -16,7 +16,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryRequest: coreHttp.CompositeMa
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSponsorsBeneficiaryResponse",
@@ -39,7 +39,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryResponse: coreHttp.CompositeM
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest",
@@ -83,7 +83,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferencePostRequest: coreH
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest",
@@ -106,7 +106,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetRequest: coreHt
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse",
@@ -131,7 +131,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetResponse: coreH
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonationsResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className:
@@ -157,7 +157,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsDonations
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className:
@@ -191,7 +191,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className:
@@ -225,7 +225,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorRe
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByAmountResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className:
@@ -265,7 +265,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
   }
 };
 
-export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSponsorsByDateResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className:
@@ -305,7 +305,7 @@ export const SponsorkitDomainApiSponsorsBeneficiaryIdReferenceGetModelsSponsorSp
   }
 };
 
-export const SponsorkitDomainApiSignupFromGitHubRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSignupFromGitHubRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSignupFromGitHubRequest",
@@ -321,7 +321,7 @@ export const SponsorkitDomainApiSignupFromGitHubRequest: coreHttp.CompositeMappe
   }
 };
 
-export const SponsorkitDomainApiSignupFromGitHubResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSignupFromGitHubResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSignupFromGitHubResponse",
@@ -337,7 +337,7 @@ export const SponsorkitDomainApiSignupFromGitHubResponse: coreHttp.CompositeMapp
   }
 };
 
-export const SponsorkitDomainApiSignupAsSponsorRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSignupAsSponsorRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSignupAsSponsorRequest",
@@ -353,7 +353,7 @@ export const SponsorkitDomainApiSignupAsSponsorRequest: coreHttp.CompositeMapper
   }
 };
 
-export const SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest",
@@ -369,7 +369,7 @@ export const SponsorkitDomainApiSignupActivateStripeAccountUserIdRequest: coreHt
   }
 };
 
-export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest",
@@ -392,7 +392,7 @@ export const SponsorkitDomainApiBrowserBeneficiaryIdReferenceRequest: coreHttp.C
   }
 };
 
-export const SponsorkitDomainApiBountiesResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesResponse",
@@ -414,7 +414,7 @@ export const SponsorkitDomainApiBountiesResponse: coreHttp.CompositeMapper = {
   }
 };
 
-export const SponsorkitDomainApiBountiesBountyResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesBountyResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesBountyResponse",
@@ -444,7 +444,7 @@ export const SponsorkitDomainApiBountiesBountyResponse: coreHttp.CompositeMapper
   }
 };
 
-export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesGitHubIssueIdGetResponse",
@@ -467,7 +467,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdGetResponse: coreHttp.Compo
   }
 };
 
-export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse",
@@ -506,7 +506,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse: coreHttp.Co
   }
 };
 
-export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse",
@@ -529,7 +529,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdBountyUserResponse: coreHtt
   }
 };
 
-export const SponsorkitDomainApiBountiesGitHubIssueIdPostRequest: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiBountiesGitHubIssueIdPostRequest: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiBountiesGitHubIssueIdPostRequest",
@@ -552,7 +552,7 @@ export const SponsorkitDomainApiBountiesGitHubIssueIdPostRequest: coreHttp.Compo
   }
 };
 
-export const SponsorkitDomainApiAccountResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiAccountResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiAccountResponse",
@@ -573,7 +573,7 @@ export const SponsorkitDomainApiAccountResponse: coreHttp.CompositeMapper = {
   }
 };
 
-export const SponsorkitDomainApiAccountPaymentMethodIntentResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiAccountPaymentMethodIntentResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiAccountPaymentMethodIntentResponse",
@@ -589,7 +589,7 @@ export const SponsorkitDomainApiAccountPaymentMethodIntentResponse: coreHttp.Com
   }
 };
 
-export const SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse: coreHttp.CompositeMapper = {
+export const SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse: coreClient.CompositeMapper = {
   type: {
     name: "Composite",
     className: "SponsorkitDomainApiAccountPaymentMethodAvailabilityResponse",

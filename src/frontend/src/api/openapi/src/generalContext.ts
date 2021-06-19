@@ -1,10 +1,8 @@
-import * as coreHttp from "@azure/core-http";
+import * as coreClient from "@azure/core-client";
+import * as coreAuth from "@azure/core-auth";
 import { GeneralOptionalParams } from "./models";
 
-const packageName = "@sponsorkit/client";
-const packageVersion = "1.0.0-beta.1";
-
-export class GeneralContext extends coreHttp.ServiceClient {
+export class GeneralContext extends coreClient.ServiceClient {
   $host: string;
 
   /**
@@ -14,7 +12,7 @@ export class GeneralContext extends coreHttp.ServiceClient {
    * @param options The parameter options
    */
   constructor(
-    credentials: coreHttp.TokenCredential | coreHttp.ServiceClientCredentials,
+    credentials: coreAuth.TokenCredential,
     $host: string,
     options?: GeneralOptionalParams
   ) {
@@ -29,16 +27,26 @@ export class GeneralContext extends coreHttp.ServiceClient {
     if (!options) {
       options = {};
     }
+    const defaults: GeneralOptionalParams = {
+      requestContentType: "application/json; charset=utf-8",
+      credential: credentials
+    };
 
-    if (!options.userAgent) {
-      const defaultUserAgent = coreHttp.getDefaultUserAgentValue();
-      options.userAgent = `${packageName}/${packageVersion} ${defaultUserAgent}`;
-    }
+    const packageDetails = `azsdk-js-@sponsorkit/client/1.0.0-beta.1`;
+    const userAgentPrefix =
+      options.userAgentOptions && options.userAgentOptions.userAgentPrefix
+        ? `${options.userAgentOptions.userAgentPrefix} ${packageDetails}`
+        : `${packageDetails}`;
+    options.userAgentOptions = {
+      userAgentPrefix: userAgentPrefix
+    };
 
-    super(credentials, options);
-
-    this.requestContentType = "application/json; charset=utf-8";
-    this.baseUri = options.endpoint || "{$host}";
+    const optionsWithDefaults = {
+      ...defaults,
+      ...options,
+      baseUri: options.endpoint || "{$host}"
+    };
+    super(optionsWithDefaults);
     // Parameter assignments
     this.$host = $host;
   }

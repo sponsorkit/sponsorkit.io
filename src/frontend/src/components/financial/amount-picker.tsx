@@ -1,7 +1,7 @@
 import { Box, Button, InputAdornment, TextField } from "@material-ui/core";
 import React, { useEffect, useState } from "react";
 import palette from "../../theme/palette";
-import { sponsorshipOptions, amountButton, separator } from "./amount-picker.module.scss";
+import * as classes from "./amount-picker.module.scss";
 import { FeeDisplay } from "./fee-display";
 
 export function AmountPicker(props: {
@@ -13,7 +13,7 @@ export function AmountPicker(props: {
       () => props.onAmountChanged(+selectedOption),
       [selectedOption]);
   
-    return <Box className={sponsorshipOptions}>
+    return <Box className={classes.sponsorshipOptions}>
       <Box>
         {props.options.map(option => 
           <Button 
@@ -22,7 +22,7 @@ export function AmountPicker(props: {
             color="secondary"
             disableElevation
             onClick={() => setSelectedOption(option.toString())}
-            className={amountButton}
+            className={classes.amountButton}
             style={{
               backgroundColor: selectedOption == option.toString() ?
                 palette.light.primary.main :
@@ -35,7 +35,7 @@ export function AmountPicker(props: {
             ${option}
           </Button>)}
       </Box>
-      <Box className={separator}>- or -</Box>
+      <Box className={classes.separator}>- or -</Box>
       <TextField 
         label="Custom amount"
         variant="outlined"

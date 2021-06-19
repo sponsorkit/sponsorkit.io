@@ -1,10 +1,10 @@
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Slide, TextField } from "@material-ui/core";
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions/transition";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import LoginDialog from "../../login/login-dialog";
 import { GeneralApiAccountPaymentMethodIntentGetResponse } from "../../../api/openapi/src";
 import { createApi, useApi } from "../../../hooks/clients";
-import { FeeDisplay } from "../fee-display";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
 
@@ -84,8 +84,8 @@ export function PaymentMethodModal(props: {
         },
         [paymentMethodAvailability]);
 
-    return <>
-        <Dialog open={isOpen} TransitionComponent={Transition}>
+    return <LoginDialog>
+        {() => <Dialog open={isOpen} TransitionComponent={Transition}>
             {!isReady ?
                 <CircularProgress /> : 
                 <>
@@ -113,6 +113,6 @@ export function PaymentMethodModal(props: {
                         </Button>
                     </DialogActions>
                 </>}
-        </Dialog>
-    </>;
+        </Dialog>}
+    </LoginDialog>;
 }

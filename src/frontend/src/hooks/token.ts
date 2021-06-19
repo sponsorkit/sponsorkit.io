@@ -8,23 +8,31 @@ type TokenData = {
     isExpired: boolean
 };
 
+export function getToken() {
+    const token = typeof localStorage !== "undefined" && localStorage.getItem("token");
+    return getTokenFromString(token);
+}
+
 export function useToken(): [TokenData|null, (token: string) => void] {
     const [token, setToken] = useLocalStorage("token");
     const computedToken = useMemo(
-        () => {
-            if(!token)
-                return null;
-                
-            return {
-                data: getJwtData(token),
-                userId: getUserId(token),
-                expiryDate: getExpiryDate(token),
-                isExpired: isExpired(token)
-            };
-        },
+        () => getTokenFromString(token),
         [token]);
 
     return [computedToken, setToken];
+}
+
+function getTokenFromString(token: string|null|false) {
+    if(!token)
+        return null;
+        
+    return {
+        raw: token,
+        data: getJwtData(token),
+        userId: getUserId(token),
+        expiryDate: getExpiryDate(token),
+        isExpired: isExpired(token)
+    }
 }
 
 function getJwtData(token: string): RawData {

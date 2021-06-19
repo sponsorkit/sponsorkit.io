@@ -3,7 +3,6 @@ import React from "react";
 import { SponsorkitDomainApiBountiesBountyResponse } from "../../api/openapi/src";
 import { useApi } from "../../hooks/clients";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
-
 import * as classes from './index.module.scss';
 
 export default function BountiesPage() {

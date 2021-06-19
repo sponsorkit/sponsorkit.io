@@ -1,46 +1,29 @@
-import { Button, Container, Paper } from "@material-ui/core";
-import React, { useState } from "react";
-import LoginDialog from "../components/login/login-dialog";
-import { useToken } from "../hooks/token";
-import { useLocation, useParams } from "@reach/router";
+import { useEffect } from "react";
+import { useParams } from "@reach/router";
+import { RouteComponentProps } from "@reach/router";
 
-export default function LoginPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [token] = useToken();
-  const location = useLocation();
-  const params = useParams();
+export default function LoginPage(props: RouteComponentProps<{}>) {
+  useEffect(
+    () => {
+      if(!props.location)
+        return;
 
-  const redirectTo = params?.redirectTo;
+      const uri = new URL(props.location.href);
 
-  const onLogin = () => {
-    location.href = redirectTo ?? "/";
-  };
-
-  if(token) {
-    onLogin();
-    return null;
-  }
-
-  return <Container maxWidth="md" style={{
-    display: 'flex'
-  }}>
-    <Paper style={{
-      margin: 32,
-      flexGrow: 1
-    }}>
-      <h1>Sign up{redirectTo && " to continue"}</h1>
-      <p>Sponsorkit helps open-source developers get paid for their precious work.</p>
-
-      <Button onClick={() => setIsDialogOpen(true)}>
-        Sign in with GitHub
-      </Button>
-
-      <LoginDialog 
-        open={isDialogOpen}
-        onLoggedIn={async () => {
-          setIsDialogOpen(false);
-          onLogin();
-        }} />
-    </Paper>
-  </Container>
+      const code = uri.searchParams.get("code");
+      const state = uri.searchParams.get("state");
+      if(!code || !state)
+        return;
+      
+      window.postMessage(
+          {
+              type: "sponsorkit",
+              code,
+              state
+          }, 
+          location.origin);
+      window.close();
+    });
+  
+  return null;
 }

@@ -10,10 +10,9 @@
           "rendererOptions": {}
         }
       }],
-      "target": "es5",
-      "module": "es2015",
-      "lib": ["dom", "ES2015", "ES2016", "ES2017"],
+      "module": "es6",
       "moduleResolution": "node",
+      "lib": ["dom", "ES2015", "ES2016", "ES2017"],
       "jsx": "react-jsx",
       "strict": true,
       "esModuleInterop": true,

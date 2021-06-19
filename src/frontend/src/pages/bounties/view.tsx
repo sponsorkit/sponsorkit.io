@@ -1,20 +1,19 @@
-import {useMemo, useState} from 'react';
-import {Button, CardContent, Typography, Card, CircularProgress, Container, Box, Tooltip} from "@material-ui/core";
-
-import * as classes from './view.module.scss';
-import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
-import { Markdown } from '../../components/markdown';
-import { RestEndpointMethodTypes } from '@octokit/rest';
-import { orderBy, sum } from 'lodash';
-import { createApi, makeOctokitCall } from '../../hooks/clients';
-import { AmountPicker } from '../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
-import { getUrlParameter } from '../../helpers/url';
-import { TimelineItem, TimelineSeparator, TimelineDot, TimelineConnector, TimelineContent, Timeline, TimelineOppositeContent } from '@material-ui/lab';
+import { Box, Button, Card, CardContent, CircularProgress, Tooltip, Typography } from "@material-ui/core";
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
-import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '../../api/openapi/src';
+import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@material-ui/lab';
+import { RestEndpointMethodTypes } from '@octokit/rest';
+import { orderBy, sum } from 'lodash';
+import { useMemo, useState } from 'react';
 import { BountyhuntTemplate } from '.';
+import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '../../api/openapi/src';
+import { AmountPicker } from '../../components/financial/amount-picker';
+import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
+import { Markdown } from '../../components/markdown';
+import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
+import { getUrlParameter } from '../../helpers/url';
+import { createApi, makeOctokitCall } from '../../hooks/clients';
+import * as classes from './view.module.scss';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -151,7 +150,7 @@ function Issue(props: {
 
                         const IconComponent = e.icon;
                         const isLast = i === events.length - 1;
-                        return <TimelineItem>
+                        return <TimelineItem key={`timeline-${e.time.getTime()}`}>
                             <TimelineOppositeContent>
                                 <Typography variant="body2" color="textSecondary" className={classes.dateMark}>
                                     <span className={classes.date}>{e.time.toLocaleDateString()}</span>

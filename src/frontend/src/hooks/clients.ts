@@ -1,7 +1,8 @@
-import { RestError } from "@azure/core-http";
+import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { useEffect, useState } from "react";
 import { General } from "../api/openapi/src";
+import { getToken } from "./token";
 
 export function useOctokit<T>(
     accessor: (octokit: Octokit, abortSignal: AbortSignal) => Promise<T | null>,
@@ -34,13 +35,36 @@ export function createOctokit() {
 }
 
 export function createApi() {
-    return new General(
-        null!,
-        "http://localhost:5000",
+    var client = new General(
         {
-            generateClientRequestIdHeader: true,
-            noRetryPolicy: true
-        });
+            async getToken() {
+                const token = getToken();
+                if(!token)
+                    return null;
+
+                return {
+                    expiresOnTimestamp: token.expiryDate.getTime(),
+                    token: token.raw
+                };
+            }
+        },
+        "",
+        {});
+    client.pipeline.addPolicy({
+        name: "baseUrlPolicy",
+        sendRequest: async (request, next) => {
+            const requestUri = new URL(request.url);
+
+            const currentUri = new URL(window.location.href);
+            requestUri.hostname = `api.${currentUri.hostname}`;
+
+            if(currentUri.hostname === "localhost")
+                requestUri.hostname = "localhost:5000";
+                
+            return await next(request);
+        }
+    });
+    return client;
 }
 
 export async function makeApiCall<T>(action: (client: General) => Promise<T>): Promise<T|null> {
