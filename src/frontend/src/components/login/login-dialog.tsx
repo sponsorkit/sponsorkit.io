@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import IframeDialog from '../iframe-dialog';
-import { useLocation } from '@reach/router';
-import { newGuid } from '../../utils/guid';
-import { useToken } from '../../hooks/token';
+import React, { useMemo } from 'react';
 import { createApi } from '../../hooks/clients';
+import { useToken } from '../../hooks/token';
+import { newGuid } from '../../utils/guid';
+import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
     children: () => JSX.Element
@@ -49,6 +48,9 @@ export default function LoginDialog(props: {
 }
 
 function getRedirectUri() {
+    if(typeof window === "undefined")
+        return;
+
     const redirectUri = new URL(window.location.href);
     redirectUri.pathname = "/login";
     return redirectUri;

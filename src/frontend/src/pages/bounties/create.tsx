@@ -1,14 +1,13 @@
-import {useEffect, useMemo, useState} from 'react';
-import {CardContent, TextField, Card, Typography} from "@material-ui/core";
-import {useOctokit} from "../../hooks/clients";
-import uri from 'uri-tag';
-
-import { extractIssueLinkDetails } from '../../helpers/github-url-extraction';
+import { Card, CardContent, Container, TextField, Typography } from "@material-ui/core";
 import { navigate } from 'gatsby';
-import { Container } from '@material-ui/core';
-
-import * as classes from './create.module.scss';
+import { useEffect, useMemo, useState } from 'react';
+import uri from 'uri-tag';
 import { BountyhuntTemplate } from '.';
+import { extractIssueLinkDetails } from '../../helpers/github-url-extraction';
+import { useOctokit } from "../../hooks/clients";
+import * as classes from './create.module.scss';
+
+
 
 export default function CreateBountyPage() {
     const [issueLink, setIssueLink] = useState("");

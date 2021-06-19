@@ -1,6 +1,5 @@
-import { useEffect } from "react";
-import { useParams } from "@reach/router";
 import { RouteComponentProps } from "@reach/router";
+import { useEffect } from "react";
 
 export default function LoginPage(props: RouteComponentProps<{}>) {
   useEffect(

@@ -1,6 +1,5 @@
-import { Dialog } from '@material-ui/core';
-import React, { useEffect, useRef } from 'react';
 import { useLocation } from '@reach/router';
+import { useEffect, useRef } from 'react';
 
 type Props = {
     url: string,

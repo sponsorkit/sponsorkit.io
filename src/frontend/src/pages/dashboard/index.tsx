@@ -1,8 +1,8 @@
 import { Button, Container, Paper } from "@material-ui/core";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useState } from "react";
-import PrivateRoute from "../../components/login/private-route";
 import StripeCreditCard from "../../components/financial/stripe/credit-card";
+import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
 
 function DashboardPage() {

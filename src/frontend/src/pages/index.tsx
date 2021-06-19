@@ -1,6 +1,5 @@
-import * as React from "react"
-import { Link } from "gatsby"
 import { Button } from "@material-ui/core"
+import * as React from "react"
 
 const IndexPage = () => (
   <>

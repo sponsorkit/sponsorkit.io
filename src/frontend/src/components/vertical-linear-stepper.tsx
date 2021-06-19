@@ -1,10 +1,9 @@
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-
 import { Button, Step, StepContent, StepLabel, Stepper } from "@material-ui/core";
-import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
-
+import React, { useEffect, useMemo, useState } from 'react';
 import * as classes from './vertical-linear-stepper.module.scss';
+
+
 
 type Step = {
     title: string,

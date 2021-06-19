@@ -1,7 +1,6 @@
-import React from "react";
-import { useToken } from "../../hooks/token";
-import LoginDialog from "./login-dialog";
 import { RouteComponentProps } from "@reach/router";
+import React from "react";
+import LoginDialog from "./login-dialog";
 
 export default function PrivateRoute({ component, location, ...rest }: RouteComponentProps<{
     component: any

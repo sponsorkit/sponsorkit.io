@@ -6,7 +6,7 @@ import {
   CardNumberElement,
   FpxBankElement,
   IbanElement,
-  IdealBankElement,
+  IdealBankElement
 } from '@stripe/react-stripe-js'
 import React from 'react'
 import { StripeInput } from './input'

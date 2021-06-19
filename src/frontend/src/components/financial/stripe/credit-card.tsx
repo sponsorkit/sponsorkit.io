@@ -1,12 +1,9 @@
 import { Grid } from "@material-ui/core";
-import { CardCvcElement, CardElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { StripeElementChangeEvent, StripeElements, StripeElementType } from "@stripe/stripe-js";
-import { StripeCardNumberElement } from "@stripe/stripe-js";
-import { Stripe } from "@stripe/stripe-js";
-import React, { useState } from "react";
-import { useEffect } from "react";
-
+import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { Stripe, StripeCardNumberElement, StripeElementChangeEvent, StripeElements, StripeElementType } from "@stripe/stripe-js";
+import React, { useEffect, useState } from "react";
 import { StripeTextField } from "./text-field";
+
 
 export default function StripeCreditCard(props: {
     onInitialized: (context: { stripe: Stripe, elements: StripeElements }) => void,

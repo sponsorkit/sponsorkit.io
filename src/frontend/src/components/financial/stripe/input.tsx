@@ -1,5 +1,5 @@
 import { InputBaseComponentProps } from '@material-ui/core/InputBase'
-import { fade, useTheme } from '@material-ui/core/styles'
+import { useTheme } from '@material-ui/core/styles'
 import React from 'react'
 
 export const StripeInput: React.FC<InputBaseComponentProps> = (props) => {
