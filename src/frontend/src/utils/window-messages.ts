@@ -5,10 +5,8 @@ export type WindowMessage<K, T = null> = {
 }
 
 export type WindowMessages = 
-    OnWindowCloseMessage |
     OnGitHubCodeMessage;
 
-type OnWindowCloseMessage = WindowMessage<"on-window-close">;
 type OnGitHubCodeMessage = WindowMessage<"on-github-code", {
     code: string,
     state: string

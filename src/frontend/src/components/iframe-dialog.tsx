@@ -4,7 +4,6 @@ import { getMessage, WindowMessages } from '../utils/window-messages';
 
 type Props = {
     url: string,
-    open: boolean,
     onClose?: () => void,
     options?: Partial<Options>,
     onMessageReceived?: (message: WindowMessages) => void,
@@ -29,6 +28,18 @@ export default function IframeDialog(props: Props) {
 
     useEffect(
         () => {
+            const timerId = setInterval(
+                () => {
+                    if(!windowRef.current || !windowRef.current.closed)
+                        return;
+
+                    windowRef.current = null;
+
+                    clearInterval(timerId);
+                    props.onClose && props.onClose();
+                },
+                100);
+
             const onMessageReceived = (e: MessageEvent<any>) => {
                 if(e.origin !== location.origin)
                     return;
@@ -37,50 +48,31 @@ export default function IframeDialog(props: Props) {
                 if(!message)
                     return;
 
-                if(message.type === "on-window-close")
-                    return onClose();
-
+                clearTimeout(timerId);
                 props.onMessageReceived && props.onMessageReceived(message);
             };
 
-            const removeEventListeners = () => {
-                if(!windowRef.current)
-                    return;
-
-                windowRef.current.removeEventListener("message", onMessageReceived);
-            }
-
-            const onClose = () => {
-                removeEventListeners();
-                props.onClose && props.onClose();
-            }
-
             const close = () => {
-                if(!windowRef.current)
-                    return;
-                
-                removeEventListeners();
-                windowRef.current.close();
+                clearInterval(timerId);
+
+                windowRef.current?.close();
+                windowRef.current = null;
             }
 
-            if(props.open) {
-                if(!windowRef.current) {
-                    windowRef.current = window.open(
-                        props.url, 
-                        'sponsorkit-window', 
-                        optionsToString(props.options));
-                    if(!windowRef.current)
-                        throw new Error("Could not create window.");
+            if(!windowRef.current) {
+                windowRef.current = window.open(
+                    props.url, 
+                    'sponsorkit-window', 
+                    optionsToString(props.options));
+                if(!windowRef.current)
+                    throw new Error("Could not create window.");
 
-                    windowRef.current.addEventListener("message", onMessageReceived);
-                }
-            } else {
-                close();
+                windowRef.current.addEventListener("message", onMessageReceived);
             }
 
             return close;
         },
-        [props.open])
+        [])
 
     return null;
 }

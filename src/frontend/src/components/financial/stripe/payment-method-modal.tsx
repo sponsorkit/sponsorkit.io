@@ -17,7 +17,7 @@ const Transition = React.forwardRef(function Transition(
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export function PaymentMethodModal(props: {
+function PaymentMethodModalContent(props: {
     children: () => Promise<void> | void,
     onClose: () => void
 }) {
@@ -25,10 +25,7 @@ export function PaymentMethodModal(props: {
     const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement | null>(null);
     const [intentResponse, setIntentResponse] = useState<GeneralApiAccountPaymentMethodIntentGetResponse|null>(null);
 
-    const [isOpen, setIsOpen] = useState(true);
     const [isReady, setIsReady] = useState(false);
-
-    const [token] = useToken();
 
     const paymentMethodAvailability = useApi(
         async client => {
@@ -60,77 +57,77 @@ export function PaymentMethodModal(props: {
         },
         [paymentMethodAvailability]);
 
-    const onCancelClicked = () => setIsOpen(false);
+    const onCancelClicked = () => {
+        props.onClose();
+    };
+
     const onSubmitClicked = async () => {
         if(!isReady)
             return;
-
-        setIsOpen(false);
         
-        try {
-            if(intentResponse?.setupIntentClientSecret) {
-                if(!cardNumberElement)
-                    throw new Error("Card number element not found.");
+        if(intentResponse?.setupIntentClientSecret) {
+            if(!cardNumberElement)
+                throw new Error("Card number element not found.");
 
-                const confirmationResponse = await stripe?.confirmCardSetup(
-                    intentResponse.setupIntentClientSecret,
-                    {
-                        payment_method: {
-                            card: cardNumberElement
-                        }
-                    });
-                if(confirmationResponse?.error)
-                    throw confirmationResponse.error;
-            }
-
-            await Promise.resolve(props.children);
-        } catch {
-            setIsOpen(true);
+            const confirmationResponse = await stripe?.confirmCardSetup(
+                intentResponse.setupIntentClientSecret,
+                {
+                    payment_method: {
+                        card: cardNumberElement
+                    }
+                });
+            if(confirmationResponse?.error)
+                throw confirmationResponse.error;
         }
+
+        await Promise.resolve(props.children);
+
+        props.onClose();
     }
 
-    const render = () => (
-        <Dialog 
-            open={isOpen} 
-            TransitionComponent={Transition}
-        >
-            {!isReady ?
-                <CircularProgress /> : 
-                <>
-                    <DialogTitle>Enter payment details</DialogTitle>
-                    <DialogContent className={classes.root}>
-                        <Typography className={classes.subtext}>
-                            To continue, we need your payment details. These are stored securely with Stripe.
-                        </Typography>
-                        <Elements>
-                            <StripeCreditCard
-                                onInitialized={context => setStripe(context.stripe)}
-                                onChanged={setCardNumberElement}
-                            />
-                        </Elements>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button 
-                            onClick={onCancelClicked}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={onSubmitClicked}
-                            variant="contained"
-                        >
-                            Submit
-                        </Button>
-                    </DialogActions>
-                </>}
-        </Dialog>);
+    return <Dialog 
+        open
+        TransitionComponent={Transition}
+    >
+        <DialogTitle>Enter payment details</DialogTitle>
+        <DialogContent className={classes.root}>
+            <Typography className={classes.subtext}>
+                To continue, we need your payment details. These are stored securely with Stripe.
+            </Typography>
+            {isReady ?
+                <Elements>
+                    <StripeCreditCard
+                        onInitialized={context => setStripe(context.stripe)}
+                        onChanged={setCardNumberElement}
+                    />
+                </Elements> :
+                <CircularProgress />}
+        </DialogContent>
+        <DialogActions>
+            <Button 
+                onClick={onCancelClicked}
+                color="secondary"
+            >
+                Cancel
+            </Button>
+            <Button 
+                onClick={onSubmitClicked}
+                variant="contained"
+                disabled={!isReady}
+            >
+                Submit
+            </Button>
+        </DialogActions>
+    </Dialog>;
+}
 
-    if(!token) {
-        return <LoginDialog onClose={props.onClose}>
-            {render}
-        </LoginDialog>;
-    }
-
-    return render();
+export function PaymentMethodModal(props: {
+    children: () => Promise<void> | void,
+    onClose: () => void
+}) {
+    return <LoginDialog onClose={props.onClose}>
+        {() => <PaymentMethodModalContent {...props}>
+            {props.children}
+        </PaymentMethodModalContent>}
+    </LoginDialog>;
 }

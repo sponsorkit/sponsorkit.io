@@ -17,7 +17,6 @@ export default function LoginDialog(props: {
     }
 
     return <IframeDialog 
-        open={true} 
         url={getAuthorizeUrl(state).toString()}
         onClose={props.onClose}
         onMessageReceived={async e => {
