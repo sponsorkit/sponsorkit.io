@@ -57,7 +57,7 @@ export const StripeTextField = <T extends StripeElement>(
       }}
       {...(other as any)}
       style={{
-        marginTop: 16,
+        marginTop: 18,
         marginBottom: 8
       }}
     />

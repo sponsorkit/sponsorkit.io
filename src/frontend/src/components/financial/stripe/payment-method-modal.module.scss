@@ -1,10 +1,36 @@
 .root {
     min-width: 270px;
     max-width: 330px;
-    min-height: 260px;
 
     .subtext {
         margin-top: 10px;
         margin-bottom: 20px;
     }
+}
+
+.payment-veil {
+    position: relative;
+    min-height: 130px;
+
+    .credit-card-wrapper {
+        opacity: 0;
+        transition: opacity 250ms ease-in-out 250ms;
+
+        &.ready {
+            opacity: 1;
+        }
+    }
+
+    .progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        opacity: 1;
+        transition: opacity 250ms ease-in-out;
+
+        &.ready {
+            opacity: 0;
+        }
+    }
+
 }

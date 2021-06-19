@@ -24,21 +24,5 @@ export default function LoginPage(props: RouteComponentProps<{}>) {
       window.close();
     });
 
-  useEffect(
-    () => {
-      const onUnload = () => {
-        window.postMessage(
-          createMessage("on-window-close", null),
-          location.origin);
-      };
-
-      window.addEventListener("unload", onUnload);
-
-      return () => {
-        window.removeEventListener("unload", onUnload);
-      }
-    },
-    []);
-
   return null;
 }

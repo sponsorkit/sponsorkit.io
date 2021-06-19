@@ -1,4 +1,4 @@
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide, Typography } from "@material-ui/core";
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide, Typography } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions/transition";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
@@ -94,14 +94,17 @@ function PaymentMethodModalContent(props: {
             <Typography className={classes.subtext}>
                 To continue, we need your payment details. These are stored securely with Stripe.
             </Typography>
-            {isReady ?
-                <Elements>
-                    <StripeCreditCard
-                        onInitialized={context => setStripe(context.stripe)}
-                        onChanged={setCardNumberElement}
-                    />
-                </Elements> :
-                <CircularProgress />}
+            <Box className={classes.paymentVeil}>
+                <Box className={`${classes.creditCardWrapper} ${isReady && classes.ready}`}>
+                    <Elements>
+                        <StripeCreditCard
+                            onInitialized={context => setStripe(context.stripe)}
+                            onChanged={setCardNumberElement}
+                        />
+                    </Elements>
+                </Box>
+                <CircularProgress className={`${classes.progress} ${isReady && classes.ready}`} />
+            </Box>
         </DialogContent>
         <DialogActions>
             <Button 
