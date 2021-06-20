@@ -20,6 +20,8 @@ export default function StripeCreditCard(props: {
     const [errors, setErrors] = useState<{ [key in StripeElementType]?: string }>({});
 
     const onChange = (event: StripeElementChangeEvent) => {
+        console.log('pre-on-change');
+
         if (!stripe || !elements)
             return;
 

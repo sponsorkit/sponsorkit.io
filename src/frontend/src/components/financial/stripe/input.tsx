@@ -29,8 +29,7 @@ export const StripeInput: React.FC<InputBaseComponentProps> = (props) => {
     () => ({
       focus: () => mountNode.focus(),
     }),
-    [mountNode]
-  )
+    [mountNode]);
 
   return (
     <Component
