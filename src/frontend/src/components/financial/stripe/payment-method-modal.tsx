@@ -1,14 +1,14 @@
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide, Typography } from "@material-ui/core";
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Slide, Tooltip, Typography } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions/transition";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
 import { GeneralApiAccountPaymentMethodIntentGetResponse } from "../../../api/openapi/src";
 import { createApi, useApi } from "../../../hooks/clients";
-import { useToken } from "../../../hooks/token";
 import LoginDialog from "../../login/login-dialog";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
 import * as classes from "./payment-method-modal.module.scss";
+import PoweredByStripeBadge from "./assets/powered-by-stripe.inline.svg";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -92,7 +92,7 @@ function PaymentMethodModalContent(props: {
         <DialogTitle>Enter payment details</DialogTitle>
         <DialogContent className={classes.root}>
             <Typography className={classes.subtext}>
-                To continue, we need your payment details. These are stored securely with Stripe.
+                To continue, we need your payment details.
             </Typography>
             <Box className={classes.paymentVeil}>
                 <Box className={`${classes.creditCardWrapper} ${isReady && classes.ready}`}>
@@ -103,10 +103,18 @@ function PaymentMethodModalContent(props: {
                         />
                     </Elements>
                 </Box>
-                <CircularProgress className={`${classes.progress} ${isReady && classes.ready}`} />
+                <Box className={classes.progressWrapper}>
+                    <CircularProgress className={`${classes.progress} ${isReady && classes.ready}`} />
+                </Box>
             </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions className={classes.dialogActions}>
+            <Tooltip title="Stripe is one of the most popular and trusted payment providers in the world. Your credit card details are safe with them, and never touches our own servers.">
+                <Box className={classes.stripeBadge}>
+                    <PoweredByStripeBadge className={classes.svg} />
+                </Box>
+            </Tooltip>
+            <Box className={classes.spacer} />
             <Button 
                 onClick={onCancelClicked}
                 color="secondary"

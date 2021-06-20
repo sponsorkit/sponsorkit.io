@@ -1,6 +1,6 @@
 .root {
     min-width: 270px;
-    max-width: 330px;
+    max-width: 350px;
 
     .subtext {
         margin-top: 10px;
@@ -10,27 +10,59 @@
 
 .payment-veil {
     position: relative;
-    min-height: 130px;
+    min-height: 132px;
 
     .credit-card-wrapper {
+        position: absolute;
+        width: 100%;
+        z-index: 10;
         opacity: 0;
         transition: opacity 250ms ease-in-out 250ms;
+        display: flex;
+        flex-direction: column;
 
         &.ready {
             opacity: 1;
         }
     }
 
-    .progress {
+    .progress-wrapper {
+        z-index: 9;
         position: absolute;
         top: 0;
         left: 0;
-        opacity: 1;
-        transition: opacity 250ms ease-in-out;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        place-content: center;
+        place-items: center;
 
-        &.ready {
-            opacity: 0;
+        .progress {
+            opacity: 1;
+            transition: opacity 250ms ease-in-out;
+
+            &.ready {
+                opacity: 0;
+            }
         }
     }
 
+}
+
+.dialog-actions {
+    justify-content: space-between;
+
+    .spacer {
+        flex-grow: 1;
+    }
+
+    .stripe-badge {
+        line-height: 0;
+        place-self: center;
+
+        .svg {
+            height: 25px;
+            width: auto;
+        }
+    }
 }
