@@ -1,0 +1,4 @@
+/openapi/*
+
+# Autorest tar file
+!/openapi/sponsorkit-client-1.0.0.tgz

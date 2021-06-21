@@ -2,7 +2,7 @@
   "name": "sponsorkit",
   "private": true,
   "description": "",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "Mathias Lorenzen",
   "dependencies": {
     "@azure/core-client": "^1.1.3",
@@ -22,6 +22,7 @@
     "@material-ui/system": "^5.0.0-alpha.37",
     "@material-ui/utils": "^5.0.0-alpha.35",
     "@octokit/rest": "^18.5.2",
+    "@sponsorkit/client": "file:src/api/openapi/sponsorkit-client-1.0.0.tgz",
     "@stripe/react-stripe-js": "^1.4.0",
     "@stripe/stripe-js": "^1.13.2",
     "@types/dompurify": "^2.2.2",
@@ -82,7 +83,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=false --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack"
+    "swagger:local": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm i ./src/api/openapi/sponsorkit-client-1.0.0.tgz"
   },
   "repository": {
     "type": "git",
