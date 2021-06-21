@@ -47,7 +47,7 @@ export function createApi() {
         return requestUri.toString();
     }
 
-    var client = new General(null!, null!, {
+    var client = new General(null!, getBaseUri(), {
         requestContentType: "application/json; charset=utf-8",
         baseUri: getBaseUri(),
         allowInsecureConnection: true
