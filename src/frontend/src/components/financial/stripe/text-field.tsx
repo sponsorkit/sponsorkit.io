@@ -9,7 +9,7 @@ import {
   IdealBankElement
 } from '@stripe/react-stripe-js'
 import React from 'react'
-import { StripeInput } from './input'
+import StripeInput from './input'
 
 type StripeElement =
   | typeof AuBankAccountElement
@@ -18,48 +18,53 @@ type StripeElement =
   | typeof CardNumberElement
   | typeof FpxBankElement
   | typeof IbanElement
-  | typeof IdealBankElement
+  | typeof IdealBankElement;
 
 interface StripeTextFieldProps<T extends StripeElement>
-  extends Omit<TextFieldProps, 'onChange' | 'inputComponent' | 'inputProps'> {
-  onChange?: React.ComponentProps<T>['onChange']
-  inputProps?: React.ComponentProps<T>
-  stripeElement: T
+  extends Omit<TextFieldProps, "onChange" | "inputComponent" | "inputProps"> {
+  inputProps?: React.ComponentProps<T>;
+  labelErrorMessage?: string;
+  onChange?: React.ComponentProps<T>["onChange"];
+  stripeElement: T;
 }
 
 export const StripeTextField = <T extends StripeElement>(
   props: StripeTextFieldProps<T>
 ) => {
   const {
+    helperText,
     InputLabelProps,
-    stripeElement,
     InputProps = {},
     inputProps,
+    error,
+    labelErrorMessage,
+    stripeElement,
     ...other
-  } = props
+  } = props;
 
   return (
     <TextField
       fullWidth
-      size="small"
       InputLabelProps={{
         ...InputLabelProps,
         shrink: true
       }}
+      error={error}
       InputProps={{
         ...InputProps,
         inputProps: {
           ...inputProps,
           ...InputProps.inputProps,
-          component: stripeElement,
+          component: stripeElement
         },
         inputComponent: StripeInput
       }}
+      helperText={error ? labelErrorMessage : helperText}
       {...(other as any)}
       style={{
         marginTop: 18,
         marginBottom: 8
       }}
     />
-  )
-}
+  );
+};

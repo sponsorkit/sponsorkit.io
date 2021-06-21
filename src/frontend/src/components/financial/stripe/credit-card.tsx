@@ -20,8 +20,6 @@ export default function StripeCreditCard(props: {
     const [errors, setErrors] = useState<{ [key in StripeElementType]?: string }>({});
 
     const onChange = (event: StripeElementChangeEvent) => {
-        console.log('pre-on-change');
-
         if (!stripe || !elements)
             return;
 
@@ -40,7 +38,7 @@ export default function StripeCreditCard(props: {
         <Grid item xs={12}>
             <StripeTextField
                 error={Boolean(errors.cardNumber)}
-                helperText={errors.cardNumber}
+                labelErrorMessage={errors.cardNumber}
                 label="Card number"
                 inputProps={{
                     options: {
@@ -55,7 +53,7 @@ export default function StripeCreditCard(props: {
         <Grid item xs={7}>
             <StripeTextField
                 error={Boolean(errors.cardExpiry)}
-                helperText={errors.cardExpiry}
+                labelErrorMessage={errors.cardExpiry}
                 label="Expiry"
                 onChange={onChange}
                 stripeElement={CardExpiryElement}
@@ -67,7 +65,7 @@ export default function StripeCreditCard(props: {
         }}>
             <StripeTextField
                 error={Boolean(errors.cardCvc)}
-                helperText={errors.cardCvc}
+                labelErrorMessage={errors.cardExpiry}
                 label="CVC"
                 onChange={onChange}
                 stripeElement={CardCvcElement}
