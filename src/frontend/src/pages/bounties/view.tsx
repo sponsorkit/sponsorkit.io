@@ -6,7 +6,7 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
 import { BountyhuntTemplate } from '.';
-import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '../../api/openapi/src';
+import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '@sponsorkit/client';
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
 import { Markdown } from '../../components/markdown';

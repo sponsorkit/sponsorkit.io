@@ -1,6 +1,6 @@
 import { AppBar, Box, Container, Toolbar, Typography } from "@material-ui/core";
 import React from "react";
-import { SponsorkitDomainApiBountiesBountyResponse } from "../../api/openapi/src";
+import { SponsorkitDomainApiBountiesBountyResponse } from "@sponsorkit/client";
 import { useApi } from "../../hooks/clients";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import * as classes from './index.module.scss';

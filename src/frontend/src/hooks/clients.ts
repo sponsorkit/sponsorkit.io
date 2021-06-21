@@ -1,7 +1,7 @@
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { useEffect, useState } from "react";
-import { General } from "../api/openapi/src";
+import { General } from "@sponsorkit/client";
 import { getToken } from "./token";
 
 export function useOctokit<T>(

@@ -2,7 +2,7 @@ import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, Di
 import { TransitionProps } from "@material-ui/core/transitions/transition";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
-import { GeneralApiAccountPaymentMethodIntentGetResponse } from "../../../api/openapi/src";
+import { GeneralApiAccountPaymentMethodIntentGetResponse } from "@sponsorkit/client";
 import { createApi, useApi } from "../../../hooks/clients";
 import LoginDialog from "../../login/login-dialog";
 import StripeCreditCard from "./credit-card";
