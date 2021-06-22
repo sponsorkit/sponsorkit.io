@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
@@ -12,7 +14,8 @@ using Stripe;
 namespace Sponsorkit.Domain.Api.Account.PaymentMethod.Intent
 {
     public record Response(
-        string SetupIntentClientSecret);
+        string SetupIntentClientSecret,
+        string? ExistingPaymentMethodId);
     
     public class Get : BaseAsyncEndpoint
         .WithoutRequest
@@ -20,13 +23,16 @@ namespace Sponsorkit.Domain.Api.Account.PaymentMethod.Intent
     {
         private readonly DataContext dataContext;
         private readonly SetupIntentService setupIntentService;
+        private readonly IMediator mediator;
 
         public Get(
             DataContext dataContext,
-            SetupIntentService setupIntentService)
+            SetupIntentService setupIntentService,
+            IMediator mediator)
         {
             this.dataContext = dataContext;
             this.setupIntentService = setupIntentService;
+            this.mediator = mediator;
         }
         
         [HttpGet("/api/account/payment-method/intent")]
@@ -38,16 +44,22 @@ namespace Sponsorkit.Domain.Api.Account.PaymentMethod.Intent
                 x => x.Id == userId,
                 cancellationToken);
             
+            var paymentMethod = await mediator.Send(
+                new GetPaymentMethodForCustomerQuery(user.StripeCustomerId),
+                cancellationToken);
+            
             var intent = await setupIntentService.CreateAsync(
                 new SetupIntentCreateOptions()
                 {
                     Confirm = false,
-                    Customer = user.StripeCustomerId
+                    Customer = user.StripeCustomerId,
+                    PaymentMethod = paymentMethod?.Id
                 },
                 cancellationToken: cancellationToken);
 
             return new Response(
-                intent.ClientSecret);
+                intent.ClientSecret,
+                paymentMethod?.Id);
         }
     }
 }

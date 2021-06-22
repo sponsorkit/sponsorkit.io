@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sponsorkit.Domain.Models;
@@ -9,9 +10,10 @@ using Sponsorkit.Domain.Models;
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20210622202008_RemovalOfColumn")]
+    partial class RemovalOfColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,7 +30,7 @@ namespace Sponsorkit.Migrations
                     b.Property<long>("AmountInHundreds")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid?>("AwardedToId")
+                    b.Property<Guid>("AwardedToId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -191,7 +193,8 @@ namespace Sponsorkit.Migrations
                     b.HasOne("Sponsorkit.Domain.Models.User", "AwardedTo")
                         .WithMany("AwardedBounties")
                         .HasForeignKey("AwardedToId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
 
                     b.HasOne("Sponsorkit.Domain.Models.User", "Creator")
                         .WithMany("CreatedBounties")

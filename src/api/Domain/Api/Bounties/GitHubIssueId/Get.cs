@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
@@ -40,6 +41,7 @@ namespace Sponsorkit.Domain.Api.Bounties.GitHubIssueId
         
         [HttpGet("/api/bounties/{gitHubIssueId}")]
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues

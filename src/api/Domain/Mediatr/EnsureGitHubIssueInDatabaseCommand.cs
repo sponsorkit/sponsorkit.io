@@ -1,0 +1,99 @@
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Ardalis.Result;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Octokit;
+using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Builders;
+using Issue = Sponsorkit.Domain.Models.Issue;
+using Repository = Sponsorkit.Domain.Models.Repository;
+
+namespace Sponsorkit.Domain.Mediatr
+{
+    public record EnsureGitHubIssueInDatabaseCommand(
+        string OwnerName,
+        string RepositoryName,
+        int IssueNumber) : IRequest<Result<Issue>>;
+    
+    public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureGitHubIssueInDatabaseCommand, Result<Issue>>
+    {
+        private readonly DataContext dataContext;
+        private readonly IGitHubClient gitHubClient;
+
+        public EnsureGitHubIssueInDatabaseCommandHandler(
+            DataContext dataContext,
+            IGitHubClient gitHubClient)
+        {
+            this.dataContext = dataContext;
+            this.gitHubClient = gitHubClient;
+        }
+        
+        public async Task<Result<Issue>> Handle(EnsureGitHubIssueInDatabaseCommand request, CancellationToken cancellationToken)
+        {
+            var gitHubRepository = await gitHubClient.Repository.Get(
+                request.OwnerName,
+                request.RepositoryName);
+            if(gitHubRepository == null)
+                return Result<Issue>.NotFound();
+            
+            var gitHubIssue = await gitHubClient.Issue.Get(
+                request.OwnerName,
+                request.RepositoryName,
+                request.IssueNumber);
+            if(gitHubIssue == null)
+                return Result<Issue>.NotFound();
+
+            var repository = await EnsureRepositoryInDatabaseAsync(gitHubRepository, cancellationToken);
+            var issue = await EnsureIssueInDatabaseAsync(gitHubIssue, repository, cancellationToken);
+
+            return issue;
+        }
+
+        private async Task<Issue> EnsureIssueInDatabaseAsync(
+            Octokit.Issue gitHubIssue, 
+            Repository repository, 
+            CancellationToken cancellationToken)
+        {
+            var issue = await dataContext.Issues.SingleOrDefaultAsync(
+                x => x.GitHubId == gitHubIssue.Id,
+                cancellationToken);
+            if (issue == null)
+            {
+                var newIssue = new IssueBuilder()
+                    .WithGitHubId(gitHubIssue.Id)
+                    .WithRepository(repository)
+                    .Build();
+                await dataContext.Issues.AddAsync(
+                    newIssue,
+                    cancellationToken);
+
+                issue = newIssue;
+            }
+
+            return issue;
+        }
+
+        private async Task<Repository> EnsureRepositoryInDatabaseAsync(
+            Octokit.Repository gitHubRepository, 
+            CancellationToken cancellationToken)
+        {
+            var repository = await dataContext.Repositories.SingleOrDefaultAsync(
+                x => x.GitHubId == gitHubRepository.Id,
+                cancellationToken);
+            if (repository == null)
+            {
+                var newRepository = new RepositoryBuilder()
+                    .WithGitHubId(gitHubRepository.Id)
+                    .Build();
+                await dataContext.Repositories.AddAsync(
+                    newRepository,
+                    cancellationToken);
+
+                repository = newRepository;
+            }
+
+            return repository;
+        }
+    }
+}

@@ -12,10 +12,9 @@ export default () => {
     }
     
     return (
-        <PaymentMethodModal onClose={() => setShouldAddPaymentMethod(false)}>
-            {() => {
-                alert("Payment method added!");
-            }}
-        </PaymentMethodModal>
+        <PaymentMethodModal 
+            onClose={() => setShouldAddPaymentMethod(false)}
+            onPaymentMethodAdded={() => alert("payment method added!")}
+        />
     )
 };

@@ -18,72 +18,78 @@ const Transition = React.forwardRef(function Transition(
 });
 
 function PaymentMethodModalContent(props: {
-    children: () => Promise<void> | void,
-    onClose: () => void
+    onClose: () => void,
+    onPaymentMethodAdded: () => Promise<void>|void
 }) {
     const [stripe, setStripe] = useState<Stripe>();
     const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement | null>(null);
     const [intentResponse, setIntentResponse] = useState<GeneralApiAccountPaymentMethodIntentGetResponse|null>(null);
 
-    const [isReady, setIsReady] = useState(false);
-
-    const paymentMethodAvailability = useApi(
-        async client => {
-            const response = await client.apiAccountPaymentMethodAvailabilityGet({});
-            return response?.availability;
-        },
-        []);
-
     useEffect(
         () => {
             async function effect() {
-                if(!paymentMethodAvailability)
-                    return;
-
-                if(paymentMethodAvailability === "available") {
-                    setIsReady(true);
-                    return;
-                }
-
                 const intentResponse = await createApi().apiAccountPaymentMethodIntentGet({});
                 if(!intentResponse.setupIntentClientSecret)
                     throw new Error("No setup intent could be found.");
 
                 setIntentResponse(intentResponse);
-                setIsReady(true);
             }
 
             effect();
         },
-        [paymentMethodAvailability]);
+        []);
+        
+    useEffect(
+        () => {
+            /**
+             * If an existing payment method already exists, we just 3D secure the existing one.
+             */
+            async function effect() {
+                if(!intentResponse)
+                    return;
+
+                if(!intentResponse.existingPaymentMethodId)
+                    return;
+
+                onCreditCardReady();
+            }
+
+            effect();
+        },
+        [intentResponse]);
 
     const onCancelClicked = () => {
         props.onClose();
     };
 
-    const onSubmitClicked = async () => {
-        if(!isReady)
+    const onCreditCardReady = async () => {
+        if(!intentResponse)
             return;
+
+        if(!intentResponse.existingPaymentMethodId && !cardNumberElement)
+            throw new Error("Card not inferred.");
         
-        if(intentResponse?.setupIntentClientSecret) {
-            if(!cardNumberElement)
-                throw new Error("Card number element not found.");
+        const confirmationResponse = await stripe?.confirmCardSetup(
+            intentResponse.setupIntentClientSecret,
+            {
+                payment_method: intentResponse.existingPaymentMethodId ?? 
+                { card: cardNumberElement! }
+            });
+        if(confirmationResponse?.error)
+            throw confirmationResponse.error;
 
-            const confirmationResponse = await stripe?.confirmCardSetup(
-                intentResponse.setupIntentClientSecret,
-                {
-                    payment_method: {
-                        card: cardNumberElement
-                    }
-                });
-            if(confirmationResponse?.error)
-                throw confirmationResponse.error;
-        }
+        await createApi().apiAccountPaymentMethodApplyPost({});
 
-        await Promise.resolve(props.children);
+        await Promise.resolve(props.onPaymentMethodAdded());
 
         props.onClose();
     }
+
+    if(!intentResponse)
+        return null;
+
+    if(!!intentResponse.existingPaymentMethodId)
+        return null;
 
     return <Dialog 
         open
@@ -95,7 +101,7 @@ function PaymentMethodModalContent(props: {
                 To continue, we need your payment details.
             </Typography>
             <Box className={classes.paymentVeil}>
-                <Box className={`${classes.creditCardWrapper} ${isReady && classes.ready}`}>
+                <Box className={`${classes.creditCardWrapper} ${!!intentResponse && classes.ready}`}>
                     <Elements>
                         <StripeCreditCard
                             onInitialized={context => setStripe(context.stripe)}
@@ -104,7 +110,7 @@ function PaymentMethodModalContent(props: {
                     </Elements>
                 </Box>
                 <Box className={classes.progressWrapper}>
-                    <CircularProgress className={`${classes.progress} ${isReady && classes.ready}`} />
+                    <CircularProgress className={`${classes.progress} ${!!intentResponse && classes.ready}`} />
                 </Box>
             </Box>
         </DialogContent>
@@ -122,9 +128,9 @@ function PaymentMethodModalContent(props: {
                 Cancel
             </Button>
             <Button 
-                onClick={onSubmitClicked}
+                onClick={onCreditCardReady}
                 variant="contained"
-                disabled={!isReady}
+                disabled={!intentResponse}
             >
                 Submit
             </Button>
@@ -133,12 +139,10 @@ function PaymentMethodModalContent(props: {
 }
 
 export function PaymentMethodModal(props: {
-    children: () => Promise<void> | void,
-    onClose: () => void
+    onClose: () => void,
+    onPaymentMethodAdded: () => Promise<void>|void
 }) {
     return <LoginDialog onClose={props.onClose}>
-        {() => <PaymentMethodModalContent {...props}>
-            {props.children}
-        </PaymentMethodModalContent>}
+        {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
 }

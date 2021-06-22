@@ -11,8 +11,6 @@ namespace Sponsorkit.Domain.Models
 
         public long GitHubId { get; set; }
         
-        public DateTime CreatedAtUtc { get; set; }
-        
         public User? Owner { get; set; }
         public Guid? OwnerId { get; set; }
         
