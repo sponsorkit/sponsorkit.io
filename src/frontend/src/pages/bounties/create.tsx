@@ -3,7 +3,7 @@ import { navigate } from 'gatsby';
 import { useEffect, useMemo, useState } from 'react';
 import uri from 'uri-tag';
 import { BountyhuntTemplate } from '.';
-import { extractIssueLinkDetails } from '../../helpers/github-url-extraction';
+import { extractIssueLinkDetails } from '../../utils/github-url-extraction';
 import { useOctokit } from "../../hooks/clients";
 import * as classes from './create.module.scss';
 

@@ -10,8 +10,8 @@ import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse } from '@sponsor
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
 import { Markdown } from '../../components/markdown';
-import { extractReposApiLinkDetails } from '../../helpers/github-url-extraction';
-import { getUrlParameter } from '../../helpers/url';
+import { extractReposApiLinkDetails } from '../../utils/github-url-extraction';
+import { getUrlParameter } from '@utils/url';
 import { createApi, makeOctokitCall } from '../../hooks/clients';
 import * as classes from './view.module.scss';
 
@@ -52,10 +52,8 @@ export default function IssueByIdPage(props: {
                 if(!issue)
                     return;
                 
-                // const response = await makeApiCall(async client => 
-                //     await client.apiBountiesGitHubIssueIdGet(issue.id));
-                // setBounties(response?.bounties ?? null);
-                setBounties(null);
+                const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
+                setBounties(response?.bounties ?? null);
             }
             
             effect();

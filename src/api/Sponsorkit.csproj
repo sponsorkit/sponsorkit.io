@@ -48,15 +48,5 @@
     <None Update="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\frontend\**\*" Exclude="..\frontend\node_modules\**\*;..\frontend\.cache\**\*;..\frontend\public\**\*">
-      <Link>Frontend\%(RecursiveDir)\%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-    <None Update="..\frontend\src\pages\bounties\create.tsx">
-      <Link>Frontend\src\pages\bounties\create.tsx</Link>
-    </None>
-    <None Update="..\frontend\src\pages\bounties\index.tsx">
-      <Link>Frontend\src\pages\bounties\index.tsx</Link>
-    </None>
   </ItemGroup>
 </Project>

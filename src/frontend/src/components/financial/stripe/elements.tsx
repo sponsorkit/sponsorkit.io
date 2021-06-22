@@ -1,13 +1,34 @@
+import { CircularProgress } from "@material-ui/core";
 import { Elements as StripeElements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import React, { PropsWithChildren } from 'react';
-
-
-const stripePromise = loadStripe('pk_test_51IWkhfBGc8xbeDA0hIEM0ZyOJfsyGufhwCLzem0YluDpXFLgR2WuHx7priPX5DWKCyvikRTPRgKn7Cf05vZbHuDD00BceWadyX');
-
+import { loadStripe, Stripe } from "@stripe/stripe-js";
+import { PropsWithChildren, useEffect, useState } from 'react';
+import { useConfiguration } from "../../../hooks/configuration";
 
 export default function Elements(props: PropsWithChildren<{}>) {
-    return <StripeElements options={{ locale: 'en' }} stripe={stripePromise}>
+    const [stripe, setStripe] = useState<Stripe|undefined>();
+    const configuration = useConfiguration();
+
+    useEffect(
+        () => {
+            async function effect() {
+                if(!configuration)
+                    return;
+
+                const loadedStripe = await loadStripe(configuration.stripeClientId);                
+                if(!loadedStripe)
+                    throw new Error("Could not load Stripe.");
+                
+                setStripe(loadedStripe);
+            }
+
+            effect();
+        },
+        [configuration]);
+
+    if(!stripe)
+        return <CircularProgress />;
+
+    return <StripeElements options={{ locale: 'en' }} stripe={stripe}>
         {props.children}
     </StripeElements>;
 }
