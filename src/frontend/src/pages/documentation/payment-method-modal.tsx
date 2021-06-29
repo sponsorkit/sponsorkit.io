@@ -1,6 +1,6 @@
 import { Button } from "@material-ui/core";
 import { useEffect, useState } from "react";
-import {PaymentMethodModal} from "../../components/financial/stripe/payment-method-modal";
+import {PaymentMethodModal} from "../../components/financial/stripe/payment-modal";
 
 export default () => {
     const [shouldAddPaymentMethod, setShouldAddPaymentMethod] = useState(false);
@@ -14,7 +14,11 @@ export default () => {
     return (
         <PaymentMethodModal 
             onClose={() => setShouldAddPaymentMethod(false)}
-            onPaymentMethodAdded={() => alert("payment method added!")}
+            onComplete={() => alert("payment method added!")}
+            onAcquirePaymentIntent={async () => ({
+                clientSecret: "dummy",
+                existingPaymentMethodId: "dummy"
+            })}
         />
     )
 };

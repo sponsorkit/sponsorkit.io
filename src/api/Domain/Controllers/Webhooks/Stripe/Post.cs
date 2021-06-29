@@ -25,22 +25,15 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         .WithRequest<Request>
         .WithoutResponse
     {
-        private readonly DataContext dataContext;
-
-        private readonly IMediator mediator;
         private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
         private readonly IEnumerable<IWebhookEventHandler> webhookEventHandlers;
         private readonly ILogger logger;
 
         public Post(
-            DataContext dataContext,
-            IMediator mediator,
             IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
             IEnumerable<IWebhookEventHandler> webhookEventHandlers,
             ILogger logger)
         {
-            this.dataContext = dataContext;
-            this.mediator = mediator;
             this.stripeOptionsMonitor = stripeOptionsMonitor;
             this.webhookEventHandlers = webhookEventHandlers;
             this.logger = logger;
@@ -48,7 +41,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
 
         [HttpPost("/webhooks/stripe")]
         [AllowAnonymous]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = default)
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (!IsValidStripeWebhookIpAddress(ipAddress))
@@ -70,7 +63,8 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                 foreach (var eventHandler in elligibleEventHandlers)
                 {
                     await eventHandler.HandleAsync(
-                        stripeEvent.Data.Object);
+                        stripeEvent.Data.Object,
+                        cancellationToken);
                 }
                 
                 return Ok();

@@ -6,14 +6,16 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
 import { BountyhuntTemplate } from '.';
-import { SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainApiBountiesGitHubIssueIdPostGitHubIssueRequest } from '@sponsorkit/client';
 import { AmountPicker } from '../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../components/financial/stripe/payment-method-modal';
+import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
 import { Markdown } from '../../components/markdown';
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
 import { getUrlParameter } from '@utils/url';
 import { createApi, makeOctokitCall } from '../../hooks/clients';
 import * as classes from './view.module.scss';
+import { useCountUp } from 'use-count-up'
+import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { useAnimatedCount } from "@hooks/animations";
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -25,7 +27,7 @@ export default function IssueByIdPage(props: {
     const repo = getUrlParameter(props.location, "repo");
 
     const [issue, setIssue] = useState<OctokitIssueResponse|null|undefined>();
-    const [bounties, setBounties] = useState<SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[]|null|undefined>();
+    const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[]|null|undefined>();
 
     useMemo(
         () => {
@@ -48,17 +50,17 @@ export default function IssueByIdPage(props: {
 
     useMemo(
         () => {
-            async function effect() {
-                if(!issue)
-                    return;
-                
-                const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
-                setBounties(response?.bounties ?? null);
-            }
-            
-            effect();
+            onRefreshBounties();
         },
         [issue?.id]);
+
+    const onRefreshBounties = async () => {
+        if(!issue)
+            return;
+        
+        const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
+        setBounties(response?.bounties ?? null);
+    }
 
     if(issue === undefined || bounties === undefined) {
         return <BountyhuntTemplate>
@@ -72,7 +74,8 @@ export default function IssueByIdPage(props: {
     return <BountyhuntTemplate>
         <Issue 
             issue={issue}
-            bounties={bounties} />
+            bounties={bounties}
+            onBountyCreated={onRefreshBounties} />
     </BountyhuntTemplate>
 }
 
@@ -85,7 +88,8 @@ type Event = {
 
 function Issue(props: {
     issue: OctokitIssueResponse,
-    bounties: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[]|null
+    bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[]|null,
+    onBountyCreated: () => Promise<void>|void
 }) {
     const events: Array<Event|null> = 
         [
@@ -175,23 +179,28 @@ function Issue(props: {
         </Box>
         <Bounties 
             issue={props.issue}
-            bounties={props.bounties} />
+            bounties={props.bounties}
+            onBountyCreated={props.onBountyCreated} />
     </Box>
 }
 
 function Bounties(props: { 
     issue: OctokitIssueResponse,
-    bounties: SponsorkitDomainApiBountiesGitHubIssueIdBountyResponse[]|null
+    bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[]|null,
+    onBountyCreated: () => Promise<void>|void
 }) {    
-    const totalAmount = useMemo(
+    const totalBountyReward = useAnimatedCount(
         () => !props.bounties ? 0 : 
             sum(props.bounties.map(x => x.amountInHundreds)) / 100,
-        []);
+        [props.bounties]);
 
+    const totalBountyCount = useAnimatedCount(
+        () => props.bounties?.length ?? 0,
+        [props.bounties]);
 
     const claimError = useMemo(
         () => {
-            if(totalAmount === 0)
+            if(totalBountyReward.static === 0)
                 return "There is no bounty to claim";
 
             if(props.issue.state === "closed")
@@ -199,7 +208,7 @@ function Bounties(props: {
 
             return "";
         },
-        [props.issue.state, totalAmount]);
+        [props.issue.state, totalBountyReward]);
 
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
     if(!issueDetails)
@@ -210,10 +219,10 @@ function Bounties(props: {
         <CardContent className={classes.bountyAmount}>
             <Box className={classes.labelContainer}>
                 <Typography component="div" variant="h3" className={classes.amountRaised}>
-                    <Tooltip title={`$${totalAmount} USD`}><b>${totalAmount}</b></Tooltip> reward
+                    <Tooltip title={`$${totalBountyReward.static} USD`}><b>${totalBountyReward.animated}</b></Tooltip> reward
                 </Typography>
                 <Typography component="div" className={classes.amountOfSponsors}>
-                    <b>{props.bounties?.length ?? 0}</b> bounties
+                    <b>{totalBountyCount.animated}</b> bounties
                 </Typography>
             </Box>
             <Tooltip title={claimError} className={classes.buttonContainer}>
@@ -228,40 +237,27 @@ function Bounties(props: {
         </CardContent>
         <CardContent>
             <CreateBounty 
-                currentAmount={totalAmount / 100}
+                currentAmount={10}
                 issue={{
                     issueNumber: issueDetails.number,
                     ownerName: issueDetails.owner,
                     repositoryName: issueDetails.repo
-                }} />
+                }}
+                onBountyCreated={props.onBountyCreated} />
         </CardContent>
         </>
     </Card>
 }
 
 function CreateBounty(props: {
-    issue: SponsorkitDomainApiBountiesGitHubIssueIdPostGitHubIssueRequest,
-    currentAmount: number
+    issue: SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest,
+    currentAmount: number,
+    onBountyCreated: () => Promise<void>|void
 }) {
     const [amount, setAmount] = useState(0);
     const [shouldCreate, setShouldCreate] = useState(false);
 
     const onCreateClicked = () => setShouldCreate(true);
-
-    const onPaymentMethodAcquired = async () => {
-        console.log("payment-method");
-
-        const amountInHundreds = amount * 100;
-        await createApi().apiBountiesPost(
-            {
-                body: {
-                    amountInHundreds,
-                    issue: props.issue
-                }
-            });
-
-        alert("Your bounty has been created!");
-    }
 
     return <>
         <Typography variant="h4" component="h3" className={classes.title}>
@@ -281,8 +277,23 @@ function CreateBounty(props: {
         </Button>
         {shouldCreate && 
             <PaymentMethodModal 
-                onPaymentMethodAdded={onPaymentMethodAcquired}
+                onComplete={props.onBountyCreated}
                 onClose={() => setShouldCreate(false)} 
+                onAcquirePaymentIntent={async () => {
+                    const response = await createApi().apiBountiesPaymentIntentPost({
+                        body: {
+                            amountInHundreds: amount * 100,
+                            issue: props.issue
+                        }
+                    });
+                    if(!response)
+                        throw new Error("Could not create intent for bounty.");
+
+                    return {
+                        clientSecret: response.paymentIntentClientSecret,
+                        existingPaymentMethodId: response.existingPaymentMethodId
+                    }
+                }}
             />}
     </>;
 }

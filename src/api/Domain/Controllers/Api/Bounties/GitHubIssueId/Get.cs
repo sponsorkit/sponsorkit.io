@@ -42,6 +42,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
         [HttpGet("/api/bounties/{gitHubIssueId}")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues

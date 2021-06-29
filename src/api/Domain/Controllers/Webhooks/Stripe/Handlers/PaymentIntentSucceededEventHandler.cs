@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Controllers.Api.Account.PaymentMethod.Intent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;

@@ -13,7 +13,7 @@ using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Api.Account.PaymentMethod.Intent
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
 {
     public record GitHubIssueRequest(
         string OwnerName,
@@ -55,8 +55,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.PaymentMethod.Intent
             this.mediator = mediator;
         }
         
-        [HttpPost("/api/account/payment-method/intent")]
-        public override async Task<ActionResult<Response>> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = new CancellationToken())
+        [HttpPost("/api/bounties/payment-intent")]
+        public override async Task<ActionResult<Response>> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = default)
         {
             var userId = User.GetRequiredId();
             
