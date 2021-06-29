@@ -8,7 +8,8 @@ export function useAnimatedCount(
     const {value: valueAnimated} = useCountUp({
         end: accessor(),
         isCounting: true,
-        duration: 3
+        duration: 2,
+        start: 0
     });
     const value = useMemo(
         () => accessor(),

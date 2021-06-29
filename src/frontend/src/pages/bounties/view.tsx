@@ -29,6 +29,14 @@ export default function IssueByIdPage(props: {
     const [issue, setIssue] = useState<OctokitIssueResponse|null|undefined>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[]|null|undefined>();
 
+    const onRefreshBounties = async () => {
+        if(!issue)
+            return;
+        
+        const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
+        setBounties(response?.bounties ?? null);
+    }
+
     useMemo(
         () => {
             async function effect() {
@@ -53,14 +61,6 @@ export default function IssueByIdPage(props: {
             onRefreshBounties();
         },
         [issue?.id]);
-
-    const onRefreshBounties = async () => {
-        if(!issue)
-            return;
-        
-        const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
-        setBounties(response?.bounties ?? null);
-    }
 
     if(issue === undefined || bounties === undefined) {
         return <BountyhuntTemplate>
