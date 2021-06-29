@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Api.Browser.BeneficiaryIdReference;
+using Sponsorkit.Domain.Controllers.Api.Browser.BeneficiaryIdReference;
 
 namespace Sponsorkit.Tests.Domain.Api.Browser
 {

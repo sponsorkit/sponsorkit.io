@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Api.Browser.BeneficiaryIdReference;
 using Sponsorkit.Domain.Helpers;
 
 namespace Sponsorkit.Tests.Domain.Helpers

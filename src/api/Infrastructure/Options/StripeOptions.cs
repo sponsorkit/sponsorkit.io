@@ -8,7 +8,8 @@ namespace Sponsorkit.Infrastructure.Options
     {
         [NotLogged] public string SecretKey { get; set; } = null!;
 
-        [NotLogged]
-        public string PublishableKey { get; set; } = null!;
+        [NotLogged] public string PublishableKey { get; set; } = null!;
+
+        [NotLogged] public string WebhookSecretKey { get; set; } = null!;
     }
 }
