@@ -116,8 +116,6 @@ namespace Sponsorkit.Infrastructure.AspNet
                 .AddAuthorization()
                 .AddApiExplorer();
 
-            services.AddHealthChecks();
-
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(
@@ -207,7 +205,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHealthChecks("/health", new HealthCheckOptions()
+                endpoints.MapHealthChecks("/health-json", new HealthCheckOptions()
                 {
                     ResponseWriter = async (context, report) =>
                     {
@@ -234,6 +232,8 @@ namespace Sponsorkit.Infrastructure.AspNet
                         await context.Response.WriteAsync(result);
                     }
                 });
+                
+                endpoints.MapHealthChecks("/health");
 
                 endpoints.MapSwagger();
 
