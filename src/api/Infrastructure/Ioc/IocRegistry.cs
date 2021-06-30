@@ -154,7 +154,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddDbContextPool<DataContext>(
                 optionsBuilder =>
                 {
-                    var sqlOptions = Configuration.Get<SqlOptions>();
+                    var sqlOptions = Configuration.GetOptions<SqlOptions>();
                     var connectionString = sqlOptions.ConnectionString;
 
                     optionsBuilder.UseNpgsql(
