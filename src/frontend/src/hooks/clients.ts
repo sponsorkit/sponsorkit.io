@@ -36,17 +36,15 @@ export function createOctokit() {
 
 export function createApi() {
     function getBaseUri() {
-        const requestUri = new URL(window.location.href);
-
         const currentUri = new URL(window.location.href);
+        if (currentUri.hostname === "localhost")
+            return "http://localhost:5000";
+
+        const requestUri = new URL(window.location.href);
         requestUri.hostname = `api.${currentUri.hostname}`;
         requestUri.pathname = "";
         requestUri.search = "";
         requestUri.hash = "";
-
-        if (currentUri.hostname === "localhost")
-            return "http://localhost:5000";
-
         return requestUri.toString();
     }
 
