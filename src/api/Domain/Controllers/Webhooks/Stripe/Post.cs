@@ -20,10 +20,8 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
 {
-    public record Request;
-
     public class Post : BaseAsyncEndpoint
-        .WithRequest<Request>
+        .WithoutRequest
         .WithoutResponse
     {
         private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
@@ -43,7 +41,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         [HttpPost("/webhooks/stripe")]
         [AllowAnonymous]
         [DisableCors]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = default)
+        public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = default)
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (!IsValidStripeWebhookIpAddress(ipAddress))
