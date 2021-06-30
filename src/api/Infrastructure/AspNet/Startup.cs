@@ -246,7 +246,7 @@ namespace Sponsorkit.Infrastructure.AspNet
         private static bool IsWebhookRequest(HttpContext context)
         {
             return context.Request.Path.StartsWithSegments(
-                "/api/webhooks",
+                "/webhooks",
                 StringComparison.InvariantCultureIgnoreCase);
         }
     }

@@ -13,8 +13,10 @@ using FluffySpoon.AspNet.NGrok;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
 namespace Sponsorkit.Infrastructure.AspNet
@@ -31,6 +33,7 @@ namespace Sponsorkit.Infrastructure.AspNet
         private PlanService? planService;
         private WebhookEndpointService? webhookEndpointService;
         private INGrokHostedService? ngrokHostedService;
+        private IOptionsMonitor<StripeOptions> stripeOptions;
 
         private DockerClient? docker;
 
@@ -59,6 +62,7 @@ namespace Sponsorkit.Infrastructure.AspNet
             customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
             planService = scope.ServiceProvider.GetRequiredService<PlanService>();
             webhookEndpointService = scope.ServiceProvider.GetRequiredService<WebhookEndpointService>();
+            stripeOptions = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<StripeOptions>>();
 
             ngrokHostedService = scope.ServiceProvider.GetService<INGrokHostedService>();
 
@@ -88,18 +92,17 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             await CleanupStripeWebhooksAsync();
 
-            var sslTunnels = tunnels.Where(x => x.PublicUrl.StartsWith("https://", StringComparison.InvariantCulture));
-            foreach (var tunnel in sslTunnels)
-            {
-                var webhookUrl = $"{tunnel.PublicUrl}/stripe";
-                Console.WriteLine($"Created Stripe webhook towards {webhookUrl}");
+            var sslTunnel = tunnels.Single(x => x.PublicUrl.StartsWith("https://", StringComparison.InvariantCulture));
+            
+            var webhookUrl = $"{sslTunnel.PublicUrl}/webhooks/stripe";
+            Console.WriteLine($"Created Stripe webhook towards {webhookUrl}");
 
-                await webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
-                {
-                    Url = webhookUrl,
-                    EnabledEvents = new List<string>() { "*" }
-                });
-            }
+            var webhook = await webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
+            {
+                Url = webhookUrl,
+                EnabledEvents = new List<string>() { "*" }
+            });
+            stripeOptions.CurrentValue.WebhookSecretKey = webhook.Secret;
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)

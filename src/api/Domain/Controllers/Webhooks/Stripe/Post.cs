@@ -8,6 +8,7 @@ using Ardalis.ApiEndpoints;
 using Ardalis.Result;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -41,13 +42,17 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
 
         [HttpPost("/webhooks/stripe")]
         [AllowAnonymous]
+        [DisableCors]
         public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = default)
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (!IsValidStripeWebhookIpAddress(ipAddress))
                 return BadRequest();
 
-            using var reader = new StreamReader(HttpContext.Request.Body);
+            await using var stream = HttpContext.Request.Body;
+            stream.Seek(0, SeekOrigin.Begin);
+            
+            using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync();
 
             try

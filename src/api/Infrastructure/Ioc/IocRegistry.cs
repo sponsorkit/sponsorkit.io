@@ -9,11 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Octokit;
+using Octokit.Internal;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
+using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
@@ -60,9 +63,15 @@ namespace Sponsorkit.Infrastructure.Ioc
 
         private void ConfigureGitHub()
         {
-            Services.AddScoped<IGitHubClient>(c => 
+            Services.AddScoped<IGitHubClient>(serviceProvider => 
                 new GitHubClient(
-                    GitHubClientFactory.GetProductHeaderValue()));
+                    GitHubClientFactory.GetProductHeaderValue(),
+                    new InMemoryCredentialStore(
+                        new Credentials(serviceProvider
+                            .GetRequiredService<IOptionsMonitor<GitHubOptions>>()
+                            .CurrentValue
+                            .BountyhuntBot
+                            .PersonalAccessToken))));
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
         }
 
@@ -129,6 +138,9 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddSingleton<PlanService>();
             Services.AddSingleton<ChargeService>();
             Services.AddSingleton<SetupIntentService>();
+            Services.AddSingleton<PaymentIntentService>();
+
+            Services.AddScoped<IWebhookEventHandler, PaymentIntentSucceededEventHandler>();
 
             Services.AddSingleton<IStripeClient, StripeClient>(
                 _ => new StripeClient(

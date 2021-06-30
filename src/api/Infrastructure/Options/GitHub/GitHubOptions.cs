@@ -8,5 +8,6 @@ namespace Sponsorkit.Infrastructure.Options.GitHub
     public class GitHubOptions
     {
         public GitHubOAuthOptions OAuth { get; set; }
+        public GitHubBotOptions BountyhuntBot { get; set; }
     }
 }

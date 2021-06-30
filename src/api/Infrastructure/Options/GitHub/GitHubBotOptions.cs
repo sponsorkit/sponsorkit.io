@@ -4,13 +4,9 @@ using Destructurama.Attributed;
 namespace Sponsorkit.Infrastructure.Options.GitHub
 {
     [ExcludeFromCodeCoverage]
-    public class GitHubOAuthOptions
+    public class GitHubBotOptions
     {
         [NotLogged]
-        public string ClientId { get; set; } = null!;
-        
-        [NotLogged]
-        public string ClientSecret { get; set; } = null!;
+        public string PersonalAccessToken { get; set; } = null!;
     }
-
 }

@@ -15,7 +15,7 @@ import { createApi, makeOctokitCall } from '../../hooks/clients';
 import * as classes from './view.module.scss';
 import { useCountUp } from 'use-count-up'
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
-import { useAnimatedCount } from "@hooks/animations";
+import { useAnimatedCount } from "@hooks/count-up";
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -200,7 +200,7 @@ function Bounties(props: {
 
     const claimError = useMemo(
         () => {
-            if(totalBountyReward.static === 0)
+            if(totalBountyReward.current === 0)
                 return "There is no bounty to claim";
 
             if(props.issue.state === "closed")
@@ -219,7 +219,7 @@ function Bounties(props: {
         <CardContent className={classes.bountyAmount}>
             <Box className={classes.labelContainer}>
                 <Typography component="div" variant="h3" className={classes.amountRaised}>
-                    <Tooltip title={`$${totalBountyReward.static} USD`}><b>${totalBountyReward.animated}</b></Tooltip> reward
+                    <Tooltip title={`$${totalBountyReward.current} USD`}><b>${totalBountyReward.animated}</b></Tooltip> reward
                 </Typography>
                 <Typography component="div" className={classes.amountOfSponsors}>
                     <b>{totalBountyCount.animated}</b> bounties

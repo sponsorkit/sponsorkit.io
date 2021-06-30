@@ -87,6 +87,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
                     Customer = user.StripeCustomerId,
                     PaymentMethod = paymentMethod?.Id,
                     Amount = amountToChargeInHundreds,
+                    Currency = "usd",
                     Metadata = new Dictionary<string, string>()
                     {
                         { UniversalMetadataKeys.Type, "BountyPaymentIntent" },

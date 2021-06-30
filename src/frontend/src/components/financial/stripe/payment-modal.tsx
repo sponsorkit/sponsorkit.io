@@ -53,32 +53,10 @@ function PaymentMethodModalContent(props: Props) {
             effect();
         },
         []);
-        
-    useEffect(
-        () => {
-            /**
-             * If an existing payment method already exists, we just 3D secure the existing one.
-             */
-            async function effect() {
-                if(!intentResponse)
-                    return;
-
-                if(!intentResponse.existingPaymentMethodId)
-                    return;
-
-                onCreditCardReady();
-            }
-
-            effect();
-        },
-        [intentResponse]);
 
     const onCreditCardReady = async () => {
         if(!intentResponse)
             return;
-
-        if(!intentResponse?.existingPaymentMethodId && !cardNumberElement)
-            throw new Error("Card not inferred.");
 
         setError(null);
         setIsLoading(true);
@@ -114,7 +92,7 @@ function PaymentMethodModalContent(props: Props) {
             if(paymentIntent.status !== "succeeded")
                 throw new Error("Did not expect payment intent status: " + paymentIntent.status);
     
-            await delay(1000);
+            await delay(5000);
             await Promise.resolve(props.onComplete());
     
             props.onClose();
@@ -126,12 +104,6 @@ function PaymentMethodModalContent(props: Props) {
     const onCancelClicked = () => {
         props.onClose();
     };
-
-    if(!intentResponse)
-        return null;
-
-    if(!!intentResponse.existingPaymentMethodId)
-        return null;
 
     const isReady = !!intentResponse && !isLoading;
 
@@ -157,7 +129,7 @@ function PaymentMethodModalContent(props: Props) {
                     <CircularProgress className={`${classes.progress} ${isReady && classes.ready}`} />
                 </Box>
             </Box>
-            {error && 
+            {error && !isLoading && 
                 <Box>
                     <FormHelperText error>
                         {error.message}
