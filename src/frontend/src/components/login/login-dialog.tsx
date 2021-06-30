@@ -1,9 +1,10 @@
+import { useConfiguration } from '@hooks/configuration';
 import React, { useMemo } from 'react';
-import { getMessage } from 'src/utils/window-messages';
-import { createApi } from '../../hooks/clients';
-import { useToken } from '../../hooks/token';
-import { newGuid } from '../../utils/guid';
+import { createApi } from '@hooks/clients';
+import { useToken } from '@hooks/token';
+import { newGuid } from '@utils/guid';
 import IframeDialog from '../iframe-dialog';
+import { SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
 
 export default function LoginDialog(props: {
     onClose: () => void,
@@ -11,13 +12,17 @@ export default function LoginDialog(props: {
 }) {
     const state = useMemo(newGuid, []);
     const [token, setToken] = useToken();
+    const configuration = useConfiguration();
 
     if(token && !token.isExpired) {
         return props.children();
     }
 
+    if(configuration === undefined)
+        return null;
+
     return <IframeDialog 
-        url={getAuthorizeUrl(state).toString()}
+        url={getAuthorizeUrl(state, configuration).toString()}
         onClose={props.onClose}
         onMessageReceived={async e => {
             if(e.type !== "on-github-code")
@@ -39,9 +44,9 @@ export default function LoginDialog(props: {
         }} />
 }
 
-function getAuthorizeUrl(state: string) {
+function getAuthorizeUrl(state: string, configuration: SponsorkitDomainControllersApiConfigurationResponse) {
     const url = new URL("https://github.com/login/oauth/authorize");
-    url.searchParams.set("client_id", "72e8a446cc32814bd9c2");
+    url.searchParams.set("client_id", configuration.gitHubClientId);
     url.searchParams.set("scope", "user:email");
     url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", getRedirectUri().toString());
