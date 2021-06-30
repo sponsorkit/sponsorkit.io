@@ -40,6 +40,9 @@ export function createApi() {
 
         const currentUri = new URL(window.location.href);
         requestUri.hostname = `api.${currentUri.hostname}`;
+        requestUri.pathname = "";
+        requestUri.search = "";
+        requestUri.hash = "";
 
         if (currentUri.hostname === "localhost")
             return "http://localhost:5000";
