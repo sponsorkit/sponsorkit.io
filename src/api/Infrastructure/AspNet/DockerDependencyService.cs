@@ -121,6 +121,9 @@ namespace Sponsorkit.Infrastructure.AspNet
                 .ToListAsync();
             foreach (var endpoint in existingEndpoints)
             {
+                if (endpoint.Url == "https://sponsorkit.io/webhooks/stripe")
+                    continue;
+                
                 try
                 {
                     await webhookEndpointService.DeleteAsync(endpoint.Id);
