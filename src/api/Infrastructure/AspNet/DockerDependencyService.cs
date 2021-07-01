@@ -121,7 +121,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 .ToListAsync();
             foreach (var endpoint in existingEndpoints)
             {
-                if (endpoint.Url == "https://sponsorkit.io/webhooks/stripe")
+                if (endpoint.Url == "https://api.sponsorkit.io/webhooks/stripe")
                     continue;
                 
                 try
