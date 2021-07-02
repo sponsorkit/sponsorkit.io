@@ -66,17 +66,33 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                         amountInHundreds, 
                         cancellationToken);
 
-                    var payment = new PaymentBuilder()
-                        .WithBounty(bounty)
-                        .WithAmountInHundreds(amountInHundreds)
-                        .WithStripeId(data.Id)
-                        .Build();
-                    await dataContext.Payments.AddAsync(
-                        payment,
+                    await AddOrIncreasePaymentAmountForBountyAsync(
+                        data, 
+                        bounty, 
+                        amountInHundreds, 
                         cancellationToken);
 
                     await dataContext.SaveChangesAsync(cancellationToken);
                 });
+        }
+
+        private async Task AddOrIncreasePaymentAmountForBountyAsync(PaymentIntent paymentIntent, Bounty bounty, int amountInHundreds, CancellationToken cancellationToken)
+        {
+            if (bounty.Payment == null)
+            {
+                var payment = new PaymentBuilder()
+                    .WithBounty(bounty)
+                    .WithAmountInHundreds(amountInHundreds)
+                    .WithStripeId(paymentIntent.Id)
+                    .Build();
+                await dataContext.Payments.AddAsync(
+                    payment,
+                    cancellationToken);
+            }
+            else
+            {
+                bounty.Payment.AmountInHundreds += amountInHundreds;
+            }
         }
 
         private async Task<Bounty> AddOrIncreaseBountyAsync(Result<Issue> issue, User user, int amountInHundreds, CancellationToken cancellationToken)
@@ -122,6 +138,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         private async Task<Bounty?> GetExistingBountyAsync(Issue issue, User user, CancellationToken cancellationToken)
         {
             return await dataContext.Bounties
+                .Include(x => x.Payment)
                 .SingleOrDefaultAsync(
                     bounty =>
                         bounty.IssueId == issue.Id &&
