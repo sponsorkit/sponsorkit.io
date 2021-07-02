@@ -222,7 +222,7 @@ function Bounties(props: {
                     <Tooltip title={`$${totalBountyReward.current} USD`}><b>${totalBountyReward.animated}</b></Tooltip> reward
                 </Typography>
                 <Typography component="div" className={classes.amountOfSponsors}>
-                    <b>{totalBountyCount.animated}</b> bounties
+                    <b>{totalBountyCount.animated}</b> bount{totalBountyCount.current === 1 ? "y" : "ies"}
                 </Typography>
             </Box>
             <Tooltip title={claimError} className={classes.buttonContainer}>
