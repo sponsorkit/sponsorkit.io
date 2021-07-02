@@ -4,10 +4,10 @@
     "Sponsorkit": {
       "commandName": "Project",
       "environmentVariables": {
-        "ASPNETCORE_URLS": "https://*:14567;http://*:14566",
+        "ASPNETCORE_URLS": "http://*:5000",
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:14567"
+      "applicationUrl": "https://localhost:5000"
     }
   }
 }
