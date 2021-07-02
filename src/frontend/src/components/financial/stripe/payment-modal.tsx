@@ -162,7 +162,7 @@ function PaymentMethodModalContent(props: Props) {
 }
 
 export function PaymentMethodModal(props: Props) {
-    return <LoginDialog onClose={props.onClose}>
+    return <LoginDialog>
         {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
 }

@@ -7,7 +7,7 @@ import IframeDialog from '../iframe-dialog';
 import { SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
 
 export default function LoginDialog(props: {
-    onClose: () => void,
+    onClose?: () => void,
     children: () => JSX.Element
 }) {
     const state = useMemo(newGuid, []);
