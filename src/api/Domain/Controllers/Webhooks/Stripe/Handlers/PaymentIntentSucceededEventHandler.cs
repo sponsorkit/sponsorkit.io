@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
@@ -59,13 +60,10 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                         x => x.Id == userId,
                         cancellationToken);
 
-                    var bounty = new BountyBuilder()
-                        .WithAmountInHundreds(amountInHundreds)
-                        .WithCreator(user)
-                        .WithIssue(issue)
-                        .Build();
-                    await dataContext.Bounties.AddAsync(
-                        bounty,
+                    var bounty = await AddOrIncreaseBountyAsync(
+                        issue, 
+                        user, 
+                        amountInHundreds, 
                         cancellationToken);
 
                     var payment = new PaymentBuilder()
@@ -79,6 +77,56 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
 
                     await dataContext.SaveChangesAsync(cancellationToken);
                 });
+        }
+
+        private async Task<Bounty> AddOrIncreaseBountyAsync(Result<Issue> issue, User user, int amountInHundreds, CancellationToken cancellationToken)
+        {
+            var bounty = await GetExistingBountyAsync(
+                issue,
+                user,
+                cancellationToken);
+            if (bounty == null)
+            {
+                bounty = await CreateNewBountyAsync(
+                    user,
+                    issue,
+                    amountInHundreds,
+                    cancellationToken);
+            }
+            else
+            {
+                bounty.AmountInHundreds += amountInHundreds;
+            }
+
+            return bounty;
+        }
+
+        private async Task<Bounty> CreateNewBountyAsync(
+            User user, 
+            Issue issue, 
+            int amountInHundreds, 
+            CancellationToken cancellationToken)
+        {
+            var newBounty = new BountyBuilder()
+                .WithAmountInHundreds(amountInHundreds)
+                .WithCreator(user)
+                .WithIssue(issue)
+                .Build();
+            await dataContext.Bounties.AddAsync(
+                newBounty,
+                cancellationToken);
+
+            return newBounty;
+        }
+
+        private async Task<Bounty?> GetExistingBountyAsync(Issue issue, User user, CancellationToken cancellationToken)
+        {
+            return await dataContext.Bounties
+                .SingleOrDefaultAsync(
+                    bounty =>
+                        bounty.IssueId == issue.Id &&
+                        bounty.CreatorId == user.Id,
+                    cancellationToken);
         }
 
         public override bool CanHandle(string type)
