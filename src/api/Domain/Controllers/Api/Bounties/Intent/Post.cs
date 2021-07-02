@@ -70,9 +70,11 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
             if (issue.Status == ResultStatus.NotFound)
                 return NotFound();
 
-            var user = await dataContext.Users.SingleAsync(
+            var user = await dataContext.Users.SingleOrDefaultAsync(
                 x => x.Id == userId,
                 cancellationToken);
+            if (user == null)
+                return Unauthorized("User not found.");
             
             var paymentMethod = await mediator.Send(
                 new GetPaymentMethodForCustomerQuery(user.StripeCustomerId),
