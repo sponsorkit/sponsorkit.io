@@ -18,7 +18,7 @@ namespace Sponsorkit.Migrations
                     GitHub_Id = table.Column<long>(type: "bigint", nullable: true),
                     GitHub_Username = table.Column<string>(type: "text", nullable: true),
                     GitHub_EncryptedAccessToken = table.Column<byte[]>(type: "bytea", nullable: true),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,7 +31,6 @@ namespace Sponsorkit.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     GitHubId = table.Column<long>(type: "bigint", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     OwnerId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -69,7 +68,7 @@ namespace Sponsorkit.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RepositoryId = table.Column<Guid>(type: "uuid", nullable: true),
                     MonthlyAmountInHundreds = table.Column<int>(type: "integer", nullable: true),
                     Reference = table.Column<string>(type: "text", nullable: false),
@@ -102,9 +101,9 @@ namespace Sponsorkit.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AmountInHundreds = table.Column<long>(type: "bigint", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     CreatorId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AwardedToId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AwardedToId = table.Column<Guid>(type: "uuid", nullable: true),
                     IssueId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -135,9 +134,11 @@ namespace Sponsorkit.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     BountyId = table.Column<Guid>(type: "uuid", nullable: true),
                     SponsorshipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TransferredToConnectedAccountAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    FeePayedOutToPlatformBankAccountAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     AmountInHundreds = table.Column<int>(type: "integer", nullable: false),
                     StripeId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -162,9 +163,10 @@ namespace Sponsorkit.Migrations
                 column: "AwardedToId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Bounties_CreatorId",
+                name: "IX_Bounties_CreatorId_IssueId",
                 table: "Bounties",
-                column: "CreatorId");
+                columns: new[] { "CreatorId", "IssueId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bounties_IssueId",

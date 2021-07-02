@@ -1,10 +1,9 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Sponsorkit.Infrastructure.Options;
 
-namespace Sponsorkit.Domain.Models
+namespace Sponsorkit.Domain.Models.Context
 {
     public class DataContextFactory : IDesignTimeDbContextFactory<DataContext>
     {

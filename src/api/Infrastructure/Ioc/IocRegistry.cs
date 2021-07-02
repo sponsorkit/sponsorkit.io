@@ -18,6 +18,7 @@ using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties
 {

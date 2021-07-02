@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Sponsorkit.Domain.Models.Builders
 {
@@ -23,41 +22,11 @@ namespace Sponsorkit.Domain.Models.Builders
         private List<Sponsorship>? createdSponsorships;
         private List<Sponsorship>? awardedSponsorships;
         
-        private DateTime createdAtUtc;
+        private DateTimeOffset createdAtUtc;
         
         public UserBuilder()
         {
             createdAtUtc = DateTime.UtcNow;
-        }
-
-        public UserBuilder WithRepositories(params Repository[] repositories)
-        {
-            this.repositories = repositories.ToList();
-            return this;
-        }
-
-        public UserBuilder WithCreatedBounties(params Bounty[] bounties)
-        {
-            this.createdBounties = bounties.ToList();
-            return this;
-        }
-
-        public UserBuilder WithAwardedBounties(params Bounty[] bounties)
-        {
-            this.awardedBounties = bounties.ToList();
-            return this;
-        }
-
-        public UserBuilder WithCreatedSponsorships(params Sponsorship[] sponsorships)
-        {
-            this.createdSponsorships = sponsorships.ToList();
-            return this;
-        }
-
-        public UserBuilder WithAwardedSponsorships(params Sponsorship[] sponsorships)
-        {
-            this.awardedSponsorships = sponsorships.ToList();
-            return this;
         }
 
         public UserBuilder WithId(Guid id)
@@ -95,12 +64,6 @@ namespace Sponsorkit.Domain.Models.Builders
                 EncryptedAccessToken = encryptedAccessToken,
                 Username = username
             };
-            return this;
-        }
-
-        public UserBuilder WithCreatedAtUtc(DateTime createdAtUtc)
-        {
-            this.createdAtUtc = createdAtUtc;
             return this;
         }
         

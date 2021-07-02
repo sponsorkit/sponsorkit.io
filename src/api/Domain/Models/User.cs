@@ -21,7 +21,7 @@ namespace Sponsorkit.Domain.Models
 
         public UserGitHubInformation? GitHub { get; set; }
 
-        public DateTime CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAtUtc { get; set; }
         
         public List<Repository> Repositories { get; set; } = new();
         

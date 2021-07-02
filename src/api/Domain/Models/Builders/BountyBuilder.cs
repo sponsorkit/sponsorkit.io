@@ -9,7 +9,7 @@ namespace Sponsorkit.Domain.Models.Builders
 
         private long? amountInHundreds;
 
-        private DateTime createdAtUtc;
+        private DateTimeOffset createdAtUtc;
 
         public BountyBuilder()
         {

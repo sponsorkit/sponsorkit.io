@@ -17,18 +17,18 @@ namespace Sponsorkit.Domain.Models
         /// <summary>
         /// The date at which the amount (after fees are deducted) has been sent to the connected account (the receiver of the sponsorship, or the claimer of the bounty).
         /// </summary>
-        public DateTime? TransferredToConnectedAccountAtUtc { get; set; }
+        public DateTimeOffset? TransferredToConnectedAccountAtUtc { get; set; }
         
         /// <summary>
         /// The date at which the fees for this transfer have been payed out to the platform (Sponsorkit's) bank account.
         /// </summary>
-        public DateTime? FeePayedOutToPlatformBankAccountAtUtc { get; set; }
+        public DateTimeOffset? FeePayedOutToPlatformBankAccountAtUtc { get; set; }
         
         /// <summary>
         /// The amount of money in hundreds, UTC.
         /// </summary>
         public int AmountInHundreds { get; set; }
         public string StripeId { get; set; } = null!;
-        public DateTime CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAtUtc { get; set; }
     }
 }

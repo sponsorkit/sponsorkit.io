@@ -12,7 +12,7 @@ namespace Sponsorkit.Domain.Models
         
         public long AmountInHundreds { get; set; }
         
-        public DateTime CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAtUtc { get; set; }
 
         public User Creator { get; set; } = null!;
         public Guid CreatorId { get; set; }
@@ -21,6 +21,7 @@ namespace Sponsorkit.Domain.Models
         public Guid? AwardedToId { get; set; }
 
         public Issue Issue { get; set; } = null!;
+        public Guid IssueId { get; set; }
 
         public Payment? Payment { get; set; }
     }
@@ -40,6 +41,14 @@ namespace Sponsorkit.Domain.Models
                 .WithMany(x => x!.AwardedBounties)
                 .HasForeignKey(x => x.AwardedToId)
                 .OnDelete(DeleteBehavior.NoAction);
+            
+            builder
+                .HasIndex(x => new
+                {
+                    x.CreatorId,
+                    x.IssueId
+                })
+                .IsUnique();
         }
     }
 }

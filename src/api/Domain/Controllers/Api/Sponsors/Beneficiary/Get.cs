@@ -5,6 +5,7 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Sponsors.Beneficiary
 {

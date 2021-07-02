@@ -16,6 +16,7 @@ using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
+using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Stripe;

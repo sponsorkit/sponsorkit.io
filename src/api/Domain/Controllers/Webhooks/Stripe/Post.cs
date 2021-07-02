@@ -45,7 +45,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         {
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (!IsValidStripeWebhookIpAddress(ipAddress))
-                return BadRequest();
+                return BadRequest("Invalid IP address.");
 
             await using var stream = HttpContext.Request.Body;
             stream.Seek(0, SeekOrigin.Begin);
@@ -75,7 +75,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
             catch (StripeException e)
             {
                 logger.Error(e, "A Stripe webhook error occured.");
-                return BadRequest();
+                return BadRequest("A Stripe webhook error occured.");
             }
         }
 

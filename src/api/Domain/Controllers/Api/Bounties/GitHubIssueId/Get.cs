@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
 {
@@ -19,7 +20,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
 
     public record BountyResponse(
         long AmountInHundreds,
-        DateTime CreatedAtUtc,
+        DateTimeOffset CreatedAtUtc,
         BountyUserResponse CreatorUser,
         BountyUserResponse? AwardedUser);
 

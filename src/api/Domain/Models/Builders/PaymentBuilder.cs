@@ -8,12 +8,12 @@ namespace Sponsorkit.Domain.Models.Builders
         private Bounty? bounty;
         private Sponsorship? sponsorship;
         
-        private DateTime? transferredToConnectedAccountAtUtc;
-        private DateTime? feePayedOutToPlatformBankAccountAtUtc;
+        private DateTimeOffset? transferredToConnectedAccountAtUtc;
+        private DateTimeOffset? feePayedOutToPlatformBankAccountAtUtc;
 
         private int? amountInHundreds;
         private string? stripeId;
-        private DateTime createdAtUtc;
+        private DateTimeOffset createdAtUtc;
 
         public PaymentBuilder()
         {
@@ -38,13 +38,13 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public PaymentBuilder WithTransferredToConnectedAccountAtcUtc(DateTime date)
+        public PaymentBuilder WithTransferredToConnectedAccountAtcUtc(DateTimeOffset date)
         {
             this.transferredToConnectedAccountAtUtc = date;
             return this;
         }
 
-        public PaymentBuilder WithFeePayedOutToPlatformBankAccountAtUtc(DateTime date)
+        public PaymentBuilder WithFeePayedOutToPlatformBankAccountAtUtc(DateTimeOffset date)
         {
             this.feePayedOutToPlatformBankAccountAtUtc = date;
             return this;
@@ -62,7 +62,7 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public PaymentBuilder WithCreatedAtUtc(DateTime createdAtUtc)
+        public PaymentBuilder WithCreatedAtUtc(DateTimeOffset createdAtUtc)
         {
             this.createdAtUtc = createdAtUtc;
             return this;

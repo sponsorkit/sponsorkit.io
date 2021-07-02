@@ -5,20 +5,20 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20210622202225_ForeignKey")]
-    partial class ForeignKey
+    [Migration("20210702075103_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.6")
+                .HasAnnotation("ProductVersion", "5.0.7")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
@@ -33,8 +33,8 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid?>("AwardedToId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatorId")
                         .HasColumnType("uuid");
@@ -46,9 +46,10 @@ namespace Sponsorkit.Migrations
 
                     b.HasIndex("AwardedToId");
 
-                    b.HasIndex("CreatorId");
-
                     b.HasIndex("IssueId");
+
+                    b.HasIndex("CreatorId", "IssueId")
+                        .IsUnique();
 
                     b.ToTable("Bounties");
                 });
@@ -84,11 +85,11 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid?>("BountyId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("FeePayedOutToPlatformBankAccountAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset?>("FeePayedOutToPlatformBankAccountAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("SponsorshipId")
                         .HasColumnType("uuid");
@@ -97,8 +98,8 @@ namespace Sponsorkit.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("TransferredToConnectedAccountAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset?>("TransferredToConnectedAccountAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -138,8 +139,8 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid>("BeneficiaryId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("MonthlyAmountInHundreds")
                         .HasColumnType("integer");
@@ -169,8 +170,8 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<byte[]>("EncryptedEmail")
                         .IsRequired()
