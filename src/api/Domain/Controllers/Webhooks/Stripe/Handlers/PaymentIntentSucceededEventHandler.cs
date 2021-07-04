@@ -88,12 +88,11 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                 payment,
                 cancellationToken);
 
-            const int duplicateKeyError = 23505;
             try
             {
                 await dataContext.SaveChangesAsync(cancellationToken);
             }
-            catch (PostgresException ex) when (ex.ErrorCode == duplicateKeyError)
+            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
             {
                 throw new EventAlreadyHandledException();
             }
