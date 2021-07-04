@@ -73,7 +73,11 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             await dataContext.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task AddOrIncreasePaymentAmountForBountyAsync(PaymentIntent paymentIntent, Bounty bounty, int amountInHundreds, CancellationToken cancellationToken)
+        private async Task AddOrIncreasePaymentAmountForBountyAsync(
+            PaymentIntent paymentIntent, 
+            Bounty bounty, 
+            int amountInHundreds, 
+            CancellationToken cancellationToken)
         {
             if (bounty.Payment == null)
             {
