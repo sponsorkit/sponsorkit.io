@@ -58,6 +58,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                 cancellationToken);
 
             var bounty = await AddOrIncreaseBountyAsync(
+                eventId,
                 issue, 
                 user, 
                 amountInHundreds, 
@@ -94,6 +95,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         }
 
         private async Task<Bounty> AddOrIncreaseBountyAsync(
+            string eventId,
             Issue issue, 
             User user, 
             int amountInHundreds,
@@ -106,6 +108,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             if (bounty == null)
             {
                 bounty = await CreateNewBountyAsync(
+                    eventId,
                     user,
                     issue,
                     amountInHundreds,
