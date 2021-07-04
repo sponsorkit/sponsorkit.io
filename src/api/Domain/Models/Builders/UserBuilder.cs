@@ -26,7 +26,7 @@ namespace Sponsorkit.Domain.Models.Builders
         
         public UserBuilder()
         {
-            createdAtUtc = DateTime.UtcNow;
+            createdAtUtc = DateTimeOffset.UtcNow;
         }
 
         public UserBuilder WithId(Guid id)

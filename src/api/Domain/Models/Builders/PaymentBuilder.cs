@@ -18,7 +18,7 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public PaymentBuilder()
         {
-            createdAtUtc = DateTime.UtcNow;
+            createdAtUtc = DateTimeOffset.UtcNow;
         }
 
         public PaymentBuilder WithStripeEventId(string eventId)

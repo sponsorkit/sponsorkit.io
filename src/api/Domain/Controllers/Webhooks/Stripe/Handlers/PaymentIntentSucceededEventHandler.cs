@@ -23,16 +23,13 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
     {
         private readonly DataContext dataContext;
         private readonly IMediator mediator;
-        private readonly PaymentIntentService paymentIntentService;
 
         public PaymentIntentSucceededEventHandler(
             DataContext dataContext,
-            IMediator mediator,
-            PaymentIntentService paymentIntentService)
+            IMediator mediator)
         {
             this.dataContext = dataContext;
             this.mediator = mediator;
-            this.paymentIntentService = paymentIntentService;
         }
 
         protected override async Task HandleAsync(string eventId, PaymentIntent data, CancellationToken cancellationToken)

@@ -13,7 +13,7 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public BountyBuilder()
         {
-            createdAtUtc = DateTime.UtcNow;
+            createdAtUtc = DateTimeOffset.UtcNow;
         }
 
         public BountyBuilder WithCreator(User creator)
