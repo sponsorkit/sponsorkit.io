@@ -63,8 +63,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                 user, 
                 amountInHundreds, 
                 cancellationToken);
-            if (bounty.StripeEventId == eventId)
-                throw new EventAlreadyHandledException();
 
             await AddOrIncreasePaymentAmountForBountyAsync(
                 data, 
@@ -116,6 +114,9 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             }
             else
             {
+                if (bounty.StripeEventId == eventId)
+                    throw new EventAlreadyHandledException();
+                
                 bounty.AmountInHundreds += amountInHundreds;
             }
 
