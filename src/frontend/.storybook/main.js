@@ -14,7 +14,17 @@ module.exports = {
   },
   webpackFinal: async (config, { configType }) => {
     config.resolve.alias = {...config.resolve.alias, ...webpackConfig.resolve.alias};
-    config.module.rules = [...config.module.rules, ...webpackConfig.module.rules];
+    config.module.rules = [
+      ...config.module.rules, 
+      ...[
+        {
+          test: /\.module\.scss$/i,
+          use: [
+              "css-loader",
+              "sass-loader",
+          ],
+        },
+      ]];
     return config;
   }
 }
