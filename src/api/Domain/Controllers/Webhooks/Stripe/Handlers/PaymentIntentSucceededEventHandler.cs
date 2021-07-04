@@ -92,7 +92,12 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             {
                 await dataContext.SaveChangesAsync(cancellationToken);
             }
-            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+            catch (DbUpdateException ex) when (
+                ex is { 
+                    InnerException: PostgresException { 
+                        SqlState: PostgresErrorCodes.UniqueViolation
+                    }
+                })
             {
                 throw new EventAlreadyHandledException();
             }
