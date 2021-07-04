@@ -7,7 +7,10 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
     {
         bool CanHandle(string type);
 
-        Task HandleAsync(object data, CancellationToken cancellationToken);
+        Task HandleAsync(
+            string eventId,
+            object data, 
+            CancellationToken cancellationToken);
     }
 
 }

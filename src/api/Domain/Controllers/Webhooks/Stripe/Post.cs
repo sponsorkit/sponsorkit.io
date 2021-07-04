@@ -71,9 +71,17 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                         x.CanHandle(stripeEvent.Type));
                     foreach (var eventHandler in elligibleEventHandlers)
                     {
-                        await eventHandler.HandleAsync(
-                            stripeEvent.Data.Object,
-                            cancellationToken);
+                        try
+                        {
+                            await eventHandler.HandleAsync(
+                                stripeEvent.Id,
+                                stripeEvent.Data.Object,
+                                cancellationToken);
+                        }
+                        catch (EventAlreadyHandledException ex)
+                        {
+                            logger.Information(ex, "Already handled event.");
+                        }
                     }
 
                     return Ok();

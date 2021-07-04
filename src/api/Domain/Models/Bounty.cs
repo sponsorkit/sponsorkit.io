@@ -9,6 +9,11 @@ namespace Sponsorkit.Domain.Models
     {
         [Key]
         public Guid Id { get; set; }
+
+        /// <summary>
+        /// The ID of the webhook event that created this bounty. Bounties are always created from webhook calls from Stripe, despite being initiated by the user. This is because some forms of payment attempts require additional processing time.
+        /// </summary>
+        public string StripeEventId { get; set; } = null!;
         
         public long AmountInHundreds { get; set; }
         

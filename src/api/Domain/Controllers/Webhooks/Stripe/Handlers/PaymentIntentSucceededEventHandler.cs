@@ -34,7 +34,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             this.paymentIntentService = paymentIntentService;
         }
 
-        protected override async Task HandleAsync(PaymentIntent data, CancellationToken cancellationToken)
+        protected override async Task HandleAsync(string eventId, PaymentIntent data, CancellationToken cancellationToken)
         {
             var type = data.Metadata[UniversalMetadataKeys.Type];
             if (type != "BountyPaymentIntent")
@@ -46,34 +46,32 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             var gitHubRepositoryName = data.Metadata[MetadataKeys.GitHubIssueRepositoryName];
             var userId = Guid.Parse(data.Metadata[MetadataKeys.UserId]);
 
-            await dataContext.ExecuteInTransactionAsync(
-                async () =>
-                {
-                    var issue = await mediator.Send(
-                        new EnsureGitHubIssueInDatabaseCommand(
-                            gitHubOwnerName,
-                            gitHubRepositoryName,
-                            gitHubIssueNumber),
-                        cancellationToken);
-                    
-                    var user = await dataContext.Users.SingleAsync(
-                        x => x.Id == userId,
-                        cancellationToken);
+            var issue = await mediator.Send(
+                new EnsureGitHubIssueInDatabaseCommand(
+                    gitHubOwnerName,
+                    gitHubRepositoryName,
+                    gitHubIssueNumber),
+                cancellationToken);
+            
+            var user = await dataContext.Users.SingleAsync(
+                x => x.Id == userId,
+                cancellationToken);
 
-                    var bounty = await AddOrIncreaseBountyAsync(
-                        issue, 
-                        user, 
-                        amountInHundreds, 
-                        cancellationToken);
+            var bounty = await AddOrIncreaseBountyAsync(
+                issue, 
+                user, 
+                amountInHundreds, 
+                cancellationToken);
+            if (bounty.StripeEventId == eventId)
+                throw new EventAlreadyHandledException();
 
-                    await AddOrIncreasePaymentAmountForBountyAsync(
-                        data, 
-                        bounty, 
-                        amountInHundreds, 
-                        cancellationToken);
+            await AddOrIncreasePaymentAmountForBountyAsync(
+                data, 
+                bounty, 
+                amountInHundreds, 
+                cancellationToken);
 
-                    await dataContext.SaveChangesAsync(cancellationToken);
-                });
+            await dataContext.SaveChangesAsync(cancellationToken);
         }
 
         private async Task AddOrIncreasePaymentAmountForBountyAsync(PaymentIntent paymentIntent, Bounty bounty, int amountInHundreds, CancellationToken cancellationToken)
@@ -95,7 +93,11 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             }
         }
 
-        private async Task<Bounty> AddOrIncreaseBountyAsync(Result<Issue> issue, User user, int amountInHundreds, CancellationToken cancellationToken)
+        private async Task<Bounty> AddOrIncreaseBountyAsync(
+            Issue issue, 
+            User user, 
+            int amountInHundreds,
+            CancellationToken cancellationToken)
         {
             var bounty = await GetExistingBountyAsync(
                 issue,
