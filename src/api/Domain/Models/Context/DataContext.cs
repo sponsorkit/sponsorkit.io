@@ -22,7 +22,7 @@ namespace Sponsorkit.Domain.Models.Context
 
         public async Task ExecuteInTransactionAsync(
             Func<Task> action,
-            IsolationLevel? isolationLevel = IsolationLevel.ReadUncommitted)
+            IsolationLevel? isolationLevel = null)
         {
             await ExecuteInTransactionAsync<object?>(
                 async () =>
@@ -35,7 +35,7 @@ namespace Sponsorkit.Domain.Models.Context
 
         public async Task<T> ExecuteInTransactionAsync<T>(
             Func<Task<T>> action,
-            IsolationLevel? isolationLevel = IsolationLevel.ReadUncommitted)
+            IsolationLevel? isolationLevel = null)
         {
             if (Database.CurrentTransaction != null)
                 return await action();
@@ -44,7 +44,7 @@ namespace Sponsorkit.Domain.Models.Context
             return await strategy.ExecuteAsync(async () =>
             {
                 await using var transaction = await Database.BeginTransactionAsync(
-                    isolationLevel ?? IsolationLevel.ReadUncommitted);
+                    isolationLevel ?? IsolationLevel.Serializable);
 
                 try
                 {

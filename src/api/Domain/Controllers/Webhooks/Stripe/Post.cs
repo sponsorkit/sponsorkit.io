@@ -15,6 +15,7 @@ using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
@@ -27,15 +28,18 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
         private readonly IEnumerable<IWebhookEventHandler> webhookEventHandlers;
         private readonly ILogger logger;
+        private readonly DataContext dataContext;
 
         public Post(
             IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
             IEnumerable<IWebhookEventHandler> webhookEventHandlers,
-            ILogger logger)
+            ILogger logger,
+            DataContext dataContext)
         {
             this.stripeOptionsMonitor = stripeOptionsMonitor;
             this.webhookEventHandlers = webhookEventHandlers;
             this.logger = logger;
+            this.dataContext = dataContext;
         }
 
         [HttpPost("/webhooks/stripe")]
@@ -43,40 +47,43 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         [DisableCors]
         public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = default)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-            if (!IsValidStripeWebhookIpAddress(ipAddress))
-                return BadRequest("Invalid IP address.");
-
-            await using var stream = HttpContext.Request.Body;
-            stream.Seek(0, SeekOrigin.Begin);
-            
-            using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync();
-
-            try
+            return await dataContext.ExecuteInTransactionAsync<ActionResult>(async () =>
             {
-                var signatureHeader = Request.Headers["Stripe-Signature"];
-                var stripeEvent = EventUtility.ConstructEvent(
-                    json,
-                    signatureHeader,
-                    stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                if (!IsValidStripeWebhookIpAddress(ipAddress))
+                    return BadRequest("Invalid IP address.");
 
-                var elligibleEventHandlers = webhookEventHandlers.Where(x => 
-                    x.CanHandle(stripeEvent.Type));
-                foreach (var eventHandler in elligibleEventHandlers)
+                await using var stream = HttpContext.Request.Body;
+                stream.Seek(0, SeekOrigin.Begin);
+
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+
+                try
                 {
-                    await eventHandler.HandleAsync(
-                        stripeEvent.Data.Object,
-                        cancellationToken);
+                    var signatureHeader = Request.Headers["Stripe-Signature"];
+                    var stripeEvent = EventUtility.ConstructEvent(
+                        json,
+                        signatureHeader,
+                        stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
+
+                    var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                        x.CanHandle(stripeEvent.Type));
+                    foreach (var eventHandler in elligibleEventHandlers)
+                    {
+                        await eventHandler.HandleAsync(
+                            stripeEvent.Data.Object,
+                            cancellationToken);
+                    }
+
+                    return Ok();
                 }
-                
-                return Ok();
-            }
-            catch (StripeException e)
-            {
-                logger.Error(e, "A Stripe webhook error occured.");
-                return BadRequest("A Stripe webhook error occured.");
-            }
+                catch (StripeException e)
+                {
+                    logger.Error(e, "A Stripe webhook error occured.");
+                    return BadRequest("A Stripe webhook error occured.");
+                }
+            });
         }
 
         /// <summary>
