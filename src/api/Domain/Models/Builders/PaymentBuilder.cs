@@ -14,10 +14,17 @@ namespace Sponsorkit.Domain.Models.Builders
         private int? amountInHundreds;
         private string? stripeId;
         private DateTimeOffset createdAtUtc;
+        private string? stripeEventId;
 
         public PaymentBuilder()
         {
             createdAtUtc = DateTime.UtcNow;
+        }
+
+        public PaymentBuilder WithStripeEventId(string eventId)
+        {
+            this.stripeEventId = eventId;
+            return this;
         }
 
         public PaymentBuilder WithId(Guid id)
@@ -76,6 +83,9 @@ namespace Sponsorkit.Domain.Models.Builders
             if (stripeId == null)
                 throw new InvalidOperationException("Stripe ID must be set.");
 
+            if (stripeEventId == null)
+                throw new InvalidOperationException("Stripe event ID must be set.");
+
             return new Payment()
             {
                 Bounty = bounty,
@@ -85,7 +95,8 @@ namespace Sponsorkit.Domain.Models.Builders
                 AmountInHundreds = amountInHundreds.Value,
                 CreatedAtUtc = createdAtUtc,
                 TransferredToConnectedAccountAtUtc = transferredToConnectedAccountAtUtc,
-                FeePayedOutToPlatformBankAccountAtUtc = feePayedOutToPlatformBankAccountAtUtc
+                FeePayedOutToPlatformBankAccountAtUtc = feePayedOutToPlatformBankAccountAtUtc,
+                StripeEventId = stripeEventId
             };
         }
     }

@@ -11,17 +11,9 @@ namespace Sponsorkit.Domain.Models.Builders
 
         private DateTimeOffset createdAtUtc;
 
-        public string? stripeEventId;
-
         public BountyBuilder()
         {
             createdAtUtc = DateTime.UtcNow;
-        }
-
-        public BountyBuilder WithStripeEventId(string eventId)
-        {
-            this.stripeEventId = eventId;
-            return this;
         }
 
         public BountyBuilder WithCreator(User creator)
@@ -53,16 +45,12 @@ namespace Sponsorkit.Domain.Models.Builders
             if (amountInHundreds == null)
                 throw new InvalidOperationException("Amount not specified.");
 
-            if (stripeEventId == null)
-                throw new InvalidOperationException("Stripe event ID not set.");
-
             return new Bounty()
             {
                 Creator = creator,
                 Issue = issue,
                 AmountInHundreds = amountInHundreds.Value,
-                CreatedAtUtc = createdAtUtc,
-                StripeEventId = stripeEventId
+                CreatedAtUtc = createdAtUtc
             };
         }
     }

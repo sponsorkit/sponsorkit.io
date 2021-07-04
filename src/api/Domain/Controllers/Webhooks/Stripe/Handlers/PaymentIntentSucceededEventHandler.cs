@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
@@ -58,13 +59,13 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                 cancellationToken);
 
             var bounty = await AddOrIncreaseBountyAsync(
-                eventId,
                 issue, 
                 user, 
                 amountInHundreds, 
                 cancellationToken);
 
-            await AddOrIncreasePaymentAmountForBountyAsync(
+            await AddPaymentForBountyAsync(
+                eventId,
                 data, 
                 bounty, 
                 amountInHundreds, 
@@ -73,31 +74,35 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             await dataContext.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task AddOrIncreasePaymentAmountForBountyAsync(
+        private async Task AddPaymentForBountyAsync(
+            string eventId,
             PaymentIntent paymentIntent, 
             Bounty bounty, 
             int amountInHundreds, 
             CancellationToken cancellationToken)
         {
-            if (bounty.Payment == null)
+            var payment = new PaymentBuilder()
+                .WithBounty(bounty)
+                .WithAmountInHundreds(amountInHundreds)
+                .WithStripeId(paymentIntent.Id)
+                .WithStripeEventId(eventId)
+                .Build();
+            await dataContext.Payments.AddAsync(
+                payment,
+                cancellationToken);
+
+            const int duplicateKeyError = 23505;
+            try
             {
-                var payment = new PaymentBuilder()
-                    .WithBounty(bounty)
-                    .WithAmountInHundreds(amountInHundreds)
-                    .WithStripeId(paymentIntent.Id)
-                    .Build();
-                await dataContext.Payments.AddAsync(
-                    payment,
-                    cancellationToken);
+                await dataContext.SaveChangesAsync(cancellationToken);
             }
-            else
+            catch (PostgresException ex) when (ex.ErrorCode == duplicateKeyError)
             {
-                bounty.Payment.AmountInHundreds += amountInHundreds;
+                throw new EventAlreadyHandledException();
             }
         }
 
         private async Task<Bounty> AddOrIncreaseBountyAsync(
-            string eventId,
             Issue issue, 
             User user, 
             int amountInHundreds,
@@ -110,7 +115,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             if (bounty == null)
             {
                 bounty = await CreateNewBountyAsync(
-                    eventId,
                     user,
                     issue,
                     amountInHundreds,
@@ -118,17 +122,15 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             }
             else
             {
-                if (bounty.StripeEventId == eventId)
-                    throw new EventAlreadyHandledException();
-                
                 bounty.AmountInHundreds += amountInHundreds;
             }
+
+            await dataContext.SaveChangesAsync(cancellationToken);
 
             return bounty;
         }
 
         private async Task<Bounty> CreateNewBountyAsync(
-            string eventId,
             User user, 
             Issue issue, 
             int amountInHundreds, 
@@ -137,7 +139,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             var newBounty = new BountyBuilder()
                 .WithAmountInHundreds(amountInHundreds)
                 .WithCreator(user)
-                .WithStripeEventId(eventId)
                 .WithIssue(issue)
                 .Build();
             await dataContext.Bounties.AddAsync(
@@ -150,7 +151,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         private async Task<Bounty?> GetExistingBountyAsync(Issue issue, User user, CancellationToken cancellationToken)
         {
             return await dataContext.Bounties
-                .Include(x => x.Payment)
                 .SingleOrDefaultAsync(
                     bounty =>
                         bounty.IssueId == issue.Id &&

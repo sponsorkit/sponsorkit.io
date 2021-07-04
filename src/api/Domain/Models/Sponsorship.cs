@@ -40,19 +40,19 @@ namespace Sponsorkit.Domain.Models
                 .HasOne(x => x.Beneficiary)
                 .WithMany(x => x.AwardedSponsorships)
                 .HasForeignKey(x => x.BeneficiaryId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Restrict);
                 
             builder
                 .HasOne(x => x.Sponsor)
                 .WithMany(x => x.CreatedSponsorships)
                 .HasForeignKey(x => x.SponsorId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder
                 .HasOne(x => x.Repository)
                 .WithMany(x => x!.Sponsorships)
                 .HasForeignKey(x => x.SponsorId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
