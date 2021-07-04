@@ -120,6 +120,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         }
 
         private async Task<Bounty> CreateNewBountyAsync(
+            string eventId,
             User user, 
             Issue issue, 
             int amountInHundreds, 
@@ -128,6 +129,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             var newBounty = new BountyBuilder()
                 .WithAmountInHundreds(amountInHundreds)
                 .WithCreator(user)
+                .WithStripeEventId(eventId)
                 .WithIssue(issue)
                 .Build();
             await dataContext.Bounties.AddAsync(

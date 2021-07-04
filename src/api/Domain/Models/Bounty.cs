@@ -54,6 +54,10 @@ namespace Sponsorkit.Domain.Models
                     x.IssueId
                 })
                 .IsUnique();
+
+            builder
+                .HasIndex(x => x.StripeEventId)
+                .IsUnique();
         }
     }
 }

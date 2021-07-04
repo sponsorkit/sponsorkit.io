@@ -31,7 +31,8 @@
         "tslib" : ["./node_modules/tslib/tslib.d.ts"],
         "@components/*": ["src/components/*"],
         "@hooks/*": ["src/hooks/*"],
-        "@utils/*": ["src/utils/*"]
+        "@utils/*": ["src/utils/*"],
+        "@theme": ["src/theme/"]
       }
     }
 }

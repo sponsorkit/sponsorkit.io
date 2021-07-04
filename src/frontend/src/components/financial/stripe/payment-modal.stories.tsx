@@ -3,24 +3,22 @@ import { useEffect, useState } from "react";
 
 import { Story, Meta } from '@storybook/react';
 import { PaymentMethodModal } from "./payment-modal";
+import ThemeConfig from "@theme";
 
 export default {
     component: PaymentMethodModal,
-    title: 'components/login/login-dialog',
+    title: 'components/financial/stripe/payment-modal',
 } as Meta;
 
 type Props = {}
 
 const Template: Story<Props> = (args) => {
     const [shouldAddPaymentMethod, setShouldAddPaymentMethod] = useState(false);
-
-    if(!shouldAddPaymentMethod) {
-        return <Button variant="contained" onClick={() => setShouldAddPaymentMethod(true)}>
-            Add payment method
-        </Button>
-    }
     
-    return (
+    return !shouldAddPaymentMethod ?
+        <Button variant="contained" onClick={() => setShouldAddPaymentMethod(true)}>
+            Add payment method
+        </Button> :
         <PaymentMethodModal 
             onClose={() => setShouldAddPaymentMethod(false)}
             onComplete={() => alert("payment method added!")}
@@ -28,8 +26,7 @@ const Template: Story<Props> = (args) => {
                 clientSecret: "dummy",
                 existingPaymentMethodId: "dummy"
             })}
-        />
-    )
+        />;
 };
 
 export const Minimal = Template.bind({});

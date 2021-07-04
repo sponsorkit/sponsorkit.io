@@ -13,7 +13,8 @@ module.exports = {
     builder: "webpack5",
   },
   webpackFinal: async (config, { configType }) => {
-    config.resolve.alias = webpackConfig.resolve.alias;
+    config.resolve.alias = {...config.resolve.alias, ...webpackConfig.resolve.alias};
+    config.module.rules = [...config.module.rules, ...webpackConfig.module.rules];
     return config;
   }
 }

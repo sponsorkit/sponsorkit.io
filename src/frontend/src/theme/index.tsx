@@ -20,28 +20,24 @@ export default function ThemeConfig({ children }: ThemeConfigProps) {
   const isLight = true;
 
   const direction: Direction = "ltr";
-  const themeOptions: ThemeOptions = useMemo(
-    () => ({
-      palette: isLight ? 
-        { 
-          ...palette.light, 
-          mode: 'light' 
-        } : 
-        { 
-          ...palette.dark, 
-          mode: 'dark' 
-        },
-      shape,
-      typography,
-      breakpoints,
-      direction,
-      shadows: isLight ? shadows.light : shadows.dark,
-      customShadows: isLight ? customShadows.light : customShadows.dark
-    }),
-    [isLight, direction]
-  );
 
-  const theme = createTheme(themeOptions);
+  const theme = createTheme({
+    palette: isLight ? 
+      { 
+        ...palette.light, 
+        mode: 'light' 
+      } : 
+      { 
+        ...palette.dark, 
+        mode: 'dark' 
+      },
+    shape,
+    typography,
+    breakpoints,
+    direction,
+    shadows: isLight ? shadows.light : shadows.dark,
+    customShadows: isLight ? customShadows.light : customShadows.dark
+  });
   theme.components = componentsOverride(theme);
 
   return (

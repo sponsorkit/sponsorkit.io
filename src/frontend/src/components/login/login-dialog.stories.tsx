@@ -1,6 +1,7 @@
 import { Button } from '@material-ui/core';
 import { Story, Meta } from '@storybook/react';
 import { useState, useEffect } from 'react';
+import ThemeConfig from '@theme';
 import LoginDialog from "./login-dialog";
 
 export default {
@@ -24,18 +25,14 @@ const Template: Story<Props> = (args) => {
 
     if(!isReady)
         return <>Not ready yet</>;
-
-    if(!shouldLogIn) {
-        return <Button variant="contained" onClick={() => setShouldLogIn(true)}>
-            Log in
-        </Button>
-    }
     
-    return (
+    return !shouldLogIn ?
+        <Button variant="contained" onClick={() => setShouldLogIn(true)}>
+            Log in
+        </Button> :
         <LoginDialog onClose={() => setShouldLogIn(false)}>
             {() => <>Logged in!</>}
         </LoginDialog>
-    )
 };
 
 export const Minimal = Template.bind({});

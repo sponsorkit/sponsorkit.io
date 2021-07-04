@@ -2,6 +2,7 @@ import { Box, Button, Typography } from '@material-ui/core';
 import { Story, Meta } from '@storybook/react';
 import { useState, useEffect } from 'react';
 import { useAnimatedCount } from './count-up';
+import ThemeConfig from '@theme';
 
 export default {
     title: 'hooks/count-up',
@@ -25,7 +26,7 @@ const Template: Story<Props> = (args) => {
         <Typography>
             Animated: {count.animated}
         </Typography>
-        <Button onClick={() => setValue(value + 123)}>
+        <Button variant="contained" onClick={() => setValue(value + 123)}>
             Increase
         </Button>
     </Box>
