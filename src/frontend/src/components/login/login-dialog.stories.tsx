@@ -1,8 +1,16 @@
-import { Button } from "@material-ui/core";
-import { useEffect, useState } from "react";
-import LoginDialog from "../../components/login/login-dialog";
+import { Button } from '@material-ui/core';
+import { Story, Meta } from '@storybook/react';
+import { useState, useEffect } from 'react';
+import LoginDialog from "./login-dialog";
 
-export default () => {
+export default {
+    component: LoginDialog,
+    title: 'components/login/login-dialog',
+} as Meta;
+
+type Props = {}
+
+const Template: Story<Props> = (args) => {
     const [isReady, setIsReady] = useState(false);
     const [shouldLogIn, setShouldLogIn] = useState(false);
 
@@ -28,4 +36,9 @@ export default () => {
             {() => <>Logged in!</>}
         </LoginDialog>
     )
+};
+
+export const Minimal = Template.bind({});
+
+Minimal.args = {
 };

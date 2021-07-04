@@ -1,3 +1,5 @@
+const webpackConfig = require("../webpack.config");
+
 module.exports = {
   "stories": [
     "../src/**/*.stories.mdx",
@@ -9,5 +11,9 @@ module.exports = {
   ],
   core: {
     builder: "webpack5",
+  },
+  webpackFinal: async (config, { configType }) => {
+    config.resolve.alias = webpackConfig.resolve.alias;
+    return config;
   }
 }

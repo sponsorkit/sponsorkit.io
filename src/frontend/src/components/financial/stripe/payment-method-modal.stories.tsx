@@ -1,8 +1,17 @@
 import { Button } from "@material-ui/core";
 import { useEffect, useState } from "react";
-import {PaymentMethodModal} from "../../components/financial/stripe/payment-modal";
 
-export default () => {
+import { Story, Meta } from '@storybook/react';
+import { PaymentMethodModal } from "./payment-modal";
+
+export default {
+    component: PaymentMethodModal,
+    title: 'components/login/login-dialog',
+} as Meta;
+
+type Props = {}
+
+const Template: Story<Props> = (args) => {
     const [shouldAddPaymentMethod, setShouldAddPaymentMethod] = useState(false);
 
     if(!shouldAddPaymentMethod) {
@@ -21,4 +30,9 @@ export default () => {
             })}
         />
     )
+};
+
+export const Minimal = Template.bind({});
+
+Minimal.args = {
 };

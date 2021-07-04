@@ -1,9 +1,15 @@
-import { useAnimatedCount } from "@hooks/count-up"
-import { Button, Typography } from "@material-ui/core";
-import { Box } from "@material-ui/system";
-import { useState } from "react"
+import { Box, Button, Typography } from '@material-ui/core';
+import { Story, Meta } from '@storybook/react';
+import { useState, useEffect } from 'react';
+import { useAnimatedCount } from './count-up';
 
-export default () => {
+export default {
+    title: 'hooks/count-up',
+} as Meta;
+
+type Props = {}
+
+const Template: Story<Props> = (args) => {
     const [value, setValue] = useState(100);
     const count = useAnimatedCount(
         () => value,
@@ -23,4 +29,9 @@ export default () => {
             Increase
         </Button>
     </Box>
-}
+};
+
+export const Minimal = Template.bind({});
+
+Minimal.args = {
+};
