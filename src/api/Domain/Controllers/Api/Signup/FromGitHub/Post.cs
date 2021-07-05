@@ -21,6 +21,7 @@ using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Stripe;
 using GitHubUser = Octokit.User;
+using User = Sponsorkit.Domain.Models.User;
 
 namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
 {
@@ -105,18 +106,19 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
                     return user;
                 });
 
-            var jwtToken = GenerateJwtTokenForUser(authenticatedUser.Id);
+            var jwtToken = GenerateJwtTokenForUser(authenticatedUser);
             return new Response(jwtToken);
         }
 
-        private string GenerateJwtTokenForUser(Guid userId)
+        private string GenerateJwtTokenForUser(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, userId.ToString())
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                    new Claim(JwtRegisteredClaimNames.Name, user.GitHub?.Username ?? "")
                 }),
                 Expires = Debugger.IsAttached ? 
                     DateTime.UtcNow.AddHours(24) : 

@@ -5,6 +5,7 @@ import { getMessage, WindowMessages } from '../utils/window-messages';
 type Props = {
     url: string,
     onClose?: () => void,
+    onPopupFailed?: () => void,
     options?: Partial<Options>,
     onMessageReceived?: (message: WindowMessages) => void,
 };
@@ -28,17 +29,7 @@ export default function IframeDialog(props: Props) {
 
     useEffect(
         () => {
-            const timerId = setInterval(
-                () => {
-                    if(!windowRef.current || !windowRef.current.closed)
-                        return;
-
-                    windowRef.current = null;
-
-                    clearInterval(timerId);
-                    props.onClose && props.onClose();
-                },
-                100);
+            let timerId: any;
 
             const onMessageReceived = (e: MessageEvent<any>) => {
                 if(e.origin !== location.origin)
@@ -48,8 +39,20 @@ export default function IframeDialog(props: Props) {
                 if(!message)
                     return;
 
-                clearTimeout(timerId);
+                clearInterval(timerId);
                 props.onMessageReceived && props.onMessageReceived(message);
+
+                timerId = setInterval(
+                    () => {
+                        if(!windowRef.current || !windowRef.current.closed)
+                            return;
+    
+                        windowRef.current = null;
+    
+                        clearInterval(timerId);
+                        props.onClose && props.onClose();
+                    },
+                    100)
             };
 
             const close = () => {
@@ -64,8 +67,13 @@ export default function IframeDialog(props: Props) {
                     props.url, 
                     'sponsorkit-window', 
                     optionsToString(props.options));
-                if(!windowRef.current)
-                    throw new Error("Could not create window.");
+                if(!windowRef.current) {
+                    if(!props.onPopupFailed)
+                        throw new Error("Could not create window.");
+
+                    props.onPopupFailed();
+                    return;
+                }
 
                 windowRef.current.addEventListener("message", onMessageReceived);
             }

@@ -1,9 +1,8 @@
-import { Button, Container, Paper } from "@material-ui/core";
-import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
-import React, { useState } from "react";
-import StripeCreditCard from "../../components/financial/stripe/credit-card";
+import CircularProgressBar from "@components/circular-progress-bar";
+import { Box, Button, Card, CardContent, Container, Paper } from "@material-ui/core";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
+import * as classes from "./index.module.scss";
 
 function DashboardPage() {
     const account = useApi(
@@ -12,78 +11,79 @@ function DashboardPage() {
     if(!account)
         return null;
 
-    return <Container maxWidth="md" style={{
-        display: 'flex'
-      }}>
-        <Paper style={{
-          margin: 32,
-          flexGrow: 1
-        }}>
-            <BeneficiarySection isSetup={!!account.beneficiary} />
-            <SponsorSection isSetup={!!account.sponsor} />
-        </Paper>
+    return <Container 
+        maxWidth="md" 
+        style={{
+            display: 'flex'
+        }}
+    >
+        <AccountOverview
+            title="Beneficiary profile"
+            subTitle="Used when you want to earn money from bounties, donations or sponsorships."
+            checkpoints={[
+                {
+                    label: "Connect your GitHub account",
+                    validate: () => true
+                },
+                {
+                    label: "Verify e-mail address",
+                    validate: () => account.isEmailVerified,
+                    onClick: () => {}
+                },
+                {
+                    label: "Complete Stripe profile",
+                    validate: () => account.isEmailVerified,
+                    onClick: () => {}
+                }
+            ]}
+        />
+        <AccountOverview
+            title="Sponsor profile"
+            subTitle="Used when you want to place bounties, give donations or start sponsoring others."
+            checkpoints={[
+                {
+                    label: "Connect your GitHub account",
+                    validate: () => true
+                },
+                {
+                    label: "Verify e-mail address",
+                    validate: () => account.isEmailVerified,
+                    onClick: () => {}
+                },
+                {
+                    label: "Save payment details for later",
+                    validate: () => !!account.sponsor?.creditCard,
+                    onClick: () => {}
+                }
+            ]}
+        />
     </Container>;
 }
 
-function BeneficiarySection(props: {
-    isSetup: boolean
+function AccountOverview(props: {
+    title: string,
+    subTitle: string,
+    checkpoints: Array<{
+        validate: () => boolean,
+        label: string,
+        onClick?: () => void
+    }>
 }) {
-    if(props.isSetup)
-        return <p>Your beneficiary account has already been set up</p>;
-
-    const onSignUpClicked = async () => {
-        await createApi().apiSignupAsBeneficiaryPost();
-        alert("Done! Check your e-mail.");
-    };
-
-    return <>
-        <Button onClick={onSignUpClicked}>
-            Sign up
-        </Button>
-    </>
-}
-
-function SponsorSection(props: {
-    isSetup: boolean
-}) {
-    const [cardNumberElement, setCardNumberElement] = useState<StripeCardNumberElement|null>(null);
-    const [stripe, setStripe] = useState<Stripe>();
-    
-    if(props.isSetup)
-        return <p>Your sponsor account has already been set up</p>;
-
-    const onSaveClicked = async () => {
-        if(!stripe || !cardNumberElement)
-            throw new Error("Stripe or payment method not fully set.");
-
-        const paymentMethodResponse = await stripe.createPaymentMethod({
-          card: cardNumberElement,
-          type: "card"
-        });
-        if(paymentMethodResponse.error)
-          return alert(paymentMethodResponse.error.message);
-          
-        await createApi().apiSignupAsSponsorPost({
-            body: {
-                stripePaymentMethodId: paymentMethodResponse.paymentMethod.id
-            }
-        });
-
-        alert("Sponsorship updated!");
-    };
-
-    return <>
-        <StripeCreditCard 
-            onInitialized={context => setStripe(context.stripe)} 
-            onChanged={setCardNumberElement}
-        />
-        <Button 
-            disabled={!stripe || !cardNumberElement} 
-            onClick={onSaveClicked}
-        >
-            Save
-        </Button>
-    </>
+    const totalCheckpointCount = props.checkpoints.length;
+    const validatedCheckpointCount = props.checkpoints
+        .filter(x => x.validate())
+        .length;
+    return <Card>
+        <CardContent className={classes.accountOverview}>
+            <Box>
+                <CircularProgressBar
+                    size={100}
+                    current={validatedCheckpointCount}
+                    maximum={totalCheckpointCount}
+                />
+            </Box>
+        </CardContent>
+    </Card>
 }
 
 export default function() {

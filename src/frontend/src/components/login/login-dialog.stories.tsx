@@ -30,7 +30,7 @@ const Template: Story<Props> = (args) => {
         <Button variant="contained" onClick={() => setShouldLogIn(true)}>
             Log in
         </Button> :
-        <LoginDialog onClose={() => setShouldLogIn(false)}>
+        <LoginDialog onDismissed={() => setShouldLogIn(false)}>
             {() => <>Logged in!</>}
         </LoginDialog>
 };

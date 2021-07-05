@@ -14,6 +14,7 @@ namespace Sponsorkit.Domain.Models
         public Guid Id { get; set; }
         
         public byte[] EncryptedEmail { get; set; } = null!;
+        public DateTimeOffset? EmailVerifiedAtUtc { get; set; }
 
         public string StripeCustomerId { get; set; } = null!;
 
