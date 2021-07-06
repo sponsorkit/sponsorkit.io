@@ -28,6 +28,18 @@
                         .typography {
                             padding-left: 5px;
                         }
+
+                        &.incomplete p {
+                            font-weight: bold;
+                            text-decoration: underline;
+                            text-decoration-style: dotted;
+                            text-decoration-color: #ccc;
+                            cursor: pointer;
+                        }
+
+                        &.complete {
+                            opacity: 1;
+                        }
                     }
                 }
             }

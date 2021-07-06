@@ -95,7 +95,10 @@ function AccountOverview(props: {
                 <Box>
                     <ul>
                         {props.checkpoints.map(x =>
-                            <li>
+                            <li className={x.validate() ? 
+                                classes.complete : 
+                                classes.incomplete}
+                            >
                                 {x.validate() ?
                                     <CheckBox color="primary" /> :
                                     <CheckBoxOutlineBlank color="disabled" />}
