@@ -5,7 +5,7 @@ import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
-import { BountyhuntTemplate } from '.';
+import { AppBarTemplate } from '..';
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
 import { Markdown } from '../../components/markdown';
@@ -63,20 +63,20 @@ export default function IssueByIdPage(props: {
         [issue?.id]);
 
     if(issue === undefined || bounties === undefined) {
-        return <BountyhuntTemplate>
+        return <AppBarTemplate logoVariant="bountyhunt">
             <CircularProgress />
-        </BountyhuntTemplate>;
+        </AppBarTemplate>;
     }
 
     if(issue === null)
         throw new Error("Issue not found.");
 
-    return <BountyhuntTemplate>
+    return <AppBarTemplate logoVariant="bountyhunt">
         <Issue 
             issue={issue}
             bounties={bounties}
             onBountyCreated={onRefreshBounties} />
-    </BountyhuntTemplate>
+    </AppBarTemplate>
 }
 
 type Event = {

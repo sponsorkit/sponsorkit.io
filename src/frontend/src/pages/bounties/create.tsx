@@ -2,7 +2,7 @@ import { Card, CardContent, Container, TextField, Typography } from "@material-u
 import { navigate } from 'gatsby';
 import { useEffect, useMemo, useState } from 'react';
 import uri from 'uri-tag';
-import { BountyhuntTemplate } from '.';
+import { AppBarTemplate } from '..';
 import { extractIssueLinkDetails } from '../../utils/github-url-extraction';
 import { useOctokit } from "../../hooks/clients";
 import * as classes from './create.module.scss';
@@ -62,7 +62,7 @@ export default function CreateBountyPage() {
         },
         [issueDetails, issue]);
     
-    return <BountyhuntTemplate>
+    return <AppBarTemplate logoVariant="bountyhunt">
         <Container className={classes.root}>
             <Card className={classes.card}>
                 <CardContent className={classes.cardContent}>
@@ -85,5 +85,5 @@ export default function CreateBountyPage() {
                 </CardContent>
             </Card>
         </Container>
-    </BountyhuntTemplate>
+    </AppBarTemplate>
 }

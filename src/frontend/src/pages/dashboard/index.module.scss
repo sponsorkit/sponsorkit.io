@@ -1,5 +1,36 @@
-.account-overview {
-    width: 500px;
-    height: 500px;
-    box-sizing: border-box;
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+
+    .account-overview {
+        display: flex;
+        justify-content: space-between;
+        justify-self: center;
+
+        .content {
+            .progress {
+                margin-top: 20px;
+                display: flex;
+                flex-direction: row;
+                place-items: center;
+
+                ul {
+                    list-style: none;
+                    margin-left: 10px;
+
+                    li {
+                        display: flex;
+                        flex-direction: row;
+                        align-content: center;
+                        margin: 10px;
+
+                        .typography {
+                            padding-left: 5px;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

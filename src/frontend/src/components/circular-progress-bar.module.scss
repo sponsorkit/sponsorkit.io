@@ -1,8 +1,13 @@
 .root {
-    min-height: 50px;
-    min-width: 50px;
+    position: relative;
+
+    .progress-bar {
+        position: absolute;
+    }
 
     .percentage {
-        place-self: center;
+        position: absolute;
+        text-align: center;
+        width: 100%;
     }
 }
