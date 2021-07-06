@@ -123,7 +123,8 @@ namespace Sponsorkit.Infrastructure.AspNet
                         .WithOrigins(Debugger.IsAttached ?
                             new [] {
                                 "http://localhost:8000",
-                                "http://localhost:9000"
+                                "http://localhost:9000",
+                                "http://localhost:6006"
                             } :
                             new [] { 
                                 "https://sponsorkit.io"

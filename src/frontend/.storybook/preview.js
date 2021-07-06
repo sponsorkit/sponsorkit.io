@@ -1,5 +1,5 @@
 import { addDecorator } from '@storybook/react';
-import ThemeConfig from "@theme";
+import Layout from "../plugins/gatsby-plugin-top-layout/layout";
 
 export const parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
@@ -12,9 +12,7 @@ export const parameters = {
 }
 
 addDecorator((story) => (
-  <ThemeConfig>
-    <>
+  <Layout>
     {story()}
-    </>
-  </ThemeConfig>
+  </Layout>
 ));

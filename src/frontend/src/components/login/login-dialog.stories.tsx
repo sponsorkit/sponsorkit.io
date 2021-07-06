@@ -1,7 +1,6 @@
 import { Button } from '@material-ui/core';
 import { Story, Meta } from '@storybook/react';
 import { useState, useEffect } from 'react';
-import ThemeConfig from '@theme';
 import LoginDialog from "./login-dialog";
 
 export default {

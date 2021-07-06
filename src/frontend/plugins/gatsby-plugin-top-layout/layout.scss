@@ -2,4 +2,13 @@ body {
   background-color: #F5F5F5;
   cursor: default;
   user-select: none;
+
+  .MuiModal-root {
+
+    .MuiBackdrop-root {
+      backdrop-filter: blur(30px);
+      background-color: rgba(245, 245, 245, 0.7) !important;
+    }
+
+  }
 }

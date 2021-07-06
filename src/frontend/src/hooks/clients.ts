@@ -69,7 +69,13 @@ export function createApi() {
             if (token)
                 request.headers.set("Authorization", `Bearer ${token.raw}`);
                 
-            const response = await next(request);
+            let response = await next(request);
+            if(response.status === 401) {
+                request.headers.delete("Authorization");
+                localStorage.removeItem("token");
+                response = await next(request);
+            }
+
             return response;
         }
     });
