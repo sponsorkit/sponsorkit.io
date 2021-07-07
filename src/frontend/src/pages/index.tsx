@@ -45,9 +45,11 @@ export function AppBarTemplate(props: {
           <SponsorkitLogo />}
       </Toolbar>
     </AppBar>
+    <Box flexGrow={1} />
     <Container className={classes.contentRoot}>
       {props.children}
     </Container>
+    <Box flexGrow={2} />
   </>
 }
 
