@@ -24,8 +24,7 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
         return null;
 
     const onDismissed = () => {
-        alert("want to go back");
-        //history.back();
+        history.back();
     }
 
     const onPopupFailed = () => {

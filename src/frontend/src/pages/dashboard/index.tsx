@@ -1,12 +1,23 @@
 import CircularProgressBar from "@components/circular-progress-bar";
-import { Box, Button, Card, CardContent, Container, Paper, Tooltip, Typography } from "@material-ui/core";
+import { Box, Button, Card, CardContent, Container, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Slide, TextField, Tooltip, Typography } from "@material-ui/core";
+import { TransitionProps } from "@material-ui/core/transitions";
 import { CheckBox, CheckBoxOutlineBlank, QuestionAnswer } from "@material-ui/icons";
+import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
 
+const Transition = React.forwardRef(function Transition(
+    props: TransitionProps & { children?: React.ReactElement<any, any> },
+    ref: React.Ref<unknown>,
+) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
 function DashboardPage() {
+    const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+
     const account = useApi(
         async client => await client.apiAccountGet(),
         []);
@@ -18,6 +29,10 @@ function DashboardPage() {
             maxWidth="md"
             className={classes.root}
         >
+            <EmailValidationDialog 
+                email={account.email}
+                isOpen={isValidatingEmail}
+                onClose={() => setIsValidatingEmail(false)} />
             <Typography variant="h2" component="h2">
                 Profile completion
             </Typography>
@@ -32,15 +47,15 @@ function DashboardPage() {
                         onClick: () => { }
                     },
                     {
-                        label: "Verify e-mail address",
+                        label: "Change or verify e-mail address",
                         description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money.",
                         validate: () => account.isEmailVerified,
-                        onClick: () => { }
+                        onClick: () => setIsValidatingEmail(true)
                     },
                     {
                         label: "Complete Stripe profile",
                         description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
-                        validate: () => account.isEmailVerified,
+                        validate: () => !!account.beneficiary,
                         onClick: () => { }
                     }
                 ]}
@@ -55,10 +70,10 @@ function DashboardPage() {
                         validate: () => true
                     },
                     {
-                        label: "Verify e-mail address",
+                        label: "Change or verify e-mail address",
                         description: "Verifying your e-mail address allows you to receive an e-mail whenever your card has been charged.",
                         validate: () => account.isEmailVerified,
-                        onClick: () => { }
+                        onClick: () => setIsValidatingEmail(true)
                     },
                     {
                         label: "Save payment details for later",
@@ -70,6 +85,52 @@ function DashboardPage() {
             />
         </Container>
     </AppBarTemplate>;
+}
+
+function EmailValidationDialog(props: {
+    email: string,
+    isOpen: boolean,
+    onClose: () => void
+}) {
+    const [email, setEmail] = useState(() => props.email);
+
+    const onVerifyClicked = () => {
+
+    };
+
+    return <Dialog 
+        open={props.isOpen}
+        onClose={props.onClose}
+        TransitionComponent={Transition}
+    >
+        <DialogTitle>Is this your e-mail?</DialogTitle>
+        <DialogContent className={classes.verifyEmailDialog}>
+            <Typography>
+                Make sure your e-mail is correct and hit "Verify". We'll send you an e-mail with a verification link.
+            </Typography>
+            <TextField 
+                label="E-mail"
+                variant="outlined"
+                autoFocus
+                className={classes.textBox}
+                value={email} 
+                onChange={e => setEmail(e.target.value)} />
+        </DialogContent>
+        <DialogActions>
+            <Button 
+                onClick={props.onClose}
+                color="secondary"
+            >
+                Cancel
+            </Button>
+            <Button 
+                onClick={onVerifyClicked}
+                variant="contained"
+            >
+                Verify
+            </Button>
+        </DialogActions>
+    </Dialog>
 }
 
 function AccountOverview(props: {
@@ -103,10 +164,15 @@ function AccountOverview(props: {
                 <Box>
                     <ul>
                         {props.checkpoints.map(x =>
-                            <Tooltip title={x.description}>
-                                <li className={x.validate() ? 
-                                    classes.complete : 
-                                    classes.incomplete}
+                            <Tooltip placement="left" title={x.description}>
+                                <li 
+                                    onClick={() => 
+                                        !x.validate() && 
+                                        x.onClick &&
+                                        x.onClick()}
+                                    className={x.validate() ? 
+                                        classes.complete : 
+                                        classes.incomplete}
                                 >
                                     {x.validate() ?
                                         <CheckBox color="primary" /> :

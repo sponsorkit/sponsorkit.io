@@ -8,12 +8,9 @@ body, #___gatsby, #gatsby-focus-wrapper {
   min-height: 100vh;
   place-content: stretch;
 
-  .MuiModal-root {
-
-    .MuiBackdrop-root {
-      backdrop-filter: blur(30px);
-      background-color: rgba(245, 245, 245, 0.7) !important;
-    }
-
+  .MuiBackdrop-root {
+    backdrop-filter: blur(20px);
+    background: none !important;
+    background-color: rgba(245, 245, 245, 0.7) !important;
   }
 }

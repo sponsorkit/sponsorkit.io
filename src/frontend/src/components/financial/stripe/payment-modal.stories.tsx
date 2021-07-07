@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 
 import { Story, Meta } from '@storybook/react';
 import { PaymentMethodModal } from "./payment-modal";
-import ThemeConfig from "@theme";
 
 export default {
     component: PaymentMethodModal,
