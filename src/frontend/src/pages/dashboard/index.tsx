@@ -89,8 +89,7 @@ function AccountOverview(props: {
     return <Card className={classes.accountOverview}>
         <CardContent className={classes.content}>
             <Typography variant="h5" component="h2">
-                {props.title},
-                356+89/*
+                {props.title}
             </Typography>
             <Typography variant="body2" component="p">
                 {props.subTitle}
