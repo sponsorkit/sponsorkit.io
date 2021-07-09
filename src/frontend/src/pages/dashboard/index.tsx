@@ -1,11 +1,13 @@
 import CircularProgressBar from "@components/circular-progress-bar";
-import { Box, Button, Card, CardContent, Container, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Slide, TextField, Tooltip, Typography } from "@material-ui/core";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Slide, TextField, Typography } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions";
-import { CheckBox, CheckBoxOutlineBlank, QuestionAnswer } from "@material-ui/icons";
+import { DoneSharp } from "@material-ui/icons";
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
-import { createApi, useApi } from "../../hooks/clients";
+import { useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
 
 const Transition = React.forwardRef(function Transition(
@@ -29,7 +31,7 @@ function DashboardPage() {
             maxWidth="md"
             className={classes.root}
         >
-            <EmailValidationDialog 
+            <EmailValidationDialog
                 email={account.email}
                 isOpen={isValidatingEmail}
                 onClose={() => setIsValidatingEmail(false)} />
@@ -98,7 +100,7 @@ function EmailValidationDialog(props: {
 
     };
 
-    return <Dialog 
+    return <Dialog
         open={props.isOpen}
         onClose={props.onClose}
         TransitionComponent={Transition}
@@ -108,22 +110,22 @@ function EmailValidationDialog(props: {
             <Typography>
                 Make sure your e-mail is correct and hit "Verify". We'll send you an e-mail with a verification link.
             </Typography>
-            <TextField 
+            <TextField
                 label="E-mail"
                 variant="outlined"
                 autoFocus
                 className={classes.textBox}
-                value={email} 
+                value={email}
                 onChange={e => setEmail(e.target.value)} />
         </DialogContent>
         <DialogActions>
-            <Button 
+            <Button
                 onClick={props.onClose}
                 color="secondary"
             >
                 Cancel
             </Button>
-            <Button 
+            <Button
                 onClick={onVerifyClicked}
                 variant="contained"
             >
@@ -161,28 +163,30 @@ function AccountOverview(props: {
                     current={validatedCheckpointCount}
                     maximum={totalCheckpointCount}
                 />
-                <Box>
-                    <ul>
-                        {props.checkpoints.map(x =>
-                            <Tooltip placement="left" title={x.description}>
-                                <li 
-                                    onClick={() => 
-                                        !x.validate() && 
-                                        x.onClick &&
-                                        x.onClick()}
-                                    className={x.validate() ? 
-                                        classes.complete : 
-                                        classes.incomplete}
-                                >
-                                    {x.validate() ?
-                                        <CheckBox color="primary" /> :
-                                        <CheckBoxOutlineBlank color="disabled" />}
-                                    <Typography className={classes.typography}>
-                                        {x.label}
-                                    </Typography>
-                                </li>
-                            </Tooltip>)}
-                    </ul>
+                <Box className={classes.accordions}>
+                    {props.checkpoints.map(x => 
+                        <Accordion className={classes.accordion}>
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                <FormControlLabel
+                                    classes={{
+                                        label: classes.header
+                                    }}
+                                    control={x.validate() ?
+                                        <DoneSharp 
+                                            className={classes.checkbox}
+                                            color="primary" /> :
+                                        <HelpOutlineIcon
+                                            className={classes.checkbox}
+                                            color="disabled" />}
+                                    label={x.label}
+                                />
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Typography color="textSecondary">
+                                    {x.description}
+                                </Typography>
+                            </AccordionDetails>
+                        </Accordion>)}
                 </Box>
             </Box>
         </CardContent>

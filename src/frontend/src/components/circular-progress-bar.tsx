@@ -1,7 +1,7 @@
-import { CircularProgressbarWithChildren as ReactCircularProgressBar, buildStyles } from 'react-circular-progressbar';
 import { Box, Typography } from '@material-ui/core';
-import * as classes from "./circular-progress-bar.module.scss";
 import palette from '@theme/palette';
+import { CircularProgressbarWithChildren as ReactCircularProgressBar } from 'react-circular-progressbar';
+import * as classes from "./circular-progress-bar.module.scss";
 
 export default function CircularProgressBar(props: {
     maximum: number,
@@ -21,19 +21,35 @@ export default function CircularProgressBar(props: {
         <ReactCircularProgressBar
             value={percentage}
             className={classes.progressBar}
-            styles={buildStyles({
-                strokeLinecap: 'round',
-                pathColor: palette.light.primary.main,
-                trailColor: '#eee',
-                backgroundColor: '#eee'
-            })} />
+            styles={{
+                path: {
+                    strokeLinecap: 'round',
+                    stroke: palette.light.primary.main,
+                    width: props.size,
+                    height: props.size
+                },
+                trail: {
+                    stroke: '#eee',
+                    width: props.size,
+                    height: props.size
+                },
+                root: {
+                    width: props.size,
+                    height: props.size
+                },
+                background: {
+                    width: props.size,
+                    height: props.size
+                }
+            }} />
         <Typography
             className={classes.percentage}
             fontSize={`${fontSize}px`}
             style={{
                 top: `${props.size / 2 - fontSize / 2}px`,
                 lineHeight: `${fontSize}px`,
-                color: palette.light.primary.main
+                color: palette.light.primary.main,
+                width: props.size
             }}
         >
             {Math.round(percentage)}%

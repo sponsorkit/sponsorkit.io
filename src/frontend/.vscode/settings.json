@@ -2,5 +2,10 @@
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "files.exclude": {
         "**/node_modules/": true
+    },
+    "editor.codeActionsOnSave": {
+        "addMissingImports": true,
+        "source.fixAll": true,
+        "source.organizeImports": true
     }
 }
