@@ -4,7 +4,7 @@ import { TransitionProps } from "@material-ui/core/transitions";
 import { DoneSharp } from "@material-ui/icons";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
@@ -19,10 +19,11 @@ const Transition = React.forwardRef(function Transition(
 
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+    const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
     const account = useApi(
         async client => await client.accountGet(),
-        []);
+        [lastProgressChange]);
     if (!account)
         return null;
 
@@ -30,6 +31,7 @@ function DashboardPage() {
         <EmailValidationDialog
             email={account.email}
             isOpen={isValidatingEmail}
+            onValidated={() => setLastProgressChange(new Date())}
             onClose={() => setIsValidatingEmail(false)} />
         <Container
             maxWidth="lg"
@@ -77,11 +79,40 @@ function DashboardPage() {
 function EmailValidationDialog(props: {
     email: string,
     isOpen: boolean,
-    onClose: () => void
+    onClose: () => void,
+    onValidated: () => void
 }) {
     const [email, setEmail] = useState(() => props.email);
     const [isLoading, setIsLoading] = useState(false);
     const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
+
+    useEffect(
+        () => {
+            let timerId: any;
+
+            async function effect() {
+                if(isWaitingForVerification) {
+                    const account = await createApi().accountGet();
+                    if(account.isEmailVerified) {
+                        setIsLoading(false);
+                        setIsWaitingForVerification(false);
+
+                        props.onValidated();
+                        props.onClose();
+                        return;
+                    }
+                }
+
+                timerId = setTimeout(effect, 1000);
+            }
+
+            timerId = setTimeout(effect, 1000);
+
+            return () => {
+                clearTimeout(timerId);
+            }
+        },
+        [isWaitingForVerification]);
 
     const onVerifyClicked = async () => {
         setIsLoading(true);
@@ -98,10 +129,15 @@ function EmailValidationDialog(props: {
         }
     };
 
+    const isVerificationDisabled = isLoading || isWaitingForVerification;
+
     return <Dialog
         open={props.isOpen}
-        onClose={props.onClose}
+        onClose={() => {
+            props.onClose();
+        }}
         TransitionComponent={Transition}
+        className={classes.emailValidationDialog}
     >
         <DialogTitle>Is this your e-mail?</DialogTitle>
         <DialogContent className={classes.verifyEmailDialog}>
@@ -117,10 +153,12 @@ function EmailValidationDialog(props: {
                 onChange={e => setEmail(e.target.value)} />
         </DialogContent>
         <DialogActions>
-            {isLoading &&
-                <Box>
-                    <CircularProgress variant="indeterminate" />
-                    <Typography>
+            {(isLoading || isWaitingForVerification) &&
+                <Box display="flex" flexDirection="row" alignItems="center">
+                    <CircularProgress 
+                        size={25}
+                        variant="indeterminate" />
+                    <Typography className={classes.loadingText}>
                         {isWaitingForVerification ? 
                             "E-mail sent! Waiting for verification..." : 
                             "Sending e-mail verification..."}
@@ -128,12 +166,14 @@ function EmailValidationDialog(props: {
                 </Box>}
             <Box className={classes.spacer} />
             <Button
+                disabled={isLoading}
                 onClick={props.onClose}
                 color="secondary"
             >
                 Cancel
             </Button>
             <Button
+                disabled={isVerificationDisabled}
                 onClick={onVerifyClicked}
                 variant="contained"
             >

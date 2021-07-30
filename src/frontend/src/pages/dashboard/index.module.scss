@@ -1,5 +1,13 @@
-.spacer {
-    flex-grow: 1;
+.email-validation-dialog {
+    .spacer {
+        flex-grow: 1;
+    }
+
+    .loading-text {
+        font-size: 14px;
+        padding-left: 15px;
+        opacity: 0.7;
+    }
 }
 
 .root {
