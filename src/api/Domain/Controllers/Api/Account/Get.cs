@@ -49,7 +49,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
             this.paymentMethodService = paymentMethodService;
         }
         
-        [HttpGet("/api/account")]
+        [HttpGet("/account")]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();

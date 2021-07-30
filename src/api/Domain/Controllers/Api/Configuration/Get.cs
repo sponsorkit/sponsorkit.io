@@ -26,7 +26,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Configuration
             this.gitHubOptions = gitHubOptions;
         }
         
-        [HttpGet("/api/configuration")]
+        [HttpGet("/configuration")]
         [AllowAnonymous]
         public override ActionResult<Response> Handle()
         {

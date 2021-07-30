@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------
 
-declare module '@material-ui/core/styles/shape' {
+declare module '@material-ui/core/styles' {
   interface Shape {
     borderRadiusSm: number | string;
     borderRadiusMd: number | string;

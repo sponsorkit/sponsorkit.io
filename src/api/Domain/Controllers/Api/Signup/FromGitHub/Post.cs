@@ -61,7 +61,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
             this.tokenFactory = tokenFactory;
         }
 
-        [HttpPost("/api/signup/from-github")]
+        [HttpPost("/signup/from-github")]
         [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {

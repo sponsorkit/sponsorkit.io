@@ -33,7 +33,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail
             this.tokenFactory = tokenFactory;
         }
         
-        [HttpPost("/api/account/email/send-verification-email")]
+        [HttpPost("/account/email/send-verification-email")]
         public override async Task<ActionResult> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();
@@ -51,14 +51,14 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail
                     EmailVerificationRole)
             });
 
-            var verificationLink = $"https://sponsorkit.io/api/account/email/verify-email-token/{token}";
+            var verificationLink = $"https://api.sponsorkit.io/account/email/verify-email-token/{token}";
             
             await mediator.Send(
                 new SendEmailCommand(
                     EmailSender.Sponsorkit,
                     request.Email,
                     "Verify your e-mail address",
-                    "SendVerificationEmail",
+                    "VerifyEmailAddress",
                     new Model(
                         verificationLink)),
                 cancellationToken);

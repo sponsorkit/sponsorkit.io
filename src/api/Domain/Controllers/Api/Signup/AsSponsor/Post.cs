@@ -29,7 +29,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsSponsor
             this.customerService = customerService;
         }
         
-        [HttpPost("/api/signup/as-sponsor")]
+        [HttpPost("/signup/as-sponsor")]
         public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();

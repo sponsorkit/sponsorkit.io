@@ -39,7 +39,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
             this.dataContext = dataContext;
         }
         
-        [HttpGet("/api/bounties/{gitHubIssueId}")]
+        [HttpGet("/bounties/{gitHubIssueId}")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]

@@ -1,21 +1,20 @@
+import { useAnimatedCount } from "@hooks/count-up";
 import { Box, Button, Card, CardContent, CircularProgress, Tooltip, Typography } from "@material-ui/core";
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@material-ui/lab';
 import { RestEndpointMethodTypes } from '@octokit/rest';
+import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { getUrlParameter } from '@utils/url';
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
 import { AppBarTemplate } from '..';
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
 import { Markdown } from '../../components/markdown';
-import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
-import { getUrlParameter } from '@utils/url';
 import { createApi, makeOctokitCall } from '../../hooks/clients';
+import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
 import * as classes from './view.module.scss';
-import { useCountUp } from 'use-count-up'
-import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
-import { useAnimatedCount } from "@hooks/count-up";
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -33,7 +32,7 @@ export default function IssueByIdPage(props: {
         if(!issue)
             return;
         
-        const response = await createApi().apiBountiesGitHubIssueIdGet(issue.id);
+        const response = await createApi().bountiesGitHubIssueIdGet(issue.id);
         setBounties(response?.bounties ?? null);
     }
 
@@ -280,7 +279,7 @@ function CreateBounty(props: {
                 onComplete={props.onBountyCreated}
                 onClose={() => setShouldCreate(false)} 
                 onAcquirePaymentIntent={async () => {
-                    const response = await createApi().apiBountiesPaymentIntentPost({
+                    const response = await createApi().bountiesPaymentIntentPost({
                         body: {
                             amountInHundreds: amount * 100,
                             issue: props.issue

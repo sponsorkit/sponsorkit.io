@@ -2,6 +2,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Amazon;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.SimpleEmailV2;
 using Flurl.Http.Configuration;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +22,7 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
+using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 
 namespace Sponsorkit.Infrastructure.Ioc
@@ -57,6 +61,8 @@ namespace Sponsorkit.Infrastructure.Ioc
             ConfigureFlurl();
 
             ConfigureLogging();
+
+            ConfigureAws();
         }
 
         private void ConfigureGitHub()
@@ -71,6 +77,17 @@ namespace Sponsorkit.Infrastructure.Ioc
                             .BountyhuntBot
                             .PersonalAccessToken))));
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
+        }
+
+        private void ConfigureAws()
+        {
+            Services.AddAWSService<IAmazonSimpleEmailServiceV2>();
+            
+            Services.AddDefaultAWSOptions(
+                new AWSOptions()
+                {
+                    Region = RegionEndpoint.EUNorth1
+                });
         }
 
         private void ConfigureLogging()
@@ -169,6 +186,7 @@ namespace Sponsorkit.Infrastructure.Ioc
         private void ConfigureInfrastructure()
         {
             Services.AddSingleton<IAesEncryptionHelper, AesEncryptionHelper>();
+            Services.AddSingleton<ITokenFactory, TokenFactory>();
 
             Services.AddLogging(builder => builder
                 .SetMinimumLevel(LogLevel.Debug)

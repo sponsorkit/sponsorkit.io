@@ -45,7 +45,7 @@ module.exports = {
           },
         },
         {
-          loader: "sass-loader",
+          loader: "sass-loader"
         }
       ],
       include: path.resolve(__dirname, '../'),

@@ -30,7 +30,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.ActivateStripeAccountUserId
         }
 
         [AllowAnonymous]
-        [HttpGet("/api/signup/activate-stripe-account/{userId}")]
+        [HttpGet("/signup/activate-stripe-account/{userId}")]
         public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             var accountId = await dataContext.Users
@@ -43,8 +43,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.ActivateStripeAccountUserId
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = $"https://sponsorkit.io/api/signup/activate-stripe-account/{request.UserId}",
-                    ReturnUrl = $"https://sponsorkit.io/api/signup/completed",
+                    RefreshUrl = $"https://sponsorkit.io/signup/activate-stripe-account/{request.UserId}",
+                    ReturnUrl = $"https://sponsorkit.io/signup/completed",
                     Type = "account_onboarding"
                 }, 
                 cancellationToken: cancellationToken);

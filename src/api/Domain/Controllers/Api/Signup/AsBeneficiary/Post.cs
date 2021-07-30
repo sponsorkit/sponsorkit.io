@@ -31,7 +31,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
             this.aesEncryptionHelper = aesEncryptionHelper;
         }
         
-        [HttpPost("/api/signup/as-beneficiary")]
+        [HttpPost("/signup/as-beneficiary")]
         public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();
@@ -50,7 +50,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
                     await SendMailAsync(
                         account.Email,
                         "Fill in your information with Stripe",
-                        $"Yada yada: https://sponsorkit.io/api/signup/activate-stripe-account/{user.Id}");
+                        $"Yada yada: https://sponsorkit.io/signup/activate-stripe-account/{user.Id}");
                 });
 
             return new OkResult();

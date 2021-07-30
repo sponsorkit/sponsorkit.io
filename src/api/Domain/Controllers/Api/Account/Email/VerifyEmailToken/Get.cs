@@ -19,7 +19,7 @@ using Stripe;
 namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
 {
     public record Request(
-        [FromRoute]string Token);
+        string Token);
     
     public class Get : BaseAsyncEndpoint
         .WithRequest<Request>
@@ -42,9 +42,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
             this.jwtOptionsMonitor = jwtOptionsMonitor;
         }
         
-        [HttpGet("/api/account/email/verify-email-token/{token}")]
+        [HttpGet("/account/email/verify-email-token/{token}")]
         [AllowAnonymous]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new CancellationToken())
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(

@@ -1,13 +1,12 @@
-import { AppBar, Box, Container, Toolbar, Typography } from "@material-ui/core";
-import React from "react";
 import { SponsorkitDomainControllersApiBountiesBountyResponse } from "@sponsorkit/client";
-import { useApi } from "../../hooks/clients";
+import React from "react";
 import { AppBarTemplate } from "..";
+import { useApi } from "../../hooks/clients";
 
 export default function BountiesPage() {
     const bounties = useApi(
         async client => {
-            var response = await client.apiBountiesGet({});
+            var response = await client.bountiesGet({});
             return response?.bounties;
         },
         []);

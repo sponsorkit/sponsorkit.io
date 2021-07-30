@@ -1,6 +1,6 @@
 import { Typography } from "@material-ui/core";
 import React from "react";
-import { summary } from "./fee-display.module.scss";
+import * as classes from "./fee-display.module.scss";
 
 export function FeeDisplay(props: {
     amount: number
@@ -11,7 +11,7 @@ export function FeeDisplay(props: {
     const getStripeFees = () =>
         (props.amount * 0.029) + 0.30;
 
-    return <Typography className={summary}>
+    return <Typography className={classes.summary}>
         ${(props.amount + getStripeFees() + getSponsorkitFees()).toFixed(2)} will be charged (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
     </Typography>
 }

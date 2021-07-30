@@ -81,16 +81,16 @@ namespace Sponsorkit.Domain.Mediatr.Email
         {
             var template = await System.IO.File.ReadAllTextAsync(
                 Path.Combine(
-                    Environment.CurrentDirectory,
+                    "Domain",
                     "Mediatr",
                     "Email",
                     "Templates",
-                    request.TemplateDirectory),
+                    request.TemplateDirectory,
+                    "Template.cshtml"),
                 cancellationToken);
 
             var engine = new RazorLightEngineBuilder()
-                .UseEmbeddedResourcesProject(typeof(IMailModel))
-                .SetOperatingAssembly(typeof(IMailModel).Assembly)
+                .UseFileSystemProject(Environment.CurrentDirectory)
                 .UseMemoryCachingProvider()
                 .Build();
 

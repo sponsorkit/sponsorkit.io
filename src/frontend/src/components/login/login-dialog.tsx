@@ -1,10 +1,10 @@
-import { useConfiguration } from '@hooks/configuration';
-import React, { useMemo, useRef } from 'react';
 import { createApi } from '@hooks/clients';
+import { useConfiguration } from '@hooks/configuration';
 import { useToken } from '@hooks/token';
-import { newGuid } from '@utils/guid';
-import IframeDialog from '../iframe-dialog';
 import { SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
+import { newGuid } from '@utils/guid';
+import React, { useMemo, useRef } from 'react';
+import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
     onDismissed?: () => void,
@@ -46,7 +46,7 @@ export default function LoginDialog(props: {
 
             wasDismissed.current = false;
             
-            const response = await createApi().apiSignupFromGithubPost({
+            const response = await createApi().signupFromGithubPost({
                 body: {
                   gitHubAuthenticationCode: e.data.code
                 }

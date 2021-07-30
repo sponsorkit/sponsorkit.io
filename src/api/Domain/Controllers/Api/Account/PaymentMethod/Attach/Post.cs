@@ -37,7 +37,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.PaymentMethod.Attach
             this.mediator = mediator;
         }
 
-        [HttpPost("/api/account/payment-method/apply")]
+        [HttpPost("/account/payment-method/apply")]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())

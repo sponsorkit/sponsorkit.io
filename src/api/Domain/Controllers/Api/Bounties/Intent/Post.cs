@@ -55,7 +55,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
             this.mediator = mediator;
         }
         
-        [HttpPost("/api/bounties/payment-intent")]
+        [HttpPost("/bounties/payment-intent")]
         public override async Task<ActionResult<Response>> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = default)
         {
             var userId = User.GetRequiredId();

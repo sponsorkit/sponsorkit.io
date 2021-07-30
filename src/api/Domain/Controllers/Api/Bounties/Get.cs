@@ -29,7 +29,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
             this.dataContext = dataContext;
         }
         
-        [HttpGet("/api/bounties")]
+        [HttpGet("/bounties")]
         [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {

@@ -36,7 +36,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get
             this.dataContext = dataContext;
         }
 
-        [HttpGet("/api/sponsors/{beneficiaryId}/{reference}")]
+        [HttpGet("/sponsors/{beneficiaryId}/{reference}")]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
         {
             var currentSponsor = await GetBeneficiarySponsorshipSummary(

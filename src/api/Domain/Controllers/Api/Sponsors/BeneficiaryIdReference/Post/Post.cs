@@ -45,7 +45,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Post
             this.dataContext = dataContext;
         }
         
-        [HttpPost("/api/sponsors/{beneficiaryId}/{reference}")]
+        [HttpPost("/sponsors/{beneficiaryId}/{reference}")]
         public override ActionResult Handle(Request request)
         {
             throw new NotImplementedException();

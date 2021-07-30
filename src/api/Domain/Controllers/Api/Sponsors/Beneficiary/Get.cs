@@ -29,7 +29,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.Beneficiary
             this.dataContext = dataContext;
         }
 
-        [HttpGet("/api/sponsors/{beneficiaryId}")]
+        [HttpGet("/sponsors/{beneficiaryId}")]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             var user = await dataContext.Users.SingleOrDefaultAsync(

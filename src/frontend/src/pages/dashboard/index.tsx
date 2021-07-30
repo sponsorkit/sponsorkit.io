@@ -1,5 +1,5 @@
 import CircularProgressBar from "@components/circular-progress-bar";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Slide, TextField, Typography } from "@material-ui/core";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Slide, TextField, Typography } from "@material-ui/core";
 import { TransitionProps } from "@material-ui/core/transitions";
 import { DoneSharp } from "@material-ui/icons";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
@@ -7,7 +7,7 @@ import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
-import { useApi } from "../../hooks/clients";
+import { createApi, useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
 
 const Transition = React.forwardRef(function Transition(
@@ -21,7 +21,7 @@ function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
 
     const account = useApi(
-        async client => await client.apiAccountGet(),
+        async client => await client.accountGet(),
         []);
     if (!account)
         return null;
@@ -80,9 +80,22 @@ function EmailValidationDialog(props: {
     onClose: () => void
 }) {
     const [email, setEmail] = useState(() => props.email);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
 
-    const onVerifyClicked = () => {
+    const onVerifyClicked = async () => {
+        setIsLoading(true);
 
+        try {
+            await createApi().accountEmailSendVerificationEmailPost({
+                body: {
+                    email
+                }
+            });
+            setIsWaitingForVerification(true);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return <Dialog
@@ -104,6 +117,16 @@ function EmailValidationDialog(props: {
                 onChange={e => setEmail(e.target.value)} />
         </DialogContent>
         <DialogActions>
+            {isLoading &&
+                <Box>
+                    <CircularProgress variant="indeterminate" />
+                    <Typography>
+                        {isWaitingForVerification ? 
+                            "E-mail sent! Waiting for verification..." : 
+                            "Sending e-mail verification..."}
+                    </Typography>
+                </Box>}
+            <Box className={classes.spacer} />
             <Button
                 onClick={props.onClose}
                 color="secondary"
