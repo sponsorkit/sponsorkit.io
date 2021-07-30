@@ -1,7 +1,4 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Helpers;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sponsorkit.Tests.Domain.Helpers
 {

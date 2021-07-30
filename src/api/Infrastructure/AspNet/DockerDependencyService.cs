@@ -15,7 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit

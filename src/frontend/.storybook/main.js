@@ -20,18 +20,37 @@ module.exports = {
       ...config.resolve.alias, 
       ...webpackConfig.resolve.alias,
       ...getStorybookHackAliases()
-    };
-    config.module.rules = [
-      ...config.module.rules,
-      {
-        test: /\.s?css$/i,
-        use: [
-          "style-loader",
-          "css-loader",
-          "sass-loader",
-        ],
-      }
-    ];
+    };  
+
+    // add SCSS support for CSS Modules
+    config.module.rules.push({
+      test: /\.scss$/,
+      use: [
+        {
+          loader: "style-loader",
+          options: {
+            esModule: true,
+            modules: {
+              namedExport: true
+            }
+          }
+        },
+        {
+          loader: "css-loader",
+          options: {
+            esModule: true,
+            modules: {
+              namedExport: true
+            }
+          },
+        },
+        {
+          loader: "sass-loader",
+        }
+      ],
+      include: path.resolve(__dirname, '../'),
+    });
+
     return config;
   }
 }

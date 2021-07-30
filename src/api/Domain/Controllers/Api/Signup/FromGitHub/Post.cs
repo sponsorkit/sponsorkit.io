@@ -1,8 +1,7 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -10,15 +9,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
-using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
+using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 using GitHubUser = Octokit.User;
 using User = Sponsorkit.Domain.Models.User;
@@ -38,9 +35,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly IGitHubClient gitHubClient;
         private readonly IAesEncryptionHelper aesEncryptionHelper;
+        private readonly ITokenFactory tokenFactory;
 
         private readonly IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor;
-        private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
 
         private readonly CustomerService customerService;
 
@@ -50,18 +47,18 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
             IGitHubClientFactory gitHubClientFactory,
             IGitHubClient gitHubClient,
             IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor,
-            IOptionsMonitor<JwtOptions> jwtOptionsMonitor,
             IAesEncryptionHelper aesEncryptionHelper,
+            ITokenFactory tokenFactory,
             DataContext dataContext,
             CustomerService customerService)
         {
             this.gitHubClientFactory = gitHubClientFactory;
             this.gitHubClient = gitHubClient;
             this.gitHubOptionsMonitor = gitHubOptionsMonitor;
-            this.jwtOptionsMonitor = jwtOptionsMonitor;
             this.dataContext = dataContext;
             this.customerService = customerService;
             this.aesEncryptionHelper = aesEncryptionHelper;
+            this.tokenFactory = tokenFactory;
         }
 
         [HttpPost("/api/signup/from-github")]
@@ -99,7 +96,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
                     await dataContext.Users.AddAsync(user, cancellationToken);
                     await dataContext.SaveChangesAsync(cancellationToken);
 
-                    var customer = await CreateStripeCustomerForUserAsync(email, cancellationToken);
+                    var customer = await CreateStripeCustomerForUserAsync(user.Id, email, cancellationToken);
                     user.StripeCustomerId = customer.Id;
                     await dataContext.SaveChangesAsync(cancellationToken);
 
@@ -112,37 +109,33 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
 
         private string GenerateJwtTokenForUser(User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
+            return tokenFactory.Create(new[]
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                    new Claim(JwtRegisteredClaimNames.Name, user.GitHub?.Username ?? "")
-                }),
-                Expires = Debugger.IsAttached ? 
-                    DateTime.UtcNow.AddHours(24) : 
-                    DateTime.UtcNow.AddMinutes(15),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
-                    SecurityAlgorithms.HmacSha512Signature),
-                Audience = "sponsorkit.io",
-                Issuer = "sponsorkit.io"
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+                new Claim(
+                    JwtRegisteredClaimNames.Sub, 
+                    user.Id.ToString()), 
+                new Claim(
+                    JwtRegisteredClaimNames.Name, 
+                    user.GitHub?.Username ?? ""), 
+                new Claim(
+                    ClaimTypes.Role, 
+                    "User")
+            });
         }
 
         private async Task<Customer> CreateStripeCustomerForUserAsync(
+            Guid userId,
             string email,
             CancellationToken cancellationToken)
         {
             return await customerService.CreateAsync(
                 new CustomerCreateOptions()
                 {
-                    Email = email
+                    Email = email,
+                    Metadata = new Dictionary<string, string>()
+                    {
+                        { "UserId", userId.ToString() }
+                    }
                 },
                 cancellationToken: cancellationToken);
         }

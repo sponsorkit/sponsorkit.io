@@ -6,7 +6,6 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
 

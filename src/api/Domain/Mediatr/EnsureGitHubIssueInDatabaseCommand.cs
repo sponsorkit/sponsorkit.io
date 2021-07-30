@@ -4,7 +4,6 @@ using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Issue = Sponsorkit.Domain.Models.Issue;

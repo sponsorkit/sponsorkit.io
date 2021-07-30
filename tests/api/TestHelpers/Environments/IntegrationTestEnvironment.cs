@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet;

@@ -1,32 +1,66 @@
 .root {
     display: flex;
     flex-direction: column;
-    gap: 40px;
 
-    .account-overview {
+    .profile-completion-header {
+        align-self: center;
+    }
+
+    .account-overviews {
         display: flex;
-        justify-content: space-between;
-        justify-self: center;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 40px;
+        gap: 40px;
 
-        .content {
-            .progress {
-                margin-top: 20px;
-                display: flex;
-                flex-direction: row;
-                place-items: center;
-                
+        .account-overview {
+            display: flex;
+            justify-content: space-between;
+            justify-self: center;
+            max-width: 650px;
+
+            .content {
+                .header {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+
+                    .text {
+                        margin-right: 30px;
+                    }
+                }
+                    
                 .accordions {
+                    margin-top: 20px;
                     flex-shrink: 2;
-                    margin-left: 30px;
 
                     .accordion {
-                        .header {
-                            font-weight: bold;
-                            font-size: 14px;
+                        .accordion-summary {
+                            margin-left: 10px;
+
+                            .header {
+                                font-weight: bold;
+                                font-size: 14px;
+                            }
+
+                            .checkbox {
+                                margin-right: 10px;
+                            }
                         }
 
-                        .checkbox {
-                            margin-right: 10px;
+                        .accordion-details {
+                            display: flex;
+                            flex-direction: column;
+
+                            .description {
+                                font-size: 14px;
+                            }
+
+                            .complete-button {
+                                margin-top: 15px;
+                                align-self: flex-start;
+                            }
                         }
                     }
                 }

@@ -3,18 +3,23 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Sponsorkit.Infrastructure.Options;
 
 namespace Sponsorkit.Infrastructure.Security.Jwt
 {
-    public class TokenGenerator
+    public class TokenFactory : ITokenFactory
     {
-        public TokenGenerator()
+        private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
+
+        public TokenFactory(
+            IOptionsMonitor<JwtOptions> jwtOptionsMonitor)
         {
-            
+            this.jwtOptionsMonitor = jwtOptionsMonitor;
         }
         
-        public string GenerateJwtTokenForUser(Claim[] claims)
+        public string Create(Claim[] claims)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -22,7 +27,7 @@ namespace Sponsorkit.Infrastructure.Security.Jwt
                 Subject = new ClaimsIdentity(claims),
                 Expires = Debugger.IsAttached ? 
                     DateTime.UtcNow.AddHours(24) : 
-                    DateTime.UtcNow.AddMinutes(15),
+                    DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),

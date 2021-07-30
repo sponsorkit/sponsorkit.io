@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

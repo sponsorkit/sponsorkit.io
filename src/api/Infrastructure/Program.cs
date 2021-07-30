@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading.Tasks;
 using FluffySpoon.AspNet.NGrok;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 using Serilog;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Logging;

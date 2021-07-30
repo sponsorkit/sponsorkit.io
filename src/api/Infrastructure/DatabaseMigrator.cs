@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Infrastructure

@@ -27,64 +27,49 @@ function DashboardPage() {
         return null;
 
     return <AppBarTemplate logoVariant="sponsorkit">
+        <EmailValidationDialog
+            email={account.email}
+            isOpen={isValidatingEmail}
+            onClose={() => setIsValidatingEmail(false)} />
         <Container
-            maxWidth="md"
+            maxWidth="lg"
             className={classes.root}
         >
-            <EmailValidationDialog
-                email={account.email}
-                isOpen={isValidatingEmail}
-                onClose={() => setIsValidatingEmail(false)} />
-            <Typography variant="h2" component="h2">
-                Profile completion
+            <Typography variant="h2" component="h2" className={classes.profileCompletionHeader}>
+                Profile
             </Typography>
-            <AccountOverview
-                title="Beneficiary"
-                subTitle="Your beneficiary profile is used when you want to earn money from bounties, donations or sponsorships."
-                checkpoints={[
-                    {
-                        label: "Connect your GitHub account",
-                        description: "Connecting with GitHub allows you to receive donations and sponsorships.",
-                        validate: () => true,
-                        onClick: () => { }
-                    },
-                    {
-                        label: "Change or verify e-mail address",
-                        description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money.",
-                        validate: () => account.isEmailVerified,
-                        onClick: () => setIsValidatingEmail(true)
-                    },
-                    {
-                        label: "Complete Stripe profile",
-                        description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
-                        validate: () => !!account.beneficiary,
-                        onClick: () => { }
-                    }
-                ]}
-            />
-            <AccountOverview
-                title="Sponsor"
-                subTitle="Your sponsor profile is used when you want to place bounties, give donations or start sponsoring others."
-                checkpoints={[
-                    {
-                        label: "Connect your GitHub account",
-                        description: "Connecting with GitHub allows us to know which GitHub user should be associated with bounties you create.",
-                        validate: () => true
-                    },
-                    {
-                        label: "Change or verify e-mail address",
-                        description: "Verifying your e-mail address allows you to receive an e-mail whenever your card has been charged.",
-                        validate: () => account.isEmailVerified,
-                        onClick: () => setIsValidatingEmail(true)
-                    },
-                    {
-                        label: "Save payment details for later",
-                        description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
-                        validate: () => !!account.sponsor?.creditCard,
-                        onClick: () => { }
-                    }
-                ]}
-            />
+            <Box className={classes.accountOverviews}>
+                <AccountOverview
+                    title="Profile completion"
+                    subTitle="Your beneficiary details are used when you want to earn money from bounties, donations or sponsorships. Your sponsor details are used when you want to place bounties, give donations or start sponsoring others."
+                    checkpoints={[
+                        {
+                            label: "Connect your GitHub account",
+                            description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
+                            validate: () => true,
+                            onClick: () => { }
+                        },
+                        {
+                            label: "Change or verify e-mail address",
+                            description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money, and when your card has been charged (invoices).",
+                            validate: () => account.isEmailVerified,
+                            onClick: () => setIsValidatingEmail(true)
+                        },
+                        {
+                            label: "Save payment details for later",
+                            description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
+                            validate: () => !!account.sponsor?.creditCard,
+                            onClick: () => { }
+                        },
+                        {
+                            label: "Fill in your bank account details",
+                            description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
+                            validate: () => !!account.beneficiary,
+                            onClick: () => { }
+                        }
+                    ]}
+                />
+            </Box>
         </Container>
     </AppBarTemplate>;
 }
@@ -108,7 +93,7 @@ function EmailValidationDialog(props: {
         <DialogTitle>Is this your e-mail?</DialogTitle>
         <DialogContent className={classes.verifyEmailDialog}>
             <Typography>
-                Make sure your e-mail is correct and hit "Verify". We'll send you an e-mail with a verification link.
+                Make sure your e-mail is correct. We'll send you an e-mail with a verification link.
             </Typography>
             <TextField
                 label="E-mail"
@@ -135,59 +120,73 @@ function EmailValidationDialog(props: {
     </Dialog>
 }
 
+type CheckpointProps = {
+    validate: () => boolean,
+    label: string,
+    description: string,
+    onClick?: () => void
+};
+
 function AccountOverview(props: {
     title: string,
     subTitle: string,
-    checkpoints: Array<{
-        validate: () => boolean,
-        label: string,
-        description: string,
-        onClick?: () => void
-    }>
+    checkpoints: Array<CheckpointProps>
 }) {
     const totalCheckpointCount = props.checkpoints.length;
     const validatedCheckpointCount = props.checkpoints
         .filter(x => x.validate())
         .length;
+    const firstNonValidatedCheckpointIndex = props.checkpoints.findIndex(x => !x.validate());
     return <Card className={classes.accountOverview}>
         <CardContent className={classes.content}>
-            <Typography variant="h5" component="h2">
-                {props.title}
-            </Typography>
-            <Typography variant="body2" component="p">
-                {props.subTitle}
-            </Typography>
-            <Box className={classes.progress}>
+            <Box className={classes.header}>
+                <Box className={classes.text}>
+                    <Typography variant="h5" component="h2">
+                        {props.title}
+                    </Typography>
+                    <Typography variant="body2" component="p">
+                        {props.subTitle}
+                    </Typography>
+                </Box>
                 <CircularProgressBar
-                    size={100}
+                    size={110}
                     current={validatedCheckpointCount}
                     maximum={totalCheckpointCount}
+                    text={`${validatedCheckpointCount} / ${totalCheckpointCount}`}
                 />
-                <Box className={classes.accordions}>
-                    {props.checkpoints.map(x => 
-                        <Accordion className={classes.accordion}>
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <FormControlLabel
-                                    classes={{
-                                        label: classes.header
-                                    }}
-                                    control={x.validate() ?
-                                        <DoneSharp 
-                                            className={classes.checkbox}
-                                            color="primary" /> :
-                                        <HelpOutlineIcon
-                                            className={classes.checkbox}
-                                            color="disabled" />}
-                                    label={x.label}
-                                />
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                <Typography color="textSecondary">
-                                    {x.description}
-                                </Typography>
-                            </AccordionDetails>
-                        </Accordion>)}
-                </Box>
+            </Box>
+            <Box className={classes.accordions}>
+                {props.checkpoints.map((x, i) =>
+                    <Accordion className={classes.accordion} defaultExpanded={i === firstNonValidatedCheckpointIndex}>
+                        <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
+                            <FormControlLabel
+                                classes={{
+                                    label: classes.header
+                                }}
+                                control={x.validate() ?
+                                    <DoneSharp
+                                        className={classes.checkbox}
+                                        color="primary" /> :
+                                    <HelpOutlineIcon
+                                        className={classes.checkbox}
+                                        color="disabled" />}
+                                label={x.label}
+                            />
+                        </AccordionSummary>
+                        <AccordionDetails className={classes.accordionDetails}>
+                            <Typography className={classes.description} color="textSecondary">
+                                {x.description}
+                            </Typography>
+                            {!x.validate() &&
+                                <Button 
+                                    className={classes.completeButton} 
+                                    variant="contained"
+                                    onClick={x.onClick}
+                                >
+                                    Begin
+                                </Button>}
+                        </AccordionDetails>
+                    </Accordion>)}
             </Box>
         </CardContent>
     </Card>

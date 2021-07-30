@@ -10,7 +10,8 @@ export default {
 type Props = {
     maximum: number,
     current: number,
-    size: number
+    size: number,
+    text?: string
 }
 
 const Template: Story<Props> = (args) => {
@@ -28,5 +29,6 @@ export const Minimal = Template.bind({});
 Minimal.args = {
     current: 33,
     maximum: 100,
-    size: 300
+    size: 300,
+    text: ""
 };
