@@ -22,9 +22,9 @@ module.exports = {
       ...getStorybookHackAliases()
     };  
 
-    // add SCSS support for CSS Modules
+    // add SCSS support for SCSS Modules
     config.module.rules.push({
-      test: /\.scss$/,
+      test: /\.module\.scss$/,
       use: [
         {
           loader: "style-loader",
@@ -46,6 +46,24 @@ module.exports = {
         },
         {
           loader: "sass-loader",
+        }
+      ],
+      include: path.resolve(__dirname, '../'),
+    });
+
+    // add SCSS support for SCSS
+    config.module.rules.push({
+      test: /\.scss$/,
+      exclude: /\.module\.scss$/,
+      use: [
+        {
+          loader: "style-loader"
+        },
+        {
+          loader: "css-loader"
+        },
+        {
+          loader: "sass-loader"
         }
       ],
       include: path.resolve(__dirname, '../'),

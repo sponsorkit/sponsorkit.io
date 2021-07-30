@@ -16,7 +16,7 @@ type Props = {
 
 const Template: Story<Props> = (args) => {
     return <Box style={{
-        border: "1px solid gray",
+        border: "1px dashed rgba(0,0,0,0.25)",
         width: args.size,
         height: args.size
     }}>
