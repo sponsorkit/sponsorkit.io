@@ -1,0 +1,13 @@
+{
+	"name": "Node.js",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": { "VARIANT": "16" }
+	},
+	"settings": {},
+	"extensions": [
+		"dbaeumer.vscode-eslint"
+	],
+	"forwardPorts": [8000],
+	"remoteUser": "node"
+}
