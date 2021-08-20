@@ -1,3 +1,9 @@
-function isPopupBlocked(window: Window|null) {
-    return !window || window.closed || typeof window.closed !== "undefined";
+export function isPopupBlocked(window: Window|null) {
+    if(!window)
+        return true;
+
+    if(typeof window.closed === "undefined")
+        return false;
+
+    return window.closed;
 }

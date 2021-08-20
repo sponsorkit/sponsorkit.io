@@ -12,7 +12,7 @@ using Stripe;
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
 {
     public record Request(
-        [FromRoute] Guid UserId);
+        Guid UserId);
     
     public class Get : BaseAsyncEndpoint
         .WithRequest<Request>
@@ -31,7 +31,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
 
         [AllowAnonymous]
         [HttpGet("/account/stripe-connect/activate/{userId}")]
-        public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
+        public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
         {
             var accountId = await dataContext.Users
                 .AsQueryable()
@@ -50,7 +50,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
                 cancellationToken: cancellationToken);
             return new RedirectResult(
                 linkResponse.Url,
-                true,
+                false,
                 false);
         }
     }

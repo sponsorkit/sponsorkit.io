@@ -4,6 +4,7 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardC
 import { DoneSharp } from "@material-ui/icons";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
+import { isPopupBlocked } from "@utils/popup";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
@@ -127,7 +128,7 @@ function BankDetailsDialog(props: {
         const popup = window.open(response.activationUrl);
         if(isPopupBlocked(popup)) {
             alert("It looks like your browser is blocking the Stripe activation popup. Unblock it, and try again.");
-            throw new Error("Popup blocked.");
+            return false;
         }
     };
 
@@ -136,7 +137,7 @@ function BankDetailsDialog(props: {
         onClose={props.onClose}
         buttonText="Begin"
         isValidatedAccessor={account => !!account.beneficiary}
-        requestSentText="Stripe popup window opened! Waiting for profile completion..."
+        requestSentText="Window opened! Waiting for profile completion..."
         requestSendingText="Fetching Stripe activation link..."
         onValidating={onFillInClicked}
         onValidated={props.onValidated}
@@ -145,9 +146,6 @@ function BankDetailsDialog(props: {
         <DialogContent className={classes.verifyEmailDialog}>
             <Typography>
                 A new window will pop up, which will prompt you to fill in your information through them.
-            </Typography>
-            <Typography fontWeight="bold">
-                Make sure your browser isn't blocking the popup.
             </Typography>
         </DialogContent>
     </AsynchronousProgressDialog>

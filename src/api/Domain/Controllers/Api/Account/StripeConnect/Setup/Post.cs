@@ -59,12 +59,19 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
             User user, 
             CancellationToken cancellationToken)
         {
+            if (user.StripeConnectId != null)
+            {
+                return await accountService.GetAsync(
+                    user.StripeConnectId, 
+                    cancellationToken: cancellationToken);
+            }
+
             var email = await aesEncryptionHelper.DecryptAsync(user.EncryptedEmail);
             return await accountService.CreateAsync(
                 new AccountCreateOptions()
                 {
                     Email = email,
-                    Type = "standard"
+                    Type = "express"
                 },
                 cancellationToken: cancellationToken);
         }

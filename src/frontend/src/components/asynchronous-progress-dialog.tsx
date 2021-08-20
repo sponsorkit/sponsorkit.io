@@ -3,7 +3,7 @@ import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@ma
 import { Box } from "@material-ui/system";
 import { useEffect, useState } from "react";
 import { SponsorkitDomainControllersApiAccountResponse } from "src/api/openapi/src";
-import classes from "./asynchronous-progress-dialog.module.scss";
+import * as classes from "./asynchronous-progress-dialog.module.scss";
 import { DialogTransition } from "./dialog-transition";
 
 export function AsynchronousProgressDialog(props: {
@@ -15,7 +15,7 @@ export function AsynchronousProgressDialog(props: {
     onClose: () => void,
     onValidated: () => void,
     isValidatedAccessor: (account: SponsorkitDomainControllersApiAccountResponse) => boolean,
-    onValidating: () => Promise<void>|void
+    onValidating: () => Promise<boolean|void>|boolean|void
 }) {
     const [isLoading, setIsLoading] = useState(false);
     const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
@@ -52,7 +52,10 @@ export function AsynchronousProgressDialog(props: {
         setIsLoading(true);
 
         try {
-            await Promise.resolve(props.onValidating());
+            const didValidate = await Promise.resolve(props.onValidating());
+            if(typeof didValidate === "boolean" && !didValidate)
+                return;
+            
             setIsWaitingForVerification(true);
         } finally {
             setIsLoading(false);
