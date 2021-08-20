@@ -1,20 +1,13 @@
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormHelperText, Slide, Tooltip, Typography } from "@material-ui/core";
-import { TransitionProps } from "@material-ui/core/transitions/transition";
+import { DialogTransition } from "@components/dialog-transition";
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormHelperText, Tooltip, Typography } from "@material-ui/core";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
+import { delay } from "@utils/time";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";
+import PoweredByStripeBadge from "./assets/powered-by-stripe.inline.svg";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
 import * as classes from "./payment-modal.module.scss";
-import PoweredByStripeBadge from "./assets/powered-by-stripe.inline.svg";
-import { delay } from "@utils/time";
-
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
 
 type IntentResponse = {
     clientSecret: string,
@@ -109,7 +102,7 @@ function PaymentMethodModalContent(props: Props) {
 
     return <Dialog 
         open
-        TransitionComponent={Transition}
+        TransitionComponent={DialogTransition}
     >
         <DialogTitle>Enter payment details</DialogTitle>
         <DialogContent className={classes.root}>

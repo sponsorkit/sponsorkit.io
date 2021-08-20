@@ -4,17 +4,20 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
+namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
 {
+    public record Response(
+        string ActivationUrl);
+    
     public class Post : BaseAsyncEndpoint
         .WithoutRequest
-        .WithoutResponse
+        .WithResponse<Response>
     {
         private readonly DataContext dataContext;
         private readonly AccountService accountService;
@@ -31,12 +34,12 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
             this.aesEncryptionHelper = aesEncryptionHelper;
         }
         
-        [HttpPost("/signup/as-beneficiary")]
-        public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
+        [HttpPost("/account/stripe-connect/setup")]
+        public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();
             
-            await dataContext.ExecuteInTransactionAsync(
+            return await dataContext.ExecuteInTransactionAsync(
                 async () =>
                 {
                     var user = await dataContext.Users.SingleAsync(
@@ -47,21 +50,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
                     user.StripeConnectId = account.Id;
                     await dataContext.SaveChangesAsync(cancellationToken);
 
-                    await SendMailAsync(
-                        account.Email,
-                        "Fill in your information with Stripe",
-                        $"https://sponsorkit.io/signup/activate-stripe-account/{user.Id}");
+                    return new Response(
+                        $"https://api.sponsorkit.io/account/stripe-connect/activate/{user.Id}");
                 });
-
-            return new OkResult();
-        }
-
-        private async Task SendMailAsync(
-            string emailAddress, 
-            string title, 
-            string content)
-        {
-            throw new NotImplementedException();
         }
 
         private async Task<Stripe.Account> CreateStripeAccountForUserAsync(

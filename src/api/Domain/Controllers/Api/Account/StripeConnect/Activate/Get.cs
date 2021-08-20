@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Api.Signup.ActivateStripeAccountUserId
+namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
 {
     public record Request(
         [FromRoute] Guid UserId);
@@ -30,7 +30,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.ActivateStripeAccountUserId
         }
 
         [AllowAnonymous]
-        [HttpGet("/signup/activate-stripe-account/{userId}")]
+        [HttpGet("/account/stripe-connect/activate/{userId}")]
         public override async Task<ActionResult> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             var accountId = await dataContext.Users
@@ -43,7 +43,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.ActivateStripeAccountUserId
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = $"https://sponsorkit.io/signup/activate-stripe-account/{request.UserId}",
+                    RefreshUrl = $"https://api.sponsorkit.io/account/stripe-connect/activate/{request.UserId}",
                     ReturnUrl = $"https://sponsorkit.io/signup/completed",
                     Type = "account_onboarding"
                 }, 

@@ -1,24 +1,18 @@
+import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import CircularProgressBar from "@components/circular-progress-bar";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Slide, TextField, Typography } from "@material-ui/core";
-import { TransitionProps } from "@material-ui/core/transitions";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, Container, DialogContent, DialogTitle, FormControlLabel, TextField, Typography } from "@material-ui/core";
 import { DoneSharp } from "@material-ui/icons";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
 
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
-
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+    const [isFillingInBankDetails, setIsFillingInBankDetails] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
     const account = useApi(
@@ -33,6 +27,10 @@ function DashboardPage() {
             isOpen={isValidatingEmail}
             onValidated={() => setLastProgressChange(new Date())}
             onClose={() => setIsValidatingEmail(false)} />
+        <BankDetailsDialog
+            isOpen={isFillingInBankDetails}
+            onValidated={() => setLastProgressChange(new Date())}
+            onClose={() => setIsFillingInBankDetails(false)} />
         <Container
             maxWidth="lg"
             className={classes.root}
@@ -67,7 +65,7 @@ function DashboardPage() {
                             label: "Fill in your bank account details",
                             description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
                             validate: () => !!account.beneficiary,
-                            onClick: () => { }
+                            onClick: () => setIsFillingInBankDetails(true)
                         }
                     ]}
                 />
@@ -83,61 +81,24 @@ function EmailValidationDialog(props: {
     onValidated: () => void
 }) {
     const [email, setEmail] = useState(() => props.email);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
-
-    useEffect(
-        () => {
-            let timerId: any;
-
-            async function effect() {
-                if(isWaitingForVerification) {
-                    const account = await createApi().accountGet();
-                    if(account.isEmailVerified) {
-                        setIsLoading(false);
-                        setIsWaitingForVerification(false);
-
-                        props.onValidated();
-                        props.onClose();
-                        return;
-                    }
-                }
-
-                timerId = setTimeout(effect, 1000);
-            }
-
-            timerId = setTimeout(effect, 1000);
-
-            return () => {
-                clearTimeout(timerId);
-            }
-        },
-        [isWaitingForVerification]);
 
     const onVerifyClicked = async () => {
-        setIsLoading(true);
-
-        try {
-            await createApi().accountEmailSendVerificationEmailPost({
-                body: {
-                    email
-                }
-            });
-            setIsWaitingForVerification(true);
-        } finally {
-            setIsLoading(false);
-        }
+        await createApi().accountEmailSendVerificationEmailPost({
+            body: {
+                email
+            }
+        });
     };
 
-    const isVerificationDisabled = isLoading || isWaitingForVerification;
-
-    return <Dialog
-        open={props.isOpen}
-        onClose={() => {
-            props.onClose();
-        }}
-        TransitionComponent={Transition}
-        className={classes.emailValidationDialog}
+    return <AsynchronousProgressDialog
+        isOpen={props.isOpen}
+        onClose={props.onClose}
+        buttonText="Verify"
+        isValidatedAccessor={account => account.isEmailVerified}
+        requestSentText="E-mail sent! Waiting for verification..."
+        requestSendingText="Sending e-mail verification..."
+        onValidating={onVerifyClicked}
+        onValidated={props.onValidated}
     >
         <DialogTitle>Is this your e-mail?</DialogTitle>
         <DialogContent className={classes.verifyEmailDialog}>
@@ -152,35 +113,44 @@ function EmailValidationDialog(props: {
                 value={email}
                 onChange={e => setEmail(e.target.value)} />
         </DialogContent>
-        <DialogActions>
-            {(isLoading || isWaitingForVerification) &&
-                <Box display="flex" flexDirection="row" alignItems="center">
-                    <CircularProgress 
-                        size={25}
-                        variant="indeterminate" />
-                    <Typography className={classes.loadingText}>
-                        {isWaitingForVerification ? 
-                            "E-mail sent! Waiting for verification..." : 
-                            "Sending e-mail verification..."}
-                    </Typography>
-                </Box>}
-            <Box className={classes.spacer} />
-            <Button
-                disabled={isLoading}
-                onClick={props.onClose}
-                color="secondary"
-            >
-                Cancel
-            </Button>
-            <Button
-                disabled={isVerificationDisabled}
-                onClick={onVerifyClicked}
-                variant="contained"
-            >
-                Verify
-            </Button>
-        </DialogActions>
-    </Dialog>
+    </AsynchronousProgressDialog>
+}
+
+function BankDetailsDialog(props: {
+    isOpen: boolean,
+    onClose: () => void,
+    onValidated: () => void
+}) {
+    const onFillInClicked = async () => {
+        const response = await createApi().accountStripeConnectSetupPost();
+        
+        const popup = window.open(response.activationUrl);
+        if(isPopupBlocked(popup)) {
+            alert("It looks like your browser is blocking the Stripe activation popup. Unblock it, and try again.");
+            throw new Error("Popup blocked.");
+        }
+    };
+
+    return <AsynchronousProgressDialog
+        isOpen={props.isOpen}
+        onClose={props.onClose}
+        buttonText="Begin"
+        isValidatedAccessor={account => !!account.beneficiary}
+        requestSentText="Stripe popup window opened! Waiting for profile completion..."
+        requestSendingText="Fetching Stripe activation link..."
+        onValidating={onFillInClicked}
+        onValidated={props.onValidated}
+    >
+        <DialogTitle>We'll send you over to Stripe</DialogTitle>
+        <DialogContent className={classes.verifyEmailDialog}>
+            <Typography>
+                A new window will pop up, which will prompt you to fill in your information through them.
+            </Typography>
+            <Typography fontWeight="bold">
+                Make sure your browser isn't blocking the popup.
+            </Typography>
+        </DialogContent>
+    </AsynchronousProgressDialog>
 }
 
 type CheckpointProps = {

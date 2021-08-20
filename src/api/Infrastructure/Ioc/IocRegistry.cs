@@ -15,13 +15,13 @@ using Microsoft.Extensions.Options;
 using Octokit;
 using Octokit.Internal;
 using Serilog;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 
