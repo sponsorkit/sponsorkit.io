@@ -6,6 +6,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
 import { isPopupBlocked } from "@utils/popup";
 import React, { useState } from "react";
+import { SponsorkitDomainControllersApiAccountResponse } from "src/api/openapi/src";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
@@ -75,6 +76,13 @@ function DashboardPage() {
     </AppBarTemplate>;
 }
 
+function createAccountValidatior(predicate: (account: SponsorkitDomainControllersApiAccountResponse) => boolean) {
+    return (async () => {
+        const account = await createApi().accountGet();
+        return predicate(account);
+    });
+}
+
 function EmailValidationDialog(props: {
     email: string,
     isOpen: boolean,
@@ -95,11 +103,11 @@ function EmailValidationDialog(props: {
         isOpen={props.isOpen}
         onClose={props.onClose}
         buttonText="Verify"
-        isValidatedAccessor={account => account.isEmailVerified}
+        isDoneAccessor={createAccountValidatior(account => account.isEmailVerified)}
         requestSentText="E-mail sent! Waiting for verification..."
         requestSendingText="Sending e-mail verification..."
-        onValidating={onVerifyClicked}
-        onValidated={props.onValidated}
+        onRequestSending={onVerifyClicked}
+        onDone={props.onValidated}
     >
         <DialogTitle>Is this your e-mail?</DialogTitle>
         <DialogContent className={classes.verifyEmailDialog}>
@@ -136,11 +144,11 @@ function BankDetailsDialog(props: {
         isOpen={props.isOpen}
         onClose={props.onClose}
         buttonText="Begin"
-        isValidatedAccessor={account => !!account.beneficiary}
+        isDoneAccessor={createAccountValidatior(account => !!account.beneficiary)}
         requestSentText="Window opened! Waiting for profile completion..."
         requestSendingText="Fetching Stripe activation link..."
-        onValidating={onFillInClicked}
-        onValidated={props.onValidated}
+        onRequestSending={onFillInClicked}
+        onDone={props.onValidated}
     >
         <DialogTitle>We'll send you over to Stripe</DialogTitle>
         <DialogContent className={classes.verifyEmailDialog}>

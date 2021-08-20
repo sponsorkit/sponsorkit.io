@@ -20,11 +20,11 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
         string RepositoryName,
         int IssueNumber);
     
-    public record Request(
+    public record PostRequest(
         GitHubIssueRequest Issue,
         int AmountInHundreds);
     
-    public record Response(
+    public record PostResponse(
         string PaymentIntentClientSecret,
         string? ExistingPaymentMethodId);
 
@@ -35,28 +35,29 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
         public const string GitHubIssueNumber = "GitHubIssueNumber";
         public const string AmountInHundreds = "AmountInHundreds";
         public const string UserId = "UserId";
+        public const string FeeInHundreds = "FeeInHundreds";
     }
     
     public class Post : BaseAsyncEndpoint
-        .WithRequest<Request>
-        .WithResponse<Response>
+        .WithRequest<PostRequest>
+        .WithResponse<PostResponse>
     {
         private readonly DataContext dataContext;
-        private readonly PaymentIntentService paymentIntentService;
+        private readonly SetupIntentService setupIntentService;
         private readonly IMediator mediator;
 
         public Post(
             DataContext dataContext,
-            PaymentIntentService paymentIntentService,
+            SetupIntentService setupIntentService,
             IMediator mediator)
         {
             this.dataContext = dataContext;
-            this.paymentIntentService = paymentIntentService;
+            this.setupIntentService = setupIntentService;
             this.mediator = mediator;
         }
         
         [HttpPost("/bounties/payment-intent")]
-        public override async Task<ActionResult<Response>> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = default)
+        public override async Task<ActionResult<PostResponse>> HandleAsync([FromBody] PostRequest request, CancellationToken cancellationToken = default)
         {
             var userId = User.GetRequiredId();
             
@@ -80,20 +81,19 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
                 cancellationToken);
 
             var feeInHundreds = FeeCalculator.GetSponsorkitFeeInHundreds(request.AmountInHundreds);
-            var amountToChargeInHundreds = request.AmountInHundreds + feeInHundreds;
             
-            var intent = await paymentIntentService.CreateAsync(
-                new PaymentIntentCreateOptions()
+            var intent = await setupIntentService.CreateAsync(
+                new SetupIntentCreateOptions()
                 {
                     Confirm = false,
                     Customer = user.StripeCustomerId,
                     PaymentMethod = paymentMethod?.Id,
-                    Amount = amountToChargeInHundreds,
-                    Currency = "usd",
+                    Usage = "off_session",
                     Metadata = new Dictionary<string, string>()
                     {
-                        { UniversalMetadataKeys.Type, "BountyPaymentIntent" },
+                        { UniversalMetadataKeys.Type, UniversalMetadataTypes.BountySetupIntent },
                         { MetadataKeys.AmountInHundreds, request.AmountInHundreds.ToString(CultureInfo.InvariantCulture) },
+                        { MetadataKeys.FeeInHundreds, feeInHundreds.ToString(CultureInfo.InvariantCulture) },
                         { MetadataKeys.GitHubIssueNumber, request.Issue.IssueNumber.ToString(CultureInfo.InvariantCulture) },
                         { MetadataKeys.GitHubIssueOwnerName, request.Issue.OwnerName },
                         { MetadataKeys.GitHubIssueRepositoryName, request.Issue.RepositoryName },
@@ -102,7 +102,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
                 },
                 cancellationToken: cancellationToken);
 
-            return new Response(
+            return new PostResponse(
                 intent.ClientSecret,
                 paymentMethod?.Id);
         }

@@ -18,12 +18,12 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
     /// <summary>
     /// Posts a bounty to the database once the 
     /// </summary>
-    public class PaymentIntentSucceededEventHandler : WebhookEventHandler<PaymentIntent>
+    public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
     {
         private readonly DataContext dataContext;
         private readonly IMediator mediator;
 
-        public PaymentIntentSucceededEventHandler(
+        public SetupIntentSucceededEventHandler(
             DataContext dataContext,
             IMediator mediator)
         {
@@ -31,10 +31,10 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             this.mediator = mediator;
         }
 
-        protected override async Task HandleAsync(string eventId, PaymentIntent data, CancellationToken cancellationToken)
+        protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
         {
             var type = data.Metadata[UniversalMetadataKeys.Type];
-            if (type != "BountyPaymentIntent")
+            if (type != UniversalMetadataTypes.BountySetupIntent)
                 throw new InvalidOperationException($"Invalid payment intent type: {type}");
 
             var amountInHundreds = int.Parse(data.Metadata[MetadataKeys.AmountInHundreds], CultureInfo.InvariantCulture);
@@ -72,7 +72,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
 
         private async Task AddPaymentForBountyAsync(
             string eventId,
-            PaymentIntent paymentIntent, 
+            SetupIntent paymentIntent, 
             Bounty bounty, 
             int amountInHundreds, 
             CancellationToken cancellationToken)
@@ -83,6 +83,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                 .WithStripeId(paymentIntent.Id)
                 .WithStripeEventId(eventId)
                 .Build();
+            
             await dataContext.Payments.AddAsync(
                 payment,
                 cancellationToken);
@@ -160,7 +161,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
 
         public override bool CanHandle(string type)
         {
-            return type == Events.PaymentIntentSucceeded;
+            return type == Events.SetupIntentSucceeded;
         }
     }
 }

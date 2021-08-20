@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
@@ -51,7 +52,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                     await dataContext.SaveChangesAsync(cancellationToken);
 
                     return new Response(
-                        $"https://api.sponsorkit.io/account/stripe-connect/activate/{user.Id}");
+                        LinkHelper.GetApiUrl($"/account/stripe-connect/activate/{user.Id}"));
                 });
         }
 

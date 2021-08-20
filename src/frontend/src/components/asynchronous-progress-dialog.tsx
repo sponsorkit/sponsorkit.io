@@ -1,8 +1,6 @@
-import { createApi } from "@hooks/clients";
 import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@material-ui/core";
 import { Box } from "@material-ui/system";
 import { useEffect, useState } from "react";
-import { SponsorkitDomainControllersApiAccountResponse } from "src/api/openapi/src";
 import * as classes from "./asynchronous-progress-dialog.module.scss";
 import { DialogTransition } from "./dialog-transition";
 
@@ -13,9 +11,10 @@ export function AsynchronousProgressDialog(props: {
     buttonText: string,
     children: React.ReactNode,
     onClose: () => void,
-    onValidated: () => void,
-    isValidatedAccessor: (account: SponsorkitDomainControllersApiAccountResponse) => boolean,
-    onValidating: () => Promise<boolean|void>|boolean|void
+    onDone?: () => Promise<void>|void,
+    isDoneAccessor: () => Promise<boolean|null>|boolean|null,
+    onRequestSending: () => Promise<boolean|void>|boolean|void,
+    actionChildren?: React.ReactNode
 }) {
     const [isLoading, setIsLoading] = useState(false);
     const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
@@ -26,13 +25,19 @@ export function AsynchronousProgressDialog(props: {
 
             async function effect() {
                 if(isWaitingForVerification) {
-                    const account = await createApi().accountGet();
-                    if(props.isValidatedAccessor(account)) {
+                    const isDone = await Promise.resolve(props.isDoneAccessor());
+                    if(isDone === null)
+                        return setIsWaitingForVerification(false);
+
+                    if(isDone) {
                         setIsLoading(false);
                         setIsWaitingForVerification(false);
 
-                        props.onValidated();
+                        if(props.onDone)
+                            props.onDone();
+                        
                         props.onClose();
+
                         return;
                     }
                 }
@@ -52,7 +57,7 @@ export function AsynchronousProgressDialog(props: {
         setIsLoading(true);
 
         try {
-            const didValidate = await Promise.resolve(props.onValidating());
+            const didValidate = await Promise.resolve(props.onRequestSending());
             if(typeof didValidate === "boolean" && !didValidate)
                 return;
             
@@ -74,7 +79,7 @@ export function AsynchronousProgressDialog(props: {
     >
         {props.children}
         <DialogActions>
-            {(isLoading || isWaitingForVerification) &&
+            {(isLoading || isWaitingForVerification) ?
                 <Box display="flex" flexDirection="row" alignItems="center">
                     <CircularProgress 
                         size={25}
@@ -84,7 +89,8 @@ export function AsynchronousProgressDialog(props: {
                             props.requestSentText : 
                             props.requestSendingText}
                     </Typography>
-                </Box>}
+                </Box> :
+                props.actionChildren}
             <Box className={classes.spacer} />
             <Button
                 disabled={isLoading}

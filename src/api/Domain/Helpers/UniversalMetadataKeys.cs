@@ -4,4 +4,9 @@
     {
         public const string Type = "Type";
     }
+
+    public static class UniversalMetadataTypes
+    {
+        public const string BountySetupIntent = "BountySetupIntent";
+    }
 }

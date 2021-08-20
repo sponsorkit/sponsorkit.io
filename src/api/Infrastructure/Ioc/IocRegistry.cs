@@ -155,7 +155,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddSingleton<SetupIntentService>();
             Services.AddSingleton<PaymentIntentService>();
 
-            Services.AddScoped<IWebhookEventHandler, PaymentIntentSucceededEventHandler>();
+            Services.AddScoped<IWebhookEventHandler, SetupIntentSucceededEventHandler>();
 
             Services.AddSingleton<IStripeClient, StripeClient>(
                 _ => new StripeClient(

@@ -6,6 +6,7 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
 
@@ -43,8 +44,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = $"https://api.sponsorkit.io/account/stripe-connect/activate/{request.UserId}",
-                    ReturnUrl = $"https://sponsorkit.io/signup/completed",
+                    RefreshUrl = LinkHelper.GetApiUrl($"/account/stripe-connect/activate/{request.UserId}"),
+                    ReturnUrl = LinkHelper.GetWebUrl($"/signup/completed"),
                     Type = "account_onboarding"
                 }, 
                 cancellationToken: cancellationToken);

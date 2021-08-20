@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
@@ -90,7 +91,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
                     cancellationToken: default);
             });
 
-            return RedirectPermanent("https://sponsorkit.io/email/verification-success");
+            return RedirectPermanent(
+                LinkHelper.GetWebUrl("/email/verification-success"));
         }
     }
 }

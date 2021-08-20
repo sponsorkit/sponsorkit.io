@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
 using Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
 using Sponsorkit.Infrastructure.AspNet;
@@ -51,7 +52,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail
                     EmailVerificationRole)
             });
 
-            var verificationLink = $"https://api.sponsorkit.io/account/email/verify-email-token/{token}";
+            var verificationLink = LinkHelper.GetApiUrl($"/account/email/verify-email-token/{token}");
             
             await mediator.Send(
                 new SendEmailCommand(

@@ -3,11 +3,9 @@ import { navigate } from 'gatsby';
 import { useEffect, useMemo, useState } from 'react';
 import uri from 'uri-tag';
 import { AppBarTemplate } from '..';
-import { extractIssueLinkDetails } from '../../utils/github-url-extraction';
 import { useOctokit } from "../../hooks/clients";
+import { extractIssueLinkDetails } from '../../utils/github-url-extraction';
 import * as classes from './create.module.scss';
-
-
 
 export default function CreateBountyPage() {
     const [issueLink, setIssueLink] = useState("");
