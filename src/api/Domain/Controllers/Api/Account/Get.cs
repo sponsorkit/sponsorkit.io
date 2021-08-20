@@ -12,7 +12,8 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account
 {
-    public record BeneficiaryResponse();
+    public record BeneficiaryResponse(
+        bool IsAccountComplete);
 
     public record CreditCardResponse(
         string LastFourDigits,
@@ -108,7 +109,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
                 return null;
 
             var account = await accountService.GetAsync(user.StripeConnectId);
-            return account?.DetailsSubmitted != true ? null : new BeneficiaryResponse();
+            if (account == null)
+                throw new Exception("Expected account to be present.");
+            
+            return new BeneficiaryResponse(account.DetailsSubmitted);
         }
     }
 }

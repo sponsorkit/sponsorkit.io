@@ -65,7 +65,7 @@ function DashboardPage() {
                         {
                             label: "Fill in your bank account details",
                             description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
-                            validate: () => !!account.beneficiary,
+                            validate: () => !!account.beneficiary?.isAccountComplete,
                             onClick: () => setIsFillingInBankDetails(true)
                         }
                     ]}
