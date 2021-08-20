@@ -50,7 +50,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.AsBeneficiary
                     await SendMailAsync(
                         account.Email,
                         "Fill in your information with Stripe",
-                        $"Yada yada: https://sponsorkit.io/signup/activate-stripe-account/{user.Id}");
+                        $"https://sponsorkit.io/signup/activate-stripe-account/{user.Id}");
                 });
 
             return new OkResult();
