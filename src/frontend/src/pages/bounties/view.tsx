@@ -199,6 +199,8 @@ function Issue(props: {
     const eventsOrdered = orderBy(events, x => x?.time, "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.repository_url);
+    if(!repo)
+        throw new Error("Expected repo details.");
 
     return <Box 
         className={combineClassNames(classes.issueRoot)}
