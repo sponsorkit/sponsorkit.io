@@ -1,7 +1,7 @@
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
-import { useEffect, useState } from "react";
 import { General } from "@sponsorkit/client";
+import { useEffect, useState } from "react";
 import { getToken } from "./token";
 
 export function useOctokit<T>(
@@ -99,7 +99,7 @@ export async function makeOctokitCall<T>(action: (client: Octokit) => Promise<T>
         const client = createOctokit();
         return await action(client);
     } catch (e) {
-        if ('status' in e && e.status === 404)
+        if (typeof e === "object" && e && 'status' in e && (e as any).status === 404)
             return null;
 
         throw e;
