@@ -80,7 +80,7 @@
     "sass-loader": "^10.2.0",
     "styled-components": "^5.2.3",
     "tslib": "^2.3.0",
-    "typescript": "^4.2.4",
+    "typescript": "^4.4.2",
     "typescript-plugin-css-modules": "^3.2.0",
     "webpack": "^5.39.1"
   },
@@ -96,7 +96,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger:local": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/api/openapi/sponsorkit-client-1.0.0.tgz",
+    "swagger": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/api/openapi/sponsorkit-client-1.0.0.tgz",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
   },

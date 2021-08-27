@@ -4,15 +4,16 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account
 {
-    public record BeneficiaryResponse();
+    public record BeneficiaryResponse(
+        bool IsAccountComplete);
 
     public record CreditCardResponse(
         string LastFourDigits,
@@ -36,17 +37,20 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
         private readonly DataContext dataContext;
         private readonly CustomerService customerService;
         private readonly PaymentMethodService paymentMethodService;
+        private readonly AccountService accountService;
 
         public Get(
             IAesEncryptionHelper encryptionHelper,
             DataContext dataContext,
             CustomerService customerService,
-            PaymentMethodService paymentMethodService)
+            PaymentMethodService paymentMethodService,
+            AccountService accountService)
         {
             this.encryptionHelper = encryptionHelper;
             this.dataContext = dataContext;
             this.customerService = customerService;
             this.paymentMethodService = paymentMethodService;
+            this.accountService = accountService;
         }
         
         [HttpGet("/account")]
@@ -71,7 +75,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
             return Ok(new Response(
                 email,
                 user.EmailVerifiedAtUtc != null,
-                GetBeneficiaryResponse(user),
+                await GetBeneficiaryResponseAsync(user),
                 GetSponsorResponse(paymentMethod)));
         }
 
@@ -99,11 +103,16 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
                 creditCard);
         }
 
-        private static BeneficiaryResponse? GetBeneficiaryResponse(User user)
+        private async Task<BeneficiaryResponse?> GetBeneficiaryResponseAsync(User user)
         {
-            return user.StripeConnectId == null ?
-                null :
-                new BeneficiaryResponse();
+            if (user.StripeConnectId == null)
+                return null;
+
+            var account = await accountService.GetAsync(user.StripeConnectId);
+            if (account == null)
+                throw new Exception("Expected account to be present.");
+            
+            return new BeneficiaryResponse(account.DetailsSubmitted);
         }
     }
 }

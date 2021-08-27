@@ -1,18 +1,10 @@
-import { DialogTitle, Typography, Dialog, DialogContent, DialogActions, Button, Slide } from "@material-ui/core";
-import { TransitionProps } from "@material-ui/core/transitions";
+import { DialogTransition } from "@components/dialog-transition";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@material-ui/core";
 import { GitHub } from "@material-ui/icons";
 import { RouteComponentProps } from "@reach/router";
-import React from "react";
-import {useState} from "react";
+import React, { useState } from "react";
 import LoginDialog from "./login-dialog";
 import * as classes from "./private-route.module.scss";
-
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children?: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
 
 export default function PrivateRoute({ component, location, ...rest }: RouteComponentProps<{
     component: any
@@ -38,7 +30,7 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
     if(!shouldShowLoginDialog) {
         return <Dialog 
             open
-            TransitionComponent={Transition}
+            TransitionComponent={DialogTransition}
         >
             <DialogTitle>Sign in to continue</DialogTitle>
             <DialogContent className={classes.root}>

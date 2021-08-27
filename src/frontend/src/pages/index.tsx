@@ -1,8 +1,9 @@
-import { AppBar, Box, Button, Container, Toolbar, Typography } from "@material-ui/core"
-import * as React from "react"
-import * as classes from "./index.module.scss";
+import { AppBar, Box, Button, Container, Toolbar, Typography } from "@material-ui/core";
+import { combineClassNames } from "@utils/strings";
+import * as React from "react";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import SponsorkitBlueIcon from './assets/Sponsorkit-blue.inline.svg';
+import * as classes from "./index.module.scss";
 
 const IndexPage = () => (
   <>
@@ -35,7 +36,8 @@ function SponsorkitLogo() {
 
 export function AppBarTemplate(props: {
   logoVariant: "sponsorkit"|"bountyhunt",
-  children: React.ReactNode
+  children: React.ReactNode,
+  className?: string
 }) {
   return <>
     <AppBar color="default" className={classes.appBar}>
@@ -46,7 +48,7 @@ export function AppBarTemplate(props: {
       </Toolbar>
     </AppBar>
     <Box flexGrow={1} />
-    <Container className={classes.contentRoot}>
+    <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
       {props.children}
     </Container>
     <Box flexGrow={2} />

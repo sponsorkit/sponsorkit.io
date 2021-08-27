@@ -1,146 +1,183 @@
-.root-wrapper {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+.root {
     gap: 30px;
+    display: flex;
+    flex-direction: column;
 
-    .issue-box {
-        display: flex;
-        flex-direction: column;
+    .issue-link-input {
+        width: 100%;
 
-        .issue {
-            z-index: 11;
-            max-width: 846px;
+        .card-content {
             width: 100%;
 
-            .repo-title, 
-            .issue-title, 
-            .markdown {
-                cursor: text;
-                user-select: text;
+            .text-field {
+                width: 100%;
             }
 
-            .repo-title {
-                text-transform: uppercase;
-                font-size: 14px;
-                color: #0045ff;
+            .body {
+                margin-bottom: 30px;
             }
+        }
+    }
 
-            .issue-title {
-                .issue-number {
-                    opacity: 0.3;
-                    font-weight: 100;
-                    padding-left: 5px;
+    .issue-root {
+        display: flex;
+        visibility: hidden;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 30px;
+        width: 100%;
+        transition: opacity 0.3s ease-in-out;
+
+        &.loading {
+            opacity: 0;
+        }
+
+        &.loaded {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .issue-box {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            max-width: 850px;
+
+            .issue {
+                z-index: 11;
+                width: 100%;
+
+                .repo-title,
+                .issue-title,
+                .markdown {
+                    cursor: text;
+                    user-select: text;
+                }
+
+                .repo-title {
+                    text-transform: uppercase;
+                    font-size: 14px;
+                    color: #0045ff;
+                }
+
+                .issue-title {
+                    .issue-number {
+                        opacity: 0.3;
+                        font-weight: 100;
+                        padding-left: 5px;
+                    }
+                }
+
+                .markdown {
+                    font-size: 14px;
+                    line-height: 21px;
+
+                    p {
+                        margin-bottom: 16px;
+                        margin-block-end: 16px;
+                    }
+
+                    li {
+                        list-style-type: none;
+
+                        input[type="checkbox"] {
+                            display: inline-block;
+                            margin-bottom: 3.5px;
+                            position: relative;
+                            top: 1px;
+                        }
+                    }
                 }
             }
 
-            .markdown {
-                font-size: 14px;
-                line-height: 21px;
+            .bounty-activity {
+                position: relative;
+                z-index: 10;
+                top: -30px;
+                padding-top: 40px;
+                margin-bottom: -20px;
+                background-color: #fbfbfb;
 
-                p {
-                    margin-bottom: 16px;
-                    margin-block-end: 16px;
+                .date-mark {
+                    padding-top: 7px;
+
+                    .date,
+                    .time {
+                        display: block;
+                        font-size: 12px;
+                        line-height: 16px;
+                    }
+
+                    .time {
+                        opacity: 0.75;
+                    }
                 }
 
-                li {
-                    list-style-type: none;
+                .timeline-content {
+                    justify-content: center;
+                    display: flex;
+                    flex-direction: column;
+                    margin-bottom: 12px;
 
-                    input[type=checkbox] {
-                        display: inline-block;
-                        margin-bottom: 3.5px;
-                        position: relative;
-                        top: 1px;
+                    .title,
+                    .subtext {
+                        justify-self: center;
+                    }
+
+                    .subtext {
+                        font-size: 12px;
                     }
                 }
             }
         }
 
-        .bounty-activity {
-            position: relative;
-            z-index: 10;
-            top: -30px;
-            padding-top: 40px;
-            margin-bottom: -20px;
-            background-color: #fbfbfb;
+        .bounties {
+            width: 340px;
+            min-width: 340px;
+            align-self: flex-start;
 
-            .date-mark {
-                padding-top: 7px;
-
-                .date, .time {
-                    display: block;
-                    font-size: 12px;
-                    line-height: 16px;
-                }
-
-                .time {
-                    opacity: 0.75;
-                }
-            }
-
-            .timeline-content {
-                justify-content: center;
+            .bounty-amount {
+                background-color: #0045ff;
+                color: white;
                 display: flex;
-                flex-direction: column;
-                margin-bottom: 12px;
+                flex-direction: row;
+                justify-content: space-between;
 
-                .title, .subtext {
-                    justify-self: center;
+                .label-container {
+                    .amount-raised {
+                        font-weight: 100;
+                    }
+
+                    .amount-of-sponsors {
+                        opacity: 0.75;
+                    }
                 }
 
-                .subtext {
-                    font-size: 12px;
-                }
-            }
-        }
-    }
-
-    .bounties {
-        width: 340px;
-        min-width: 340px;
-        align-self: flex-start;
-
-        .bounty-amount {
-            background-color: #0045ff;
-            color: white;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-
-            .label-container {
-                .amount-raised {
-                    font-weight: 100;
+                .button-container {
+                    align-self: flex-end;
                 }
 
-                .amount-of-sponsors {
-                    opacity: 0.75;
+                .claim-button {
+                    color: rgba(255, 255, 255, 1);
+                    border-color: rgba(255, 255, 255, 0.5);
+                    background-color: rgba(255, 255, 255, 0.1);
+
+                    &.disabled {
+                        color: rgba(255, 255, 255, 0.5);
+                        border-color: rgba(255, 255, 255, 0.1);
+                    }
                 }
             }
 
-            .button-container {
-                align-self: flex-end;
+            .add-button {
+                margin-top: 10px;
             }
 
-            .claim-button {
-                color: rgba(255,255,255,1);
-                border-color: rgba(255,255,255,0.5);
-                background-color: rgba(255,255,255,0.1);
-
-                &.disabled {
-                    color: rgba(255,255,255,0.5);
-                    border-color: rgba(255,255,255,0.1);
-                }
+            .title {
+                text-align: center;
+                margin-bottom: 10px;
             }
-        }
-
-        .add-button {
-            margin-top: 10px;
-        }
-
-        .title {
-            text-align: center;
-            margin-bottom: 10px;
         }
     }
 }

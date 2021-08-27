@@ -16,13 +16,18 @@
         position: absolute;
         width: 100%;
         z-index: 10;
-        opacity: 0;
+        opacity: 0.25;
         transition: opacity 250ms ease-in-out 250ms;
         display: flex;
         flex-direction: column;
 
         &.ready {
             opacity: 1;
+        }
+
+        &.initializing {
+            opacity: 0;
+            z-index: -999;
         }
     }
 
@@ -40,29 +45,30 @@
         .progress {
             opacity: 1;
             transition: opacity 250ms ease-in-out;
+            display: none;
 
             &.ready {
                 opacity: 0;
+            }
+
+            &.initializing {
+                display: unset;
             }
         }
     }
 
 }
 
-.dialog-actions {
-    justify-content: space-between;
+.spacer {
+    flex-grow: 1;
+}
 
-    .spacer {
-        flex-grow: 1;
-    }
+.stripe-badge {
+    line-height: 0;
+    place-self: center;
 
-    .stripe-badge {
-        line-height: 0;
-        place-self: center;
-
-        .svg {
-            height: 25px;
-            width: auto;
-        }
+    .svg {
+        height: 25px;
+        width: auto;
     }
 }

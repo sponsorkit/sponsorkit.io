@@ -10,11 +10,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options.GitHub;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 using GitHubUser = Octokit.User;
@@ -65,9 +65,6 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
         [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
-            if (request == null)
-                return new BadRequestObjectResult("Request data was incorrect.");
-
             var gitHubCode = request.GitHubAuthenticationCode;
 
             var gitHubAccessToken = await ExchangeGitHubAuthenticationCodeForAccessTokenAsync(gitHubCode);

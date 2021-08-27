@@ -1,0 +1,29 @@
+.root {
+    position: relative;
+
+    .absolute {
+        position: absolute;
+
+        &.new-state {
+            opacity: 1;
+        }
+
+        &.old-state {
+            opacity: 1;
+        }
+
+        &.loading {
+            opacity: 0;
+        }
+
+        &.loaded {
+            &.not-found {
+                opacity: 0;
+            }
+
+            &.found {
+                opacity: 1;
+            }
+        }
+    }
+}

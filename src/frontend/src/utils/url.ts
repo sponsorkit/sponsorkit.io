@@ -1,4 +1,4 @@
-export function getUrlParameter(url: string|Location, key: string): string|null|undefined {
+export function getUrlParameter(url: string|Location, key: string): string|undefined {
     if(typeof url === "object")
         return getUrlParameter(url.href, key);
 
@@ -6,7 +6,7 @@ export function getUrlParameter(url: string|Location, key: string): string|null|
     if(!uri)
         return;
 
-    return uri.searchParams.get(key);
+    return uri.searchParams.get(key) || undefined;
 }
 
 export function tryCreateUrl(url: string) {
