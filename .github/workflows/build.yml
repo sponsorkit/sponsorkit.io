@@ -48,7 +48,7 @@ jobs:
       run: dotnet publish --no-restore -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Run deploy step in AWS CodePipeline
-      uses: zulhfreelancer/aws-codepipeline-action@492467f
+      uses: zulhfreelancer/aws-codepipeline-action@492467f78d67ac2301e55e208326a8e9fbd23284
       with:
         aws-region: eu-north-1
         aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
