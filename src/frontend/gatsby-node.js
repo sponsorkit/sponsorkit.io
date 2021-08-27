@@ -6,11 +6,11 @@
 const webpackConfig = require("./webpack.config");
 
 exports.onCreatePage = async ({ page, actions }) => {
-  const { createPage } = actions;
+  const { createPage, deletePage } = actions;
 
-  if (page.path.match(/^\/dashboard/)) {
-    page.matchPath = "/dashboard/*"
-    createPage(page)
+  if (page.path.match(/\.stories$/)) {
+    console.warn("removing stories page", page);
+    deletePage(page);
   }
 }
 

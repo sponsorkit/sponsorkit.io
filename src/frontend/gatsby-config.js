@@ -9,6 +9,7 @@ module.exports = {
     FAST_DEV: true
   },
   plugins: [
+    `gatsby-plugin-remove-trailing-slashes`,
     `gatsby-plugin-sass`,
     'gatsby-plugin-top-layout',
     `gatsby-plugin-styled-components`,

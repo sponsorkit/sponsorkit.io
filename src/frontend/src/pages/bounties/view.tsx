@@ -42,7 +42,7 @@ export default function IssueByIdPage(props: {
                 setIssue(e.issue);
                 await onRefreshBounties();
 
-                window.history.pushState({}, '', uri`/bounties/view/?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
+                window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
             }} />
         <Transition transitionKey={issue?.number}>
             {issue && <Issue
