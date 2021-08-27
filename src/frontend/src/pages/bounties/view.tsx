@@ -151,7 +151,7 @@ function IssueInputField(props: {
                 helperText={errorMessage}
                 autoFocus
                 disabled={isLoading}
-                placeholder="Paste the full URL of the GitHub issue you want to put a bounty on."
+                placeholder="Paste the full URL of the GitHub issue you want to put a bounty on"
                 value={issueLink}
                 onChange={e => setIssueLink(e.target.value)} />
         </CardContent>
