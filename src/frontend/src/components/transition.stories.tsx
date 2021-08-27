@@ -36,25 +36,20 @@ const Template: Story<Props> = (args) => {
             border: "1px solid red"
         }}>
             <Transition
-                {...args}
-                debugMode
-                state={state}
-                render={args => {
-                    return <div style={{
-                        border: '1px solid black'
-                    }}>
-                        <p>
-                            State:&nbsp;
-                            {args.state === null && "null"}
-                            {args.state === undefined && "undefined"}
-                            {args.state ? args.state : ""}
-                        </p>
-                        <p>
-                            Class: {args.className}
-                        </p>
-                    </div>
-                }}
-            />
+                transitionKey={state}
+                timeout={1000}
+            >
+                <div style={{
+                    border: '1px solid black'
+                }}>
+                    <p>
+                        State:&nbsp;
+                        {state === null && "null"}
+                        {state === undefined && "undefined"}
+                        {state ? state : ""}
+                    </p>
+                </div>
+            </Transition>
         </div>
     </div>
 };

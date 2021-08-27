@@ -1,29 +1,26 @@
 .root {
     position: relative;
 
-    .absolute {
+    > * {
         position: absolute;
-
-        &.new-state {
-            opacity: 1;
-        }
-
-        &.old-state {
-            opacity: 1;
-        }
-
-        &.loading {
-            opacity: 0;
-        }
-
-        &.loaded {
-            &.not-found {
-                opacity: 0;
-            }
-
-            &.found {
-                opacity: 1;
-            }
-        }
     }
+}
+
+.initial {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.fading-in {
+    opacity: 1;
+    visibility: visible;
+
+    transition: opacity 1s;
+}
+
+.fading-out {
+    opacity: 0;
+    visibility: visible;
+
+    transition: opacity 1s;
 }

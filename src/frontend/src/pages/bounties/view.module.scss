@@ -21,22 +21,11 @@
 
     .issue-root {
         display: flex;
-        visibility: hidden;
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: space-between;
         gap: 30px;
         width: 100%;
-        transition: opacity 0.3s ease-in-out;
-
-        &.loading {
-            opacity: 0;
-        }
-
-        &.loaded {
-            visibility: visible;
-            opacity: 1;
-        }
 
         .issue-box {
             display: flex;

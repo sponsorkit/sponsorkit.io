@@ -1,3 +1,4 @@
+import { Transition } from "@components/transition";
 import { useAnimatedCount } from "@hooks/count-up";
 import { Box, Button, Card, CardContent, TextField, Tooltip, Typography } from "@material-ui/core";
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
@@ -6,10 +7,10 @@ import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { combineClassNames } from "@utils/strings";
-import { delay } from "@utils/time";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
+import uri from "uri-tag";
 import { AppBarTemplate } from '..';
 import { AmountPicker } from '../../components/financial/amount-picker';
 import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
@@ -37,14 +38,18 @@ export default function IssueByIdPage(props: {
     return <AppBarTemplate logoVariant="bountyhunt" className={classes.root}>
         <IssueInputField
             location={props.location}
-            onChange={async issue => {
-                setIssue(issue);
+            onChange={async e => {
+                setIssue(e.issue);
                 await onRefreshBounties();
+
+                window.history.pushState({}, '', uri`/bounties/view/?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
             }} />
-        <Issue
-            issue={issue}
-            bounties={bounties}
-            onBountyCreated={onRefreshBounties} />
+        <Transition transitionKey={issue?.number}>
+            {issue && <Issue
+                issue={issue}
+                bounties={bounties}
+                onBountyCreated={onRefreshBounties} />}
+        </Transition>
     </AppBarTemplate>
 }
 
@@ -57,7 +62,14 @@ type Event = {
 
 function IssueInputField(props: {
     location: Location,
-    onChange: (issue: OctokitIssueResponse|undefined|null) => Promise<any>
+    onChange: (e: {
+        issue: OctokitIssueResponse,
+        details: {
+            number: number,
+            owner: string,
+            repo: string
+        }
+    }) => Promise<any>
 }) {
     const issueNumber = getUrlParameter(props.location, "number");
     const owner = getUrlParameter(props.location, "owner");
@@ -103,10 +115,6 @@ function IssueInputField(props: {
                 try {
                     setIsLoading(true);
 
-                    await props.onChange(undefined);
-
-                    await delay(3000);
-
                     const issueResponse = await makeOctokitCall(async client =>
                         await client.issues.get({
                             issue_number: issueDetails.number,
@@ -116,8 +124,11 @@ function IssueInputField(props: {
                     const issue = issueResponse?.data || null;
                     setIssue(issue);
 
-                    if(!getErrorMessage())
-                        await props.onChange(issue);
+                    if(issue)
+                        await props.onChange({
+                            issue, 
+                            details: issueDetails
+                        });
                 } finally {
                     setIsLoading(false);
                 }
@@ -148,7 +159,7 @@ function IssueInputField(props: {
 }
 
 function Issue(props: {
-    issue?: OctokitIssueResponse | null | undefined,
+    issue: OctokitIssueResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -187,32 +198,23 @@ function Issue(props: {
             .filter(x => !!x);
     const eventsOrdered = orderBy(events, x => x?.time, "desc");
 
-    const repo = props.issue && extractReposApiLinkDetails(props.issue.repository_url);
+    const repo = extractReposApiLinkDetails(props.issue.repository_url);
 
     return <Box 
-        className={combineClassNames(
-            classes.issueRoot,
-            props.issue === undefined || props.bounties === undefined ? classes.loading : null,
-            props.issue && props.bounties !== undefined ? classes.loaded : null)}
+        className={combineClassNames(classes.issueRoot)}
     >
         <Box className={classes.issueBox}>
             <Card className={classes.issue}>
                 <CardContent>
                     <Typography color="textSecondary" gutterBottom className={classes.repoTitle}>
-                        {repo ?
-                            <>{repo.owner}/{repo.name}</> :
-                            "..."}
+                        {repo.owner}/{repo.name}
                     </Typography>
                     <Typography variant="h3" component="h1" className={classes.issueTitle}>
-                        {props.issue ?
-                            <>{props.issue.title} <span className={classes.issueNumber}>#{props.issue.number}</span></> :
-                            "..."}
+                        {props.issue.title} <span className={classes.issueNumber}>#{props.issue.number}</span>
                     </Typography>
                     <Markdown
                         className={classes.markdown}
-                        markdown={props.issue ?
-                            props.issue.body :
-                            ""} />
+                        markdown={props.issue.body} />
                 </CardContent>
             </Card>
             <Card className={classes.bountyActivity}>
@@ -256,7 +258,7 @@ function Issue(props: {
 }
 
 function Bounties(props: {
-    issue?: OctokitIssueResponse | null,
+    issue: OctokitIssueResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -274,14 +276,14 @@ function Bounties(props: {
             if (totalBountyReward.current === 0)
                 return "There is no bounty to claim";
 
-            if (props.issue?.state === "closed")
+            if (props.issue.state === "closed")
                 return "The reward can't be claimed when the issue isn't closed";
 
             return "";
         },
-        [props.issue?.state, totalBountyReward]);
+        [props.issue.state, totalBountyReward]);
 
-    const issueDetails = props.issue && extractIssueLinkDetails(props.issue.html_url);
+    const issueDetails = extractIssueLinkDetails(props.issue.html_url);
 
     return <Card className={classes.bounties}>
         <>
