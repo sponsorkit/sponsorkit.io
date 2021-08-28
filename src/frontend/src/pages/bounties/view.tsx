@@ -9,7 +9,7 @@ import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, Spon
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import uri from "uri-tag";
 import { AppBarTemplate } from '..';
 import { AmountPicker } from '../../components/financial/amount-picker';
@@ -27,11 +27,10 @@ export default function IssueByIdPage(props: {
     const [issue, setIssue] = useState<OctokitIssueResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
 
-    const onRefreshBounties = async () => {
-        if (!issue)
-            return;
+    const loadBountiesFromIssue = async (forIssue: OctokitIssueResponse) => {
+        setBounties(null);
 
-        const response = await createApi().bountiesGitHubIssueIdGet(issue.id);
+        const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
         setBounties(response?.bounties || null);
     }
 
@@ -39,16 +38,18 @@ export default function IssueByIdPage(props: {
         <IssueInputField
             location={props.location}
             onChange={async e => {
+                console.log("issue-input-field-changed", e);
+                
                 setIssue(e.issue);
-                await onRefreshBounties();
-
                 window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
+
+                await loadBountiesFromIssue(e.issue);
             }} />
         <Transition transitionKey={issue?.number}>
             {issue && <Issue
                 issue={issue}
                 bounties={bounties}
-                onBountyCreated={onRefreshBounties} />}
+                onBountyCreated={async () => await loadBountiesFromIssue(issue)} />}
         </Transition>
     </AppBarTemplate>
 }
@@ -104,9 +105,18 @@ function IssueInputField(props: {
             null,
         [issueLink]);
 
-    useMemo(
+    useEffect(
+        () => {
+            if(!areAllIssueVariablesSet)
+                return;
+        }
+    )
+
+    useEffect(
         () => {
             async function effect() {
+                console.log("load-issue", issueDetails, issue);
+                
                 if (!issueDetails) {
                     setIssue(null);
                     return;
@@ -124,11 +134,12 @@ function IssueInputField(props: {
                     const issue = issueResponse?.data || null;
                     setIssue(issue);
 
-                    if(issue)
+                    if(issue) {
                         await props.onChange({
                             issue, 
                             details: issueDetails
                         });
+                    }
                 } finally {
                     setIsLoading(false);
                 }
@@ -298,6 +309,11 @@ function Bounties(props: {
 
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
 
+    const onClaimClicked = async () => {
+        if(!!claimError)
+            return;
+    }
+
     return <Card className={classes.bounties}>
         <>
             <CardContent className={classes.bountyAmount}>
@@ -314,6 +330,7 @@ function Bounties(props: {
                         className={`${classes.claimButton} ${!!claimError ? classes.disabled : ""}`}
                         variant="outlined"
                         disableRipple={!!claimError}
+                        onClick={onClaimClicked}
                     >
                         Claim
                     </Button>

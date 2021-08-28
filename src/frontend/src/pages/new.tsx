@@ -137,9 +137,9 @@ export default function NewPage() {
                   onChange={setPaymentDetails} 
                 />
               </Elements>,
-            onCompleted: async () => {
-              //TODO: use payment-method-modal.tsx
-            }
+              onCompleted: async () => {
+                //TODO: use payment-method-modal.tsx
+              }
           }
         ]} 
       />
