@@ -18,7 +18,7 @@ export function Transition(props: {
         key = "transition-undefined";
 
     return <AbsoluteBox>
-        {ref => <TransitionGroup>
+        {ref => <TransitionGroup className={classes.root}>
             <CSSTransition 
                 key={key}
                 timeout={props.timeout || 1000}
