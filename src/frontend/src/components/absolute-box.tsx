@@ -1,4 +1,4 @@
-import { Ref, useEffect, useMemo, useRef, useState } from "react";
+import { Ref, useEffect, useRef, useState } from "react";
 import * as classes from "./absolute-box.module.scss";
 
 export default function AbsoluteBox(props: {
@@ -8,7 +8,7 @@ export default function AbsoluteBox(props: {
 
     const [height, setHeight] = useState(0);
 
-    useMemo(
+    useEffect(
         () => console.log("height-absolute-box", height),
         [height]);
 
@@ -18,17 +18,18 @@ export default function AbsoluteBox(props: {
 
         const updateHeight = () => {
             if(!ref.current)
-                return clearInterval(timer);
+                return;
 
             const rect = ref.current.getBoundingClientRect();
-            setHeight(rect.height);
+            if(rect.height !== height) 
+                setHeight(rect.height);
         }
 
         updateHeight();
 
         var timer = setInterval(updateHeight, 100);
         return () => clearInterval(timer);
-    }, [ref, ref.current]);
+    });
 
     return (
         <div

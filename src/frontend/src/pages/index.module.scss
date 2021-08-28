@@ -8,10 +8,12 @@
 .spacer {
     &.top {
         flex-grow: 1;
+        margin-top: 120px;
     }
 
     &.bottom {
         flex-grow: 2;
+        margin-bottom: 120px;
     }
 }
 
