@@ -9,10 +9,12 @@
 	"settings": {},
 	"extensions": [
 		"dbaeumer.vscode-eslint",
-		"ms-azuretools.vscode-docker"
+		"ms-azuretools.vscode-docker",
+		"github.copilot"
 	],
 	"forwardPorts": [
-		8000
+		8000,
+		6006
 	],
 	"remoteUser": "node",
 	"mounts": [

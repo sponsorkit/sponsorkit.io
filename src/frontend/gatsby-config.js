@@ -6,7 +6,8 @@ module.exports = {
   },
   flags: {
     PRESERVE_WEBPACK_CACHE: true,
-    FAST_DEV: true
+    FAST_DEV: true,
+    LMDB_STORE: true
   },
   plugins: [
     `gatsby-plugin-remove-trailing-slashes`,

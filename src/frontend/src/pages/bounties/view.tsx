@@ -9,7 +9,7 @@ import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, Spon
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import uri from "uri-tag";
 import { AppBarTemplate } from '..';
 import { AmountPicker } from '../../components/financial/amount-picker';
@@ -46,10 +46,12 @@ export default function IssueByIdPage(props: {
                 await loadBountiesFromIssue(e.issue);
             }} />
         <Transition transitionKey={issue?.number}>
-            {issue && <Issue
+            {ref => issue && <Issue
+                ref={ref}
                 issue={issue}
                 bounties={bounties}
-                onBountyCreated={async () => await loadBountiesFromIssue(issue)} />}
+                onBountyCreated={async () => 
+                    await loadBountiesFromIssue(issue)} />}
         </Transition>
     </AppBarTemplate>
 }
@@ -104,13 +106,6 @@ function IssueInputField(props: {
             extractIssueLinkDetails(issueLink) :
             null,
         [issueLink]);
-
-    useEffect(
-        () => {
-            if(!areAllIssueVariablesSet)
-                return;
-        }
-    )
 
     useEffect(
         () => {
@@ -180,11 +175,14 @@ function IssueInputField(props: {
     </Card>
 }
 
-function Issue(props: {
-    issue: OctokitIssueResponse,
-    bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
-    onBountyCreated: () => Promise<void> | void
-}) {
+const Issue = forwardRef(function(
+    props: {
+        issue: OctokitIssueResponse,
+        bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
+        onBountyCreated: () => Promise<void> | void
+    },
+    ref: React.Ref<HTMLDivElement>
+) {
     const events: Array<Event | null> = !props.issue ?
         [] :
         [
@@ -226,6 +224,7 @@ function Issue(props: {
 
     return <Box 
         className={combineClassNames(classes.issueRoot)}
+        ref={ref}
     >
         <Box className={classes.issueBox}>
             <Card className={classes.issue}>
@@ -279,7 +278,7 @@ function Issue(props: {
             bounties={props.bounties}
             onBountyCreated={props.onBountyCreated} />
     </Box>
-}
+});
 
 function Bounties(props: {
     issue: OctokitIssueResponse,

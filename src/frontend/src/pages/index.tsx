@@ -47,10 +47,10 @@ export function AppBarTemplate(props: {
           <SponsorkitLogo />}
       </Toolbar>
     </AppBar>
-    <Box flexGrow={1} />
+    <Box className={combineClassNames(classes.spacer, classes.top)} />
     <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
       {props.children}
     </Container>
-    <Box flexGrow={3} />
+    <Box className={combineClassNames(classes.spacer, classes.top)} />
   </>
 }
