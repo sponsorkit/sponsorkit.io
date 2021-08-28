@@ -149,8 +149,14 @@ function IssueInputField(props: {
                 label="GitHub issue URL"
                 error={!!errorMessage}
                 helperText={errorMessage}
-                autoFocus
+                autoFocus={!areAllIssueVariablesSet}
                 disabled={isLoading}
+                InputLabelProps={{
+                    shrink: true
+                }}
+                InputProps={{
+                    notched: true
+                }}
                 placeholder={!issue || !issueLink ?
                     "Paste the full URL of the GitHub issue you want to put a bounty on" :
                     issueLink}
