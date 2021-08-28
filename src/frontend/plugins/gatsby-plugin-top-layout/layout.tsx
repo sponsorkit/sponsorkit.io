@@ -5,13 +5,14 @@
  * See: https://www.gatsbyjs.com/docs/use-static-query/
  */
 
-import * as React from "react"
-
+import { LocationProvider } from "@reach/router";
+import * as React from "react";
 import Helmet from 'react-helmet';
-import {LocationProvider} from "@reach/router";
-
-import "./layout.scss";
+import { createGenerateId, JssProvider } from 'react-jss';
 import ThemeConfig from '../../src/theme';
+import "./layout.scss";
+
+const generateId = createGenerateId();
 
 export default function ({ children }: any) {
   return (<>
@@ -22,10 +23,12 @@ export default function ({ children }: any) {
       />
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;display=swap" />
     </Helmet>
-    <ThemeConfig>
-      <LocationProvider>
-        {children}
-      </LocationProvider>
-    </ThemeConfig>
+    <JssProvider generateId={generateId}>
+      <ThemeConfig>
+        <LocationProvider>
+          {children}
+        </LocationProvider>
+      </ThemeConfig>
+    </JssProvider>
   </>)
 }
