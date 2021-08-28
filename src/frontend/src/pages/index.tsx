@@ -51,7 +51,7 @@ export function AppBarTemplate(props: {
     <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
       {props.children}
     </Container>
-    <Box flexGrow={2} />
+    <Box flexGrow={3} />
   </>
 }
 
