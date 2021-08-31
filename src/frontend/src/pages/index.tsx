@@ -1,19 +1,19 @@
-import { AppBar, Box, Button, Container, Toolbar, Typography } from "@material-ui/core";
+import { AppBar, Box, Container, Toolbar, Typography } from "@material-ui/core";
 import { combineClassNames } from "@utils/strings";
-import * as React from "react";
+import { navigate } from "gatsby";
+import { useEffect } from "react";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import SponsorkitBlueIcon from './assets/Sponsorkit-blue.inline.svg';
 import * as classes from "./index.module.scss";
 
-const IndexPage = () => (
-  <>
-    <Button color="primary" variant="contained" style={{
-      margin: 16
-    }}>
-      Click me, and get disappointed
-    </Button>
-  </>
-)
+export default function IndexPage() {
+  useEffect(
+    () => {
+      navigate("/bounties/view");
+    },
+    []);
+  return null;
+}
 
 function BountyhuntLogo() {
     return <Box className={`${classes.logo} ${classes.bountyhunt}`}>
@@ -47,12 +47,10 @@ export function AppBarTemplate(props: {
           <SponsorkitLogo />}
       </Toolbar>
     </AppBar>
-    <Box flexGrow={1} />
+    <Box className={combineClassNames(classes.spacer, classes.top)} />
     <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
       {props.children}
     </Container>
-    <Box flexGrow={2} />
+    <Box className={combineClassNames(classes.spacer, classes.bottom)} />
   </>
 }
-
-export default IndexPage

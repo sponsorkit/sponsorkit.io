@@ -9,15 +9,15 @@ import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, Spon
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
-import { useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import uri from "uri-tag";
-import { AppBarTemplate } from '../..';
-import { AmountPicker } from '../../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../../components/financial/stripe/payment-modal';
-import { Markdown } from '../../../components/markdown';
-import { createApi, makeOctokitCall, useApi, useOctokit } from '../../../hooks/clients';
-import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../../utils/github-url-extraction';
-import * as classes from './index.module.scss';
+import { AppBarTemplate } from '..';
+import { AmountPicker } from '../../components/financial/amount-picker';
+import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
+import { Markdown } from '../../components/markdown';
+import { createApi, makeOctokitCall } from '../../hooks/clients';
+import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
+import * as classes from './view.module.scss';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -27,11 +27,10 @@ export default function IssueByIdPage(props: {
     const [issue, setIssue] = useState<OctokitIssueResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
 
-    const onRefreshBounties = async () => {
-        if (!issue)
-            return;
+    const loadBountiesFromIssue = async (forIssue: OctokitIssueResponse) => {
+        setBounties(null);
 
-        const response = await createApi().bountiesGitHubIssueIdGet(issue.id);
+        const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
         setBounties(response?.bounties || null);
     }
 
@@ -39,16 +38,20 @@ export default function IssueByIdPage(props: {
         <IssueInputField
             location={props.location}
             onChange={async e => {
+                console.log("issue-input-field-changed", e);
+                
                 setIssue(e.issue);
-                await onRefreshBounties();
-
                 window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
+
+                await loadBountiesFromIssue(e.issue);
             }} />
         <Transition transitionKey={issue?.number}>
-            {issue && <Issue
+            {ref => issue && <Issue
+                ref={ref}
                 issue={issue}
                 bounties={bounties}
-                onBountyCreated={onRefreshBounties} />}
+                onBountyCreated={async () => 
+                    await loadBountiesFromIssue(issue)} />}
         </Transition>
     </AppBarTemplate>
 }
@@ -104,9 +107,11 @@ function IssueInputField(props: {
             null,
         [issueLink]);
 
-    useMemo(
+    useEffect(
         () => {
             async function effect() {
+                console.log("load-issue", issueDetails, issue);
+                
                 if (!issueDetails) {
                     setIssue(null);
                     return;
@@ -124,11 +129,12 @@ function IssueInputField(props: {
                     const issue = issueResponse?.data || null;
                     setIssue(issue);
 
-                    if(issue)
+                    if(issue) {
                         await props.onChange({
                             issue, 
                             details: issueDetails
                         });
+                    }
                 } finally {
                     setIsLoading(false);
                 }
@@ -149,20 +155,34 @@ function IssueInputField(props: {
                 label="GitHub issue URL"
                 error={!!errorMessage}
                 helperText={errorMessage}
-                autoFocus
+                autoFocus={!areAllIssueVariablesSet}
                 disabled={isLoading}
-                placeholder="Paste the full URL of the GitHub issue you want to put a bounty on"
-                value={issueLink}
+                InputLabelProps={{
+                    shrink: true
+                }}
+                InputProps={{
+                    notched: true
+                }}
+                placeholder={!issue || !issueLink ?
+                    "Paste the full URL of the GitHub issue you want to put a bounty on" :
+                    issueLink}
+                value={!issue ? 
+                    issueLink :
+                    ""}
+                variant="outlined"
                 onChange={e => setIssueLink(e.target.value)} />
         </CardContent>
     </Card>
 }
 
-function Issue(props: {
-    issue: OctokitIssueResponse,
-    bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
-    onBountyCreated: () => Promise<void> | void
-}) {
+const Issue = forwardRef(function(
+    props: {
+        issue: OctokitIssueResponse,
+        bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
+        onBountyCreated: () => Promise<void> | void
+    },
+    ref: React.Ref<HTMLDivElement>
+) {
     const events: Array<Event | null> = !props.issue ?
         [] :
         [
@@ -204,6 +224,7 @@ function Issue(props: {
 
     return <Box 
         className={combineClassNames(classes.issueRoot)}
+        ref={ref}
     >
         <Box className={classes.issueBox}>
             <Card className={classes.issue}>
@@ -257,7 +278,7 @@ function Issue(props: {
             bounties={props.bounties}
             onBountyCreated={props.onBountyCreated} />
     </Box>
-}
+});
 
 function Bounties(props: {
     issue: OctokitIssueResponse,
@@ -287,6 +308,11 @@ function Bounties(props: {
 
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
 
+    const onClaimClicked = async () => {
+        if(!!claimError)
+            return;
+    }
+
     return <Card className={classes.bounties}>
         <>
             <CardContent className={classes.bountyAmount}>
@@ -303,6 +329,7 @@ function Bounties(props: {
                         className={`${classes.claimButton} ${!!claimError ? classes.disabled : ""}`}
                         variant="outlined"
                         disableRipple={!!claimError}
+                        onClick={onClaimClicked}
                     >
                         Claim
                     </Button>

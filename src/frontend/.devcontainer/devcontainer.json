@@ -1,13 +1,24 @@
 {
-	"name": "Node.js",
+	"name": "Sponsorkit",
 	"build": {
 		"dockerfile": "Dockerfile",
-		"args": { "VARIANT": "16" }
+		"args": {
+			"VARIANT": "16"
+		}
 	},
 	"settings": {},
 	"extensions": [
-		"dbaeumer.vscode-eslint"
+		"dbaeumer.vscode-eslint",
+		"ms-azuretools.vscode-docker",
+		"github.copilot"
 	],
-	"forwardPorts": [8000],
-	"remoteUser": "node"
+	"forwardPorts": [
+		8000,
+		6006
+	],
+	"remoteUser": "node",
+	"mounts": [
+		"source=sponsorkit-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+	],
+	"postCreateCommand": "sudo chown node node_modules"
 }

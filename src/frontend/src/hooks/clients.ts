@@ -54,6 +54,15 @@ export function createApi() {
         allowInsecureConnection: true
     });
     client.pipeline.addPolicy({
+        name: "timeout",
+        sendRequest: async (request, next) => {
+            request.timeout = 10000;
+
+            const response = await next(request);
+            return response;
+        }
+    });
+    client.pipeline.addPolicy({
         name: "allowInsecureConnections",
         sendRequest: async (request, next) => {
             request.allowInsecureConnection = true;

@@ -6,6 +6,7 @@ import { DialogTransition } from "./dialog-transition";
 
 export function AsynchronousProgressDialog(props: {
     isOpen: boolean,
+    isSubmitDisabled?: boolean,
     requestSendingText: string,
     requestSentText: string,
     buttonText: string,
@@ -67,7 +68,10 @@ export function AsynchronousProgressDialog(props: {
         }
     };
 
-    const isVerificationDisabled = isLoading || isWaitingForVerification;
+    const isVerificationDisabled = 
+        isLoading || 
+        isWaitingForVerification || 
+        props.isSubmitDisabled;
 
     return <Dialog
         open={props.isOpen}

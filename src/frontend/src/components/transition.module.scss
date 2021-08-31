@@ -15,12 +15,12 @@
     opacity: 1;
     visibility: visible;
 
-    transition: opacity 1s;
+    transition: opacity 1s ease-in-out;
 }
 
 .fading-out {
     opacity: 0;
     visibility: visible;
 
-    transition: opacity 1s;
+    transition: opacity 1s ease-in-out;
 }

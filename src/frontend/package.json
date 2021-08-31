@@ -74,6 +74,7 @@
     "gatsby-plugin-react-svg": "^3.0.1",
     "gatsby-plugin-remove-trailing-slashes": "^3.12.0",
     "gatsby-plugin-sass": "^4.3.0",
+    "lmdb-store": "^1.6.6",
     "prettier": "2.2.1",
     "rollup": "^1.16.3",
     "rollup-plugin-node-resolve": "^3.4.0",

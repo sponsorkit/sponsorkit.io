@@ -39,7 +39,7 @@ const Template: Story<Props> = (args) => {
                 transitionKey={state}
                 timeout={1000}
             >
-                <div style={{
+                {ref => <div ref={ref} style={{
                     border: '1px solid black'
                 }}>
                     <p>
@@ -48,7 +48,7 @@ const Template: Story<Props> = (args) => {
                         {state === undefined && "undefined"}
                         {state ? state : ""}
                     </p>
-                </div>
+                </div>}
             </Transition>
         </div>
     </div>

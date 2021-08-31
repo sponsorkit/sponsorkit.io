@@ -1,5 +1,5 @@
 {
-    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "typescript.tsdk": "node_modules/typescript/lib",
     "files.exclude": {
         "**/node_modules/": true
     },
@@ -8,5 +8,7 @@
         "source.fixAll": true,
         "source.organizeImports": true
     },
-    "javascript.preferences.importModuleSpecifier": "non-relative"
+    "javascript.preferences.importModuleSpecifier": "non-relative",
+    "editor.unfoldOnClickAfterEndOfLine": true,
+    "files.eol": "\n"
 }

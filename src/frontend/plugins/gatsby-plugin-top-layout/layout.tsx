@@ -1,17 +1,8 @@
-/**
- * Layout component that queries for data
- * with Gatsby's useStaticQuery component
- *
- * See: https://www.gatsbyjs.com/docs/use-static-query/
- */
-
-import * as React from "react"
-
+import { LocationProvider } from "@reach/router";
+import * as React from "react";
 import Helmet from 'react-helmet';
-import {LocationProvider} from "@reach/router";
-
-import "./layout.scss";
 import ThemeConfig from '../../src/theme';
+import "./layout.scss";
 
 export default function ({ children }: any) {
   return (<>

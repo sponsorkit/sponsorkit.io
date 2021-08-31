@@ -1,0 +1,8 @@
+.root {
+    position: relative;
+    transition: height 1s ease-in-out;
+
+    * > {
+        position: absolute;
+    }
+}

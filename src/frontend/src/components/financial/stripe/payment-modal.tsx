@@ -109,13 +109,14 @@ function PaymentMethodModalContent(props: Props) {
 
     return <AsynchronousProgressDialog
         isOpen
+        isSubmitDisabled={isLoading}
         onClose={onCancelClicked}
         buttonText="Submit"
         requestSendingText="Submitting..."
         requestSentText="Verifying..."
         isDoneAccessor={isDoneAccessor}
         onRequestSending={onSubmitPayment}
-        onDone={() => props.onComplete()}
+        onDone={props.onComplete}
         actionChildren={<>
             <Tooltip title="Stripe is one of the most popular and trusted payment providers in the world. Your credit card details are safe with them, and never touches our own servers.">
                 <Box className={classes.stripeBadge}>

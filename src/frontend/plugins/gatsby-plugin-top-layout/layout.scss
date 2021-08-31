@@ -14,3 +14,7 @@ body, #___gatsby, #gatsby-focus-wrapper {
     background-color: rgba(245, 245, 245, 0.7) !important;
   }
 }
+
+html {
+  overflow-y: scroll;
+}

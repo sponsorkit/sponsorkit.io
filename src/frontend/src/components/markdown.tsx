@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 import marked, { Renderer } from "marked";
+import * as classes from "./markdown.module.scss";
 
 export function Markdown(props: {
     markdown: string|undefined|null,
@@ -20,5 +21,9 @@ export function Markdown(props: {
 class GitHubMarkdownRenderer extends Renderer {
     public link(href: string|null, _: string|null, text: string|null) {
         return `<a target="_blank" rel="nofollow" href="${ href ? encodeURI(href) : ""}">${text ?? ""}</a>`;
+    }
+
+    public heading(text: string, level: 1 | 2 | 3 | 4 | 5 | 6, raw: string) {
+        return `<h${level} class="${classes[`headingh${level}`]}">${raw}</h${level}>`
     }
 }
