@@ -11,13 +11,13 @@ import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { useMemo, useState } from 'react';
 import uri from "uri-tag";
-import { AppBarTemplate } from '..';
-import { AmountPicker } from '../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
-import { Markdown } from '../../components/markdown';
-import { createApi, makeOctokitCall } from '../../hooks/clients';
-import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
-import * as classes from './view.module.scss';
+import { AppBarTemplate } from '../..';
+import { AmountPicker } from '../../../components/financial/amount-picker';
+import { PaymentMethodModal } from '../../../components/financial/stripe/payment-modal';
+import { Markdown } from '../../../components/markdown';
+import { createApi, makeOctokitCall, useApi, useOctokit } from '../../../hooks/clients';
+import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../../utils/github-url-extraction';
+import * as classes from './index.module.scss';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -373,4 +373,25 @@ function CreateBounty(props: {
                 }}
             />}
     </>;
+}
+
+function ClaimDialog(props: {
+    issue: OctokitIssueResponse
+}) {
+    const issueDetails = extractIssueLinkDetails(props.issue.html_url);
+    const account = useApi(
+        async (client, abortSignal) => await client.accountGet({
+            abortSignal
+        }),
+        [])
+    const pullRequests = useOctokit(
+        async client => 
+            issueDetails && 
+            account?.beneficiary &&
+            await client.search.issuesAndPullRequests({
+                q: `is:pr is:closed author:${account.beneficiary} repo:${issueDetails.repo}`
+            }),
+        [issueDetails, account]);
+
+    return null;
 }
