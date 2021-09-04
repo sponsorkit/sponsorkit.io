@@ -1,22 +1,25 @@
+import EmailValidationDialog from "@components/account/email-validation-dialog";
+import { DialogTransition } from "@components/dialog-transition";
+import { AmountPicker } from "@components/financial/amount-picker";
+import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
+import { Markdown } from "@components/markdown";
+import ProgressList from "@components/progress-list";
 import { Transition } from "@components/transition";
+import { createApi, makeOctokitCall, useApi, useOctokit } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
-import { Box, Button, Card, CardContent, TextField, Tooltip, Typography } from "@material-ui/core";
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip, Typography } from "@material-ui/core";
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@material-ui/lab';
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { AppBarTemplate } from "src/pages";
 import uri from "uri-tag";
-import { AppBarTemplate } from '..';
-import { AmountPicker } from '../../components/financial/amount-picker';
-import { PaymentMethodModal } from '../../components/financial/stripe/payment-modal';
-import { Markdown } from '../../components/markdown';
-import { createApi, makeOctokitCall } from '../../hooks/clients';
-import { extractIssueLinkDetails, extractReposApiLinkDetails } from '../../utils/github-url-extraction';
 import * as classes from './view.module.scss';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
@@ -308,13 +311,18 @@ function Bounties(props: {
 
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
 
+    const [isClaiming, setIsClaiming] = useState(false);
+
     const onClaimClicked = async () => {
         if(!!claimError)
             return;
+
+        setIsClaiming(true);
     }
 
     return <Card className={classes.bounties}>
         <>
+            <ClaimDialog issue={props.issue} />
             <CardContent className={classes.bountyAmount}>
                 <Box className={classes.labelContainer}>
                     <Typography component="div" variant="h3" className={classes.amountRaised}>
@@ -406,19 +414,74 @@ function ClaimDialog(props: {
     issue: OctokitIssueResponse
 }) {
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
+    const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+    const [lastProgressChange, setLastProgressChange] = useState(new Date());
+
     const account = useApi(
         async (client, abortSignal) => await client.accountGet({
             abortSignal
         }),
-        [])
+        [lastProgressChange]);
     const pullRequests = useOctokit(
         async client => 
             issueDetails && 
             account?.beneficiary &&
             await client.search.issuesAndPullRequests({
-                q: `is:pr is:closed author:${account.beneficiary} repo:${issueDetails.repo}`
+                q: `is:pr is:closed author:${account.beneficiary.gitHubUsername} repo:${issueDetails.repo}`
             }),
         [issueDetails, account]);
 
-    return null;
+    if (!account)
+        return null;
+
+    const checkpoints = [
+        {
+            label: "Connect your GitHub account",
+            description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
+            validate: () => !!account.beneficiary?.gitHubUsername,
+            onClick: () => { }
+        },
+        {
+            label: "Verify your e-mail address",
+            description: "Verifying your e-mail address reduces the chance of fake accounts, and ensures that you receive important account-related information from us (such as invoices).",
+            validate: () => account.isEmailVerified,
+            onClick: () => setIsValidatingEmail(true)
+        },
+        {
+            label: "Verify payment details",
+            description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
+            validate: () => !!account.sponsor?.creditCard,
+            onClick: () => { }
+        }
+    ];
+
+    return <>
+        <EmailValidationDialog
+            email={account.email}
+            isOpen={isValidatingEmail}
+            onValidated={() => setLastProgressChange(new Date())}
+            onClose={() => setIsValidatingEmail(false)} />
+        <Dialog open TransitionComponent={DialogTransition}>
+            <DialogTitle>Claim bounty</DialogTitle>
+            <DialogContent>
+                <ProgressList
+                    title="Trust score"
+                    subTitle="To prevent scamming, we only allow you to claim a bounty if you have reached the highest trust score."
+                    checkpoints={checkpoints}
+                />
+            </DialogContent>
+            <DialogActions>
+                <Button
+                    color="secondary"
+                >
+                    Cancel
+                </Button>
+                <Button
+                    variant="contained"
+                >
+                    Claim
+                </Button>
+            </DialogActions>
+        </Dialog>
+    </>
 }

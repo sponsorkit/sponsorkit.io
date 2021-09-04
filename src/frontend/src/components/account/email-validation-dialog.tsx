@@ -1,0 +1,48 @@
+import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
+import { createApi } from "@hooks/clients";
+import { DialogContent, DialogTitle, TextField, Typography } from "@material-ui/core";
+import { useState } from "react";
+import createAccountValidatior from "./account-validator";
+import * as classes from "./email-validation-dialog.module.scss";
+
+export default function EmailValidationDialog(props: {
+    email: string,
+    isOpen: boolean,
+    onClose: () => void,
+    onValidated: () => void
+}) {
+    const [email, setEmail] = useState(() => props.email);
+
+    const onVerifyClicked = async () => {
+        await createApi().accountEmailSendVerificationEmailPost({
+            body: {
+                email
+            }
+        });
+    };
+
+    return <AsynchronousProgressDialog
+        isOpen={props.isOpen}
+        onClose={props.onClose}
+        buttonText="Verify"
+        isDoneAccessor={createAccountValidatior(account => account.isEmailVerified)}
+        requestSentText="E-mail sent! Waiting for verification..."
+        requestSendingText="Sending e-mail verification..."
+        onRequestSending={onVerifyClicked}
+        onDone={props.onValidated}
+    >
+        <DialogTitle>Is this your e-mail?</DialogTitle>
+        <DialogContent className={classes.verifyEmailDialog}>
+            <Typography>
+                Make sure your e-mail is correct. We'll send you an e-mail with a verification link.
+            </Typography>
+            <TextField
+                label="E-mail"
+                variant="outlined"
+                autoFocus
+                className={classes.textBox}
+                value={email}
+                onChange={e => setEmail(e.target.value)} />
+        </DialogContent>
+    </AsynchronousProgressDialog>
+}

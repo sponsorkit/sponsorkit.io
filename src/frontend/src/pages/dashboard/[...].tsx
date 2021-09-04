@@ -1,12 +1,10 @@
+import createAccountValidatior from "@components/account/account-validator";
+import EmailValidationDialog from "@components/account/email-validation-dialog";
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
-import CircularProgressBar from "@components/circular-progress-bar";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent, Container, DialogContent, DialogTitle, FormControlLabel, TextField, Typography } from "@material-ui/core";
-import { DoneSharp } from "@material-ui/icons";
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import HelpOutlineIcon from '@material-ui/icons/HelpOutline';
+import ProgressList from "@components/progress-list";
+import { Box, Container, DialogContent, DialogTitle, Typography } from "@material-ui/core";
 import { isPopupBlocked } from "@utils/popup";
 import React, { useState } from "react";
-import { SponsorkitDomainControllersApiAccountResponse } from "src/api/openapi/src";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
 import { createApi, useApi } from "../../hooks/clients";
@@ -41,14 +39,14 @@ function DashboardPage() {
                 Profile
             </Typography>
             <Box className={classes.accountOverviews}>
-                <AccountOverview
+                <ProgressList
                     title="Profile completion"
                     subTitle="Your beneficiary details are used when you want to earn money from bounties, donations or sponsorships. Your sponsor details are used when you want to place bounties, give donations or start sponsoring others."
                     checkpoints={[
                         {
                             label: "Connect your GitHub account",
                             description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
-                            validate: () => true,
+                            validate: () => !!account.beneficiary?.gitHubUsername,
                             onClick: () => { }
                         },
                         {
@@ -74,55 +72,6 @@ function DashboardPage() {
             </Box>
         </Container>
     </AppBarTemplate>;
-}
-
-function createAccountValidatior(predicate: (account: SponsorkitDomainControllersApiAccountResponse) => boolean) {
-    return (async () => {
-        const account = await createApi().accountGet();
-        return predicate(account);
-    });
-}
-
-function EmailValidationDialog(props: {
-    email: string,
-    isOpen: boolean,
-    onClose: () => void,
-    onValidated: () => void
-}) {
-    const [email, setEmail] = useState(() => props.email);
-
-    const onVerifyClicked = async () => {
-        await createApi().accountEmailSendVerificationEmailPost({
-            body: {
-                email
-            }
-        });
-    };
-
-    return <AsynchronousProgressDialog
-        isOpen={props.isOpen}
-        onClose={props.onClose}
-        buttonText="Verify"
-        isDoneAccessor={createAccountValidatior(account => account.isEmailVerified)}
-        requestSentText="E-mail sent! Waiting for verification..."
-        requestSendingText="Sending e-mail verification..."
-        onRequestSending={onVerifyClicked}
-        onDone={props.onValidated}
-    >
-        <DialogTitle>Is this your e-mail?</DialogTitle>
-        <DialogContent className={classes.verifyEmailDialog}>
-            <Typography>
-                Make sure your e-mail is correct. We'll send you an e-mail with a verification link.
-            </Typography>
-            <TextField
-                label="E-mail"
-                variant="outlined"
-                autoFocus
-                className={classes.textBox}
-                value={email}
-                onChange={e => setEmail(e.target.value)} />
-        </DialogContent>
-    </AsynchronousProgressDialog>
 }
 
 function BankDetailsDialog(props: {
@@ -157,78 +106,6 @@ function BankDetailsDialog(props: {
             </Typography>
         </DialogContent>
     </AsynchronousProgressDialog>
-}
-
-type CheckpointProps = {
-    validate: () => boolean,
-    label: string,
-    description: string,
-    onClick?: () => void
-};
-
-function AccountOverview(props: {
-    title: string,
-    subTitle: string,
-    checkpoints: Array<CheckpointProps>
-}) {
-    const totalCheckpointCount = props.checkpoints.length;
-    const validatedCheckpointCount = props.checkpoints
-        .filter(x => x.validate())
-        .length;
-    const firstNonValidatedCheckpointIndex = props.checkpoints.findIndex(x => !x.validate());
-    return <Card className={classes.accountOverview}>
-        <CardContent className={classes.content}>
-            <Box className={classes.header}>
-                <Box className={classes.text}>
-                    <Typography variant="h5" component="h2">
-                        {props.title}
-                    </Typography>
-                    <Typography variant="body2" component="p">
-                        {props.subTitle}
-                    </Typography>
-                </Box>
-                <CircularProgressBar
-                    size={110}
-                    current={validatedCheckpointCount}
-                    maximum={totalCheckpointCount}
-                    text={`${validatedCheckpointCount} / ${totalCheckpointCount}`}
-                />
-            </Box>
-            <Box className={classes.accordions}>
-                {props.checkpoints.map((x, i) =>
-                    <Accordion className={classes.accordion} defaultExpanded={i === firstNonValidatedCheckpointIndex}>
-                        <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
-                            <FormControlLabel
-                                classes={{
-                                    label: classes.header
-                                }}
-                                control={x.validate() ?
-                                    <DoneSharp
-                                        className={classes.checkbox}
-                                        color="primary" /> :
-                                    <HelpOutlineIcon
-                                        className={classes.checkbox}
-                                        color="disabled" />}
-                                label={x.label}
-                            />
-                        </AccordionSummary>
-                        <AccordionDetails className={classes.accordionDetails}>
-                            <Typography className={classes.description} color="textSecondary">
-                                {x.description}
-                            </Typography>
-                            {!x.validate() &&
-                                <Button 
-                                    className={classes.completeButton} 
-                                    variant="contained"
-                                    onClick={x.onClick}
-                                >
-                                    Begin
-                                </Button>}
-                        </AccordionDetails>
-                    </Accordion>)}
-            </Box>
-        </CardContent>
-    </Card>
 }
 
 export default function () {

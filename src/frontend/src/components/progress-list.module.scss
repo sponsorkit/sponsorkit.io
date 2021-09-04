@@ -1,0 +1,52 @@
+.progress-list {
+    display: flex;
+    justify-content: space-between;
+    justify-self: center;
+    max-width: 650px;
+
+    .content {
+        .header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+
+            .text {
+                margin-right: 30px;
+            }
+        }
+            
+        .accordions {
+            margin-top: 20px;
+            flex-shrink: 2;
+
+            .accordion {
+                .accordion-summary {
+                    margin-left: 10px;
+
+                    .header {
+                        font-weight: bold;
+                        font-size: 14px;
+                    }
+
+                    .checkbox {
+                        margin-right: 10px;
+                    }
+                }
+
+                .accordion-details {
+                    display: flex;
+                    flex-direction: column;
+
+                    .description {
+                        font-size: 14px;
+                    }
+
+                    .complete-button {
+                        margin-top: 15px;
+                        align-self: flex-start;
+                    }
+                }
+            }
+        }
+    }
+}

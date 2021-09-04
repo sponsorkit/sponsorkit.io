@@ -99,7 +99,8 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
-    "swagger": "npm i -g autorest@latest && autorest --reset && autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/api/openapi/sponsorkit-client-1.0.0.tgz",
+    "swagger": "npm i -g autorest@latest && autorest --reset && npm run swagger:autorest:generate && cd ./src/api/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/api/openapi/sponsorkit-client-1.0.0.tgz",
+    "swagger:autorest:generate": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi || autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://host.docker.internal:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
   },
