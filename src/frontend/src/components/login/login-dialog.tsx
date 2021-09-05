@@ -9,7 +9,7 @@ import IframeDialog from '../iframe-dialog';
 export default function LoginDialog(props: {
     onDismissed?: () => void,
     onPopupFailed?: () => void,
-    children: () => JSX.Element
+    children: () => JSX.Element|null|undefined
 }) {
     const state = useMemo(newGuid, []);
     const [token, setToken] = useToken();
@@ -17,7 +17,7 @@ export default function LoginDialog(props: {
     const wasDismissed = useRef(true);
 
     if(token && !token.isExpired) {
-        return props.children();
+        return props.children() || <></>;
     }
 
     if(configuration === undefined)

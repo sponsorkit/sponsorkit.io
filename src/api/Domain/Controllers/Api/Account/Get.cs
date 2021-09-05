@@ -13,8 +13,7 @@ using Stripe;
 namespace Sponsorkit.Domain.Controllers.Api.Account
 {
     public record BeneficiaryResponse(
-        bool IsAccountComplete,
-        string? GitHubUsername);
+        bool IsAccountComplete);
 
     public record CreditCardResponse(
         string LastFourDigits,
@@ -25,6 +24,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
 
     public record Response(
         string Email,
+        string? GitHubUsername,
         bool IsEmailVerified,
         BeneficiaryResponse? Beneficiary,
         SponsorResponse? Sponsor);
@@ -75,6 +75,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
 
             return Ok(new Response(
                 email,
+                user.GitHub?.Username,
                 user.EmailVerifiedAtUtc != null,
                 await GetBeneficiaryResponseAsync(user),
                 GetSponsorResponse(paymentMethod)));
@@ -114,8 +115,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
                 throw new Exception("Expected account to be present.");
             
             return new BeneficiaryResponse(
-                account.DetailsSubmitted,
-                user.GitHub?.Username);
+                account.DetailsSubmitted);
         }
     }
 }

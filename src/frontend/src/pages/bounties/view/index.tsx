@@ -2,25 +2,27 @@ import EmailValidationDialog from "@components/account/email-validation-dialog";
 import { DialogTransition } from "@components/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
+import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress-list";
 import { Transition } from "@components/transition";
 import { createApi, makeOctokitCall, useApi, useOctokit } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
-import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip, Typography } from "@material-ui/core";
+import { useToken } from "@hooks/token";
+import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, TextField, Tooltip, Typography } from "@material-ui/core";
 import { GitHub, SvgIconComponent } from '@material-ui/icons';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@material-ui/lab';
 import { RestEndpointMethodTypes } from '@octokit/rest';
+import { AppBarTemplate } from "@pages/index";
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { AppBarTemplate } from "src/pages";
 import uri from "uri-tag";
-import * as classes from './view.module.scss';
+import * as classes from './index.module.scss';
 
 type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
@@ -322,7 +324,13 @@ function Bounties(props: {
 
     return <Card className={classes.bounties}>
         <>
-            <ClaimDialog issue={props.issue} />
+            <ClaimDialog 
+                issue={props.issue}
+                isOpen={isClaiming}
+                onClose={() => setIsClaiming(false)}
+                onClaim={async () => {
+                    
+                }} />
             <CardContent className={classes.bountyAmount}>
                 <Box className={classes.labelContainer}>
                     <Typography component="div" variant="h3" className={classes.amountRaised}>
@@ -335,8 +343,8 @@ function Bounties(props: {
                 <Tooltip title={claimError} className={classes.buttonContainer}>
                     <Button
                         className={`${classes.claimButton} ${!!claimError ? classes.disabled : ""}`}
-                        variant="outlined"
                         disableRipple={!!claimError}
+                        variant="outlined"
                         onClick={onClaimClicked}
                     >
                         Claim
@@ -410,78 +418,165 @@ function CreateBounty(props: {
     </>;
 }
 
+type OctokitPullRequestResponse = RestEndpointMethodTypes["search"]["issuesAndPullRequests"]["response"]["data"]["items"][0];
+
 function ClaimDialog(props: {
-    issue: OctokitIssueResponse
+    issue: OctokitIssueResponse,
+    isOpen: boolean,
+    onClose: () => void,
+    onClaim: () => Promise<void> | void
 }) {
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
+    const [token] = useToken();
     const account = useApi(
-        async (client, abortSignal) => await client.accountGet({
-            abortSignal
-        }),
-        [lastProgressChange]);
+        async (client, abortSignal) => token ?
+            await client.accountGet({
+                abortSignal
+            }) :
+            null,
+        [lastProgressChange, token]);
     const pullRequests = useOctokit(
-        async client => 
-            issueDetails && 
-            account?.beneficiary &&
-            await client.search.issuesAndPullRequests({
-                q: `is:pr is:closed author:${account.beneficiary.gitHubUsername} repo:${issueDetails.repo}`
-            }),
-        [issueDetails, account]);
+        async client => {
+            if(!issueDetails?.repo || !account?.gitHubUsername)
+                return undefined;
 
-    if (!account)
-        return null;
-
-    const checkpoints = [
-        {
-            label: "Connect your GitHub account",
-            description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
-            validate: () => !!account.beneficiary?.gitHubUsername,
-            onClick: () => { }
+            const validPullRequestResponse = await client.search.issuesAndPullRequests({
+                q: `is:pr is:merged author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
+            });
+            const invalidPullRequestResponse = await client.search.issuesAndPullRequests({
+                q: `is:pr is:unmerged author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
+            });
+            return [
+                ...validPullRequestResponse.data.items,
+                ...invalidPullRequestResponse.data.items
+            ]
         },
-        {
-            label: "Verify your e-mail address",
-            description: "Verifying your e-mail address reduces the chance of fake accounts, and ensures that you receive important account-related information from us (such as invoices).",
-            validate: () => account.isEmailVerified,
-            onClick: () => setIsValidatingEmail(true)
-        },
-        {
-            label: "Verify payment details",
-            description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
-            validate: () => !!account.sponsor?.creditCard,
-            onClick: () => { }
-        }
-    ];
+        [issueDetails?.repo, account?.gitHubUsername]);
+    useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 
-    return <>
-        <EmailValidationDialog
-            email={account.email}
-            isOpen={isValidatingEmail}
-            onValidated={() => setLastProgressChange(new Date())}
-            onClose={() => setIsValidatingEmail(false)} />
-        <Dialog open TransitionComponent={DialogTransition}>
-            <DialogTitle>Claim bounty</DialogTitle>
-            <DialogContent>
-                <ProgressList
-                    title="Trust score"
-                    subTitle="To prevent scamming, we only allow you to claim a bounty if you have reached the highest trust score."
-                    checkpoints={checkpoints}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button
-                    color="secondary"
-                >
-                    Cancel
-                </Button>
-                <Button
-                    variant="contained"
-                >
-                    Claim
-                </Button>
-            </DialogActions>
-        </Dialog>
-    </>
+    const [selectedPullRequest, setSelectedPullRequest] = useState<OctokitPullRequestResponse|null>();
+    const pullRequestError = useMemo(
+        () => {
+            if(selectedPullRequest === undefined)
+                return "";
+
+            if(!selectedPullRequest)
+                return "You must select a pull request.";
+
+            if(!selectedPullRequest.pull_request.merged_at)
+                return "Only merged pull requests are accepted."
+
+            return "";
+        },
+        [selectedPullRequest]);
+
+    const error = useMemo(
+        () => selectedPullRequest ?
+            pullRequestError :
+            "You must select a pull request.",
+        [pullRequestError]);
+
+    const onClaimClicked = async () => {
+        if(error)
+            return;
+        
+        await props.onClaim();
+    }
+
+    return <LoginDialog onDismissed={props.onClose}>
+        {() => account && pullRequests ? <>
+            <EmailValidationDialog
+                email={account.email}
+                isOpen={isValidatingEmail}
+                onValidated={() => setLastProgressChange(new Date())}
+                onClose={() => setIsValidatingEmail(false)} />
+            <Dialog 
+                open={props.isOpen} 
+                onClose={props.onClose} 
+                TransitionComponent={DialogTransition}
+            >
+                <DialogContent>
+                    <ProgressList
+                        title="Claim bounty"
+                        subTitle="To be able to claim a bounty, you need to fill out all of the following information. This information is needed to reduce potential fraud."
+                        checkpoints={[
+                            {
+                                label: "Connect your GitHub account",
+                                description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
+                                validate: () => !!account.gitHubUsername,
+                                onClick: () => { }
+                            },
+                            {
+                                label: "Verify your e-mail address",
+                                description: "Verifying your e-mail address reduces the chance of fake accounts, and ensures that you receive important account-related information from us (such as invoices).",
+                                validate: () => account.isEmailVerified,
+                                onClick: () => setIsValidatingEmail(true)
+                            },
+                            {
+                                label: "Verify payment details",
+                                description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
+                                validate: () => !!account.sponsor?.creditCard,
+                                onClick: () => { }
+                            },
+                            {
+                                label: "Pick the pull request that solved the issue",
+                                description: "We only allow merged pull requests from your GitHub user. Pull requests not from your user, closed pull requests or open pull requests, will not be accepted.",
+                                validate: () => false,
+                                onClick: () => { },
+                                children: <Autocomplete<OctokitPullRequestResponse>
+                                    options={pullRequests}
+                                    autoHighlight
+                                    getOptionLabel={option => `#${option.number}: ${option.title}`}
+                                    groupBy={option => option.pull_request.merged_at ?
+                                        "Valid (merged)" :
+                                        `Invalid (${option.state})`}
+                                    renderOption={(props, option) => <Box {...props as any}>
+                                        <Typography className={classes.pullRequest}>
+                                            <span className={classes.number}>#{option.number}</span>
+                                            <span className={classes.title}>{option.title}</span>
+                                        </Typography>
+                                    </Box>}
+                                    onChange={(_, value) => setSelectedPullRequest(value || null)}
+                                    value={selectedPullRequest}
+                                    renderInput={params => (
+                                        <TextField
+                                          {...params}
+                                          label="Choose a pull request"
+                                          variant="outlined"
+                                          helperText={pullRequestError}
+                                          error={!!pullRequestError}
+                                          inputProps={{
+                                            ...params.inputProps,
+                                            autoComplete: 'new-password', // disable autocomplete and autofill
+                                          }}
+                                        />
+                                      )}
+                                />
+                            }
+                        ]}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        color="secondary"
+                        onClick={props.onClose}
+                    >
+                        Cancel
+                    </Button>
+                    <Tooltip title={error}>
+                        <Button
+                            variant="contained"
+                            disabled={!!error}
+                            onClick={onClaimClicked}
+                        >
+                            Claim
+                        </Button>
+                    </Tooltip>
+                </DialogActions>
+            </Dialog>
+        </> : null}
+    </LoginDialog>
 }

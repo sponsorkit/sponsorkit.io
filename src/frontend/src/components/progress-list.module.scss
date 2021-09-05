@@ -1,51 +1,45 @@
-.progress-list {
+.header {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
-    justify-self: center;
-    max-width: 650px;
 
-    .content {
-        .header {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
+    .text {
+        margin-right: 30px;
+    }
+}
+    
+.accordions {
+    margin-top: 20px;
+    flex-shrink: 2;
 
-            .text {
-                margin-right: 30px;
+    .accordion {
+        .accordion-summary {
+            margin-left: 10px;
+
+            .header {
+                font-weight: bold;
+                font-size: 14px;
+            }
+
+            .checkbox {
+                margin-right: 10px;
             }
         }
-            
-        .accordions {
-            margin-top: 20px;
-            flex-shrink: 2;
 
-            .accordion {
-                .accordion-summary {
-                    margin-left: 10px;
+        .accordion-details {
+            $gap: 20px;
 
-                    .header {
-                        font-weight: bold;
-                        font-size: 14px;
-                    }
+            display: flex;
+            flex-direction: column;
+            gap: $gap;
 
-                    .checkbox {
-                        margin-right: 10px;
-                    }
-                }
+            .description {
+                font-size: 14px;
+                margin-top: -$gap / 2;
+            }
 
-                .accordion-details {
-                    display: flex;
-                    flex-direction: column;
-
-                    .description {
-                        font-size: 14px;
-                    }
-
-                    .complete-button {
-                        margin-top: 15px;
-                        align-self: flex-start;
-                    }
-                }
+            .complete-button {
+                align-self: flex-start;
             }
         }
     }

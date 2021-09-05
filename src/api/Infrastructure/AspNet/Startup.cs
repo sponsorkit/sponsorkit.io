@@ -173,7 +173,6 @@ namespace Sponsorkit.Infrastructure.AspNet
         public void Configure(
             IApplicationBuilder app)
         {
-            app.UseCors();
             app.UseForwardedHeaders();
 
             app.UseNGrokAutomaticUrlDetection();
@@ -183,6 +182,8 @@ namespace Sponsorkit.Infrastructure.AspNet
             app.UseExceptionHandler("/errors/details");
 
             app.UseRouting();
+            
+            app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();

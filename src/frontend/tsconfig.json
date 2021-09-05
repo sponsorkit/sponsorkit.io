@@ -33,6 +33,7 @@
         "@hooks/*": ["src/hooks/*"],
         "@utils/*": ["src/utils/*"],
         "@theme/*": ["src/theme/*"],
+        "@pages/*": ["src/pages/*"],
         "@theme": ["src/theme/"]
       }
     }

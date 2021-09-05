@@ -173,3 +173,19 @@
         }
     }
 }
+
+.pull-request {
+    .number {
+        font-weight: 100;
+        opacity: 0.5;
+        display: inline-block;
+        min-width: 50px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .title {
+        padding-left: 10px;
+        display: inline-block;
+    }
+}

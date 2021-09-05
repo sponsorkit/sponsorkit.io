@@ -13,5 +13,12 @@
         justify-content: center;
         margin-top: 40px;
         gap: 40px;
+
+        .account-overview {
+            display: flex;
+            justify-content: space-between;
+            justify-self: center;
+            max-width: 650px;
+        }
     }
 }

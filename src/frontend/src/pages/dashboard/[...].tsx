@@ -2,7 +2,7 @@ import createAccountValidatior from "@components/account/account-validator";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import ProgressList from "@components/progress-list";
-import { Box, Container, DialogContent, DialogTitle, Typography } from "@material-ui/core";
+import { Box, Card, CardContent, Container, DialogContent, DialogTitle, Typography } from "@material-ui/core";
 import { isPopupBlocked } from "@utils/popup";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
@@ -39,36 +39,40 @@ function DashboardPage() {
                 Profile
             </Typography>
             <Box className={classes.accountOverviews}>
-                <ProgressList
-                    title="Profile completion"
-                    subTitle="Your beneficiary details are used when you want to earn money from bounties, donations or sponsorships. Your sponsor details are used when you want to place bounties, give donations or start sponsoring others."
-                    checkpoints={[
-                        {
-                            label: "Connect your GitHub account",
-                            description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
-                            validate: () => !!account.beneficiary?.gitHubUsername,
-                            onClick: () => { }
-                        },
-                        {
-                            label: "Change or verify e-mail address",
-                            description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money, and when your card has been charged (invoices).",
-                            validate: () => account.isEmailVerified,
-                            onClick: () => setIsValidatingEmail(true)
-                        },
-                        {
-                            label: "Save payment details for later",
-                            description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
-                            validate: () => !!account.sponsor?.creditCard,
-                            onClick: () => { }
-                        },
-                        {
-                            label: "Fill in your bank account details",
-                            description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
-                            validate: () => !!account.beneficiary?.isAccountComplete,
-                            onClick: () => setIsFillingInBankDetails(true)
-                        }
-                    ]}
-                />
+                <Card className={classes.accountOverview}>
+                    <CardContent>
+                        <ProgressList
+                            title="Profile completion"
+                            subTitle="Your beneficiary details are used when you want to earn money from bounties, donations or sponsorships. Your sponsor details are used when you want to place bounties, give donations or start sponsoring others."
+                            checkpoints={[
+                                {
+                                    label: "Connect your GitHub account",
+                                    description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
+                                    validate: () => !!account.gitHubUsername,
+                                    onClick: () => { }
+                                },
+                                {
+                                    label: "Change or verify e-mail address",
+                                    description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money, and when your card has been charged (invoices).",
+                                    validate: () => account.isEmailVerified,
+                                    onClick: () => setIsValidatingEmail(true)
+                                },
+                                {
+                                    label: "Save payment details for later",
+                                    description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
+                                    validate: () => !!account.sponsor?.creditCard,
+                                    onClick: () => { }
+                                },
+                                {
+                                    label: "Fill in your bank account details",
+                                    description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
+                                    validate: () => !!account.beneficiary?.isAccountComplete,
+                                    onClick: () => setIsFillingInBankDetails(true)
+                                }
+                            ]}
+                        />
+                    </CardContent>
+                </Card>
             </Box>
         </Container>
     </AppBarTemplate>;
@@ -100,7 +104,7 @@ function BankDetailsDialog(props: {
         onDone={props.onValidated}
     >
         <DialogTitle>We'll send you over to Stripe</DialogTitle>
-        <DialogContent className={classes.verifyEmailDialog}>
+        <DialogContent>
             <Typography>
                 A new window will pop up, which will prompt you to fill in your information through them.
             </Typography>
