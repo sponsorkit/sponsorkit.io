@@ -15,6 +15,7 @@ type IntentResponse = {
 };
 
 type Props = {
+    isOpen: boolean,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
     onComplete: () => Promise<void> | void
@@ -30,7 +31,7 @@ function PaymentMethodModalContent(props: Props) {
 
     useEffect(
         () => {
-            async function effect() {
+            async function onOpen() {
                 setIsLoading(true);
                 setIsInitializing(true);
 
@@ -46,9 +47,19 @@ function PaymentMethodModalContent(props: Props) {
                 }
             }
 
-            effect();
+            async function onClose() {
+                setError(null);
+                setIntentResponse(null);
+                setCardNumberElement(null);
+                setStripe(undefined);
+                setIsLoading(false);
+                setIsInitializing(false);
+            }
+
+            props.isOpen && onOpen();
+            !props.isOpen && onClose();
         },
-        []);
+        [props.isOpen]);
 
     const isDoneAccessor = async () => {
         if (!intentResponse)
@@ -67,8 +78,10 @@ function PaymentMethodModalContent(props: Props) {
         if (setupIntent.status === "processing")
             return false;
 
-        if (setupIntent?.status !== "succeeded")
-            throw new Error("Did not expect payment intent status: " + setupIntent?.status);
+        if (setupIntent?.status !== "succeeded") {
+            console.error("Did not expect payment intent status", setupIntent?.status);
+            return null;
+        }
 
         const bountyIntentResponse = await createApi().bountiesPaymentIntentIdGet(setupIntent.id);
         return bountyIntentResponse.isProcessed;
@@ -108,8 +121,8 @@ function PaymentMethodModalContent(props: Props) {
     const isReady = !!intentResponse && !isLoading;
 
     return <AsynchronousProgressDialog
-        isOpen
-        isSubmitDisabled={isLoading}
+        isOpen={props.isOpen}
+        isSubmitDisabled={isLoading || !!error || !cardNumberElement}
         onClose={onCancelClicked}
         buttonText="Submit"
         requestSendingText="Submitting..."

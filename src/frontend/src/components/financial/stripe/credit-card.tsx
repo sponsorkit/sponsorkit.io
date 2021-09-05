@@ -4,6 +4,10 @@ import { Stripe, StripeCardNumberElement, StripeElementChangeEvent, StripeElemen
 import { useEffect, useState } from "react";
 import { StripeTextField } from "./text-field";
 
+type StatusOverview = { [key in StripeElementType]?: {
+    error: string,
+    complete: boolean
+} };
 
 export default function StripeCreditCard(props: {
     onInitialized: (context: { stripe: Stripe, elements: StripeElements }) => void,
@@ -23,19 +27,35 @@ export default function StripeCreditCard(props: {
         },
         [stripe, elements]);
 
-    const [errors, setErrors] = useState<{ [key in StripeElementType]?: string }>({});
+    const [statuses, setStatuses] = useState<StatusOverview>({});
 
     const onChange = (event: StripeElementChangeEvent) => {
         if (!stripe || !elements)
             return;
 
-        setErrors({
-            ...errors,
-            [event.elementType]: event.error?.message
-        });
+        const newStatuses: StatusOverview = {
+            ...statuses,
+            [event.elementType]: {
+                error: event.error?.message,
+                complete: event.complete
+            }
+        };
+        setStatuses(newStatuses);
 
-        const cardNumberElement = elements.getElement(CardNumberElement);
-        props.onChanged(cardNumberElement);
+        const knownElementTypes: StripeElementType[] = [
+            "cardNumber",
+            "cardExpiry",
+            "cardCvc"
+        ];
+
+        const hasError = knownElementTypes
+            .filter(key => {
+                const status = newStatuses[key];
+                return !status?.complete || status?.error;
+            })
+            .length > 0;
+
+        props.onChanged(!hasError && event.complete ? elements.getElement(CardNumberElement) : null);
     };
 
     return <Grid container style={{
@@ -43,8 +63,8 @@ export default function StripeCreditCard(props: {
     }}>
         <Grid item xs={12}>
             <StripeTextField
-                error={Boolean(errors.cardNumber)}
-                labelErrorMessage={errors.cardNumber}
+                error={Boolean(statuses.cardNumber?.error)}
+                labelErrorMessage={statuses.cardNumber?.error}
                 label="Card number"
                 inputProps={{
                     options: {
@@ -58,8 +78,8 @@ export default function StripeCreditCard(props: {
         </Grid>
         <Grid item xs={7}>
             <StripeTextField
-                error={Boolean(errors.cardExpiry)}
-                labelErrorMessage={errors.cardExpiry}
+                error={Boolean(statuses.cardExpiry?.error)}
+                labelErrorMessage={statuses.cardExpiry?.error}
                 label="Expiry"
                 onChange={onChange}
                 stripeElement={CardExpiryElement}
@@ -70,8 +90,8 @@ export default function StripeCreditCard(props: {
             paddingLeft: 18
         }}>
             <StripeTextField
-                error={Boolean(errors.cardCvc)}
-                labelErrorMessage={errors.cardExpiry}
+                error={Boolean(statuses.cardCvc?.error)}
+                labelErrorMessage={statuses.cardExpiry?.error}
                 label="CVC"
                 onChange={onChange}
                 stripeElement={CardCvcElement}

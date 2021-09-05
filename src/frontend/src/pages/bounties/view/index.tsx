@@ -1,5 +1,5 @@
 import EmailValidationDialog from "@components/account/email-validation-dialog";
-import { DialogTransition } from "@components/dialog-transition";
+import getDialogTransitionProps from "@components/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
@@ -17,6 +17,7 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
+import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
@@ -44,7 +45,7 @@ export default function IssueByIdPage(props: {
             location={props.location}
             onChange={async e => {
                 console.log("issue-input-field-changed", e);
-                
+
                 setIssue(e.issue);
                 window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
 
@@ -55,7 +56,7 @@ export default function IssueByIdPage(props: {
                 ref={ref}
                 issue={issue}
                 bounties={bounties}
-                onBountyCreated={async () => 
+                onBountyCreated={async () =>
                     await loadBountiesFromIssue(issue)} />}
         </Transition>
     </AppBarTemplate>
@@ -98,7 +99,7 @@ function IssueInputField(props: {
         if (issue === null)
             return "No issue was found with the given URL.";
     };
-        
+
     const [issue, setIssue] = useState<OctokitIssueResponse | null>();
 
     const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
@@ -116,7 +117,7 @@ function IssueInputField(props: {
         () => {
             async function effect() {
                 console.log("load-issue", issueDetails, issue);
-                
+
                 if (!issueDetails) {
                     setIssue(null);
                     return;
@@ -134,9 +135,9 @@ function IssueInputField(props: {
                     const issue = issueResponse?.data || null;
                     setIssue(issue);
 
-                    if(issue) {
+                    if (issue) {
                         await props.onChange({
-                            issue, 
+                            issue,
                             details: issueDetails
                         });
                     }
@@ -171,7 +172,7 @@ function IssueInputField(props: {
                 placeholder={!issue || !issueLink ?
                     "Paste the full URL of the GitHub issue you want to put a bounty on" :
                     issueLink}
-                value={!issue ? 
+                value={!issue ?
                     issueLink :
                     ""}
                 variant="outlined"
@@ -180,7 +181,7 @@ function IssueInputField(props: {
     </Card>
 }
 
-const Issue = forwardRef(function(
+const Issue = forwardRef(function (
     props: {
         issue: OctokitIssueResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
@@ -224,10 +225,10 @@ const Issue = forwardRef(function(
     const eventsOrdered = orderBy(events, x => x?.time, "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.repository_url);
-    if(!repo)
+    if (!repo)
         throw new Error("Expected repo details.");
 
-    return <Box 
+    return <Box
         className={combineClassNames(classes.issueRoot)}
         ref={ref}
     >
@@ -316,7 +317,7 @@ function Bounties(props: {
     const [isClaiming, setIsClaiming] = useState(false);
 
     const onClaimClicked = async () => {
-        if(!!claimError)
+        if (!!claimError)
             return;
 
         setIsClaiming(true);
@@ -324,12 +325,12 @@ function Bounties(props: {
 
     return <Card className={classes.bounties}>
         <>
-            <ClaimDialog 
+            <ClaimDialog
                 issue={props.issue}
                 isOpen={isClaiming}
                 onClose={() => setIsClaiming(false)}
                 onClaim={async () => {
-                    
+
                 }} />
             <CardContent className={classes.bountyAmount}>
                 <Box className={classes.labelContainer}>
@@ -392,29 +393,29 @@ function CreateBounty(props: {
         >
             Add
         </Button>
-        {shouldCreate &&
-            <PaymentMethodModal
-                onComplete={props.onBountyCreated}
-                onClose={() => setShouldCreate(false)}
-                onAcquirePaymentIntent={async () => {
-                    if (!props.issue)
-                        throw new Error("Issue was not set.");
+        <PaymentMethodModal
+            isOpen={shouldCreate}
+            onComplete={props.onBountyCreated}
+            onClose={() => setShouldCreate(false)}
+            onAcquirePaymentIntent={async () => {
+                if (!props.issue)
+                    throw new Error("Issue was not set.");
 
-                    const response = await createApi().bountiesPaymentIntentPost({
-                        body: {
-                            amountInHundreds: amount * 100,
-                            issue: props.issue
-                        }
-                    });
-                    if (!response)
-                        throw new Error("Could not create intent for bounty.");
-
-                    return {
-                        clientSecret: response.paymentIntentClientSecret,
-                        existingPaymentMethodId: response.existingPaymentMethodId
+                const response = await createApi().bountiesPaymentIntentPost({
+                    body: {
+                        amountInHundreds: amount * 100,
+                        issue: props.issue
                     }
-                }}
-            />}
+                });
+                if (!response)
+                    throw new Error("Could not create intent for bounty.");
+
+                return {
+                    clientSecret: response.paymentIntentClientSecret,
+                    existingPaymentMethodId: response.existingPaymentMethodId
+                }
+            }}
+        />
     </>;
 }
 
@@ -429,6 +430,7 @@ function ClaimDialog(props: {
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
+    const [key] = useState(newGuid);
 
     const [token] = useToken();
     const account = useApi(
@@ -440,7 +442,7 @@ function ClaimDialog(props: {
         [lastProgressChange, token]);
     const pullRequests = useOctokit(
         async client => {
-            if(!issueDetails?.repo || !account?.gitHubUsername)
+            if (!issueDetails?.repo || !account?.gitHubUsername)
                 return undefined;
 
             const validPullRequestResponse = await client.search.issuesAndPullRequests({
@@ -457,16 +459,16 @@ function ClaimDialog(props: {
         [issueDetails?.repo, account?.gitHubUsername]);
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 
-    const [selectedPullRequest, setSelectedPullRequest] = useState<OctokitPullRequestResponse|null>();
+    const [selectedPullRequest, setSelectedPullRequest] = useState<OctokitPullRequestResponse | null>();
     const pullRequestError = useMemo(
         () => {
-            if(selectedPullRequest === undefined)
+            if (selectedPullRequest === undefined)
                 return "";
 
-            if(!selectedPullRequest)
+            if (!selectedPullRequest)
                 return "You must select a pull request.";
 
-            if(!selectedPullRequest.pull_request.merged_at)
+            if (!selectedPullRequest.pull_request.merged_at)
                 return "Only merged pull requests are accepted."
 
             return "";
@@ -480,26 +482,23 @@ function ClaimDialog(props: {
         [pullRequestError]);
 
     const onClaimClicked = async () => {
-        if(error)
+        if (error)
             return;
-        
+
         await props.onClaim();
     }
 
-    if(!props.isOpen)
-        return null;
-
-    return <LoginDialog onDismissed={props.onClose}>
+    return <LoginDialog key={key} onDismissed={props.onClose}>
         {() => account && pullRequests ? <>
             <EmailValidationDialog
                 email={account.email}
                 isOpen={isValidatingEmail}
                 onValidated={() => setLastProgressChange(new Date())}
                 onClose={() => setIsValidatingEmail(false)} />
-            <Dialog 
-                open={props.isOpen} 
-                onClose={props.onClose} 
-                TransitionComponent={DialogTransition}
+            <Dialog
+                open={props.isOpen}
+                onClose={props.onClose}
+                {...getDialogTransitionProps()}
             >
                 <DialogContent>
                     <ProgressList
@@ -546,17 +545,17 @@ function ClaimDialog(props: {
                                     value={selectedPullRequest}
                                     renderInput={params => (
                                         <TextField
-                                          {...params}
-                                          label="Choose a pull request"
-                                          variant="outlined"
-                                          helperText={pullRequestError}
-                                          error={!!pullRequestError}
-                                          inputProps={{
-                                            ...params.inputProps,
-                                            autoComplete: 'new-password', // disable autocomplete and autofill
-                                          }}
+                                            {...params}
+                                            label="Choose a pull request"
+                                            variant="outlined"
+                                            helperText={pullRequestError}
+                                            error={!!pullRequestError}
+                                            inputProps={{
+                                                ...params.inputProps,
+                                                autoComplete: 'new-password', // disable autocomplete and autofill
+                                            }}
                                         />
-                                      )}
+                                    )}
                                 />
                             }
                         ]}

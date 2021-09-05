@@ -1,4 +1,4 @@
-import { DialogTransition } from "@components/dialog-transition";
+import getDialogTransitionProps from "@components/dialog-transition";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@material-ui/core";
 import { GitHub } from "@material-ui/icons";
 import { RouteComponentProps } from "@reach/router";
@@ -30,7 +30,7 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
     if(!shouldShowLoginDialog) {
         return <Dialog 
             open
-            TransitionComponent={DialogTransition}
+            {...getDialogTransitionProps()}
         >
             <DialogTitle>Sign in to continue</DialogTitle>
             <DialogContent className={classes.root}>

@@ -2,7 +2,7 @@ import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@ma
 import { Box } from "@material-ui/system";
 import { useEffect, useState } from "react";
 import * as classes from "./asynchronous-progress-dialog.module.scss";
-import { DialogTransition } from "./dialog-transition";
+import getDialogTransitionProps from "./dialog-transition";
 
 export function AsynchronousProgressDialog(props: {
     isOpen: boolean,
@@ -78,7 +78,7 @@ export function AsynchronousProgressDialog(props: {
         onClose={() => {
             props.onClose();
         }}
-        TransitionComponent={DialogTransition}
+        {...getDialogTransitionProps()}
         className={classes.root}
     >
         {props.children}
