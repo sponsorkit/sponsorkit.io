@@ -7,6 +7,7 @@ import React, { useMemo, useRef } from 'react';
 import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
+    isOpen: boolean,
     onDismissed?: () => void,
     onPopupFailed?: () => void,
     children: () => JSX.Element|null|undefined
@@ -16,7 +17,7 @@ export default function LoginDialog(props: {
     const configuration = useConfiguration();
     const wasDismissed = useRef(true);
 
-    if(token && !token.isExpired) {
+    if(!props.isOpen || (token && !token.isExpired)) {
         return props.children() || <></>;
     }
 

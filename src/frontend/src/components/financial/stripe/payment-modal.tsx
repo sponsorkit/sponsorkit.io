@@ -168,7 +168,7 @@ function PaymentMethodModalContent(props: Props) {
 }
 
 export function PaymentMethodModal(props: Props) {
-    return <LoginDialog>
+    return <LoginDialog isOpen={props.isOpen}>
         {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
 }

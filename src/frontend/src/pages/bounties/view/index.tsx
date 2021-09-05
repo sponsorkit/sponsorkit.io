@@ -488,7 +488,11 @@ function ClaimDialog(props: {
         await props.onClaim();
     }
 
-    return <LoginDialog key={key} onDismissed={props.onClose}>
+    return <LoginDialog 
+        key={key} 
+        isOpen={props.isOpen}
+        onDismissed={props.onClose}
+    >
         {() => account && pullRequests ? <>
             <EmailValidationDialog
                 email={account.email}

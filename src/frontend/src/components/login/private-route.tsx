@@ -51,6 +51,7 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
     }
 
     return <LoginDialog 
+        isOpen={shouldShowLoginDialog}
         onDismissed={onDismissed}
         onPopupFailed={onPopupFailed}
     >
