@@ -377,7 +377,7 @@ function CreateBounty(props: {
 
     return <>
         <Typography variant="h4" component="h3" className={classes.title}>
-            {props.currentAmount > 0 ?
+            {props.currentAmount ?
                 "Increase bounty" :
                 "Add bounty"}
         </Typography>
