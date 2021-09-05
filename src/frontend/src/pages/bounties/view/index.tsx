@@ -486,6 +486,9 @@ function ClaimDialog(props: {
         await props.onClaim();
     }
 
+    if(!props.isOpen)
+        return null;
+
     return <LoginDialog onDismissed={props.onClose}>
         {() => account && pullRequests ? <>
             <EmailValidationDialog
