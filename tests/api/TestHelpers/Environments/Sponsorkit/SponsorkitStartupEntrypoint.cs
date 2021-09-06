@@ -114,6 +114,8 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 
             scope.Dispose();
             host.Dispose();
+
+            await Task.CompletedTask;
         }
     }
 

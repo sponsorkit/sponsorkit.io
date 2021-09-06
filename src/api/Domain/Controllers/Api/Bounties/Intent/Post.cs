@@ -59,8 +59,6 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
         [HttpPost("/bounties/payment-intent")]
         public override async Task<ActionResult<PostResponse>> HandleAsync([FromBody] PostRequest request, CancellationToken cancellationToken = default)
         {
-            var userId = User.GetRequiredId();
-            
             var issue = await mediator.Send(
                 new EnsureGitHubIssueInDatabaseCommand(
                     request.Issue.OwnerName,
@@ -70,11 +68,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
             if (issue.Status == ResultStatus.NotFound)
                 return NotFound();
 
-            var user = await dataContext.Users.SingleOrDefaultAsync(
+            var userId = User.GetRequiredId();
+            var user = await dataContext.Users.SingleAsync(
                 x => x.Id == userId,
                 cancellationToken);
-            if (user == null)
-                return Unauthorized("User not found.");
             
             var paymentMethod = await mediator.Send(
                 new GetPaymentMethodForCustomerQuery(user.StripeCustomerId),

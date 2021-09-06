@@ -7,6 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluffySpoon.AspNet.NGrok;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -36,15 +38,9 @@ namespace Sponsorkit.Infrastructure.AspNet
             Environment = environment;
         }
 
-        public IConfiguration Configuration
-        {
-            get;
-        }
+        public IConfiguration Configuration { get; }
 
-        public IHostEnvironment Environment
-        {
-            get;
-        }
+        public IHostEnvironment Environment { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -57,6 +53,30 @@ namespace Sponsorkit.Infrastructure.AspNet
             ConfigureAspNetCore(services);
             ConfigureSwagger(services);
             ConfigureAuthentication(services);
+            ConfigureHangfire(services);
+        }
+
+        private void ConfigureHangfire(IServiceCollection services)
+        {
+            var sqlOptions = Configuration.GetOptions<SqlOptions>();
+            var connectionString = sqlOptions.ConnectionString;
+
+            services.AddHangfire(configuration => configuration
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(
+                    connectionString,
+                    new SqlServerStorageOptions
+                    {
+                        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                        QueuePollInterval = TimeSpan.Zero,
+                        UseRecommendedIsolationLevel = true,
+                        DisableGlobalLocks = true
+                    }));
+
+            services.AddHangfireServer();
         }
 
         private static void ConfigureNGrok(IServiceCollection services)
@@ -69,10 +89,7 @@ namespace Sponsorkit.Infrastructure.AspNet
             var jwtOptions = Configuration.GetOptions<JwtOptions>();
             services
                 .AddAuthorization()
-                .AddAuthentication(options =>
-                {
-                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
+                .AddAuthentication(options => { options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; })
                 .AddJwtBearer(options =>
                 {
                     options.Audience = "sponsorkit.io";
@@ -103,10 +120,7 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             services
                 .AddMvcCore()
-                .AddJsonOptions(x =>
-                {
-                    x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-                })
+                .AddJsonOptions(x => { x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)); })
                 .AddApplicationPart(typeof(Startup).Assembly)
                 .AddControllersAsServices()
                 .AddAuthorization()
@@ -116,13 +130,13 @@ namespace Sponsorkit.Infrastructure.AspNet
             {
                 options.AddDefaultPolicy(
                     builder => builder
-                        .WithOrigins(Debugger.IsAttached ?
-                            new [] {
-                                "http://localhost:8000",
-                                "http://localhost:9000",
-                                "http://localhost:6006"
-                            } :
-                            new [] { 
+                        .WithOrigins(Debugger.IsAttached
+                            ? new[]
+                            {
+                                "http://localhost:8000", "http://localhost:9000", "http://localhost:6006"
+                            }
+                            : new[]
+                            {
                                 "https://sponsorkit.io"
                             })
                         .AllowAnyHeader()
@@ -130,10 +144,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                         .AllowCredentials());
             });
 
-            services.AddResponseCompression(options =>
-            {
-                options.EnableForHttps = true;
-            });
+            services.AddResponseCompression(options => { options.EnableForHttps = true; });
         }
 
         private static void ConfigureSwagger(IServiceCollection services)
@@ -145,20 +156,23 @@ namespace Sponsorkit.Infrastructure.AspNet
                 c.OperationFilter<AutoRestOpenApiFilter>();
                 c.ParameterFilter<AutoRestOpenApiFilter>();
                 c.RequestBodyFilter<AutoRestOpenApiFilter>();
-                
+
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "General",
                     Version = "v1"
                 });
 
-                c.TagActionsBy(x => new[] { "General" });
-                
+                c.TagActionsBy(x => new[]
+                {
+                    "General"
+                });
+
                 c.IgnoreObsoleteActions();
                 c.IgnoreObsoleteProperties();
-                
+
                 c.SupportNonNullableReferenceTypes();
-                
+
                 c.DescribeAllParametersInCamelCase();
                 c.CustomOperationIds(x =>
                 {
@@ -182,7 +196,7 @@ namespace Sponsorkit.Infrastructure.AspNet
             app.UseExceptionHandler("/errors/details");
 
             app.UseRouting();
-            
+
             app.UseCors();
 
             app.UseAuthentication();
@@ -221,7 +235,6 @@ namespace Sponsorkit.Infrastructure.AspNet
                                     Error = e.Value.Exception?.Message
                                 })
                                 .ToList()
-
                         });
 
                         context.Response.ContentType = MediaTypeNames.Application.Json;
@@ -229,7 +242,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                         await context.Response.WriteAsync(result);
                     }
                 });
-                
+
                 endpoints.MapHealthChecks("/health");
 
                 endpoints.MapSwagger();

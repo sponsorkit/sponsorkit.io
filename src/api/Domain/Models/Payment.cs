@@ -32,7 +32,7 @@ namespace Sponsorkit.Domain.Models
         public int AmountInHundreds { get; set; }
         
         /// <summary>
-        /// The ID of the corresponding payment intent in Stripe.
+        /// The ID of the setup intent in Stripe.
         /// </summary>
         public string StripeId { get; set; } = null!;
         

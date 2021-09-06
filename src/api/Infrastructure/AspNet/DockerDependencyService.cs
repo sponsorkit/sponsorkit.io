@@ -33,7 +33,7 @@ namespace Sponsorkit.Infrastructure.AspNet
         private PlanService? planService;
         private WebhookEndpointService? webhookEndpointService;
         private INGrokHostedService? ngrokHostedService;
-        private IOptionsMonitor<StripeOptions> stripeOptions;
+        private IOptionsMonitor<StripeOptions>? stripeOptions;
 
         private DockerClient? docker;
 
@@ -90,6 +90,9 @@ namespace Sponsorkit.Infrastructure.AspNet
             if (webhookEndpointService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
+            if (stripeOptions == null)
+                throw new InvalidOperationException("Stripe options could not be fetched.");
+
             await CleanupStripeWebhooksAsync();
 
             var sslTunnel = tunnels.Single(x => x.PublicUrl.StartsWith("https://", StringComparison.InvariantCulture));
@@ -102,6 +105,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 Url = webhookUrl,
                 EnabledEvents = new List<string>() { "*" }
             });
+            
             stripeOptions.CurrentValue.WebhookSecretKey = webhook.Secret;
         }
 

@@ -14,14 +14,6 @@ namespace Sponsorkit.Domain.Models.Builders
 
         private UserGitHubInformation? gitHub;
         
-        private List<Repository>? repositories;
-        
-        private List<Bounty>? createdBounties;
-        private List<Bounty>? awardedBounties;
-
-        private List<Sponsorship>? createdSponsorships;
-        private List<Sponsorship>? awardedSponsorships;
-        
         private DateTimeOffset createdAtUtc;
         
         public UserBuilder()
@@ -82,11 +74,6 @@ namespace Sponsorkit.Domain.Models.Builders
                 StripeCustomerId = stripeCustomerId,
                 StripeConnectId = stripeConnectId,
                 CreatedAtUtc = createdAtUtc,
-                Repositories = repositories ?? new List<Repository>(),
-                AwardedBounties = awardedBounties ?? new List<Bounty>(),
-                AwardedSponsorships = awardedSponsorships ?? new List<Sponsorship>(),
-                CreatedBounties = createdBounties ?? new List<Bounty>(),
-                CreatedSponsorships = createdSponsorships ?? new List<Sponsorship>(),
                 GitHub = gitHub
             };
 

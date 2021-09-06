@@ -5,7 +5,6 @@ namespace Sponsorkit.Domain.Models.Builders
 {
     public class IssueBuilder : ModelBuilder<Issue>
     {
-        private Guid id;
         private Bounty[] bounties;
         private Repository? repository;
         private long? gitHubId;
@@ -13,12 +12,6 @@ namespace Sponsorkit.Domain.Models.Builders
         public IssueBuilder()
         {
             bounties = Array.Empty<Bounty>();
-        }
-
-        public IssueBuilder WithId(Guid id)
-        {
-            this.id = id;
-            return this;
         }
 
         public IssueBuilder WithBounties(params Bounty[] bounties)
@@ -49,7 +42,6 @@ namespace Sponsorkit.Domain.Models.Builders
             
             return new Issue()
             {
-                Id = id,
                 Bounties = bounties.ToList(),
                 Repository = repository,
                 GitHubId = gitHubId.Value

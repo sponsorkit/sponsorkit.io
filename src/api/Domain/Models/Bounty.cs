@@ -24,6 +24,8 @@ namespace Sponsorkit.Domain.Models
         public Issue Issue { get; set; } = null!;
         public Guid IssueId { get; set; }
 
+        public List<BountyClaimRequest> ClaimRequests { get; set; } = new();
+
         public List<Payment> Payments { get; set; } = new();
     }
     
@@ -35,12 +37,6 @@ namespace Sponsorkit.Domain.Models
                 .HasOne(x => x.Creator)
                 .WithMany(x => x.CreatedBounties)
                 .HasForeignKey(x => x.CreatorId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder
-                .HasOne(x => x.AwardedTo)
-                .WithMany(x => x!.AwardedBounties)
-                .HasForeignKey(x => x.AwardedToId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder

@@ -27,7 +27,8 @@ namespace Sponsorkit.Domain.Models
         public List<Repository> Repositories { get; set; } = new();
         
         public List<Bounty> CreatedBounties { get; set; } = new();
-        public List<Bounty> AwardedBounties { get; set; } = new();
+        
+        public List<BountyClaimRequest> BountyClaimRequests { get; set; } = new();
 
         public List<Sponsorship> CreatedSponsorships { get; set; } = new();
         public List<Sponsorship> AwardedSponsorships { get; set; } = new();
@@ -36,8 +37,8 @@ namespace Sponsorkit.Domain.Models
     public class UserGitHubInformation
     {
         public long Id { get; set; }
-        
-        public string Username { get; set; }
+
+        public string Username { get; set; } = null!;
 
         public byte[] EncryptedAccessToken { get; set; } = null!;
     }

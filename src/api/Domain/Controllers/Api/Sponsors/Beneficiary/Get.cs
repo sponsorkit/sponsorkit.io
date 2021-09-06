@@ -35,6 +35,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.Beneficiary
             var user = await dataContext.Users.SingleOrDefaultAsync(
                 x => x.Id == request.BeneficiaryId, 
                 cancellationToken: cancellationToken);
+            if (user == null)
+                return NotFound();
 
             return new OkObjectResult(new Response(user.Id)
             {

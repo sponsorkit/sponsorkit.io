@@ -4,13 +4,24 @@
         <TargetFramework>net5.0</TargetFramework>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Docker.DotNet" Version="3.125.4" />
+        <PackageReference Include="Docker.DotNet" Version="3.125.5" />
         <PackageReference Include="FluffySpoon.AspNet.NGrok" Version="1.75.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.5" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.5" />
-        <PackageReference Include="coverlet.collector" Version="3.0.3">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="5.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="5.0.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.9" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+        <PackageReference Include="MSTest.TestAdapter" Version="2.2.7" />
+        <PackageReference Include="MSTest.TestFramework" Version="2.2.7" />
+        <PackageReference Include="coverlet.collector" Version="3.1.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
