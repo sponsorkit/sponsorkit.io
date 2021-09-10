@@ -8,10 +8,10 @@ namespace Sponsorkit.Domain.Models.Builders
     {
         private Guid id;
 
-        private long? gitHubId;
         private User? owner;
         private List<Issue>? issues;
         private List<Sponsorship>? sponsorships;
+        private RepositoryGitHubInformation? gitHub;
 
         public RepositoryBuilder WithId(Guid id)
         {
@@ -19,9 +19,17 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public RepositoryBuilder WithGitHubId(long gitHubId)
+        public RepositoryBuilder WithGitHubInformation(
+            long gitHubId,
+            string name,
+            string ownerName)
         {
-            this.gitHubId = gitHubId;
+            this.gitHub = new RepositoryGitHubInformation()
+            {
+                Id = gitHubId,
+                Name = name,
+                OwnerName = ownerName
+            };
             return this;
         }
 
@@ -45,8 +53,8 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public override Repository Build()
         {
-            if (gitHubId == null)
-                throw new InvalidOperationException("No GitHub ID was specified.");
+            if (gitHub == null)
+                throw new InvalidOperationException("No GitHub information was specified.");
             
             return new Repository()
             {
@@ -54,7 +62,7 @@ namespace Sponsorkit.Domain.Models.Builders
                 Owner = owner,
                 Issues = issues ?? new List<Issue>(),
                 Sponsorships = sponsorships ?? new List<Sponsorship>(),
-                GitHubId = gitHubId.Value
+                GitHub = gitHub
             };
         }
     }

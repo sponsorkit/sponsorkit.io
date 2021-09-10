@@ -7,6 +7,7 @@ using Ardalis.ApiEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Octokit;
 using Serilog;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
@@ -16,11 +17,14 @@ using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
+using Issue = Sponsorkit.Domain.Models.Issue;
+using PullRequest = Sponsorkit.Domain.Models.PullRequest;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
 {
     public record PostRequest(
-        [FromRoute] long GitHubIssueId);
+        [FromRoute] long GitHubIssueId,
+        [FromRoute] long GitHubPullRequestNumber);
     
     public class Post : BaseAsyncEndpoint
         .WithRequest<PostRequest>
@@ -30,34 +34,42 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
         private readonly IMediator mediator;
         private readonly IAesEncryptionHelper aesEncryptionHelper;
         private readonly ILogger logger;
+        private readonly IGitHubClient gitHubClient;
 
         public Post(
             DataContext dataContext,
             IMediator mediator,
             IAesEncryptionHelper aesEncryptionHelper,
-            ILogger logger)
+            ILogger logger,
+            IGitHubClient gitHubClient)
         {
             this.dataContext = dataContext;
             this.mediator = mediator;
             this.aesEncryptionHelper = aesEncryptionHelper;
             this.logger = logger;
+            this.gitHubClient = gitHubClient;
         }
 
         [HttpPost("/bounties/{gitHubIssueId}/claim")]
         public override async Task<ActionResult> HandleAsync([FromRoute] PostRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
-                .Include(x => x.Bounties)
-                .ThenInclude(x => x.Creator)
+                .Include(x => x.Bounties).ThenInclude(x => x.Creator)
+                .Include(x => x.Repository)
                 .SingleOrDefaultAsync(
-                    x => x.GitHubId == request.GitHubIssueId,
+                    x => x.GitHub.Id == request.GitHubIssueId,
                     cancellationToken);
             if (issue == null)
-                return NotFound();
+                return NotFound("Issue not found.");
 
-            var userId = User.GetRequiredId();
-
+            var pullRequest = await gitHubClient.PullRequest.Get(
+                issue.Repository.GitHub.Id,
+                (int)request.GitHubPullRequestNumber);
+            if (pullRequest == null)
+                return NotFound("Invalid pull request specified.");
+            
             var addedClaimRequests = new HashSet<BountyClaimRequest>();
+            var userId = User.GetRequiredId();
             
             var result = await dataContext.ExecuteInTransactionAsync<ActionResult?>(async () =>
             {
@@ -65,6 +77,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
                     .AsQueryable()
                     .Include(x => x.BountyClaimRequests
                         .Where(b => b.Bounty.IssueId == issue.Id))
+                    .ThenInclude(x => x.PullRequest)
                     .SingleAsync(
                         x => x.Id == userId,
                         cancellationToken);
@@ -73,11 +86,18 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
                 if (existingClaimRequest != null)
                     return BadRequest("An existing claim request exists for this bounty.");
 
+                var databasePullRequest = new PullRequestBuilder()
+                    .WithRepository(issue.Repository)
+                    .WithGitHubInformation(
+                        pullRequest.Id,
+                        pullRequest.Number)
+                    .Build();
                 foreach (var bounty in issue.Bounties)
                 {
                     var claimRequest = new BountyClaimRequestBuilder()
                         .WithBounty(bounty)
                         .WithCreator(user)
+                        .WithPullRequest(databasePullRequest)
                         .Build();
                     user.BountyClaimRequests.Add(claimRequest);
                     bounty.ClaimRequests.Add(claimRequest);
@@ -93,15 +113,26 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
             if (result != null)
                 return result;
 
+            await SendClaimRequestsToUserEmailsAsync(
+                addedClaimRequests, 
+                cancellationToken);
+
+            return Ok();
+        }
+
+        private async Task SendClaimRequestsToUserEmailsAsync(
+            ICollection<BountyClaimRequest> addedClaimRequests, 
+            CancellationToken cancellationToken)
+        {
             foreach (var claimRequest in addedClaimRequests)
             {
                 var emailAddress = await aesEncryptionHelper.DecryptAsync(claimRequest.Bounty.Creator.EncryptedEmail);
-                
+
                 var userGitHubInformation = claimRequest.Creator.GitHub;
                 if (userGitHubInformation == null)
                     throw new InvalidOperationException("Creator GitHub information could not be found.");
 
-                var verdictUrl = LinkHelper.GetApiUrl($"/bounties/{issue.GitHubId}/claim/{claimRequest.Id}");
+                var verdictUrl = LinkHelper.GetWebUrl($"/bounties/claims/verdict?claimId={claimRequest.Id}");
                 await mediator.Send(
                     new SendEmailCommand(
                         EmailSender.Bountyhunt,
@@ -113,8 +144,6 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
                             userGitHubInformation.Username)),
                     cancellationToken);
             }
-
-            return Ok();
         }
     }
 }

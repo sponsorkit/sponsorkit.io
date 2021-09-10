@@ -56,12 +56,14 @@ namespace Sponsorkit.Domain.Mediatr
             CancellationToken cancellationToken)
         {
             var issue = await dataContext.Issues.SingleOrDefaultAsync(
-                x => x.GitHubId == gitHubIssue.Id,
+                x => x.GitHub.Id == gitHubIssue.Id,
                 cancellationToken);
             if (issue == null)
             {
                 var newIssue = new IssueBuilder()
-                    .WithGitHubId(gitHubIssue.Id)
+                    .WithGitHubInformation(
+                        gitHubIssue.Id,
+                        gitHubIssue.Number)
                     .WithRepository(repository)
                     .Build();
                 await dataContext.Issues.AddAsync(
@@ -79,21 +81,22 @@ namespace Sponsorkit.Domain.Mediatr
             CancellationToken cancellationToken)
         {
             var repository = await dataContext.Repositories.SingleOrDefaultAsync(
-                x => x.GitHubId == gitHubRepository.Id,
+                x => x.GitHub.Id == gitHubRepository.Id,
                 cancellationToken);
-            if (repository == null)
-            {
-                var newRepository = new RepositoryBuilder()
-                    .WithGitHubId(gitHubRepository.Id)
-                    .Build();
-                await dataContext.Repositories.AddAsync(
-                    newRepository,
-                    cancellationToken);
+            if (repository != null)
+                return repository;
+            
+            var newRepository = new RepositoryBuilder()
+                .WithGitHubInformation(
+                    gitHubRepository.Id,
+                    gitHubRepository.Name,
+                    gitHubRepository.Owner.Name)
+                .Build();
+            await dataContext.Repositories.AddAsync(
+                newRepository,
+                cancellationToken);
 
-                repository = newRepository;
-            }
-
-            return repository;
+            return newRepository;
         }
     }
 }

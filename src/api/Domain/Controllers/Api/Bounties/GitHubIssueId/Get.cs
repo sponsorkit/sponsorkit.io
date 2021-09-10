@@ -49,7 +49,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)
                 .Include(x => x.Bounties).ThenInclude(x => x.AwardedTo)
                 .SingleOrDefaultAsync(
-                    x => x.GitHubId == request.GitHubIssueId,
+                    x => x.GitHub.Id == request.GitHubIssueId,
                     cancellationToken);
             if (issue == null)
                 return NotFound();

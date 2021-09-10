@@ -38,6 +38,12 @@ namespace Sponsorkit.Domain.Models
                 .WithMany(x => x.CreatedBounties)
                 .HasForeignKey(x => x.CreatorId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            builder
+                .HasMany(x => x.ClaimRequests)
+                .WithOne(x => x.Bounty)
+                .HasForeignKey(x => x.BountyId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder
                 .HasMany(x => x.Payments)

@@ -30,7 +30,6 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
             this.dataContext = dataContext;
         }
 
-        [AllowAnonymous]
         [HttpGet("/account/stripe-connect/activate/{userId}")]
         public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
         {

@@ -53,30 +53,6 @@ namespace Sponsorkit.Infrastructure.AspNet
             ConfigureAspNetCore(services);
             ConfigureSwagger(services);
             ConfigureAuthentication(services);
-            ConfigureHangfire(services);
-        }
-
-        private void ConfigureHangfire(IServiceCollection services)
-        {
-            var sqlOptions = Configuration.GetOptions<SqlOptions>();
-            var connectionString = sqlOptions.ConnectionString;
-
-            services.AddHangfire(configuration => configuration
-                .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-                .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UseSqlServerStorage(
-                    connectionString,
-                    new SqlServerStorageOptions
-                    {
-                        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-                        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-                        QueuePollInterval = TimeSpan.Zero,
-                        UseRecommendedIsolationLevel = true,
-                        DisableGlobalLocks = true
-                    }));
-
-            services.AddHangfireServer();
         }
 
         private static void ConfigureNGrok(IServiceCollection services)

@@ -7,7 +7,7 @@ namespace Sponsorkit.Domain.Models.Builders
     {
         private Bounty[] bounties;
         private Repository? repository;
-        private long? gitHubId;
+        private IssueGitHubInformation? gitHub;
 
         public IssueBuilder()
         {
@@ -26,16 +26,22 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public IssueBuilder WithGitHubId(long id)
+        public IssueBuilder WithGitHubInformation(
+            long id,
+            long number)
         {
-            this.gitHubId = id;
+            this.gitHub = new IssueGitHubInformation()
+            {
+                Id = id,
+                Number = number
+            };
             return this;
         }
         
         public override Issue Build()
         {
-            if (gitHubId == null)
-                throw new InvalidOperationException("GitHub ID was not set.");
+            if (gitHub == null)
+                throw new InvalidOperationException("GitHub information was not set.");
 
             if (repository == null)
                 throw new InvalidOperationException("Repository was not set.");
@@ -44,7 +50,7 @@ namespace Sponsorkit.Domain.Models.Builders
             {
                 Bounties = bounties.ToList(),
                 Repository = repository,
-                GitHubId = gitHubId.Value
+                GitHub = gitHub
             };
         }
     }

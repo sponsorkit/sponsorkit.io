@@ -48,6 +48,12 @@ namespace Sponsorkit.Domain.Models
         public void Configure(EntityTypeBuilder<User> builder)
         {
             builder.OwnsOne(x => x.GitHub);
+            
+            builder
+                .HasMany(x => x.BountyClaimRequests)
+                .WithOne(x => x.Creator!)
+                .HasForeignKey(x => x.CreatorId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

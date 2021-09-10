@@ -38,7 +38,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
                 .GroupBy(x => x.Issue)
                 .Select(x => new BountyResponse(
                     x.Sum(b => b.AmountInHundreds),
-                    x.Key.GitHubId,
+                    x.Key.GitHub.Id,
                     x.Count()))
                 .OrderByDescending(x => x.AmountInHundreds)
                 .ToArrayAsync(cancellationToken);

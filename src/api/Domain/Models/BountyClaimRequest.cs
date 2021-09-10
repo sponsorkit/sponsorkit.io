@@ -25,8 +25,9 @@ namespace Sponsorkit.Domain.Models
 
         public ClaimVerdict? Verdict { get; set; }
         public DateTimeOffset? VerdictAtUtc { get; set; }
-        
-        public long GitHubPullRequestId { get; set; }
+
+        public PullRequest PullRequest { get; set; } = null!;
+        public Guid PullRequestId { get; set; }
         
         public DateTimeOffset CreatedAtUtc { get; set; }
         
@@ -38,16 +39,12 @@ namespace Sponsorkit.Domain.Models
         public void Configure(EntityTypeBuilder<BountyClaimRequest> builder)
         {
             builder
-                .HasOne(x => x.Bounty)
-                .WithMany(x => x.ClaimRequests!)
-                .HasForeignKey(x => x.Bounty)
-                .OnDelete(DeleteBehavior.Restrict);
-            
-            builder
-                .HasOne(x => x.Creator)
-                .WithMany(x => x.BountyClaimRequests!)
-                .HasForeignKey(x => x.Creator)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasIndex(x => new
+                {
+                    x.BountyId,
+                    x.CreatorId
+                })
+                .IsUnique();
         }
     }
 }

@@ -16,6 +16,7 @@ namespace Sponsorkit.Domain.Models.Context
         public DbSet<Sponsorship> Sponsorships { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<BountyClaimRequest> BountyClaimRequests { get; set; }
+        public DbSet<PullRequest> PullRequests { get; set; }
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {

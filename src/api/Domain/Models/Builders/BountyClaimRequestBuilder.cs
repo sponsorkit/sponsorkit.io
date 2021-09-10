@@ -6,6 +6,8 @@ namespace Sponsorkit.Domain.Models.Builders
     {
         private Bounty? bounty;
         private User? creator;
+        private PullRequest? pullRequest;
+        
         private DateTimeOffset createdAtUtc;
 
         public BountyClaimRequestBuilder()
@@ -25,6 +27,12 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
+        public BountyClaimRequestBuilder WithPullRequest(PullRequest pullRequest)
+        {
+            this.pullRequest = pullRequest;
+            return this;
+        }
+
         public override BountyClaimRequest Build()
         {
             if (bounty == null)
@@ -33,11 +41,15 @@ namespace Sponsorkit.Domain.Models.Builders
             if (creator == null)
                 throw new InvalidOperationException("The creator must be set.");
             
+            if (pullRequest == null)
+                throw new InvalidOperationException("The pull request must be set.");
+            
             return new BountyClaimRequest()
             {
                 Bounty = bounty,
                 Creator = creator,
-                CreatedAtUtc = createdAtUtc
+                CreatedAtUtc = createdAtUtc,
+                PullRequest = pullRequest
             };
         }
     }
