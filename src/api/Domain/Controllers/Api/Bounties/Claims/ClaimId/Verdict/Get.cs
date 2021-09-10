@@ -15,7 +15,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
     public record GitHubResponse(
         string OwnerName,
         string RepositoryName,
-        long PullRequestNumber);
+        long PullRequestNumber,
+        long IssueNumber);
 
     public record GetResponse(
         long BountyAmountInHundreds,
@@ -58,7 +59,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
                 new GitHubResponse(
                     issueRepository.GitHub.OwnerName,
                     issueRepository.GitHub.Name,
-                    claimRequest.PullRequest.GitHub.Number),
+                    claimRequest.PullRequest.GitHub.Number,
+                    claimRequest.Bounty.Issue.GitHub.Number),
                 claimRequest.Verdict);
         }
     }
