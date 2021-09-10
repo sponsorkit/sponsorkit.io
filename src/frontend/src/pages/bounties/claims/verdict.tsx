@@ -88,17 +88,35 @@ function ClaimVerdictContents(props: {
 function Issue(props: {
     issue: GitHubIssue
 }) {
-    return null;
+    //TODO: rounded border.
+    return <div>
+        <div>
+            Issue
+        </div>
+        <div>
+            #{props.issue.number} {props.issue.title}
+        </div>
+    </div>;
 }
 
 function PullRequest(props: {
     pullRequest: GitHubPullRequest
 }) {
-    return null;
+    //TODO: rounded border.
+    return <div>
+        <div>
+            Pull request
+        </div>
+        <div>
+            #{props.pullRequest.number} {props.pullRequest.title}
+        </div>
+    </div>;
 }
 
 function Bounty(props: {
     amountInHundreds: number
 }) {
-    return null;
+    return <div>
+        ${props.amountInHundreds / 100}
+    </div>;
 }

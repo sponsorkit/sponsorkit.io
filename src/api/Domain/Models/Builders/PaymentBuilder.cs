@@ -86,7 +86,10 @@ namespace Sponsorkit.Domain.Models.Builders
             if (stripeEventId == null)
                 throw new InvalidOperationException("Stripe event ID must be set.");
 
-            return new Payment()
+            if (amountInHundreds <= 0)
+                throw new InvalidOperationException("Amount must be positive.");
+
+                return new Payment()
             {
                 Bounty = bounty,
                 Id = id,

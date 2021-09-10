@@ -45,6 +45,9 @@ namespace Sponsorkit.Domain.Models.Builders
             if (amountInHundreds == null)
                 throw new InvalidOperationException("Amount not specified.");
 
+            if (amountInHundreds <= 0)
+                throw new InvalidOperationException("Amount must be positive.");
+
             return new Bounty()
             {
                 Creator = creator,
