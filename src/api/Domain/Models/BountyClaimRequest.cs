@@ -26,6 +26,8 @@ namespace Sponsorkit.Domain.Models
         public ClaimVerdict? Verdict { get; set; }
         public DateTimeOffset? VerdictAtUtc { get; set; }
         
+        public long GitHubPullRequestId { get; set; }
+        
         public DateTimeOffset CreatedAtUtc { get; set; }
         
         public DateTimeOffset? ExpiredAtUtc { get; set; }

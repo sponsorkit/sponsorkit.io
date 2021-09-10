@@ -17,7 +17,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim.ClaimId
         [HttpGet("/bounties/{gitHubIssueId}/claim/{claimId}")]
         public override Task<ActionResult> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            var link = LinkHelper.GetWebUrl($"/bounties/verdict/{request.ClaimId}");
+            var link = LinkHelper.GetWebUrl($"/bounties/verdict?claimId={request.ClaimId}");
             return Task.FromResult<ActionResult>(new RedirectResult(link));
         }
     }
