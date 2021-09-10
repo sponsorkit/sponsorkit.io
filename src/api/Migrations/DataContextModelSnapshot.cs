@@ -70,8 +70,8 @@ namespace Sponsorkit.Migrations
                     b.Property<DateTimeOffset?>("ExpiredAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("GitHubPullRequestId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("PullRequestId")
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("Verdict")
                         .HasColumnType("integer");
@@ -81,9 +81,12 @@ namespace Sponsorkit.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BountyId");
-
                     b.HasIndex("CreatorId");
+
+                    b.HasIndex("PullRequestId");
+
+                    b.HasIndex("BountyId", "CreatorId")
+                        .IsUnique();
 
                     b.ToTable("BountyClaimRequests");
                 });
@@ -93,9 +96,6 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<long>("GitHubId")
-                        .HasColumnType("bigint");
 
                     b.Property<Guid>("RepositoryId")
                         .HasColumnType("uuid");
@@ -154,14 +154,27 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Payments");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.PullRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("GitHubId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.ToTable("PullRequests");
+                });
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("OwnerId")
                         .HasColumnType("uuid");
@@ -274,9 +287,17 @@ namespace Sponsorkit.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Sponsorkit.Domain.Models.PullRequest", "PullRequest")
+                        .WithMany()
+                        .HasForeignKey("PullRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Bounty");
 
                     b.Navigation("Creator");
+
+                    b.Navigation("PullRequest");
                 });
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
@@ -285,6 +306,28 @@ namespace Sponsorkit.Migrations
                         .WithMany("Issues")
                         .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("Sponsorkit.Domain.Models.IssueGitHubInformation", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("IssueId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("Id")
+                                .HasColumnType("bigint");
+
+                            b1.Property<long>("Number")
+                                .HasColumnType("bigint");
+
+                            b1.HasKey("IssueId");
+
+                            b1.ToTable("Issues");
+
+                            b1.WithOwner()
+                                .HasForeignKey("IssueId");
+                        });
+
+                    b.Navigation("GitHub")
                         .IsRequired();
 
                     b.Navigation("Repository");
@@ -306,11 +349,71 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Sponsorship");
                 });
 
+            modelBuilder.Entity("Sponsorkit.Domain.Models.PullRequest", b =>
+                {
+                    b.HasOne("Sponsorkit.Domain.Models.Repository", "Repository")
+                        .WithMany("PullRequests")
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("Sponsorkit.Domain.Models.PullRequestGitHubInformation", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("PullRequestId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("Id")
+                                .HasColumnType("bigint");
+
+                            b1.Property<long>("Number")
+                                .HasColumnType("bigint");
+
+                            b1.HasKey("PullRequestId");
+
+                            b1.ToTable("PullRequests");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PullRequestId");
+                        });
+
+                    b.Navigation("GitHub")
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
             modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
                 {
                     b.HasOne("Sponsorkit.Domain.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId");
+
+                    b.OwnsOne("Sponsorkit.Domain.Models.RepositoryGitHubInformation", "GitHub", b1 =>
+                        {
+                            b1.Property<Guid>("RepositoryId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("Id")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("OwnerName")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.HasKey("RepositoryId");
+
+                            b1.ToTable("Repositories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RepositoryId");
+                        });
+
+                    b.Navigation("GitHub")
+                        .IsRequired();
 
                     b.Navigation("Owner");
                 });
@@ -386,6 +489,8 @@ namespace Sponsorkit.Migrations
             modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
                 {
                     b.Navigation("Issues");
+
+                    b.Navigation("PullRequests");
 
                     b.Navigation("Sponsorships");
                 });

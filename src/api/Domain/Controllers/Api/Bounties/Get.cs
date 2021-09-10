@@ -35,10 +35,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
         {
             var groupedResponse = await dataContext.Bounties
                 .AsQueryable()
-                .GroupBy(x => x.Issue)
+                .GroupBy(x => x.Issue.GitHub.Id)
                 .Select(x => new BountyResponse(
                     x.Sum(b => b.AmountInHundreds),
-                    x.Key.GitHub.Id,
+                    x.Key,
                     x.Count()))
                 .OrderByDescending(x => x.AmountInHundreds)
                 .ToArrayAsync(cancellationToken);

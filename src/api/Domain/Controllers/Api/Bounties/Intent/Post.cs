@@ -68,7 +68,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
             if (issue.Status == ResultStatus.NotFound)
                 return NotFound();
 
-            if (request.AmountInHundreds <= 10_00)
+            if (request.AmountInHundreds < 10_00)
                 return BadRequest("Minimum amount is 10 USD.");
 
             var userId = User.GetRequiredId();
