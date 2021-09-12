@@ -16,7 +16,7 @@ namespace Sponsorkit.Infrastructure
             configurationBuilder.AddSystemsManager(configureSource =>
             {
                 configureSource.Path = $"/sponsorkit/{environment}";
-                configureSource.ReloadAfter = TimeSpan.FromMinutes(5);
+                configureSource.ReloadAfter = TimeSpan.FromHours(24);
                 configureSource.Optional = false;
                 configureSource.AwsOptions = new AWSOptions()
                 {

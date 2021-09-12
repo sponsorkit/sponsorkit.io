@@ -7,11 +7,7 @@
     <IncludeOpenAPIAnalyzers>true</IncludeOpenAPIAnalyzers>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <PreserveCompilationContext>true</PreserveCompilationContext>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <UserSecretsId>sponsorkit-secrets</UserSecretsId>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>

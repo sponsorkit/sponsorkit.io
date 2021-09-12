@@ -96,7 +96,12 @@ namespace Sponsorkit.Infrastructure.AspNet
 
             services
                 .AddMvcCore()
-                .AddJsonOptions(x => { x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)); })
+                .AddJsonOptions(x =>
+                {
+                    x.JsonSerializerOptions.Converters.Add(
+                        new JsonStringEnumConverter(
+                            JsonNamingPolicy.CamelCase));
+                })
                 .AddApplicationPart(typeof(Startup).Assembly)
                 .AddControllersAsServices()
                 .AddAuthorization()
@@ -106,12 +111,14 @@ namespace Sponsorkit.Infrastructure.AspNet
             {
                 options.AddDefaultPolicy(
                     builder => builder
-                        .WithOrigins(Debugger.IsAttached
-                            ? new[]
+                        .WithOrigins(Debugger.IsAttached ? 
+                            new[]
                             {
-                                "http://localhost:8000", "http://localhost:9000", "http://localhost:6006"
-                            }
-                            : new[]
+                                "http://localhost:8000", 
+                                "http://localhost:9000", 
+                                "http://localhost:6006"
+                            } : 
+                            new[]
                             {
                                 "https://sponsorkit.io"
                             })
