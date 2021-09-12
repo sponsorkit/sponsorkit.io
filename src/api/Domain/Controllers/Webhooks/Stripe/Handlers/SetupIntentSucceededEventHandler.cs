@@ -22,21 +22,45 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
     {
         private readonly DataContext dataContext;
         private readonly IMediator mediator;
+        private readonly CustomerService customerService;
 
         public SetupIntentSucceededEventHandler(
             DataContext dataContext,
-            IMediator mediator)
+            IMediator mediator,
+            CustomerService customerService)
         {
             this.dataContext = dataContext;
             this.mediator = mediator;
+            this.customerService = customerService;
         }
 
         protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
         {
+            await SetPaymentMethodAsDefaultAsync(data, cancellationToken);
+            
             var type = data.Metadata[UniversalMetadataKeys.Type];
             if (type != UniversalMetadataTypes.BountySetupIntent)
                 throw new InvalidOperationException($"Invalid payment intent type: {type}");
 
+            await HandleBountySetupIntentAsync(eventId, data, cancellationToken);
+        }
+
+        private async Task SetPaymentMethodAsDefaultAsync(SetupIntent data, CancellationToken cancellationToken)
+        {
+            await customerService.UpdateAsync(
+                data.CustomerId,
+                new CustomerUpdateOptions()
+                {
+                    InvoiceSettings = new CustomerInvoiceSettingsOptions()
+                    {
+                        DefaultPaymentMethod = data.PaymentMethodId
+                    }
+                },
+                cancellationToken: cancellationToken);
+        }
+
+        private async Task HandleBountySetupIntentAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
+        {
             var amountInHundreds = int.Parse(data.Metadata[MetadataKeys.AmountInHundreds], CultureInfo.InvariantCulture);
             var gitHubIssueNumber = int.Parse(data.Metadata[MetadataKeys.GitHubIssueNumber], CultureInfo.InvariantCulture);
             var gitHubOwnerName = data.Metadata[MetadataKeys.GitHubIssueOwnerName];
@@ -49,22 +73,22 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                     gitHubRepositoryName,
                     gitHubIssueNumber),
                 cancellationToken);
-            
+
             var user = await dataContext.Users.SingleAsync(
                 x => x.Id == userId,
                 cancellationToken);
 
             var bounty = await AddOrIncreaseBountyAsync(
-                issue, 
-                user, 
-                amountInHundreds, 
+                issue,
+                user,
+                amountInHundreds,
                 cancellationToken);
 
             await AddPaymentForBountyAsync(
                 eventId,
-                data, 
-                bounty, 
-                amountInHundreds, 
+                data,
+                bounty,
+                amountInHundreds,
                 cancellationToken);
 
             await dataContext.SaveChangesAsync(cancellationToken);

@@ -86,7 +86,11 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddDefaultAWSOptions(
                 new AWSOptions()
                 {
-                    Region = RegionEndpoint.EUNorth1
+                    Region = RegionEndpoint.EUNorth1,
+                    Profile = Debugger.IsAttached ? 
+                        "sponsorkit" :
+                        null,
+                    
                 });
         }
 

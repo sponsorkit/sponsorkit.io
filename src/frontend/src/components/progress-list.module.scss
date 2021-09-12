@@ -6,6 +6,15 @@
     .text {
         margin-right: 30px;
     }
+
+    .progress-bar {
+        transition: opacity 1s ease-in-out;
+        opacity: 0.25;
+
+        &.loaded {
+            opacity: 1;
+        }
+    }
 }
     
 .accordions {
@@ -23,6 +32,15 @@
 
             .checkbox {
                 margin-right: 10px;
+                width: 20px;
+                height: 20px;
+                opacity: 1;
+                transition: opacity 1s ease-in-out;
+
+                &.progress-bar {
+                    color: rgba(145, 158, 171, 0.8);
+                    opacity: 0.5;
+                }
             }
         }
 

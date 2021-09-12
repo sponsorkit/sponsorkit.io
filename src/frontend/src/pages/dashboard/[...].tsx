@@ -18,15 +18,13 @@ function DashboardPage() {
     const account = useApi(
         async client => await client.accountGet(),
         [lastProgressChange]);
-    if (!account)
-        return null;
 
     return <AppBarTemplate logoVariant="sponsorkit">
-        <EmailValidationDialog
+        {account && <EmailValidationDialog
             email={account.email}
             isOpen={isValidatingEmail}
             onValidated={() => setLastProgressChange(new Date())}
-            onClose={() => setIsValidatingEmail(false)} />
+            onClose={() => setIsValidatingEmail(false)} />}
         <BankDetailsDialog
             isOpen={isFillingInBankDetails}
             onValidated={() => setLastProgressChange(new Date())}
@@ -42,31 +40,32 @@ function DashboardPage() {
                 <Card className={classes.accountOverview}>
                     <CardContent>
                         <ProgressList
+                            validationTarget={account}
                             title="Profile completion"
                             subTitle="Your beneficiary details are used when you want to earn money from bounties, donations or sponsorships. Your sponsor details are used when you want to place bounties, give donations or start sponsoring others."
                             checkpoints={[
                                 {
                                     label: "Connect your GitHub account",
                                     description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
-                                    validate: () => !!account.gitHubUsername,
+                                    validate: account => !!account?.gitHubUsername,
                                     onClick: () => { }
                                 },
                                 {
                                     label: "Change or verify e-mail address",
                                     description: "Verifying your e-mail address allows you to receive an e-mail whenever you earn money, and when your card has been charged (invoices).",
-                                    validate: () => account.isEmailVerified,
+                                    validate: account => account?.isEmailVerified || false,
                                     onClick: () => setIsValidatingEmail(true)
                                 },
                                 {
                                     label: "Save payment details for later",
                                     description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
-                                    validate: () => !!account.sponsor?.creditCard,
+                                    validate: account => !!account?.sponsor?.creditCard,
                                     onClick: () => { }
                                 },
                                 {
                                     label: "Fill in your bank account details",
                                     description: "Filling in your bank account and payout details with Stripe allows you to withdraw earned money to your bank account.",
-                                    validate: () => !!account.beneficiary?.isAccountComplete,
+                                    validate: account => !!account?.beneficiary?.isAccountComplete,
                                     onClick: () => setIsFillingInBankDetails(true)
                                 }
                             ]}

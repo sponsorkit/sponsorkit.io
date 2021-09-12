@@ -20,5 +20,8 @@
 	"mounts": [
 		"source=sponsorkit-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
 	],
-	"postCreateCommand": "sudo chown node node_modules && npm i"
+	"postCreateCommand": "sudo chown node node_modules && npm i",
+	"containerEnv": {
+		"AWS_PROFILE": "sponsorkit"
+	}
 }

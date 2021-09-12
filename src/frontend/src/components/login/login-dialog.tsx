@@ -17,12 +17,12 @@ export default function LoginDialog(props: {
     const configuration = useConfiguration();
     const wasDismissed = useRef(true);
 
-    if(!props.isOpen || (token && !token.isExpired)) {
+    if(configuration === undefined || !props.isOpen)
+        return <></>;
+
+    if(token && !token.isExpired) {
         return props.children() || <></>;
     }
-
-    if(configuration === undefined)
-        return null;
 
     const onClose = () => {
         if(!props.onDismissed)
