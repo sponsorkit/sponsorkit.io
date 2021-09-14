@@ -222,7 +222,7 @@ const Issue = forwardRef(function (
             })) ?? [])
         ]
             .filter(x => !!x);
-    const eventsOrdered = orderBy(events, x => x?.time, "desc");
+    const eventsOrdered = orderBy(events, x => x?.time.getTime(), "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.repository_url);
     if (!repo)
