@@ -114,7 +114,7 @@
     "swagger:autorest:generate": "npm run swagger:autorest:generate:debug:devcontainer || npm run swagger:autorest:generate:debug:localhost",
     "swagger:autorest:generate:debug:devcontainer": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://host.docker.internal:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi",
     "swagger:autorest:generate:debug:localhost": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/api/openapi",
-    "swagger:octokit": "graphql-codegen --config codegen.yml",
+    "swagger:octokit": "npm update @octokit/graphql-schema && graphql-codegen --config codegen.yml",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
   },
