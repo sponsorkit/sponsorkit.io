@@ -1,3 +1,4 @@
+import { ApolloClient, HttpLink, InMemoryCache, NormalizedCacheObject } from "@apollo/client";
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
@@ -30,8 +31,44 @@ export function useOctokit<T>(
     return result;
 }
 
+export function useOctokitGraphQL<T>(
+    accessor: (octokit: ApolloClient<NormalizedCacheObject>, abortSignal: AbortSignal) => Promise<T | null>,
+    deps: any[]
+) {
+    const [result, setResult] = useState<T | null | undefined>();
+    useEffect(
+        () => {
+            const abortSignalController = new AbortController();
+
+            async function effect() {
+                const client = createOctokitGraphQL();
+                const result = await accessor(client, abortSignalController.signal);
+
+                setResult(result);
+            }
+
+            effect();
+
+            return () => {
+                abortSignalController.abort();
+            }
+        },
+        deps);
+
+    return result;
+}
+
 export function createOctokit() {
     return new Octokit();
+}
+
+export function createOctokitGraphQL() {
+    return new ApolloClient({
+        link: new HttpLink({
+            uri: "https://api.github.com/graphql",
+        }),
+        cache: new InMemoryCache()
+    });
 }
 
 export function createApi() {
@@ -77,9 +114,9 @@ export function createApi() {
             const token = getToken();
             if (token)
                 request.headers.set("Authorization", `Bearer ${token.raw}`);
-                
+
             let response = await next(request);
-            if(response.status === 401) {
+            if (response.status === 401) {
                 request.headers.delete("Authorization");
                 localStorage.removeItem("token");
                 response = await next(request);

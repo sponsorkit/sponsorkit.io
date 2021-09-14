@@ -453,6 +453,15 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
+    // const foo = useOctokitGraphQL(
+    //     async (client, abortSignal) => await client.query<GetMergedPullRequestsQuery>({
+    //         query: GetMergedPullRequestsDocument,
+    //         variables: {
+
+    //         }
+    //     }),
+    //     []);
+
     const [token] = useToken();
     const account = useApi(
         async (client, abortSignal) => token ?
