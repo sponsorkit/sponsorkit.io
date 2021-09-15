@@ -1,10 +1,9 @@
-import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
+import { DocumentNode } from 'graphql';
+import gql from 'graphql-tag';
 export type Maybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-const defaultOptions =  {}
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -21979,31 +21978,12 @@ export const GetPullRequestsDocument = gql`
   }
 }
     `;
-
-/**
- * __useGetPullRequestsQuery__
- *
- * To run a query within a React component, call `useGetPullRequestsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetPullRequestsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetPullRequestsQuery({
- *   variables: {
- *      query: // value for 'query'
- *   },
- * });
- */
-export function useGetPullRequestsQuery(baseOptions: Apollo.QueryHookOptions<GetPullRequestsQuery, GetPullRequestsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetPullRequestsQuery, GetPullRequestsQueryVariables>(GetPullRequestsDocument, options);
-      }
-export function useGetPullRequestsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetPullRequestsQuery, GetPullRequestsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetPullRequestsQuery, GetPullRequestsQueryVariables>(GetPullRequestsDocument, options);
-        }
-export type GetPullRequestsQueryHookResult = ReturnType<typeof useGetPullRequestsQuery>;
-export type GetPullRequestsLazyQueryHookResult = ReturnType<typeof useGetPullRequestsLazyQuery>;
-export type GetPullRequestsQueryResult = Apollo.QueryResult<GetPullRequestsQuery, GetPullRequestsQueryVariables>;
+export type Requester<C= {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R>
+export function getSdk<C>(requester: Requester<C>) {
+  return {
+    getPullRequests(variables: GetPullRequestsQueryVariables, options?: C): Promise<GetPullRequestsQuery> {
+      return requester<GetPullRequestsQuery, GetPullRequestsQueryVariables>(GetPullRequestsDocument, variables, options);
+    }
+  };
+}
+export type Sdk = ReturnType<typeof getSdk>;

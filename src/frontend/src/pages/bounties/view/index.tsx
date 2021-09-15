@@ -1,4 +1,3 @@
-import { useGetPullRequestsLazyQuery } from "@api/octokit/graphql";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import getDialogTransitionProps from "@components/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
@@ -448,6 +447,8 @@ function ClaimDialog(props: ClaimDialogProps) {
 }
 
 function ClaimDialogContents(props: ClaimDialogProps) {
+    console.log("render", "claim-dialog-contents");
+
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
@@ -462,15 +463,19 @@ function ClaimDialogContents(props: ClaimDialogProps) {
         [lastProgressChange, token]);    
 
     const pullRequests = useOctokitGraphQL(
-        useGetPullRequestsLazyQuery,
+        async (client, abortSignal) => 
+            account && 
+            issueDetails && 
+            await client.getPullRequests(
+                {
+                    query: `is:pr author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
+                },
+                { abortSignal }),
         x => x?.search
             ?.edges
             ?.map(x => x?.node)
             .map(x => x?.__typename === "PullRequest" ? x : null)
             .filter(x => x),
-        () => account && issueDetails && {
-            query: `is:pr author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
-        },
         [account, issueDetails]);
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 

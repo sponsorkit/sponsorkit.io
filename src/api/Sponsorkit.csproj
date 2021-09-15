@@ -65,6 +65,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Domain\Controllers\Api\GitHub" />
     <Folder Include="Domain\Jobs" />
   </ItemGroup>
 </Project>

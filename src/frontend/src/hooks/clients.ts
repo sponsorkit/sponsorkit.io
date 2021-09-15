@@ -1,8 +1,8 @@
-import { ApolloClient, HttpLink, InMemoryCache, LazyQueryHookOptions, QueryResult, QueryTuple } from "@apollo/client";
+import { getSdk } from "@api/octokit/graphql";
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getToken } from "./token";
 
 export function useOctokit<T>(
@@ -31,19 +31,12 @@ export function useOctokit<T>(
     return result;
 }
 
-export function useOctokitGraphQL<TQuery, TParameters, TResult>(
-    useLazyQuery: (baseOptions?: LazyQueryHookOptions<TQuery, TParameters>) => QueryTuple<TQuery, TParameters>,
-    extractor: (result: QueryResult<TQuery, TParameters>["data"]) => TResult,
-    variableAccessor: () => TParameters|undefined|null,
+export function useOctokitGraphQL<TAccessorResult, TExtractorResult>(
+    accessor: (client: ReturnType<typeof createOctokitGraphQL>, abortSignal: AbortSignal) => Promise<TAccessorResult | null>,
+    extractor: (result: TAccessorResult) => TExtractorResult,
     deps: any[]
-): TResult | null | undefined {
-    const [runQuery, {data, error}] = useLazyQuery({
-        client: createOctokitGraphQL()
-    });
-
-    const computedResult = useMemo(
-        () => error || !data ? null : extractor(data),
-        [error, data])
+): TExtractorResult | null | undefined {
+    const [result, setResult] = useState<TExtractorResult | null | undefined>();
 
     useEffect(
         () => {                
@@ -52,19 +45,13 @@ export function useOctokitGraphQL<TQuery, TParameters, TResult>(
             async function effect() {
                 if(deps.findIndex(x => !x) > -1)
                     return;
-    
-                const variables = variableAccessor();
-                if(!variables)
-                    return;
 
-                runQuery({
-                    variables: variables!,
-                    context: {
-                        fetchOptions: {
-                            signal: abortSignalController.signal
-                        }
-                    }
-                });
+                const client = createOctokitGraphQL();
+                const response = await accessor(client, abortSignalController.signal);
+                if(!response)
+                    return setResult(null);
+
+                setResult(extractor(response));
             }
 
             effect();
@@ -75,35 +62,47 @@ export function useOctokitGraphQL<TQuery, TParameters, TResult>(
         },
         deps);
 
-    return computedResult;
+    return result;
 }
 
 export function createOctokit() {
     return new Octokit();
 }
 
+type OctokitGraphQLOptions = {
+    abortSignal: AbortSignal
+}
 export function createOctokitGraphQL() {
-    return new ApolloClient({
-        link: new HttpLink({
-            uri: "https://api.github.com/graphql",
-        }),
-        cache: new InMemoryCache()
+    return getSdk<OctokitGraphQLOptions>(async (query, variables, options) => {
+        const url = `${getBaseUri()}/github/graphql`;
+        const result = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                query: query.loc?.source.body,
+                variables
+            }),
+            signal: options?.abortSignal
+        });
+        return await result.json();
     });
+}
+function getBaseUri() {
+    const currentUri = new URL(window.location.href);
+    if (currentUri.hostname === "localhost")
+        return "http://localhost:5000";
+
+    const requestUri = new URL(window.location.href);
+    requestUri.hostname = `api.${currentUri.hostname}`;
+    requestUri.pathname = "";
+    requestUri.search = "";
+    requestUri.hash = "";
+    return requestUri.toString();
 }
 
 export function createApi() {
-    function getBaseUri() {
-        const currentUri = new URL(window.location.href);
-        if (currentUri.hostname === "localhost")
-            return "http://localhost:5000";
-
-        const requestUri = new URL(window.location.href);
-        requestUri.hostname = `api.${currentUri.hostname}`;
-        requestUri.pathname = "";
-        requestUri.search = "";
-        requestUri.hash = "";
-        return requestUri.toString();
-    }
 
     var client = new General(null!, getBaseUri(), {
         requestContentType: "application/json; charset=utf-8",
