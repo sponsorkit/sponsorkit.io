@@ -1,3 +1,4 @@
+import { useGetPullRequestsLazyQuery } from "@api/octokit/graphql";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import getDialogTransitionProps from "@components/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
@@ -6,7 +7,7 @@ import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress-list";
 import { Transition } from "@components/transition";
-import { createApi, makeOctokitCall, useApi, useOctokit } from "@hooks/clients";
+import { createApi, makeOctokitCall, useApi, useOctokitGraphQL } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
 import { useToken } from "@hooks/token";
 import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogContent, TextField, Tooltip, Typography } from "@material-ui/core";
@@ -419,8 +420,6 @@ function CreateBounty(props: {
     </>;
 }
 
-type OctokitPullRequestResponse = RestEndpointMethodTypes["search"]["issuesAndPullRequests"]["response"]["data"]["items"][0];
-
 type ClaimDialogProps = {
     issue: OctokitIssueResponse,
     isOpen: boolean,
@@ -453,15 +452,6 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
-    // const foo = useOctokitGraphQL(
-    //     async (client, abortSignal) => await client.query<GetMergedPullRequestsQuery>({
-    //         query: GetMergedPullRequestsDocument,
-    //         variables: {
-
-    //         }
-    //     }),
-    //     []);
-
     const [token] = useToken();
     const account = useApi(
         async (client, abortSignal) => token ?
@@ -469,27 +459,22 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 abortSignal
             }) :
             null,
-        [lastProgressChange, token]);
-    const pullRequests = useOctokit(
-        async client => {
-            if (!issueDetails?.repo || !account?.gitHubUsername)
-                return undefined;
+        [lastProgressChange, token]);    
 
-            const validPullRequestResponse = await client.search.issuesAndPullRequests({
-                q: `is:pr is:merged author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
-            });
-            const invalidPullRequestResponse = await client.search.issuesAndPullRequests({
-                q: `is:pr is:unmerged author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
-            });
-            return [
-                ...validPullRequestResponse.data.items,
-                ...invalidPullRequestResponse.data.items
-            ]
+    const pullRequests = useOctokitGraphQL(
+        useGetPullRequestsLazyQuery,
+        x => x?.search
+            ?.edges
+            ?.map(x => x?.node)
+            .map(x => x?.__typename === "PullRequest" ? x : null)
+            .filter(x => x),
+        () => account && issueDetails && {
+            query: `is:pr author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
         },
-        [issueDetails?.repo, account?.gitHubUsername]);
+        [account, issueDetails]);
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 
-    const [selectedPullRequest, setSelectedPullRequest] = useState<OctokitPullRequestResponse | null>();
+    const [selectedPullRequest, setSelectedPullRequest] = useState<ArrayContents<typeof pullRequests> | null>();
     const pullRequestError = useMemo(
         () => {
             if (selectedPullRequest === undefined)
@@ -498,7 +483,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             if (!selectedPullRequest)
                 return "You must select a pull request.";
 
-            if (!selectedPullRequest.pull_request.merged_at)
+            if (!selectedPullRequest.mergedAt)
                 return "Only merged pull requests are accepted."
 
             return "";
@@ -554,17 +539,17 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                     description: "We only allow merged pull requests from your GitHub user. Pull requests not from your user, closed pull requests or open pull requests, will not be accepted.",
                     validate: () => false,
                     onClick: () => { },
-                    children: <Autocomplete<OctokitPullRequestResponse>
+                    children: <Autocomplete<ArrayContents<typeof pullRequests>>
                         options={pullRequests ?? []}
                         autoHighlight
-                        getOptionLabel={option => `#${option.number}: ${option.title}`}
-                        groupBy={option => option.pull_request.merged_at ?
+                        getOptionLabel={option => `#${option?.number}: ${option?.title}`}
+                        groupBy={option => option?.mergedAt ?
                             "Valid (merged)" :
-                            `Invalid (${option.state})`}
+                            `Invalid (${option?.state})`}
                         renderOption={(props, option) => <Box {...props as any}>
                             <Typography className={classes.pullRequest}>
-                                <span className={classes.number}>#{option.number}</span>
-                                <span className={classes.title}>{option.title}</span>
+                                <span className={classes.number}>#{option?.number}</span>
+                                <span className={classes.title}>{option?.title}</span>
                             </Typography>
                         </Box>}
                         onChange={(_, value) => setSelectedPullRequest(value || null)}

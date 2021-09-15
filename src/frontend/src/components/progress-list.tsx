@@ -86,6 +86,7 @@ export default function ProgressList<TValidationTarget>(props: {
                     className={classes.accordion} 
                     expanded={expandStates[i]}
                     onChange={() => toggleExpandState(i)}
+                    key={`checkpoint-${i}`}
                 >
                     <AccordionSummary 
                         className={classes.accordionSummary} 

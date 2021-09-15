@@ -1,8 +1,8 @@
-import { ApolloClient, HttpLink, InMemoryCache, NormalizedCacheObject } from "@apollo/client";
+import { ApolloClient, HttpLink, InMemoryCache, LazyQueryHookOptions, QueryResult, QueryTuple } from "@apollo/client";
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getToken } from "./token";
 
 export function useOctokit<T>(
@@ -31,20 +31,40 @@ export function useOctokit<T>(
     return result;
 }
 
-export function useOctokitGraphQL<T>(
-    accessor: (octokit: ApolloClient<NormalizedCacheObject>, abortSignal: AbortSignal) => Promise<T | null>,
+export function useOctokitGraphQL<TQuery, TParameters, TResult>(
+    useLazyQuery: (baseOptions?: LazyQueryHookOptions<TQuery, TParameters>) => QueryTuple<TQuery, TParameters>,
+    extractor: (result: QueryResult<TQuery, TParameters>["data"]) => TResult,
+    variableAccessor: () => TParameters|undefined|null,
     deps: any[]
-) {
-    const [result, setResult] = useState<T | null | undefined>();
+): TResult | null | undefined {
+    const [runQuery, {data, error}] = useLazyQuery({
+        client: createOctokitGraphQL()
+    });
+
+    const computedResult = useMemo(
+        () => error || !data ? null : extractor(data),
+        [error, data])
+
     useEffect(
-        () => {
+        () => {                
             const abortSignalController = new AbortController();
 
             async function effect() {
-                const client = createOctokitGraphQL();
-                const result = await accessor(client, abortSignalController.signal);
+                if(deps.findIndex(x => !x) > -1)
+                    return;
+    
+                const variables = variableAccessor();
+                if(!variables)
+                    return;
 
-                setResult(result);
+                runQuery({
+                    variables: variables!,
+                    context: {
+                        fetchOptions: {
+                            signal: abortSignalController.signal
+                        }
+                    }
+                });
             }
 
             effect();
@@ -55,7 +75,7 @@ export function useOctokitGraphQL<T>(
         },
         deps);
 
-    return result;
+    return computedResult;
 }
 
 export function createOctokit() {
@@ -162,6 +182,9 @@ export function useApi<T>(
             const abortSignalController = new AbortController();
 
             async function effect() {
+                if(deps.findIndex(x => !x) > -1)
+                    return;
+                    
                 const result = await makeApiCall(async (client) =>
                     await accessor(client, abortSignalController.signal));
                 setResult(result);

@@ -1,0 +1,18 @@
+query getPullRequests($query: String!) {
+  search(type: ISSUE, last: 10, query: $query) {
+    edges {
+      node {
+        ... on PullRequest {
+          author {
+            login
+          }
+          number
+          mergedAt
+          title
+          createdAt
+          state
+        }
+      }
+    }
+  }
+}

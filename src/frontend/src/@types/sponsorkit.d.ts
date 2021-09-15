@@ -12,3 +12,7 @@ declare module '*.module.scss' {
     const classNames: IClassNames;
     export = classNames;
 }
+
+declare type ArrayContents<TArray> = TArray extends any[] ? 
+    (TArray[number]) : 
+    never;

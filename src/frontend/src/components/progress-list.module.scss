@@ -1,3 +1,5 @@
+@use "sass:math";
+
 .header {
     display: flex;
     flex-direction: row;
@@ -53,7 +55,7 @@
 
             .description {
                 font-size: 14px;
-                margin-top: -$gap / 2;
+                margin-top: math.div(-$gap, 2);
             }
 
             .complete-button {
