@@ -1,5 +1,5 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, FormControlLabel, Typography } from "@material-ui/core";
-import { DoneSharp, ExpandMore, HelpOutline } from "@material-ui/icons";
+import { DoneSharp, ExpandMore, HelpOutline } from "@mui/icons-material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, FormControlLabel, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
 import { useEffect, useState } from "react";
 import CircularProgressBar from "./circular-progress-bar";

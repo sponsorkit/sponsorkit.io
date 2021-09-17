@@ -2,7 +2,7 @@ import createAccountValidatior from "@components/account/account-validator";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import ProgressList from "@components/progress-list";
-import { Box, Card, CardContent, Container, DialogContent, DialogTitle, Typography } from "@material-ui/core";
+import { Box, Card, CardContent, Container, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { isPopupBlocked } from "@utils/popup";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";

@@ -1,4 +1,4 @@
-import { Button, Card, CardActions, CardContent, Typography } from "@material-ui/core";
+import { Button, Card, CardActions, CardContent, Typography } from "@mui/material";
 import { AppBarTemplate } from "..";
 import * as classes from "./verification-success.module.scss";
 

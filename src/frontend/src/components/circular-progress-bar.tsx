@@ -1,4 +1,4 @@
-import { Box, Typography } from '@material-ui/core';
+import { Box, Typography } from '@mui/material';
 import palette from '@theme/palette';
 import { CircularProgressbarWithChildren as ReactCircularProgressBar } from 'react-circular-progressbar';
 import * as classes from "./circular-progress-bar.module.scss";

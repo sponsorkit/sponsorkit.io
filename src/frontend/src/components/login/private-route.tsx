@@ -1,6 +1,6 @@
 import getDialogTransitionProps from "@components/dialog-transition";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@material-ui/core";
-import { GitHub } from "@material-ui/icons";
+import { GitHub } from "@mui/icons-material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RouteComponentProps } from "@reach/router";
 import React, { useState } from "react";
 import LoginDialog from "./login-dialog";

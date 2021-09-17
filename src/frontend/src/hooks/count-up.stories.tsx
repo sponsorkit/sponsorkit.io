@@ -1,8 +1,7 @@
-import { Box, Button, Typography } from '@material-ui/core';
-import { Story, Meta } from '@storybook/react';
-import { useState, useEffect } from 'react';
+import { Box, Button, Typography } from '@mui/material';
+import { Meta, Story } from '@storybook/react';
+import { useState } from 'react';
 import { useAnimatedCount } from './count-up';
-import ThemeConfig from '@theme';
 
 export default {
     title: 'hooks/count-up',

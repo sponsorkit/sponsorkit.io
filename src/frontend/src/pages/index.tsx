@@ -1,4 +1,4 @@
-import { AppBar, Box, Container, Toolbar, Typography } from "@material-ui/core";
+import { AppBar, Box, Container, Toolbar, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
 import { navigate } from "gatsby-link";
 import { useEffect } from "react";

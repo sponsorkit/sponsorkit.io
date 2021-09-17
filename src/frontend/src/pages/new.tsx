@@ -1,4 +1,4 @@
-import { Avatar, Box, CircularProgress, Container, Paper, TextField, Typography } from "@material-ui/core";
+import { Avatar, Box, CircularProgress, Container, Paper, TextField, Typography } from "@mui/material";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useMemo, useState } from "react";
 import { AmountPicker } from "../components/financial/amount-picker";

@@ -1,5 +1,5 @@
 import { useApi, useOctokit } from "@hooks/clients";
-import { Button, Card, CardContent, Typography } from "@material-ui/core";
+import { Button, Card, CardContent, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarTemplate } from "@pages/index";
 import { getUrlParameter } from "@utils/url";

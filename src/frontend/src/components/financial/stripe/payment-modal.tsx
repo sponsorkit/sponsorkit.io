@@ -1,6 +1,6 @@
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
-import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip, Typography } from "@material-ui/core";
+import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip, Typography } from "@mui/material";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";

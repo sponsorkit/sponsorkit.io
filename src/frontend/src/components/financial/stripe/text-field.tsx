@@ -1,15 +1,15 @@
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
+import TextField, { TextFieldProps } from '@mui/material/TextField';
 import {
-  AuBankAccountElement,
-  CardCvcElement,
-  CardExpiryElement,
-  CardNumberElement,
-  FpxBankElement,
-  IbanElement,
-  IdealBankElement
-} from '@stripe/react-stripe-js'
-import React from 'react'
-import StripeInput from './input'
+    AuBankAccountElement,
+    CardCvcElement,
+    CardExpiryElement,
+    CardNumberElement,
+    FpxBankElement,
+    IbanElement,
+    IdealBankElement
+} from '@stripe/react-stripe-js';
+import React from 'react';
+import StripeInput from './input';
 
 type StripeElement =
   | typeof AuBankAccountElement

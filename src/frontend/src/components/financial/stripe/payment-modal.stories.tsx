@@ -1,4 +1,4 @@
-import { Button } from "@material-ui/core";
+import { Button } from "@mui/material";
 import { Meta, Story } from '@storybook/react';
 import { useState } from "react";
 import { PaymentMethodModal } from "./payment-modal";

@@ -1,4 +1,4 @@
-import { alpha } from '@material-ui/core/styles';
+import { alpha } from '@mui/material/styles';
 
 // ----------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ interface GradientsPaletteOptions {
   error: string;
 }
 
-declare module '@material-ui/core/styles/createPalette' {
+declare module '@mui/material/styles/createPalette' {
   interface TypeBackground {
     neutral: string;
   }
@@ -34,7 +34,7 @@ declare module '@material-ui/core/styles/createPalette' {
   }
 }
 
-declare module '@material-ui/core' {
+declare module '@mui/material' {
   interface Color {
     0: string;
     500_8: string;

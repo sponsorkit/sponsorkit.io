@@ -1,5 +1,5 @@
-import { Dialog, DialogContent, DialogProps, Typography } from '@material-ui/core';
-import { Story, Meta } from '@storybook/react';
+import { Dialog, DialogContent, DialogProps, Typography } from '@mui/material';
+import { Meta, Story } from '@storybook/react';
 
 export default {
     component: Dialog,

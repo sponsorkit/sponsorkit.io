@@ -1,4 +1,4 @@
-import { Grid } from "@material-ui/core";
+import { Grid } from "@mui/material";
 import { CardCvcElement, CardExpiryElement, CardNumberElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { Stripe, StripeCardNumberElement, StripeElementChangeEvent, StripeElements, StripeElementType } from "@stripe/stripe-js";
 import { useEffect, useState } from "react";

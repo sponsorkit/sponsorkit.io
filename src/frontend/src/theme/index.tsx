@@ -1,16 +1,15 @@
-import { useMemo, ReactNode } from 'react';
-
-import { CssBaseline } from '@material-ui/core';
-import { ThemeProvider, ThemeOptions, createTheme, Direction } from '@material-ui/core/styles';
-import { StyledEngineProvider } from '@material-ui/core/styles';
-
-import shape from './shape';
-import palette from './palette';
-import typography from './typography';
+import { CssBaseline } from '@mui/material';
+import { createTheme, Direction, StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
+import { ReactNode } from 'react';
 import breakpoints from './breakpoints';
 import GlobalStyles from './globalStyles';
 import componentsOverride from './overrides';
+import palette from './palette';
 import shadows, { customShadows } from './shadows';
+import shape from './shape';
+import typography from './typography';
+
+
 
 type ThemeConfigProps = {
   children: ReactNode;

@@ -1,5 +1,5 @@
-import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@material-ui/core";
-import { Box } from "@material-ui/system";
+import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@mui/material";
+import { Box } from "@mui/system";
 import { useEffect, useState } from "react";
 import * as classes from "./asynchronous-progress-dialog.module.scss";
 import getDialogTransitionProps from "./dialog-transition";

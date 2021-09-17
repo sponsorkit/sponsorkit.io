@@ -1,6 +1,6 @@
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
-import { DialogContent, DialogTitle, TextField, Typography } from "@material-ui/core";
+import { DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import createAccountValidatior from "./account-validator";
 import * as classes from "./email-validation-dialog.module.scss";

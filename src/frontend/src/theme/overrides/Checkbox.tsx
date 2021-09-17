@@ -1,5 +1,5 @@
-import { Theme } from '@material-ui/core/styles';
-import { SvgIcon, SvgIconProps } from '@material-ui/core';
+import { SvgIcon, SvgIconProps } from '@mui/material';
+import { Theme } from '@mui/material/styles';
 
 // ----------------------------------------------------------------------
 

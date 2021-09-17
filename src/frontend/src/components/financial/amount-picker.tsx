@@ -1,4 +1,4 @@
-import { Box, Button, InputAdornment, TextField } from "@material-ui/core";
+import { Box, Button, InputAdornment, TextField } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import palette from "../../theme/palette";
 import * as classes from "./amount-picker.module.scss";

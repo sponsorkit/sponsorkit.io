@@ -1,4 +1,4 @@
-import { alpha, Theme } from '@material-ui/core';
+import { alpha, Theme } from '@mui/material';
 
 // ----------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
-import { Icon } from '@iconify/react';
 import closeCircleFill from '@iconify/icons-eva/close-circle-fill';
-import { Theme } from '@material-ui/core/styles';
+import { Icon } from '@iconify/react';
+import { Theme } from '@mui/material/styles';
 
 // ----------------------------------------------------------------------
 
