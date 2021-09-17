@@ -23,7 +23,8 @@ export default function ProgressList<TValidationTarget>(props: {
     title: string,
     validationTarget: TValidationTarget|undefined,
     subTitle: string,
-    checkpoints: Array<CheckpointProps<TValidationTarget>>
+    checkpoints: Array<CheckpointProps<TValidationTarget>>,
+    onValidated?: (validates: boolean) => void
 }) {
     const totalCheckpointCount = props.checkpoints.length;
     const getValidatedCheckpointCount = () => props.checkpoints
@@ -57,6 +58,15 @@ export default function ProgressList<TValidationTarget>(props: {
                 true);
         },
         [props.validationTarget]);
+
+    useEffect(
+        () => {
+            if(!props.validationTarget)
+                return;
+
+            const validated = getFirstNonValidatedCheckpointIndex() === -1;
+            props.onValidated && props.onValidated(validated);
+        });
         
     return <>
         <Box className={classes.header}>

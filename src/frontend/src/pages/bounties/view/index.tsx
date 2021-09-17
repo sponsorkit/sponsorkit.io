@@ -12,7 +12,7 @@ import { useToken } from "@hooks/token";
 import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
-import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogContent, TextField, Tooltip, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, TextField, Tooltip, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
@@ -328,10 +328,7 @@ function Bounties(props: {
             <ClaimDialog
                 issue={props.issue}
                 isOpen={isClaiming}
-                onClose={() => setIsClaiming(false)}
-                onClaim={async () => {
-
-                }} />
+                onClose={() => setIsClaiming(false)} />
             <CardContent className={classes.bountyAmount}>
                 <Box className={classes.labelContainer}>
                     <Typography component="div" variant="h3" className={classes.amountRaised}>
@@ -422,8 +419,7 @@ function CreateBounty(props: {
 type ClaimDialogProps = {
     issue: OctokitIssueResponse,
     isOpen: boolean,
-    onClose: () => void,
-    onClaim: () => Promise<void> | void
+    onClose: () => void
 };
 
 function ClaimDialog(props: ClaimDialogProps) {
@@ -439,9 +435,7 @@ function ClaimDialog(props: ClaimDialogProps) {
             onClose={props.onClose}
             {...getDialogTransitionProps()}
         >
-            <DialogContent>
-                <ClaimDialogContents {...props} />
-            </DialogContent>
+            <ClaimDialogContents {...props} />
         </Dialog>}
     </LoginDialog>
 }
@@ -452,6 +446,8 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const issueDetails = extractIssueLinkDetails(props.issue.html_url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
+
+    const [isValidated, setIsValidated] = useState(false);
 
     const [token] = useToken();
     const account = useApi(
@@ -496,9 +492,12 @@ function ClaimDialogContents(props: ClaimDialogProps) {
         [selectedPullRequest]);
 
     const error = useMemo(
-        () => selectedPullRequest ?
-            pullRequestError :
-            "You must select a pull request.",
+        () => {
+            if(!!pullRequestError)
+                return pullRequestError;
+
+            return 
+        },
         [pullRequestError]);
 
     const onClaimClicked = async () => {
@@ -511,69 +510,87 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const isLoaded = !!account && !!pullRequests;
 
     return <>
-        {isLoaded && <EmailValidationDialog
-            email={account.email}
-            isOpen={isValidatingEmail}
-            onValidated={() => setLastProgressChange(new Date())}
-            onClose={() => setIsValidatingEmail(false)} />}
-        <ProgressList
-            validationTarget={account}
-            title="Claim bounty"
-            subTitle="To be able to claim a bounty, you need to fill out all of the following information. This information is needed to reduce potential fraud."
-            checkpoints={[
-                {
-                    label: "Connect your GitHub account",
-                    description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
-                    validate: account => !!account?.gitHubUsername
-                },
-                {
-                    label: "Verify your e-mail address",
-                    description: "Verifying your e-mail address reduces the chance of fake accounts, and ensures that you receive important account-related information from us (such as invoices).",
-                    validate: account => account?.isEmailVerified || false,
-                    onClick: () => setIsValidatingEmail(true)
-                },
-                {
-                    label: "Verify payment details",
-                    description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
-                    validate: account => !!account?.sponsor?.creditCard,
-                },
-                {
-                    label: "Pick the pull request that solved the issue",
-                    description: "We only allow merged pull requests from your GitHub user. Pull requests not from your user, closed pull requests or open pull requests, will not be accepted.",
-                    validate: () => !!selectedPullRequest?.mergedAt,
-                    children: () => <>
-                        <Autocomplete<ArrayContents<typeof pullRequests>>
-                            options={pullRequests ?? []}
-                            autoHighlight
-                            getOptionLabel={option => `#${option.number}: ${option.title}`}
-                            groupBy={option => option.mergedAt ?
-                                "Valid (merged)" :
-                                `Invalid (${option.state})`}
-                            renderOption={(props, option) => <Box {...props as any} key={`pullrequest-${option.number}`}>
-                                <Typography className={classes.pullRequest}>
-                                    <span className={classes.number}>#{option.number}</span>
-                                    <span className={classes.title}>{option.title}</span>
-                                </Typography>
-                            </Box>}
-                            onChange={(_, value) => setSelectedPullRequest(value || null)}
-                            value={selectedPullRequest}
-                            renderInput={params => (
-                                <TextField
-                                    {...params}
-                                    label="Choose a pull request"
-                                    variant="outlined"
-                                    helperText={pullRequestError}
-                                    error={!!pullRequestError}
-                                    inputProps={{
-                                        ...params.inputProps,
-                                        autoComplete: 'new-password', // disable autocomplete and autofill
-                                    }}
-                                />
-                            )}
-                        />
-                    </>
-                }
-            ]}
-        />
+        <DialogContent>
+            {isLoaded && <EmailValidationDialog
+                email={account.email}
+                isOpen={isValidatingEmail}
+                onValidated={() => setLastProgressChange(new Date())}
+                onClose={() => setIsValidatingEmail(false)} />}
+            <ProgressList
+                validationTarget={account}
+                title="Claim bounty"
+                subTitle="To be able to claim a bounty, you need to fill out all of the following information. This information is needed to reduce potential fraud."
+                onValidated={setIsValidated}
+                checkpoints={[
+                    {
+                        label: "Connect your GitHub account",
+                        description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
+                        validate: account => !!account?.gitHubUsername
+                    },
+                    {
+                        label: "Verify your e-mail address",
+                        description: "Verifying your e-mail address reduces the chance of fake accounts, and ensures that you receive important account-related information from us (such as invoices).",
+                        validate: account => account?.isEmailVerified || false,
+                        onClick: () => setIsValidatingEmail(true)
+                    },
+                    {
+                        label: "Verify payment details",
+                        description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
+                        validate: account => !!account?.sponsor?.creditCard,
+                    },
+                    {
+                        label: "Pick the pull request that solved the issue",
+                        description: "We only allow merged pull requests from your GitHub user. Pull requests not from your user, closed pull requests or open pull requests, will not be accepted.",
+                        validate: () => !!selectedPullRequest?.mergedAt,
+                        children: () => <>
+                            <Autocomplete<ArrayContents<typeof pullRequests>>
+                                options={pullRequests ?? []}
+                                autoHighlight
+                                getOptionLabel={option => `#${option.number}: ${option.title}`}
+                                groupBy={option => option.mergedAt ?
+                                    "Valid" :
+                                    `Invalid`}
+                                renderOption={(props, option) => <Box {...props as any} key={`pullrequest-${option.number}`}>
+                                    <Typography className={classes.pullRequest}>
+                                        <span className={classes.number}>#{option.number}</span>
+                                        <span className={classes.title}>{option.title}</span>
+                                    </Typography>
+                                </Box>}
+                                onChange={(_, value) => setSelectedPullRequest(value || null)}
+                                value={selectedPullRequest}
+                                renderInput={params => (
+                                    <TextField
+                                        {...params}
+                                        label="Choose a pull request"
+                                        variant="outlined"
+                                        helperText={pullRequestError}
+                                        error={!!pullRequestError}
+                                        inputProps={{
+                                            ...params.inputProps,
+                                            autoComplete: 'new-password', // disable autocomplete and autofill
+                                        }}
+                                    />
+                                )}
+                            />
+                        </>
+                    }
+                ]}
+            />
+        </DialogContent>
+        <DialogActions>
+            <Button 
+                color="secondary"
+                onClick={props.onClose}
+            >
+                Cancel
+            </Button>
+            <Button 
+                variant="contained"
+                onClick={onClaimClicked}
+                disabled={!isValidated}
+            >
+                Claim
+            </Button>
+        </DialogActions>
     </>;
 }
