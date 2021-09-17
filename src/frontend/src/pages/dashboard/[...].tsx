@@ -47,8 +47,7 @@ function DashboardPage() {
                                 {
                                     label: "Connect your GitHub account",
                                     description: "Connecting your GitHub account is required for receiving bounties, donations, or sponsorships.",
-                                    validate: account => !!account?.gitHubUsername,
-                                    onClick: () => { }
+                                    validate: account => !!account?.gitHubUsername
                                 },
                                 {
                                     label: "Change or verify e-mail address",
@@ -59,8 +58,7 @@ function DashboardPage() {
                                 {
                                     label: "Save payment details for later",
                                     description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
-                                    validate: account => !!account?.sponsor?.creditCard,
-                                    onClick: () => { }
+                                    validate: account => !!account?.sponsor?.creditCard
                                 },
                                 {
                                     label: "Fill in your bank account details",

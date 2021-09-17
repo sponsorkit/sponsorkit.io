@@ -16,7 +16,7 @@ type CheckpointDefaultChildrenProps = {
 }
 
 type CheckpointCustomChildrenProps = {
-    children: React.ReactNode
+    children: (isValidated: boolean) => React.ReactNode
 }
 
 export default function ProgressList<TValidationTarget>(props: {
@@ -81,8 +81,12 @@ export default function ProgressList<TValidationTarget>(props: {
             />
         </Box>
         <Box className={classes.accordions}>
-            {props.checkpoints.map((x, i) =>
-                <Accordion 
+            {props.checkpoints.map((x, i) => {
+                const validated = props.validationTarget ?
+                    x.validate(props.validationTarget) :
+                    false;
+
+                return <Accordion 
                     className={classes.accordion} 
                     expanded={expandStates[i]}
                     onChange={() => toggleExpandState(i)}
@@ -99,7 +103,7 @@ export default function ProgressList<TValidationTarget>(props: {
                                 label: classes.header
                             }}
                             control={props.validationTarget ?
-                                (x.validate(props.validationTarget) ?
+                                (validated ?
                                     <DoneSharp
                                         className={classes.checkbox}
                                         color="primary" /> :
@@ -118,18 +122,20 @@ export default function ProgressList<TValidationTarget>(props: {
                         <Typography className={classes.description} color="textSecondary">
                             {x.description}
                         </Typography>
-                        {!!props.validationTarget && !x.validate(props.validationTarget) &&
+                        {!!props.validationTarget &&
                             ('children' in x ?
-                                x.children :
+                                x.children(validated) :
                                 <Button 
                                     className={classes.completeButton} 
                                     variant="contained"
                                     onClick={x.onClick}
+                                    disabled={validated}
                                 >
                                     Begin
                                 </Button>)}
                     </AccordionDetails>
-                </Accordion>)}
+                </Accordion>;
+            })}
         </Box>
     </>
 }

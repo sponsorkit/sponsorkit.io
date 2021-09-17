@@ -25,9 +25,11 @@ export function AsynchronousProgressDialog(props: {
             let timerId: any;
 
             async function effect() {
+                console.log("asynchronous-progress-dialog", "tick");
+
                 if(isWaitingForVerification) {
                     const isDone = await Promise.resolve(props.isDoneAccessor());
-                    if(isDone === null)
+                    if(isDone === null) 
                         return setIsWaitingForVerification(false);
 
                     if(isDone) {
@@ -46,7 +48,7 @@ export function AsynchronousProgressDialog(props: {
                 timerId = setTimeout(effect, 1000);
             }
 
-            timerId = setTimeout(effect, 1000);
+            effect();
 
             return () => {
                 clearTimeout(timerId);
@@ -75,9 +77,7 @@ export function AsynchronousProgressDialog(props: {
 
     return <Dialog
         open={props.isOpen}
-        onClose={() => {
-            props.onClose();
-        }}
+        onClose={props.onClose}
         {...getDialogTransitionProps()}
         className={classes.root}
     >

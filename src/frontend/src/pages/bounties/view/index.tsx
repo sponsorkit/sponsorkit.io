@@ -476,7 +476,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 });
             return response.pullRequests;
         },
-        [account, issueDetails]); 
+        [account]); 
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 
     const [selectedPullRequest, setSelectedPullRequest] = useState<ArrayContents<typeof pullRequests> | null>();
@@ -524,8 +524,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 {
                     label: "Connect your GitHub account",
                     description: "Connecting your GitHub account allows us to see who you are, and prevent anyone from claiming bounties via pull requests they did not actually create.",
-                    validate: account => !!account?.gitHubUsername,
-                    onClick: () => { }
+                    validate: account => !!account?.gitHubUsername
                 },
                 {
                     label: "Verify your e-mail address",
@@ -537,42 +536,42 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                     label: "Verify payment details",
                     description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
                     validate: account => !!account?.sponsor?.creditCard,
-                    onClick: () => { }
                 },
                 {
                     label: "Pick the pull request that solved the issue",
                     description: "We only allow merged pull requests from your GitHub user. Pull requests not from your user, closed pull requests or open pull requests, will not be accepted.",
-                    validate: () => false,
-                    onClick: () => { },
-                    children: <Autocomplete<ArrayContents<typeof pullRequests>>
-                        options={pullRequests ?? []}
-                        autoHighlight
-                        getOptionLabel={option => `#${option.number}: ${option?.title}`}
-                        groupBy={option => option.mergedAt ?
-                            "Valid (merged)" :
-                            `Invalid (${option.state})`}
-                        renderOption={(props, option) => <Box {...props as any}>
-                            <Typography className={classes.pullRequest}>
-                                <span className={classes.number}>#{option.number}</span>
-                                <span className={classes.title}>{option.title}</span>
-                            </Typography>
-                        </Box>}
-                        onChange={(_, value) => setSelectedPullRequest(value || null)}
-                        value={selectedPullRequest}
-                        renderInput={params => (
-                            <TextField
-                                {...params}
-                                label="Choose a pull request"
-                                variant="outlined"
-                                helperText={pullRequestError}
-                                error={!!pullRequestError}
-                                inputProps={{
-                                    ...params.inputProps,
-                                    autoComplete: 'new-password', // disable autocomplete and autofill
-                                }}
-                            />
-                        )}
-                    />
+                    validate: () => !!selectedPullRequest?.mergedAt,
+                    children: () => <>
+                        <Autocomplete<ArrayContents<typeof pullRequests>>
+                            options={pullRequests ?? []}
+                            autoHighlight
+                            getOptionLabel={option => `#${option.number}: ${option.title}`}
+                            groupBy={option => option.mergedAt ?
+                                "Valid (merged)" :
+                                `Invalid (${option.state})`}
+                            renderOption={(props, option) => <Box {...props as any} key={`pullrequest-${option.number}`}>
+                                <Typography className={classes.pullRequest}>
+                                    <span className={classes.number}>#{option.number}</span>
+                                    <span className={classes.title}>{option.title}</span>
+                                </Typography>
+                            </Box>}
+                            onChange={(_, value) => setSelectedPullRequest(value || null)}
+                            value={selectedPullRequest}
+                            renderInput={params => (
+                                <TextField
+                                    {...params}
+                                    label="Choose a pull request"
+                                    variant="outlined"
+                                    helperText={pullRequestError}
+                                    error={!!pullRequestError}
+                                    inputProps={{
+                                        ...params.inputProps,
+                                        autoComplete: 'new-password', // disable autocomplete and autofill
+                                    }}
+                                />
+                            )}
+                        />
+                    </>
                 }
             ]}
         />
