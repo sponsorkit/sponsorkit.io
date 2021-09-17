@@ -488,7 +488,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             if (!selectedPullRequest)
                 return "You must select a pull request.";
 
-            if (!selectedPullRequest)
+            if (!selectedPullRequest.mergedAt)
                 return "Only merged pull requests are accepted."
 
             return "";

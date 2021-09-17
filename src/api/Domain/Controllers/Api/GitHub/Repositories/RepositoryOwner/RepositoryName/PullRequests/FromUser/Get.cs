@@ -28,7 +28,7 @@ namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.
         long Number,
         string Title,
         DateTimeOffset? MergedAt,
-        ItemState State);
+        PullRequestState State);
 
     public record GetResponse(
         IEnumerable<PullRequestResponse> PullRequests);
@@ -70,19 +70,17 @@ namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.
                 new Query()
                     .Search(
                         $"is:pr author:{request.Username} repo:{request.RepositoryOwner}/{request.RepositoryName}",
-                        SearchType.Issue)
+                        SearchType.Issue,
+                        last: 10)
                     .Select(x => x.Nodes)
                     .OfType<PullRequest>()
-                    .Select(x => new
-                    {
+                    .Select(x => new PullRequestResponse(
                         x.Number,
                         x.Title,
                         x.MergedAt,
-                        x.State
-                    }),
+                        x.State)),
                 cancellationToken);
-            return new GetResponse(
-                mapper.Map<IEnumerable<PullRequestResponse>>(pullRequests));
+            return new GetResponse(pullRequests);
         }
 
         private async Task<string?> GetGitHubAccessTokenIfPresentAsync(CancellationToken cancellationToken)

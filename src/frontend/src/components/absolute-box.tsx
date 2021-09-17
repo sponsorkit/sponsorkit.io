@@ -16,17 +16,9 @@ export default function AbsoluteBox(props: {
         if (!ref.current)
             return;
 
-        const updateHeight = () => {
-            console.log("update-height");
-            if(!ref.current)
-                return;
-
-            const rect = ref.current.getBoundingClientRect();
-            if(rect.height !== height) 
-                setHeight(rect.height);
-        }
-
-        updateHeight();
+        const rect = ref.current.getBoundingClientRect();
+        if(rect.height !== height) 
+            setHeight(rect.height);
     });
 
     return (
