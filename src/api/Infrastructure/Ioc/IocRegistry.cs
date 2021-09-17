@@ -24,6 +24,9 @@ using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
+using GraphQLConnection = Octokit.GraphQL.Connection;
+using GraphQLIConnection = Octokit.GraphQL.IConnection;
+using GraphQLInMemoryCredentialStore = Octokit.GraphQL.Internal.InMemoryCredentialStore;
 
 namespace Sponsorkit.Infrastructure.Ioc
 {
@@ -76,6 +79,15 @@ namespace Sponsorkit.Infrastructure.Ioc
                             .CurrentValue
                             .BountyhuntBot
                             .PersonalAccessToken))));
+            Services.AddScoped<GraphQLIConnection>(serviceProvider =>
+                new GraphQLConnection(
+                    GitHubClientFactory.GetGraphQLProductHeaderValue(),
+                    new GraphQLInMemoryCredentialStore(
+                        serviceProvider
+                            .GetRequiredService<IOptionsMonitor<GitHubOptions>>()
+                            .CurrentValue
+                            .BountyhuntBot
+                            .PersonalAccessToken)));
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
         }
 
