@@ -70,24 +70,14 @@ namespace Sponsorkit.Infrastructure.Ioc
 
         private void ConfigureGitHub()
         {
-            Services.AddScoped<IGitHubClient>(serviceProvider => 
-                new GitHubClient(
-                    GitHubClientFactory.GetProductHeaderValue(),
-                    new InMemoryCredentialStore(
-                        new Credentials(serviceProvider
-                            .GetRequiredService<IOptionsMonitor<GitHubOptions>>()
-                            .CurrentValue
-                            .BountyhuntBot
-                            .PersonalAccessToken))));
-            Services.AddScoped<GraphQLIConnection>(serviceProvider =>
-                new GraphQLConnection(
-                    GitHubClientFactory.GetGraphQLProductHeaderValue(),
-                    new GraphQLInMemoryCredentialStore(
-                        serviceProvider
-                            .GetRequiredService<IOptionsMonitor<GitHubOptions>>()
-                            .CurrentValue
-                            .BountyhuntBot
-                            .PersonalAccessToken)));
+            Services.AddScoped(serviceProvider => serviceProvider
+                .GetRequiredService<IGitHubClientFactory>()
+                .CreateClientFromOAuthAuthenticationToken(null));
+            
+            Services.AddScoped(serviceProvider => serviceProvider
+                .GetRequiredService<IGitHubClientFactory>()
+                .CreateGraphQlClientFromOAuthAuthenticationToken(null));
+            
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
         }
 

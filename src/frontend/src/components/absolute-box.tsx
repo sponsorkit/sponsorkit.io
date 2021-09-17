@@ -17,6 +17,7 @@ export default function AbsoluteBox(props: {
             return;
 
         const updateHeight = () => {
+            console.log("update-height");
             if(!ref.current)
                 return;
 
@@ -26,9 +27,6 @@ export default function AbsoluteBox(props: {
         }
 
         updateHeight();
-
-        var timer = setInterval(updateHeight, 100);
-        return () => clearInterval(timer);
     });
 
     return (

@@ -1,4 +1,3 @@
-import { getSdk } from "@api/octokit/graphql";
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
@@ -31,64 +30,10 @@ export function useOctokit<T>(
     return result;
 }
 
-export function useOctokitGraphQL<TAccessorResult, TExtractorResult>(
-    accessor: (client: ReturnType<typeof createOctokitGraphQL>, abortSignal: AbortSignal) => Promise<TAccessorResult | null>,
-    extractor: (result: TAccessorResult) => TExtractorResult,
-    deps: any[]
-): TExtractorResult | null | undefined {
-    const [result, setResult] = useState<TExtractorResult | null | undefined>();
-
-    useEffect(
-        () => {                
-            const abortSignalController = new AbortController();
-
-            async function effect() {
-                if(deps.findIndex(x => !x) > -1)
-                    return;
-
-                const client = createOctokitGraphQL();
-                const response = await accessor(client, abortSignalController.signal);
-                if(!response)
-                    return setResult(null);
-
-                setResult(extractor(response));
-            }
-
-            effect();
-
-            return () => {
-                abortSignalController.abort();
-            }
-        },
-        deps);
-
-    return result;
-}
-
 export function createOctokit() {
     return new Octokit();
 }
 
-type OctokitGraphQLOptions = {
-    abortSignal: AbortSignal
-}
-export function createOctokitGraphQL() {
-    return getSdk<OctokitGraphQLOptions>(async (query, variables, options) => {
-        const url = `${getBaseUri()}/github/graphql`;
-        const result = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                query: query.loc?.source.body,
-                variables
-            }),
-            signal: options?.abortSignal
-        });
-        return await result.json();
-    });
-}
 function getBaseUri() {
     const currentUri = new URL(window.location.href);
     if (currentUri.hostname === "localhost")

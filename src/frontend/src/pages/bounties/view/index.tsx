@@ -6,7 +6,7 @@ import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress-list";
 import { Transition } from "@components/transition";
-import { createApi, makeOctokitCall, useApi, useOctokitGraphQL } from "@hooks/clients";
+import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
 import { useToken } from "@hooks/token";
 import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogContent, TextField, Tooltip, Typography } from "@material-ui/core";
@@ -354,7 +354,7 @@ function Bounties(props: {
             </CardContent>
             <CardContent>
                 <CreateBounty
-                    currentAmount={10}
+                    currentAmount={totalBountyReward.current}
                     issue={issueDetails && {
                         issueNumber: issueDetails.number,
                         ownerName: issueDetails.owner,
@@ -378,7 +378,7 @@ function CreateBounty(props: {
 
     return <>
         <Typography variant="h4" component="h3" className={classes.title}>
-            {props.currentAmount ?
+            {props.currentAmount > 0 ?
                 "Increase bounty" :
                 "Add bounty"}
         </Typography>
@@ -462,21 +462,21 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             null,
         [lastProgressChange, token]);    
 
-    const pullRequests = useOctokitGraphQL(
-        async (client, abortSignal) => 
-            account && 
-            issueDetails && 
-            await client.getPullRequests(
+    const pullRequests = useApi(
+        async (client, abortSignal) => {
+            if(!issueDetails || !account?.gitHubUsername)
+                return undefined;
+                
+            var response = await client.githubRepositoriesRepositoryOwnerRepositoryNamePullRequestsFromUserUsernameGet(
+                issueDetails.owner,
+                issueDetails.repo,
+                account.gitHubUsername,
                 {
-                    query: `is:pr author:${account.gitHubUsername} repo:${issueDetails.owner}/${issueDetails.repo}`
-                },
-                { abortSignal }),
-        x => x?.search
-            ?.edges
-            ?.map(x => x?.node)
-            .map(x => x?.__typename === "PullRequest" ? x : null)
-            .filter(x => x),
-        [account, issueDetails]);
+                    abortSignal
+                });
+            return response.pullRequests;
+        },
+        [account, issueDetails]); 
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
 
     const [selectedPullRequest, setSelectedPullRequest] = useState<ArrayContents<typeof pullRequests> | null>();
@@ -488,7 +488,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             if (!selectedPullRequest)
                 return "You must select a pull request.";
 
-            if (!selectedPullRequest.mergedAt)
+            if (!selectedPullRequest)
                 return "Only merged pull requests are accepted."
 
             return "";
@@ -547,14 +547,14 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                     children: <Autocomplete<ArrayContents<typeof pullRequests>>
                         options={pullRequests ?? []}
                         autoHighlight
-                        getOptionLabel={option => `#${option?.number}: ${option?.title}`}
-                        groupBy={option => option?.mergedAt ?
+                        getOptionLabel={option => `#${option.number}: ${option?.title}`}
+                        groupBy={option => option.mergedAt ?
                             "Valid (merged)" :
-                            `Invalid (${option?.state})`}
+                            `Invalid (${option.state})`}
                         renderOption={(props, option) => <Box {...props as any}>
                             <Typography className={classes.pullRequest}>
-                                <span className={classes.number}>#{option?.number}</span>
-                                <span className={classes.title}>{option?.title}</span>
+                                <span className={classes.number}>#{option.number}</span>
+                                <span className={classes.title}>{option.title}</span>
                             </Typography>
                         </Box>}
                         onChange={(_, value) => setSelectedPullRequest(value || null)}

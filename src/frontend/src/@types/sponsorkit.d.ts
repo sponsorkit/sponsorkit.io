@@ -13,6 +13,6 @@ declare module '*.module.scss' {
     export = classNames;
 }
 
-declare type ArrayContents<TArray> = TArray extends any[] ? 
-    (TArray[number]) : 
+declare type ArrayContents<TArray> = Exclude<TArray, null | undefined> extends any[] ? 
+    (Exclude<TArray, null | undefined>[number]) : 
     never;

@@ -5,7 +5,7 @@ import ThemeConfig from '../../src/theme';
 import "./layout.scss";
 
 export default function ({ children }: any) {
-  return (<>
+  return (<React.StrictMode>
     <Helmet>
       <meta
         name="viewport"
@@ -18,5 +18,5 @@ export default function ({ children }: any) {
         {children}
       </LocationProvider>
     </ThemeConfig>
-  </>)
+  </React.StrictMode>)
 }

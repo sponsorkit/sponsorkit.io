@@ -1,35 +1,48 @@
 ﻿using System;
+using Microsoft.Extensions.Options;
 using Octokit;
+using Octokit.GraphQL;
 using Octokit.Internal;
+using Sponsorkit.Infrastructure.Options.GitHub;
 using GraphQLProductHeaderValue = Octokit.GraphQL.ProductHeaderValue;
+using IConnection = Octokit.GraphQL.IConnection;
+using Connection = Octokit.GraphQL.Connection;
+using ProductHeaderValue = Octokit.ProductHeaderValue;
 
 namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub
 {
     public class GitHubClientFactory : IGitHubClientFactory
     {
+        private readonly IOptionsMonitor<GitHubOptions> githubOptionsMonitor;
+
         private const string ProductHeaderValue = "sponsorkit.io";
-        
-        public IGitHubClient CreateClientFromOAuthAuthenticationToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token))
-                throw new InvalidOperationException("No token provided.");
 
-            var client = new GitHubClient(
-                GetProductHeaderValue(),
+        public GitHubClientFactory(
+            IOptionsMonitor<GitHubOptions> githubOptionsMonitor)
+        {
+            this.githubOptionsMonitor = githubOptionsMonitor;
+        }
+
+        public IGitHubClient CreateClientFromOAuthAuthenticationToken(string? token)
+        {
+            return new GitHubClient(
+                new (ProductHeaderValue),
                 new InMemoryCredentialStore(
-                    new Credentials(token)));
-            
-            return client;
+                    new Credentials(PickToken(token))));
         }
 
-        public static ProductHeaderValue GetProductHeaderValue()
+        public IConnection CreateGraphQlClientFromOAuthAuthenticationToken(string? token)
         {
-            return new(ProductHeaderValue);
+            return new Connection(
+                new (ProductHeaderValue),
+                PickToken(token));
         }
 
-        public static GraphQLProductHeaderValue GetGraphQLProductHeaderValue()
+        private string PickToken(string? token)
         {
-            return new(ProductHeaderValue);
+            return
+                token ??
+                githubOptionsMonitor.CurrentValue.BountyhuntBot.PersonalAccessToken;
         }
     }
 

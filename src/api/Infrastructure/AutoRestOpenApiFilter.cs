@@ -30,7 +30,7 @@ namespace Sponsorkit.Infrastructure
 
                 var pascalCaseName = char.ToUpper(propertyPair.Key[0]) + propertyPair.Key.Substring(1);
                 var property = type.GetProperty(pascalCaseName);
-                if (!property.IsNonNullableReferenceType())
+                if (property != null && !property.IsNonNullableReferenceType())
                 {
                     propertyPair.Value.Nullable = true;
                 }
