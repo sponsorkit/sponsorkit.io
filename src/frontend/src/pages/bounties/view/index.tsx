@@ -501,10 +501,12 @@ function ClaimDialogContents(props: ClaimDialogProps) {
         [pullRequestError]);
 
     const onClaimClicked = async () => {
-        if (error)
+        if (error || !selectedPullRequest)
             return;
 
-        await props.onClaim();
+        await createApi().bountiesGitHubIssueIdClaimPost(
+            props.issue.id,
+            selectedPullRequest.number);
     }
 
     const isLoaded = !!account && !!pullRequests;
