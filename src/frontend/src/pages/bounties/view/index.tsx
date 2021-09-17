@@ -470,7 +470,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 {
                     abortSignal
                 });
-            return response.pullRequests;
+            return orderBy(response.pullRequests, x => x.mergedAt);
         },
         [account]); 
     useEffect(() => console.log("pull-requests", pullRequests), [pullRequests]);
@@ -506,7 +506,13 @@ function ClaimDialogContents(props: ClaimDialogProps) {
 
         await createApi().bountiesGitHubIssueIdClaimPost(
             props.issue.id,
-            selectedPullRequest.number);
+            {
+                body: {
+                    gitHubPullRequestNumber: selectedPullRequest.number,
+                    gitHubIssueId: props.issue.id
+                }
+            });
+        props.onClose();
     }
 
     const isLoaded = !!account && !!pullRequests;
@@ -546,6 +552,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                         validate: () => !!selectedPullRequest?.mergedAt,
                         children: () => <>
                             <Autocomplete<ArrayContents<typeof pullRequests>>
+                                disabled={!isLoaded}
                                 options={pullRequests ?? []}
                                 autoHighlight
                                 getOptionLabel={option => `#${option.number}: ${option.title}`}

@@ -24,7 +24,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
 {
     public record PostRequest(
         [FromRoute] long GitHubIssueId,
-        [FromRoute] long GitHubPullRequestNumber);
+        [FromBody] long GitHubPullRequestNumber);
     
     public class Post : BaseAsyncEndpoint
         .WithRequest<PostRequest>
@@ -50,8 +50,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
             this.gitHubClient = gitHubClient;
         }
 
-        [HttpPost("/bounties/{gitHubIssueId}/claim")]
-        public override async Task<ActionResult> HandleAsync([FromRoute] PostRequest request, CancellationToken cancellationToken = new CancellationToken())
+        [HttpPost("/bounties/{gitHubIssueId:int}/claim")]
+        public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)

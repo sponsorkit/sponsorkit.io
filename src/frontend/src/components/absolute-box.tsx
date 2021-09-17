@@ -17,8 +17,12 @@ export default function AbsoluteBox(props: {
             return;
 
         const rect = ref.current.getBoundingClientRect();
-        if(rect.height !== height) 
-            setHeight(rect.height);
+        const rectHeight = Math.ceil(rect.height);
+        if(isNaN(rectHeight))
+            return;
+
+        if(rectHeight !== height) 
+            setHeight(rectHeight);
     });
 
     return (
