@@ -17,8 +17,6 @@ using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
-using Issue = Sponsorkit.Domain.Models.Issue;
-using PullRequest = Sponsorkit.Domain.Models.PullRequest;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
 {

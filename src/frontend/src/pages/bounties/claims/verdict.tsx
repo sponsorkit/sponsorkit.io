@@ -3,6 +3,7 @@ import { Button, Card, CardContent, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarTemplate } from "@pages/index";
 import { getUrlParameter } from "@utils/url";
+import * as classes from "./verdict.module.scss";
 
 export default function ClaimVerdictPage(props: {
     location: Location
@@ -51,66 +52,64 @@ function ClaimVerdictContents(props: {
 
     return <Card>
         <CardContent>
-            <Typography>Verify bounty claim</Typography>
+            <Typography variant="h2">Verify bounty claim</Typography>
             <Typography>
                 {claimee} claims to have solved issue #{issue.data.number} which you placed a bounty on.
             </Typography>
 
-            <Typography>
+            <Typography variant="h3">
                 Reported issue
             </Typography>
             <Issue issue={issue.data} />
 
-            <Typography>
+            <Typography variant="h3">
                 Fix
             </Typography>
-            <PullRequest pullRequest={pullRequest.data} />
+            <Issue issue={pullRequest.data} />
 
-            <Typography>
+            <Typography variant="h3">
                 Your bounty
             </Typography>
             <Bounty amountInHundreds={verdict.bountyAmountInHundreds} />
 
             <div>
-                <Button>
-                    <span>Award bounty</span>
-                    <span>{claimee} receives ${amount}</span>
-                </Button>
-                <Button>
-                    <span>Reject claim</span>
-                    <span>${amount} is redistributed into other important issues</span>
-                </Button>
+                <DetailedButton 
+                    title="Award bounty"
+                    subtitle={<>{claimee} receives ${amount}</>} />
+                <DetailedButton 
+                    title="Reject claim"
+                    subtitle={<>${amount} is redistributed into other important issues</>} />
             </div>
         </CardContent>
     </Card>
 }
 
 function Issue(props: {
-    issue: GitHubIssue
+    issue: GitHubIssue|GitHubPullRequest
 }) {
-    //TODO: rounded border.
-    return <div>
-        <div>
-            Issue
+    return <div className={classes.issue}>
+        <div className={classes.heading}>
+            <span className={classes.number}>#{props.issue.number}</span>
+            <span>{props.issue.title}</span>
         </div>
-        <div>
-            #{props.issue.number} {props.issue.title}
+        <div className={classes.author}>
+            By {props.issue.user?.login}
         </div>
     </div>;
 }
 
-function PullRequest(props: {
-    pullRequest: GitHubPullRequest
+function DetailedButton(props: {
+    onClick?: () => void,
+    title: React.ReactNode,
+    subtitle: React.ReactNode
 }) {
-    //TODO: rounded border.
-    return <div>
-        <div>
-            Pull request
-        </div>
-        <div>
-            #{props.pullRequest.number} {props.pullRequest.title}
-        </div>
-    </div>;
+    return <Button 
+        onClick={props.onClick} 
+        className={classes.detailedButton}
+    >
+        <span className={classes.title}>{props.title}</span>
+        <span className={classes.subtitle}>{props.subtitle}</span>
+    </Button>
 }
 
 function Bounty(props: {

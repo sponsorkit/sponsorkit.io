@@ -17,11 +17,15 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
     public record GetResponse(
         BountyResponse[] Bounties);
 
+    public record BountyClaimRequestResponse(
+        Guid CreatorId);
+
     public record BountyResponse(
         long AmountInHundreds,
         DateTimeOffset CreatedAtUtc,
         BountyUserResponse CreatorUser,
-        BountyUserResponse? AwardedUser);
+        BountyUserResponse? AwardedUser,
+        BountyClaimRequestResponse[] ClaimRequests);
 
     public record BountyUserResponse(
         long Id,
@@ -48,6 +52,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
             var issue = await dataContext.Issues
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)
                 .Include(x => x.Bounties).ThenInclude(x => x.AwardedTo)
+                .Include(x => x.Bounties).ThenInclude(x => x.ClaimRequests)
                 .SingleOrDefaultAsync(
                     x => x.GitHub.Id == request.GitHubIssueId,
                     cancellationToken);
@@ -63,7 +68,11 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
                         x.Creator.GitHub.Username),
                     x.AwardedTo == null ? null : new BountyUserResponse(
                         x.AwardedTo.GitHub!.Id,
-                        x.AwardedTo.GitHub.Username)))
+                        x.AwardedTo.GitHub.Username),
+                    x.ClaimRequests
+                        .Select(c => new BountyClaimRequestResponse(
+                            c.CreatorId))
+                        .ToArray()))
                 .ToArray());
         }
     }

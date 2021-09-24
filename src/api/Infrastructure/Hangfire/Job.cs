@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hangfire;
 using Hangfire.Server;
-using Serilog;
 using Serilog.Context;
 
 namespace Sponsorkit.Infrastructure.Hangfire

@@ -31,7 +31,10 @@ export function useOctokit<T>(
 }
 
 export function createOctokit() {
-    return new Octokit();
+    const client = new Octokit({
+        baseUrl: `${getBaseUri()}/octokit`
+    });
+    return client;
 }
 
 function getBaseUri() {
@@ -76,7 +79,7 @@ export function createApi() {
         name: "authorization",
         sendRequest: async (request, next) => {
             const token = getToken();
-            if (token)
+            if (token && !token.isExpired)
                 request.headers.set("Authorization", `Bearer ${token.raw}`);
 
             let response = await next(request);

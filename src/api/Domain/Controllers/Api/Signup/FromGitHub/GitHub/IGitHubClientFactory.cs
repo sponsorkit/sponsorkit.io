@@ -1,4 +1,7 @@
-﻿using Octokit;
+﻿using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using Octokit;
 using IConnection = Octokit.GraphQL.IConnection;
 
 namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub
@@ -7,5 +10,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub
     {
         IGitHubClient CreateClientFromOAuthAuthenticationToken(string? token);
         IConnection CreateGraphQlClientFromOAuthAuthenticationToken(string? token);
+
+        Task<string?> GetAccessTokenFromUserIfPresentAsync(
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken);
     }
 }

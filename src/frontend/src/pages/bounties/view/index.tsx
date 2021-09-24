@@ -224,7 +224,7 @@ const Issue = forwardRef(function (
             .filter(x => !!x);
     const eventsOrdered = orderBy(events, x => x?.time.getTime(), "desc");
 
-    const repo = extractReposApiLinkDetails(props.issue.repository_url);
+    const repo = extractReposApiLinkDetails(props.issue.url);
     if (!repo)
         throw new Error("Expected repo details.");
 
@@ -300,6 +300,8 @@ function Bounties(props: {
         () => props.bounties?.length ?? 0,
         [props.bounties]);
 
+    const [token] = useToken();
+
     const claimError = useMemo(
         () => {
             if (totalBountyReward.current === 0)
@@ -308,11 +310,16 @@ function Bounties(props: {
             if (props.issue.state === "closed")
                 return "The reward can't be claimed when the issue isn't closed";
 
+            if(props.bounties?.find(x => x.claimRequests.find(c => c.creatorId === token?.userId)))
+                return "You have already sent a claim request for this reward.";
+
             return "";
         },
         [props.issue.state, totalBountyReward]);
 
-    const issueDetails = extractIssueLinkDetails(props.issue.html_url);
+    const issueDetails = extractIssueLinkDetails(props.issue.url);
+    if(!issueDetails)
+        throw new Error("No issue details could be extracted.");
 
     const [isClaiming, setIsClaiming] = useState(false);
 
@@ -504,14 +511,12 @@ function ClaimDialogContents(props: ClaimDialogProps) {
         if (error || !selectedPullRequest)
             return;
 
-        await createApi().bountiesGitHubIssueIdClaimPost(
-            props.issue.id,
-            {
-                body: {
-                    gitHubPullRequestNumber: selectedPullRequest.number,
-                    gitHubIssueId: props.issue.id
-                }
-            });
+        await createApi().bountiesClaimPost({
+            body: {
+                gitHubPullRequestNumber: selectedPullRequest.number,
+                gitHubIssueId: props.issue.id
+            }
+        });
         props.onClose();
     }
 
@@ -527,7 +532,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             <ProgressList
                 validationTarget={account}
                 title="Claim bounty"
-                subTitle="To be able to claim a bounty, you need to fill out all of the following information. This information is needed to reduce potential fraud."
+                subTitle="To be able to claim a bounty, you need to fill out all of the following information. This information is needed to reduce the chance of potential fraud."
                 onValidated={setIsValidated}
                 checkpoints={[
                     {

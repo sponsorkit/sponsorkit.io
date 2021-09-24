@@ -65,8 +65,4 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Domain\Controllers\Api\GitHub\Repositories\RepositoryOwner\RepositoryName\Issues\IssueNumber" />
-    <Folder Include="Domain\Jobs" />
-  </ItemGroup>
 </Project>

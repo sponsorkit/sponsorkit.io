@@ -39,7 +39,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
         public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var claimRequest = await dataContext.BountyClaimRequests
-                .Include(x => x.Bounty).ThenInclude(x => x.Issue).ThenInclude(x => x.Repository).ThenInclude(x => x.Owner)
+                .Include(x => x.Bounty).ThenInclude(x => x.Issue).ThenInclude(x => x.Repository)
+                .Include(x => x.PullRequest)
                 .SingleOrDefaultAsync(
                     x => x.Id == request.ClaimId,
                     cancellationToken);
@@ -50,10 +51,6 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
             if (issueRepository == null)
                 throw new InvalidOperationException("The given issue does not have a repository attached.");
 
-            var ownerName = issueRepository.Owner?.GitHub?.Username;
-            if (ownerName == null)
-                throw new InvalidOperationException("The given repository's owner name could not be determined.");
-            
             return new GetResponse(
                 claimRequest.Bounty.AmountInHundreds,
                 new GitHubResponse(

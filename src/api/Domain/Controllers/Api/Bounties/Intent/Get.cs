@@ -1,18 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
-using Ardalis.Result;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
-using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
 {

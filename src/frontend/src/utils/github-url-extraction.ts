@@ -1,7 +1,18 @@
 import { tryCreateUrl } from "./url";
 
 export function extractIssueLinkDetails(issueLink: string) {
-    const [owner, repo, type, issueNumberString] = tryGetPathNames(issueLink);
+    let owner: string;
+    let repo: string;
+    let type: string;
+    let issueNumberString: string;
+
+    const [firstSegment] = tryGetPathNames(issueLink);
+    if(firstSegment === "repos") {
+        [, owner, repo, type, issueNumberString] = tryGetPathNames(issueLink);
+    } else {
+        [owner, repo, type, issueNumberString] = tryGetPathNames(issueLink);
+    }
+
     if(type !== "issues")
         return undefined;
             
