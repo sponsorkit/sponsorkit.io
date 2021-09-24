@@ -72,13 +72,16 @@ function ClaimVerdictContents(props: {
             </Typography>
             <Bounty amountInHundreds={verdict.bountyAmountInHundreds} />
 
-            <div>
-                <DetailedButton 
-                    title="Award bounty"
-                    subtitle={<>{claimee} receives ${amount}</>} />
-                <DetailedButton 
+            <div className={classes.buttonContainer}>
+                <DetailedButton
+                    variant="outlined" 
                     title="Reject claim"
                     subtitle={<>${amount} is redistributed into other important issues</>} />
+                    
+                <DetailedButton 
+                    variant="contained"
+                    title="Award bounty"
+                    subtitle={<>{claimee} receives ${amount}</>} />
             </div>
         </CardContent>
     </Card>
@@ -100,10 +103,12 @@ function Issue(props: {
 
 function DetailedButton(props: {
     onClick?: () => void,
+    variant: 'text' | 'outlined' | 'contained',
     title: React.ReactNode,
     subtitle: React.ReactNode
 }) {
-    return <Button 
+    return <Button
+        variant={props.variant}
         onClick={props.onClick} 
         className={classes.detailedButton}
     >
