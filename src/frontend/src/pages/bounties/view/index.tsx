@@ -1,4 +1,5 @@
 import EmailValidationDialog from "@components/account/email-validation-dialog";
+import Currency from "@components/currency";
 import getDialogTransitionProps from "@components/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
@@ -339,7 +340,7 @@ function Bounties(props: {
             <CardContent className={classes.bountyAmount}>
                 <Box className={classes.labelContainer}>
                     <Typography component="div" variant="h3" className={classes.amountRaised}>
-                        <Tooltip title={`$${totalBountyReward.current} USD`}><b>${totalBountyReward.animated}</b></Tooltip> reward
+                        <Currency amount={totalBountyReward.animated} /> reward
                     </Typography>
                     <Typography component="div" className={classes.amountOfSponsors}>
                         <b>{totalBountyCount.animated}</b> bount{totalBountyCount.current === 1 ? "y" : "ies"}
@@ -450,8 +451,9 @@ function ClaimDialog(props: ClaimDialogProps) {
 function ClaimDialogContents(props: ClaimDialogProps) {
     console.log("render", "claim-dialog-contents");
 
-    const issueDetails = extractIssueLinkDetails(props.issue.html_url);
+    const issueDetails = extractIssueLinkDetails(props.issue.url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+    const [isClaiming, setIsClaiming] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
     const [isValidated, setIsValidated] = useState(false);
@@ -511,16 +513,24 @@ function ClaimDialogContents(props: ClaimDialogProps) {
         if (error || !selectedPullRequest)
             return;
 
-        await createApi().bountiesClaimPost({
-            body: {
-                gitHubPullRequestNumber: selectedPullRequest.number,
-                gitHubIssueId: props.issue.id
-            }
-        });
-        props.onClose();
+        setIsClaiming(true);
+        try {
+            await createApi().bountiesClaimPost({
+                body: {
+                    gitHubPullRequestNumber: selectedPullRequest.number,
+                    gitHubIssueId: props.issue.id
+                }
+            });
+            props.onClose();
+        } finally {
+            setIsClaiming(false);
+        }
     }
 
     const isLoaded = !!account && !!pullRequests;
+
+    if(!issueDetails) 
+        throw new Error("Couldn't infer issue details.");
 
     return <>
         <DialogContent>
@@ -601,7 +611,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             <Button 
                 variant="contained"
                 onClick={onClaimClicked}
-                disabled={!isValidated}
+                disabled={!isValidated || isClaiming}
             >
                 Claim
             </Button>

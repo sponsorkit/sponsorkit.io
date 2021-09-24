@@ -1,5 +1,5 @@
 .root {
-    max-width: 510px;
+    max-width: 470px;
 
     .header {
         margin-top: 15px;
@@ -12,8 +12,9 @@
 
     .issue {
         border-radius: 5px;
-        border: 1px solid rgba(0,0,0, 0.1);
-        background-color: rgba(0,0,0, 0.025);
+        border: 1px solid;
+        border-color: rgba(0,0,0, 0.05);
+        background-color: rgba(0,0,0, 0.01);
         padding: 10px 15px;
         cursor: pointer;
         display: flex;
@@ -21,8 +22,14 @@
         align-content: center;
         align-items: center;
         justify-content: space-between;
+        width: 100%;
+
+        transition: 
+            background-color 0.2s ease-in-out,
+            border-color 0.2s ease-in-out;
 
         &:hover {
+            border-color: rgba(0,0,0, 0.1);
             background-color: rgba(0,0,0, 0.05);
 
             .open-in-new-icon {
@@ -32,7 +39,7 @@
 
         .open-in-new-icon {
             transition: opacity 0.2s ease-in-out;
-            opacity: 0.5;
+            opacity: 0.3;
         }
 
         .heading {
@@ -74,6 +81,7 @@
     .button-container {
         gap: 20px;
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
+        margin-top: 40px;
     }
 }

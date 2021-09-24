@@ -141,7 +141,9 @@ export default function ProgressList<TValidationTarget>(props: {
                                     onClick={x.onClick}
                                     disabled={validated}
                                 >
-                                    Begin
+                                    {validated ? 
+                                        "Completed" : 
+                                        "Begin"}
                                 </Button>)}
                     </AccordionDetails>
                 </Accordion>;

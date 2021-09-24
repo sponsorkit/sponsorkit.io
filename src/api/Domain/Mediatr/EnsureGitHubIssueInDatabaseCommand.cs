@@ -58,22 +58,20 @@ namespace Sponsorkit.Domain.Mediatr
             var issue = await dataContext.Issues.SingleOrDefaultAsync(
                 x => x.GitHub.Id == gitHubIssue.Id,
                 cancellationToken);
-            if (issue == null)
-            {
-                var newIssue = new IssueBuilder()
-                    .WithGitHubInformation(
-                        gitHubIssue.Id,
-                        gitHubIssue.Number)
-                    .WithRepository(repository)
-                    .Build();
-                await dataContext.Issues.AddAsync(
-                    newIssue,
-                    cancellationToken);
+            if (issue != null) 
+                return issue;
+            
+            var newIssue = new IssueBuilder()
+                .WithGitHubInformation(
+                    gitHubIssue.Id,
+                    gitHubIssue.Number)
+                .WithRepository(repository)
+                .Build();
+            await dataContext.Issues.AddAsync(
+                newIssue,
+                cancellationToken);
 
-                issue = newIssue;
-            }
-
-            return issue;
+            return newIssue;
         }
 
         private async Task<Repository> EnsureRepositoryInDatabaseAsync(

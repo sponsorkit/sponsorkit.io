@@ -27,7 +27,7 @@ export function useAnimatedCount(
     });
     return {
         current: current,
-        animated: countUp.value,
+        animated: countUp.value as number,
         previous
     };
 }
