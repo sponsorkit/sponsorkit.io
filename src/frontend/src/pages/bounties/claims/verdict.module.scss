@@ -18,17 +18,13 @@
         font-size: 11px;
         opacity: 0.5;
     }
-
-    .button-container {
-        gap: 10px;
-        display: flex;
-    }
 }
 
 .detailed-button {
     display: inline-block;
     text-transform: unset;
-    max-width: 300px;
+    width: 200px;
+    height: 90px;
 
     .title {
         display: block;
@@ -39,4 +35,10 @@
         font-weight: 100;
         font-size: 11px;
     }
+}
+
+.button-container {
+    gap: 10px;
+    display: flex;
+    justify-content: center;
 }
