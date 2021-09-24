@@ -23,8 +23,8 @@ using PullRequest = Sponsorkit.Domain.Models.PullRequest;
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
 {
     public record PostRequest(
-        [FromRoute] long GitHubIssueId,
-        [FromBody] long GitHubPullRequestNumber);
+        long GitHubIssueId,
+        long GitHubPullRequestNumber);
     
     public class Post : BaseAsyncEndpoint
         .WithRequest<PostRequest>
@@ -50,7 +50,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
             this.gitHubClient = gitHubClient;
         }
 
-        [HttpPost("/bounties/{gitHubIssueId:int}/claim")]
+        [HttpPost("/bounties/claim")]
         public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
