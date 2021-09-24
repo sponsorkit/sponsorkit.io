@@ -1,4 +1,5 @@
 import { useApi, useOctokit } from "@hooks/clients";
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Button, Card, CardContent, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarTemplate } from "@pages/index";
@@ -50,24 +51,24 @@ function ClaimVerdictContents(props: {
     const claimee = pullRequest.data.user.login;
     const amount = verdict.bountyAmountInHundreds / 100;
 
-    return <Card>
+    return <Card className={classes.root}>
         <CardContent>
             <Typography variant="h2">Verify bounty claim</Typography>
-            <Typography>
-                {claimee} claims to have solved issue #{issue.data.number} which you placed a bounty on.
+            <Typography className={classes.text}>
+                <b>{claimee}</b> claims to have solved issue <b>#{issue.data.number}</b> which you placed a <b>${amount}</b> bounty on.
             </Typography>
 
-            <Typography variant="h3">
+            <Typography className={classes.header} variant="h3">
                 Reported issue
             </Typography>
             <Issue issue={issue.data} />
 
-            <Typography variant="h3">
+            <Typography className={classes.header} variant="h3">
                 Fix
             </Typography>
             <Issue issue={pullRequest.data} />
 
-            <Typography variant="h3">
+            <Typography className={classes.header} variant="h3">
                 Your bounty
             </Typography>
             <Bounty amountInHundreds={verdict.bountyAmountInHundreds} />
@@ -76,12 +77,12 @@ function ClaimVerdictContents(props: {
                 <DetailedButton
                     variant="outlined" 
                     title="Reject claim"
-                    subtitle={<>${amount} is redistributed into other important issues</>} />
+                    subtitle={<><b>${amount}</b> is redistributed into other important issues</>} />
                     
                 <DetailedButton 
                     variant="contained"
                     title="Award bounty"
-                    subtitle={<>{claimee} receives ${amount}</>} />
+                    subtitle={<><b>{claimee}</b> receives <b>${amount}</b></>} />
             </div>
         </CardContent>
     </Card>
@@ -91,13 +92,16 @@ function Issue(props: {
     issue: GitHubIssue|GitHubPullRequest
 }) {
     return <div className={classes.issue}>
-        <div className={classes.heading}>
-            <span className={classes.number}>#{props.issue.number}</span>
-            <span>{props.issue.title}</span>
+        <div>
+            <div className={classes.heading}>
+                <span className={classes.number}>#{props.issue.number}</span>
+                <span>{props.issue.title}</span>
+            </div>
+            <div className={classes.author}>
+                By <b>{props.issue.user?.login}</b>
+            </div>
         </div>
-        <div className={classes.author}>
-            By {props.issue.user?.login}
-        </div>
+        <OpenInNewIcon className={classes.openInNewIcon} />
     </div>;
 }
 
