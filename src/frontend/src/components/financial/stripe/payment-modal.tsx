@@ -1,6 +1,6 @@
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
-import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip, Typography } from "@mui/material";
+import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";
@@ -18,7 +18,10 @@ type Props = {
     isOpen: boolean,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
-    onComplete: () => Promise<void> | void
+    onComplete: () => Promise<void> | void,
+    beforeChildren?: React.ReactNode,
+    afterChildren?: React.ReactNode,
+    isDisabled?: boolean
 };
 
 function PaymentMethodModalContent(props: Props) {
@@ -122,7 +125,11 @@ function PaymentMethodModalContent(props: Props) {
 
     return <AsynchronousProgressDialog
         isOpen={props.isOpen}
-        isSubmitDisabled={isLoading || !!error || !cardNumberElement}
+        isSubmitDisabled={
+            isLoading || 
+            !!error || 
+            !cardNumberElement ||
+            props.isDisabled}
         onClose={onCancelClicked}
         buttonText="Submit"
         requestSendingText="Submitting..."
@@ -141,9 +148,7 @@ function PaymentMethodModalContent(props: Props) {
     >
         <DialogTitle>Enter payment details</DialogTitle>
         <DialogContent className={classes.root}>
-            <Typography className={classes.subtext}>
-                To continue, we need your payment details. Your card won't actually be charged until the bounty is claimed, but we'll verify the card now and save it with Stripe.
-            </Typography>
+            {props.beforeChildren}
             <Box className={classes.paymentVeil}>
                 <Box className={`${classes.creditCardWrapper} ${isReady && classes.ready} ${isInitializing && classes.initializing}`}>
                     <Elements>
@@ -163,6 +168,7 @@ function PaymentMethodModalContent(props: Props) {
                         {error.message}
                     </FormHelperText>
                 </Box>}
+            {props.afterChildren}
         </DialogContent>
     </AsynchronousProgressDialog>;
 }

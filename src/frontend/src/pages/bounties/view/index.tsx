@@ -6,6 +6,7 @@ import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress-list";
+import TooltipLink from "@components/tooltip-link";
 import { Transition } from "@components/transition";
 import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
@@ -13,7 +14,7 @@ import { useToken } from "@hooks/token";
 import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
-import { Autocomplete, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, TextField, Tooltip, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Card, CardContent, Checkbox, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
@@ -378,6 +379,13 @@ function CreateBounty(props: {
 }) {
     const [amount, setAmount] = useState(0);
     const [shouldCreate, setShouldCreate] = useState(false);
+    
+    const [consentChargedAferIssueClose, setConsentChargedAferIssueClose] = useState(false);
+    const [consentNoRefunds, setConsentNoRefunds] = useState(false);
+
+    const hasConsent = useMemo(
+        () => consentChargedAferIssueClose && consentNoRefunds,
+        [consentChargedAferIssueClose, consentNoRefunds]);
 
     const onCreateClicked = () => setShouldCreate(true);
 
@@ -400,6 +408,7 @@ function CreateBounty(props: {
         </Button>
         <PaymentMethodModal
             isOpen={shouldCreate}
+            isDisabled={!hasConsent}
             onComplete={props.onBountyCreated}
             onClose={() => setShouldCreate(false)}
             onAcquirePaymentIntent={async () => {
@@ -420,6 +429,35 @@ function CreateBounty(props: {
                     existingPaymentMethodId: response.existingPaymentMethodId
                 }
             }}
+            afterChildren={<FormGroup className={classes.consent}>
+                <FormControlLabel 
+                    className={classes.label}
+                    label={<>I agree to be charged <Currency amount={amount} /> after the issue has been closed.</>}
+                    control={<Checkbox
+                        checked={consentChargedAferIssueClose}
+                        onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
+                        className={classes.consentCheckbox} />} />
+                <FormControlLabel 
+                    className={classes.label}
+                    label={<>
+                        I agree that the bounty can't be refunded, even if no one claims it.
+                        <TooltipLink text="Why?">
+                            <Typography className={classes.typography}>
+                                If anyone could refund their bounty, it would lead to people working on solving a specific issue, only to find out that the reward they worked for, would have been retracted in the meanwhile.
+                            </Typography>
+                            <Typography className={classes.typography}>
+                                In the event that no one claims the bounty, the amount is instead given back to the open source community, by distributing the bounty amount among the most upvoted issues across all of GitHub.
+                            </Typography>
+                            <Typography className={classes.typography}>
+                                Bountyhunt's only income are the fees.
+                            </Typography>
+                        </TooltipLink>
+                    </>}
+                    control={<Checkbox
+                        checked={consentNoRefunds}
+                        onChange={() => setConsentNoRefunds(!consentNoRefunds)}
+                        className={classes.consentCheckbox} />} />
+            </FormGroup>}
         />
     </>;
 }

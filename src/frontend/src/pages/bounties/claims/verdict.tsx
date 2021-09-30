@@ -103,14 +103,14 @@ function ClaimVerdictContents(props: {
                 <Button 
                     variant="text"
                     color="secondary"
-                    onClick={() => setIsRejectOpen(false)}
+                    onClick={() => setIsApproveOpen(false)}
                 >
                     Cancel
                 </Button>
                 <Button 
                     variant="contained"
                     color="primary"
-                    onClick={() => setIsRejectOpen(false)}
+                    onClick={() => setIsApproveOpen(false)}
                 >
                     Award
                 </Button>
