@@ -75,6 +75,7 @@ export function createApi() {
             return response;
         }
     });
+
     client.pipeline.addPolicy({
         name: "authorization",
         sendRequest: async (request, next) => {
@@ -86,6 +87,7 @@ export function createApi() {
             if (response.status === 401) {
                 request.headers.delete("Authorization");
                 localStorage.removeItem("token");
+                
                 response = await next(request);
             }
 

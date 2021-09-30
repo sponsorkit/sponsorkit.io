@@ -1,10 +1,13 @@
 import Currency from "@components/currency";
+import { FeeDisplay } from "@components/financial/fee-display";
+import LoginDialog from "@components/login/login-dialog";
 import { useApi, useOctokit } from "@hooks/clients";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Button, ButtonBase, Card, CardContent, Typography } from "@mui/material";
+import { Button, ButtonBase, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarTemplate } from "@pages/index";
 import { getUrlParameter } from "@utils/url";
+import { useState } from "react";
 import * as classes from "./verdict.module.scss";
 
 export default function ClaimVerdictPage(props: {
@@ -15,7 +18,9 @@ export default function ClaimVerdictPage(props: {
         return null;
     
     return <AppBarTemplate logoVariant="bountyhunt">
-        <ClaimVerdictContents claimId={claimId} />
+        <LoginDialog isOpen>
+            {() => <ClaimVerdictContents claimId={claimId} />}
+        </LoginDialog>
     </AppBarTemplate>
 }
 
@@ -41,7 +46,10 @@ function ClaimVerdictContents(props: {
             pull_number: verdict.gitHub.pullRequestNumber,
             repo: verdict.gitHub.repositoryName
         }),
-        [verdict])
+        [verdict]);
+
+    const [isRejectOpen, setIsRejectOpen] = useState(false);
+    const [isApproveOpen, setIsApproveOpen] = useState(false);
 
     if(!verdict || !pullRequest || !issue)
         return null;
@@ -53,8 +61,64 @@ function ClaimVerdictContents(props: {
     const amount = verdict.bountyAmountInHundreds / 100;
 
     return <Card className={classes.root}>
+        <Dialog 
+            open={isRejectOpen}
+            onClose={() => setIsRejectOpen(false)}
+        >
+            <DialogTitle>Reject claim</DialogTitle>
+            <DialogContent>
+                <Typography>
+                    In <b>1337</b> days, the verdict phase of the bounty will be over.
+                </Typography>
+                <Typography>
+                    <i>If you have not awarded the bounty to anyone before that date, the <Currency amount={amount} /> bounty amount will be charged from your card and redistributed into new bounties across the <a href="https://github.com/issues?q=is%3Aopen+sort%3Areactions-%2B1-desc+" target="_blank">most popular GitHub issues</a> automatically.</i>
+                </Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button 
+                    variant="text"
+                    color="secondary"
+                    onClick={() => setIsRejectOpen(false)}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setIsRejectOpen(false)}
+                >
+                    Reject
+                </Button>
+            </DialogActions>
+        </Dialog>
+        <Dialog
+            open={isApproveOpen}
+            onClose={() => setIsApproveOpen(false)}
+        >
+            <DialogTitle>Award bounty</DialogTitle>
+            <DialogContent>
+                <FeeDisplay amount={amount} />
+            </DialogContent>
+            <DialogActions>
+                <Button 
+                    variant="text"
+                    color="secondary"
+                    onClick={() => setIsRejectOpen(false)}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setIsRejectOpen(false)}
+                >
+                    Award
+                </Button>
+            </DialogActions>
+        </Dialog>
         <CardContent>
-            <Typography variant="h3">Verify bounty claim</Typography>
+            <Typography variant="h3">Verify claim</Typography>
+            
             <Typography className={classes.text}>
                 <b>{claimee}</b> claims to have solved issue <b>#{issue.data.number}</b> which you placed a <Currency amount={amount} /> bounty on.
             </Typography>
@@ -73,12 +137,16 @@ function ClaimVerdictContents(props: {
                 <DetailedButton
                     variant="outlined" 
                     title="Reject claim"
-                    subtitle={<><Currency amount={amount} /> is redistributed into other important issues</>} />
+                    subtitle={<>The issue wasn't solved</>} 
+                    onClick={() => setIsRejectOpen(true)}
+                />
                     
                 <DetailedButton 
                     variant="contained"
                     title="Award bounty"
-                    subtitle={<><b>{claimee}</b> receives <Currency amount={amount} /></>} />
+                    subtitle={<>The issue was solved</>} 
+                    onClick={() => setIsApproveOpen(true)}
+                />
             </div>
         </CardContent>
     </Card>
