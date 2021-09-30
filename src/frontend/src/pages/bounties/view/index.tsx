@@ -440,15 +440,14 @@ function CreateBounty(props: {
                 <FormControlLabel 
                     className={classes.label}
                     label={<>
-                        I agree that the bounty can't be refunded, even if no one claims it.
-                        <TooltipLink text="Why?">
-                            <Typography className={classes.typography}>
+                        I agree that the bounty can't be refunded, even if no one claims it. <TooltipLink text="Why?">
+                            <Typography>
                                 If anyone could refund their bounty, it would lead to people working on solving a specific issue, only to find out that the reward they worked for, would have been retracted in the meanwhile.
                             </Typography>
-                            <Typography className={classes.typography}>
+                            <Typography>
                                 In the event that no one claims the bounty, the amount is instead given back to the open source community, by distributing the bounty amount among the most upvoted issues across all of GitHub.
                             </Typography>
-                            <Typography className={classes.typography}>
+                            <Typography>
                                 Bountyhunt's only income are the fees.
                             </Typography>
                         </TooltipLink>

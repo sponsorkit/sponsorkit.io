@@ -1,11 +1,17 @@
 .tooltip {
+    p {
+        padding-top: 10px;
+    
+        &:first-child {
+            padding-top: 0;
+        }
+    }
 }
 
 .typography {
     font-size: inherit;
     display: inline-block;
     font-weight: bold;
-    margin-left: 5px;
     text-decoration-style: dashed;
     text-decoration-line: underline;
     text-underline-offset: 2px;

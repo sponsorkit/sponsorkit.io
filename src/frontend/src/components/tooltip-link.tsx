@@ -1,4 +1,4 @@
-import { Tooltip, Typography, useTheme } from "@mui/material";
+import { Box, Tooltip, Typography, useTheme } from "@mui/material";
 import * as classes from "./tooltip-link.module.scss";
 
 export default function TooltipLink(props: {
@@ -6,9 +6,13 @@ export default function TooltipLink(props: {
     text: string
 }) {
     const theme = useTheme();
+    
     return <Tooltip 
-        className={classes.tooltip} 
-        title={<>{props.children}</>}
+        title={<Box
+            className={classes.tooltip}
+        >
+            {props.children}
+        </Box>}
     >
         <Typography 
             className={classes.typography}
