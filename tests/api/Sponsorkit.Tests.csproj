@@ -33,7 +33,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Domain\Api\Signup" />
       <Folder Include="TestHelpers\Builders\Stripe" />
         <None Include="..\..\src\api\appsettings.json">
             <Link>appsettings.json</Link>

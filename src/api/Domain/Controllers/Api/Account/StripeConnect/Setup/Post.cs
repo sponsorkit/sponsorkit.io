@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
@@ -35,6 +36,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
         }
         
         [HttpPost("/account/stripe-connect/setup")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();

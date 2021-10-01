@@ -39,9 +39,9 @@ jobs:
       working-directory: src/api
       run: dotnet restore
 
-    - name: Build with dotnet
+    - name: Run tests
       working-directory: src/api
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet test
 
     - name: Publish with dotnet
       working-directory: src/api

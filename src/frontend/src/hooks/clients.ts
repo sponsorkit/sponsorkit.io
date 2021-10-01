@@ -80,13 +80,12 @@ export function createApi() {
         name: "authorization",
         sendRequest: async (request, next) => {
             const token = getToken();
-            if (token && !token.isExpired)
+            if (token)
                 request.headers.set("Authorization", `Bearer ${token.raw}`);
 
             let response = await next(request);
             if (response.status === 401) {
-                request.headers.delete("Authorization");
-                localStorage.removeItem("token");
+                console.log("token expire");
                 
                 response = await next(request);
             }
