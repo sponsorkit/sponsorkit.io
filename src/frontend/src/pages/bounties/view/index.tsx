@@ -433,7 +433,7 @@ function CreateBounty(props: {
             afterChildren={<FormGroup className={classes.consent}>
                 <FormControlLabel 
                     className={classes.label}
-                    label={<>I agree to be charged <Currency amount={amount} /> after the issue has been closed.</>}
+                    label={<>I agree to be charged <Currency amount={amount} /> whenever my bounty is awarded to someone.</>}
                     control={<Checkbox
                         checked={consentChargedAferIssueClose}
                         onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
@@ -441,15 +441,15 @@ function CreateBounty(props: {
                 <FormControlLabel 
                     className={classes.label}
                     label={<>
-                        I agree that the bounty can't be refunded, even if no one claims it. <TooltipLink text="Why?">
+                        I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?">
                             <Typography>
-                                If anyone could refund their bounty, it would lead to people working on solving a specific issue, only to find out that the reward they worked for, would have been retracted in the meanwhile.
+                                If people know that their bounty can't be refunded, they are more likely to actually award the bounty to the bountyhunters after the issue has been closed. This decreases the chance of bountyhunters finishing their work, only to realize that the bounty isn't going to be awarded to them.
                             </Typography>
                             <Typography>
-                                In the event that no one claims the bounty, the amount is instead given back to the open source community, by distributing the bounty amount among the most upvoted issues across all of GitHub.
+                                In the event that no one claims the bounty, the bounty is relocated to another issue in the open source community, among the most upvoted issues across all of GitHub.
                             </Typography>
                             <Typography>
-                                Bountyhunt's only income are the fees.
+                                Bountyhunt's only earnings are the fees.
                             </Typography>
                         </TooltipLink>
                     </>}
