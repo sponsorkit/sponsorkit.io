@@ -56,6 +56,7 @@ namespace Sponsorkit.Tests.Reflection
             var routeAttributes = new []
             {
                 typeof(HttpPostAttribute),
+                typeof(HttpGetAttribute),
                 typeof(HttpPatchAttribute),
                 typeof(HttpPutAttribute),
                 typeof(HttpDeleteAttribute),

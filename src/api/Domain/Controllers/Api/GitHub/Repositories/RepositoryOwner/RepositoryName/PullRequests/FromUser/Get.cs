@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Octokit.GraphQL;
 using Octokit.GraphQL.Model;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
+using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
 using PullRequest = Octokit.GraphQL.Model.PullRequest;
 
 namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.RepositoryName.PullRequests.FromUser

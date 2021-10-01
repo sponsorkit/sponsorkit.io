@@ -15,6 +15,7 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Security.Encryption;
+using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
@@ -50,16 +51,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(
                 request.Token,
-                new TokenValidationParameters()
-                {
-                    ValidateAudience = true,
-                    ValidAudience = "sponsorkit.io",
-                    ValidateIssuer = true,
-                    ValidIssuer = "sponsorkit.io",
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
-                    ValidateLifetime = true
-                },
+                JwtValidator.GetValidationParameters(
+                    jwtOptionsMonitor.CurrentValue),
                 out _);
 
             if (!principal.IsInRole(Post.EmailVerificationRole))

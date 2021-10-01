@@ -6,6 +6,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using FluffySpoon.AspNet.NGrok;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,7 @@ using Microsoft.OpenApi.Models;
 using Sponsorkit.Infrastructure.AspNet.Health;
 using Sponsorkit.Infrastructure.Ioc;
 using Sponsorkit.Infrastructure.Options;
+using Sponsorkit.Infrastructure.Security.Jwt;
 
 namespace Sponsorkit.Infrastructure.AspNet
 {
@@ -63,17 +65,26 @@ namespace Sponsorkit.Infrastructure.AspNet
             var jwtOptions = Configuration.GetOptions<JwtOptions>();
             services
                 .AddAuthorization()
-                .AddAuthentication(options => { options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; })
+                .AddAuthentication(options =>
+                {
+                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
                 .AddJwtBearer(options =>
                 {
                     options.Audience = "sponsorkit.io";
-                    options.TokenValidationParameters = new()
+                    options.TokenValidationParameters = JwtValidator.GetValidationParameters(jwtOptions);
+                    options.Events = new JwtBearerEvents()
                     {
-                        ValidateIssuerSigningKey = true,
-                        ValidateIssuer = true,
-                        ValidIssuer = "sponsorkit.io",
-                        IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(jwtOptions.PrivateKey)),
+                        OnChallenge = async (context) =>
+                        {
+                            context.HandleResponse();
+                            
+                            if (context.AuthenticateFailure != null)
+                            {
+                                context.Response.StatusCode = 401;
+                                await context.HttpContext.Response.WriteAsync("{}");
+                            }
+                        }
                     };
                 });
         }
@@ -173,8 +184,6 @@ namespace Sponsorkit.Infrastructure.AspNet
             app.UseNGrokAutomaticUrlDetection();
 
             app.UseResponseCompression();
-
-            app.UseExceptionHandler("/errors/details");
 
             app.UseRouting();
 

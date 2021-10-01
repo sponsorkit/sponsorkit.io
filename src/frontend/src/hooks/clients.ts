@@ -2,7 +2,7 @@ import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
 import { useEffect, useState } from "react";
-import { getToken } from "./token";
+import { getToken, getTokenFromString, persistToken } from "./token";
 
 export function useOctokit<T>(
     accessor: (octokit: Octokit, abortSignal: AbortSignal) => Promise<T | null>,
@@ -51,7 +51,6 @@ function getBaseUri() {
 }
 
 export function createApi() {
-
     var client = new General(null!, getBaseUri(), {
         requestContentType: "application/json; charset=utf-8",
         baseUri: getBaseUri(),
@@ -79,18 +78,33 @@ export function createApi() {
     client.pipeline.addPolicy({
         name: "authorization",
         sendRequest: async (request, next) => {
-            const token = getToken();
-            if (token)
-                request.headers.set("Authorization", `Bearer ${token.raw}`);
+            let token = getToken();
+            if (token) {
+                if(token.isExpired) {
+                    persistToken(null);
 
-            let response = await next(request);
-            if (response.status === 401) {
-                console.log("token expire");
-                
-                response = await next(request);
+                    try {
+                        console.log("client", client);
+                        const refreshResponse = await client.accountTokenRefreshPost({
+                            body: {
+                                token: token.raw
+                            }
+                        });
+
+                        const newToken = refreshResponse.token;
+                        persistToken(newToken);
+
+                        token = getTokenFromString(newToken);
+                    } catch(e) {
+                        persistToken(token.raw);
+                        throw e;
+                    }
+                }
+
+                request.headers.set("Authorization", `Bearer ${token.raw}`);
             }
 
-            return response;
+            return await next(request);
         }
     });
     return client;

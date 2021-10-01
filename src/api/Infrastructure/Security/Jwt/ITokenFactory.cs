@@ -1,9 +1,10 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Sponsorkit.Infrastructure.Security.Jwt
 {
     public interface ITokenFactory
     {
-        string Create(Claim[] claims);
+        string Create(IEnumerable<Claim> claims);
     }
 }

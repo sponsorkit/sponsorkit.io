@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
@@ -30,6 +31,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
         }
 
         [HttpGet("/account/stripe-connect/activate/{userId}")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
         {
             var accountId = await dataContext.Users

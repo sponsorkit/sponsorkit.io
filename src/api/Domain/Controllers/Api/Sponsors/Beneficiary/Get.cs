@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models.Context;
@@ -30,6 +31,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.Beneficiary
         }
 
         [HttpGet("/sponsors/{beneficiaryId}")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {
             var user = await dataContext.Users.SingleOrDefaultAsync(

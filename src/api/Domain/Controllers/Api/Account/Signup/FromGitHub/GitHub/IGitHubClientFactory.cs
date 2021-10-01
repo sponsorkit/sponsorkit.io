@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Octokit;
 using IConnection = Octokit.GraphQL.IConnection;
 
-namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub
+namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub
 {
     public interface IGitHubClientFactory
     {

@@ -9,11 +9,10 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
-using GraphQLProductHeaderValue = Octokit.GraphQL.ProductHeaderValue;
 using IConnection = Octokit.GraphQL.IConnection;
 using Connection = Octokit.GraphQL.Connection;
 
-namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub
+namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub
 {
     public class GitHubClientFactory : IGitHubClientFactory
     {
