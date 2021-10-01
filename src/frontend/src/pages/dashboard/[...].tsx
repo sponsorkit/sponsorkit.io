@@ -1,13 +1,11 @@
-import createAccountValidatior from "@components/account/account-validator";
+import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
-import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import ProgressList from "@components/progress-list";
-import { Box, Card, CardContent, Container, DialogContent, DialogTitle, Typography } from "@mui/material";
-import { isPopupBlocked } from "@utils/popup";
+import { Box, Card, CardContent, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import PrivateRoute from "../../components/login/private-route";
-import { createApi, useApi } from "../../hooks/clients";
+import { useApi } from "../../hooks/clients";
 import * as classes from "./[...].module.scss";
 
 function DashboardPage() {
@@ -73,40 +71,6 @@ function DashboardPage() {
             </Box>
         </Container>
     </AppBarTemplate>;
-}
-
-function BankDetailsDialog(props: {
-    isOpen: boolean,
-    onClose: () => void,
-    onValidated: () => void
-}) {
-    const onFillInClicked = async () => {
-        const response = await createApi().accountStripeConnectSetupPost();
-        
-        const popup = window.open(response.activationUrl);
-        if(isPopupBlocked(popup)) {
-            alert("It looks like your browser is blocking the Stripe activation popup. Unblock it, and try again.");
-            return false;
-        }
-    };
-
-    return <AsynchronousProgressDialog
-        isOpen={props.isOpen}
-        onClose={props.onClose}
-        buttonText="Begin"
-        isDoneAccessor={createAccountValidatior(account => !!account.beneficiary)}
-        requestSentText="Window opened! Waiting for profile completion..."
-        requestSendingText="Fetching Stripe activation link..."
-        onRequestSending={onFillInClicked}
-        onDone={props.onValidated}
-    >
-        <DialogTitle>We'll send you over to Stripe</DialogTitle>
-        <DialogContent>
-            <Typography>
-                A new window will pop up, which will prompt you to fill in your information through them.
-            </Typography>
-        </DialogContent>
-    </AsynchronousProgressDialog>
 }
 
 export default function () {

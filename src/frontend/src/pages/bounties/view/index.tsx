@@ -1,3 +1,4 @@
+import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import Currency from "@components/currency";
 import getDialogTransitionProps from "@components/dialog-transition";
@@ -490,6 +491,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
 
     const issueDetails = extractIssueLinkDetails(props.issue.url);
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+    const [isFillingInBankDetails, setIsFillingInBankDetails] = useState(false);
     const [isClaiming, setIsClaiming] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
@@ -576,6 +578,10 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 isOpen={isValidatingEmail}
                 onValidated={() => setLastProgressChange(new Date())}
                 onClose={() => setIsValidatingEmail(false)} />}
+            {isLoaded && <BankDetailsDialog
+                isOpen={isFillingInBankDetails}
+                onValidated={() => setLastProgressChange(new Date())}
+                onClose={() => setIsFillingInBankDetails(false)} />}
             <ProgressList
                 validationTarget={account}
                 title="Claim bounty"
@@ -597,6 +603,12 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                         label: "Verify payment details",
                         description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
                         validate: account => !!account?.sponsor?.creditCard,
+                    },
+                    {
+                        label: "Specify payout details",
+                        description: "To send you money, you need to complete your Stripe profile, so that we know what bank account to send the money to.",
+                        validate: account => !!account?.beneficiary?.isAccountComplete,
+                        onClick: () => setIsFillingInBankDetails(true)
                     },
                     {
                         label: "Pick the pull request that solved the issue",
