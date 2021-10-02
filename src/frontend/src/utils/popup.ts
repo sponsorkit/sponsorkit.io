@@ -7,3 +7,8 @@ export function isPopupBlocked(window: Window|null) {
 
     return window.closed;
 }
+
+export function createPopup(url: string) {
+    const popup = window.open(url);
+    return !isPopupBlocked(popup);
+}

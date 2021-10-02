@@ -1,7 +1,7 @@
 import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
 import { DialogContent, DialogTitle, Typography } from "@mui/material";
-import { isPopupBlocked } from "@utils/popup";
+import { createPopup, isPopupBlocked } from "@utils/popup";
 import createAccountValidatior from "./account-validator";
 
 export default function BankDetailsDialog(props: {
@@ -12,8 +12,7 @@ export default function BankDetailsDialog(props: {
     const onFillInClicked = async () => {
         const response = await createApi().accountStripeConnectSetupPost();
         
-        const popup = window.open(response.activationUrl);
-        if(isPopupBlocked(popup)) {
+        if(!createPopup(response.activationUrl)) {
             alert("It looks like your browser is blocking the Stripe activation popup. Unblock it, and try again.");
             return false;
         }

@@ -8,16 +8,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
 {
-    public record Request(
-        Guid UserId);
+    public record Response(
+        string Url);
     
     public class Get : BaseAsyncEndpoint
-        .WithRequest<Request>
-        .WithoutResponse
+        .WithoutRequest
+        .WithResponse<Response>
     {
         private readonly AccountLinkService accountLinkService;
         private readonly DataContext dataContext;
@@ -30,14 +31,16 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
             this.dataContext = dataContext;
         }
 
-        [HttpGet("/account/stripe-connect/activate/{userId}")]
+        [HttpGet("/account/stripe-connect/activate")]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
+        public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new())
         {
+            var userId = User.GetRequiredId();
+            
             var accountId = await dataContext.Users
                 .AsQueryable()
-                .Where(x => x.Id == request.UserId)
+                .Where(x => x.Id == userId)
                 .Select(x => x.StripeConnectId)
                 .SingleOrDefaultAsync(cancellationToken);
             
@@ -45,15 +48,13 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = LinkHelper.GetApiUrl($"/account/stripe-connect/activate/{request.UserId}"),
+                    RefreshUrl = LinkHelper.GetWebUrl($"/account/stripe-connect/activate"),
                     ReturnUrl = LinkHelper.GetWebUrl($"/signup/completed"),
                     Type = "account_onboarding"
                 }, 
                 cancellationToken: cancellationToken);
-            return new RedirectResult(
-                linkResponse.Url,
-                false,
-                false);
+            return new Response(
+                linkResponse.Url);
         }
     }
 }

@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
+using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options.GitHub;
@@ -79,7 +80,18 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                         x => x.GitHub!.Id == currentGitHubUser.Id,
                         cancellationToken);
                     if (existingUser != null)
+                    {
+                        existingUser.GitHub ??= new UserGitHubInformation()
+                        {
+                            Id = currentGitHubUser.Id,
+                            Username = currentGitHubUser.Login
+                        };
+                        
+                        existingUser.GitHub.EncryptedAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken);
+                        await dataContext.SaveChangesAsync(cancellationToken);
+                        
                         return existingUser;
+                    }
 
                     var user = new UserBuilder()
                         .WithEmail(await aesEncryptionHelper.EncryptAsync(email))

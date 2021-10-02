@@ -71,7 +71,7 @@ namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.
                         x.MergedAt,
                         x.State)),
                 cancellationToken);
-            return new GetResponse(pullRequests);
+            return new GetResponse(pullRequests ?? Array.Empty<PullRequestResponse>());
         }
     }
 }
