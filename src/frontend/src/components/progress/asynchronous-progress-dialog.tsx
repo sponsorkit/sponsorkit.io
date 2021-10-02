@@ -1,8 +1,8 @@
+import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import { useEffect, useState } from "react";
 import * as classes from "./asynchronous-progress-dialog.module.scss";
-import getDialogTransitionProps from "./dialog-transition";
 
 export function AsynchronousProgressDialog(props: {
     isOpen: boolean,

@@ -1,4 +1,4 @@
-import getDialogTransitionProps from "@components/dialog-transition";
+import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { GitHub } from "@mui/icons-material";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RouteComponentProps } from "@reach/router";

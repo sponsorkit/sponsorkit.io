@@ -48,8 +48,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate
                 new AccountLinkCreateOptions()
                 {
                     Account = accountId,
-                    RefreshUrl = LinkHelper.GetWebUrl($"/account/stripe-connect/activate"),
-                    ReturnUrl = LinkHelper.GetWebUrl($"/signup/completed"),
+                    RefreshUrl = LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"),
+                    ReturnUrl = LinkHelper.GetWebUrl($"/landing/stripe-connect/activated"),
                     Type = "account_onboarding"
                 }, 
                 cancellationToken: cancellationToken);

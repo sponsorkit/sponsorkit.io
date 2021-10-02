@@ -85,7 +85,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
             });
 
             return RedirectPermanent(
-                LinkHelper.GetWebUrl("/email/verification-success"));
+                LinkHelper.GetWebUrl("/landing/email/verification-success"));
         }
     }
 }

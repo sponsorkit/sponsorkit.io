@@ -1,5 +1,6 @@
 import LoginDialog from "@components/login/login-dialog";
 import { useApi } from "@hooks/clients";
+import { CircularProgress } from "@mui/material";
 import { useEffect } from "react";
 
 export default function () {
@@ -21,5 +22,5 @@ function ActivateContents() {
         window.location.href = link.url;
     }, [link]);
     
-    return null;
+    return <CircularProgress />;
 }

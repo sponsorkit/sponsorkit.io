@@ -1,7 +1,7 @@
-import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
+import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
 import { DialogContent, DialogTitle, Typography } from "@mui/material";
-import { createPopup, isPopupBlocked } from "@utils/popup";
+import { createPopup } from "@utils/popup";
 import createAccountValidatior from "./account-validator";
 
 export default function BankDetailsDialog(props: {
@@ -22,7 +22,7 @@ export default function BankDetailsDialog(props: {
         isOpen={props.isOpen}
         onClose={props.onClose}
         buttonText="Begin"
-        isDoneAccessor={createAccountValidatior(account => !!account.beneficiary)}
+        isDoneAccessor={createAccountValidatior(account => !!account.beneficiary?.isAccountComplete)}
         requestSentText="Window opened! Waiting for profile completion..."
         requestSendingText="Fetching Stripe activation link..."
         onRequestSending={onFillInClicked}

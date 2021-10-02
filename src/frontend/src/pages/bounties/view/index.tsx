@@ -1,7 +1,7 @@
 import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import Currency from "@components/currency";
-import getDialogTransitionProps from "@components/dialog-transition";
+import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";

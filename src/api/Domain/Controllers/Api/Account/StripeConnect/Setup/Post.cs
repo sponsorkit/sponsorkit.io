@@ -54,7 +54,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                     await dataContext.SaveChangesAsync(cancellationToken);
 
                     return new Response(
-                        LinkHelper.GetWebUrl($"/account/stripe-connect/activate"));
+                        LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"));
                 });
         }
 
