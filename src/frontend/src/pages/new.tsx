@@ -1,12 +1,12 @@
+import { AmountPicker } from "@components/financial/amount-picker";
+import { FeeDisplay } from "@components/financial/fee-display";
+import StripeCreditCard from '@components/financial/stripe/credit-card';
+import Elements from "@components/financial/stripe/elements";
+import VerticalLinearStepper from "@components/progress/vertical-linear-stepper";
+import { useOctokit } from "@hooks/clients";
 import { Avatar, Box, CircularProgress, Container, Paper, TextField, Typography } from "@mui/material";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useMemo, useState } from "react";
-import { AmountPicker } from "../components/financial/amount-picker";
-import { FeeDisplay } from "../components/financial/fee-display";
-import StripeCreditCard from '../components/financial/stripe/credit-card';
-import Elements from "../components/financial/stripe/elements";
-import VerticalLinearStepper from "../components/vertical-linear-stepper";
-import { useOctokit } from "../hooks/clients";
 
 function SponsorDetails(props: {
   gitHubUsername: string

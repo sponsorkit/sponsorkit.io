@@ -1,14 +1,14 @@
 import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import Currency from "@components/currency";
-import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { AmountPicker } from "@components/financial/amount-picker";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
-import ProgressList from "@components/progress-list";
+import ProgressList from "@components/progress/progress-list";
 import TooltipLink from "@components/tooltip-link";
-import { Transition } from "@components/transition";
+import getDialogTransitionProps from "@components/transitions/dialog-transition";
+import { Transition } from "@components/transitions/transition";
 import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
 import { useAnimatedCount } from "@hooks/count-up";
 import { useToken } from "@hooks/token";
