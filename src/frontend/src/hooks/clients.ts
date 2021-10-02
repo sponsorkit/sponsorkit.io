@@ -32,7 +32,7 @@ export function useOctokit<T>(
 
 export function createOctokit() {
     const client = new Octokit({
-        baseUrl: `${getBaseUri()}/octokit`
+        baseUrl: `${getBaseUri()}octokit`
     });
     return client;
 }
@@ -40,7 +40,7 @@ export function createOctokit() {
 function getBaseUri() {
     const currentUri = new URL(window.location.href);
     if (currentUri.hostname === "localhost")
-        return "http://localhost:5000";
+        return "http://localhost:5000/";
 
     const requestUri = new URL(window.location.href);
     requestUri.hostname = `api.${currentUri.hostname}`;
