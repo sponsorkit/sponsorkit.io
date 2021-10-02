@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Ardalis.Result;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
@@ -57,6 +58,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
         }
         
         [HttpPost("/bounties/payment-intent")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult<PostResponse>> HandleAsync([FromBody] PostRequest request, CancellationToken cancellationToken = default)
         {
             var issue = await mediator.Send(

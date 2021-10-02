@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -19,15 +20,15 @@ namespace Sponsorkit.Infrastructure.Security.Jwt
             this.jwtOptionsMonitor = jwtOptionsMonitor;
         }
         
-        public string Create(Claim[] claims)
+        public string Create(IEnumerable<Claim> claims)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = Debugger.IsAttached ? 
-                    DateTime.UtcNow.AddHours(24) : 
-                    DateTime.UtcNow.AddHours(1),
+                    DateTime.UtcNow.AddSeconds(30) : 
+                    DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),

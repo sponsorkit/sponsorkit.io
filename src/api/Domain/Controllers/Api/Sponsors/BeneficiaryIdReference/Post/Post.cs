@@ -2,6 +2,7 @@ using System;
 using Ardalis.ApiEndpoints;
 using AutoMapper;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
@@ -46,6 +47,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Post
         }
         
         [HttpPost("/sponsors/{beneficiaryId}/{reference}")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override ActionResult Handle(Request request)
         {
             throw new NotImplementedException();

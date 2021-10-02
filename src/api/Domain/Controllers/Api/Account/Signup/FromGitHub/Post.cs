@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
+using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options.GitHub;
@@ -20,7 +20,7 @@ using Stripe;
 using GitHubUser = Octokit.User;
 using User = Sponsorkit.Domain.Models.User;
 
-namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
+namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
 {
     public record Request(
         string GitHubAuthenticationCode);
@@ -61,7 +61,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub
             this.tokenFactory = tokenFactory;
         }
 
-        [HttpPost("/signup/from-github")]
+        [HttpPost("/account/signup/from-github")]
         [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
         {

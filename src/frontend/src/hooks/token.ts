@@ -5,12 +5,24 @@ type TokenData = {
     data: RawData,
     userId: string,
     expiryDate: Date,
-    isExpired: boolean
+    isExpired: boolean,
+    raw: string
 };
 
 export function getToken() {
     const token = typeof localStorage !== "undefined" && localStorage.getItem("token");
     return getTokenFromString(token);
+}
+
+export function persistToken(token: string|null|undefined) {
+    if(typeof localStorage === "undefined")
+        return;
+
+    if(token) {
+        localStorage.setItem("token", token);
+    } else {
+        localStorage.removeItem("token");
+    }
 }
 
 export function useToken(): [TokenData|null, (token: string) => void] {
@@ -22,7 +34,9 @@ export function useToken(): [TokenData|null, (token: string) => void] {
     return [computedToken, setToken];
 }
 
-function getTokenFromString(token: string|null|false) {
+export function getTokenFromString(token: string): TokenData
+export function getTokenFromString(token: string|null|undefined|false): TokenData|null
+export function getTokenFromString(token: string|null|false|undefined) {
     if(!token)
         return null;
         

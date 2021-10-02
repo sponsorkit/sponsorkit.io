@@ -12,7 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Sponsorkit.Domain.Controllers.Api.Signup.FromGitHub.GitHub;
+using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;

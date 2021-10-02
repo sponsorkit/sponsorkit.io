@@ -31,7 +31,7 @@ export default function LoginDialog(props: {
     if(configuration === undefined || !isOpen)
         return <></>;
 
-    if(token && !token.isExpired) {
+    if(token) {
         return props.children() || <></>;
     }
 
@@ -58,7 +58,7 @@ export default function LoginDialog(props: {
 
             wasDismissed.current = false;
             
-            const response = await createApi().signupFromGithubPost({
+            const response = await createApi().accountSignupFromGithubPost({
                 body: {
                   gitHubAuthenticationCode: e.data.code
                 }

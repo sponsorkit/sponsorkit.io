@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
@@ -35,6 +36,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail
         }
         
         [HttpPost("/account/email/send-verification-email")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = new CancellationToken())
         {
             var userId = User.GetRequiredId();
