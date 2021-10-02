@@ -573,15 +573,15 @@ function ClaimDialogContents(props: ClaimDialogProps) {
 
     return <>
         <DialogContent>
-            {isLoaded && <EmailValidationDialog
+            {account && <EmailValidationDialog
                 email={account.email}
                 isOpen={isValidatingEmail}
                 onValidated={() => setLastProgressChange(new Date())}
                 onClose={() => setIsValidatingEmail(false)} />}
-            {isLoaded && <BankDetailsDialog
+            <BankDetailsDialog
                 isOpen={isFillingInBankDetails}
                 onValidated={() => setLastProgressChange(new Date())}
-                onClose={() => setIsFillingInBankDetails(false)} />}
+                onClose={() => setIsFillingInBankDetails(false)} />
             <ProgressList
                 validationTarget={account}
                 title="Claim bounty"
