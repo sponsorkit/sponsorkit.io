@@ -58,7 +58,16 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub
             var databaseUser = await dataContext.Users.SingleOrDefaultAsync(
                 x => x.Id == userId,
                 cancellationToken);
-            var encryptedToken = databaseUser.GitHub?.EncryptedAccessToken;
+            if (databaseUser == null)
+                return null;
+
+            return await GetAccessTokenFromUserIfPresentAsync(databaseUser);
+        }
+
+        public async Task<string?> GetAccessTokenFromUserIfPresentAsync(
+            Sponsorkit.Domain.Models.User user)
+        {
+            var encryptedToken = user.GitHub?.EncryptedAccessToken;
             return encryptedToken != null ? 
                 await aesEncryptionHelper.DecryptAsync(encryptedToken) :
                 null;

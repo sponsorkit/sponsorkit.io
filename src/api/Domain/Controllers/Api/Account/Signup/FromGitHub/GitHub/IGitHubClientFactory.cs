@@ -14,5 +14,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub
         Task<string?> GetAccessTokenFromUserIfPresentAsync(
             ClaimsPrincipal user,
             CancellationToken cancellationToken);
+
+        Task<string?> GetAccessTokenFromUserIfPresentAsync(
+            Sponsorkit.Domain.Models.User user);
     }
 }

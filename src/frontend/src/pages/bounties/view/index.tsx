@@ -511,10 +511,9 @@ function ClaimDialogContents(props: ClaimDialogProps) {
             if(!issueDetails || !account?.gitHubUsername)
                 return undefined;
                 
-            var response = await client.githubRepositoriesRepositoryOwnerRepositoryNamePullRequestsFromUserUsernameGet(
+            var response = await client.githubRepositoriesRepositoryOwnerRepositoryNamePullRequestsFromUserGet(
                 issueDetails.owner,
                 issueDetails.repo,
-                account.gitHubUsername,
                 {
                     abortSignal
                 });
