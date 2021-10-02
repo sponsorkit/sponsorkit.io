@@ -1,6 +1,6 @@
 import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
-import ProgressList from "@components/progress-list";
+import ProgressList from "@components/progress/progress-list";
 import { Box, Card, CardContent, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";

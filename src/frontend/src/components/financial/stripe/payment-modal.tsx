@@ -1,4 +1,4 @@
-import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
+import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";

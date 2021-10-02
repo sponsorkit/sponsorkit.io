@@ -1,4 +1,4 @@
-import { AsynchronousProgressDialog } from "@components/asynchronous-progress-dialog";
+import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
 import { DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { useState } from "react";
