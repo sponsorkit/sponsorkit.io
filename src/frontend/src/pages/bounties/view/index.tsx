@@ -321,7 +321,7 @@ function Bounties(props: {
 
             return "";
         },
-        [props.issue.state, totalBountyReward]);
+        [props.issue, totalBountyReward, props.bounties]);
 
     const issueDetails = extractIssueLinkDetails(props.issue.url);
     if(!issueDetails)

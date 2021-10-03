@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,7 @@ namespace Sponsorkit.Infrastructure.Security.Jwt
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(claims),
+                Subject = new ClaimsIdentity(claims.Distinct()),
                 Expires = Debugger.IsAttached ? 
                     DateTime.UtcNow.AddSeconds(30) : 
                     DateTime.UtcNow.AddMinutes(15),
