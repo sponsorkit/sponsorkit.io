@@ -2,7 +2,6 @@ import { Box, Button, InputAdornment, TextField } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import palette from "../../theme/palette";
 import * as classes from "./amount-picker.module.scss";
-import { FeeDisplay } from "./fee-display";
 
 export function AmountPicker(props: {
     options: number[],
@@ -48,6 +47,5 @@ export function AmountPicker(props: {
         value={selectedOption}
         onChange={e => setSelectedOption(e.target.value)} 
       />
-      <FeeDisplay amount={+selectedOption} />
     </Box>;
   }

@@ -147,6 +147,7 @@ export function useApi<T>(
                 if(deps.findIndex(x => !x) > -1)
                     return;
                     
+                setResult(undefined);
                 const result = await makeApiCall(async (client) =>
                     await accessor(client, abortSignalController.signal));
                 setResult(result);

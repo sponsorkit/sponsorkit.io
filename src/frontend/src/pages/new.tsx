@@ -1,5 +1,4 @@
 import { AmountPicker } from "@components/financial/amount-picker";
-import { FeeDisplay } from "@components/financial/fee-display";
 import StripeCreditCard from '@components/financial/stripe/credit-card';
 import Elements from "@components/financial/stripe/elements";
 import VerticalLinearStepper from "@components/progress/vertical-linear-stepper";
@@ -105,12 +104,11 @@ function PaymentDetails(props: {
       onInitialized={context => setStripe(context.stripe)} 
       onChanged={setCardNumberElement}
     />
-    <FeeDisplay amount={props.amount} />
   </>
 }
 
 export default function NewPage() {
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState<number|null>(0);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>();
 
   return <Container maxWidth="md" style={{
@@ -133,7 +131,7 @@ export default function NewPage() {
             component: 
               <Elements>
                 <PaymentDetails 
-                  amount={amount}
+                  amount={amount || 0}
                   onChange={setPaymentDetails} 
                 />
               </Elements>,

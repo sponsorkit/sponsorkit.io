@@ -1,6 +1,7 @@
 .summary {
+    $font-size: 13px;
+
     opacity: 0.5;
-    font-size: 75%;
 
     margin-top: 8px;
     margin-bottom: 8px;
@@ -9,7 +10,25 @@
 
     place-self: flex-start;
 
+    position: relative;
+
     a {
         color: inherit;
+    }
+
+    .text {
+        position: absolute;
+        font-size: $font-size;
+
+        .spinner {
+            width: $font-size !important;
+            height: $font-size !important;
+
+            display: inline-block;
+
+            margin-right: 5px;
+
+            color: inherit;
+        }
     }
 }

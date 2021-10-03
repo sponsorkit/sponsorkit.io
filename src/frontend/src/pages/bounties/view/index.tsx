@@ -2,6 +2,7 @@ import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
 import Currency from "@components/currency";
 import { AmountPicker } from "@components/financial/amount-picker";
+import { FeeDisplay } from "@components/financial/fee-display";
 import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
@@ -388,6 +389,16 @@ function CreateBounty(props: {
         () => consentChargedAferIssueClose && consentNoRefunds,
         [consentChargedAferIssueClose, consentNoRefunds]);
 
+    const feeAmount = useApi(
+        async (client, abortSignal) => {
+            const response = await client.bountiesCalculateGet({
+                amountInHundreds: (amount || 0) * 100,
+                abortSignal
+            });
+            return Math.floor(response.feeAmountInHundreds / 100);
+        },
+        [amount]);
+
     const onCreateClicked = () => setShouldCreate(true);
 
     return <>
@@ -399,8 +410,15 @@ function CreateBounty(props: {
         <AmountPicker
             options={[10, 25, 50, 100]}
             onAmountChanged={setAmount} />
+        <FeeDisplay 
+            amount={amount}
+            fee={feeAmount}
+        />
         <Button
-            disabled={!props.issue}
+            disabled={
+                !props.issue ||
+                !amount ||
+                !feeAmount}
             className={classes.addButton}
             variant="contained"
             onClick={onCreateClicked}
@@ -418,7 +436,7 @@ function CreateBounty(props: {
 
                 const response = await createApi().bountiesPaymentIntentPost({
                     body: {
-                        amountInHundreds: amount * 100,
+                        amountInHundreds: (amount || 0) * 100,
                         issue: props.issue
                     }
                 });
@@ -430,34 +448,36 @@ function CreateBounty(props: {
                     existingPaymentMethodId: response.existingPaymentMethodId
                 }
             }}
-            afterChildren={<FormGroup className={classes.consent}>
-                <FormControlLabel 
-                    className={classes.label}
-                    label={<>I agree to be charged <Currency amount={amount} /> whenever my bounty is awarded to someone.</>}
-                    control={<Checkbox
-                        checked={consentChargedAferIssueClose}
-                        onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
-                        className={classes.consentCheckbox} />} />
-                <FormControlLabel 
-                    className={classes.label}
-                    label={<>
-                        I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?">
-                            <Typography>
-                                If people know that their bounty can't be refunded, they are more likely to actually award the bounty to the bountyhunters after the issue has been closed. This decreases the chance of bountyhunters finishing their work, only to realize that the bounty isn't going to be awarded to them.
-                            </Typography>
-                            <Typography>
-                                In the event that no one claims the bounty, the bounty is relocated to another issue in the open source community, among the most upvoted issues across all of GitHub.
-                            </Typography>
-                            <Typography>
-                                Bountyhunt's only earnings are the fees.
-                            </Typography>
-                        </TooltipLink>
-                    </>}
-                    control={<Checkbox
-                        checked={consentNoRefunds}
-                        onChange={() => setConsentNoRefunds(!consentNoRefunds)}
-                        className={classes.consentCheckbox} />} />
-            </FormGroup>}
+            afterChildren={<>
+                <FormGroup className={classes.consent}>
+                    <FormControlLabel 
+                        className={classes.label}
+                        label={<>I agree to be charged <Currency amount={amount + (feeAmount || 0)} /> (including fees) whenever my bounty is awarded to someone.</>}
+                        control={<Checkbox
+                            checked={consentChargedAferIssueClose}
+                            onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
+                            className={classes.consentCheckbox} />} />
+                    <FormControlLabel 
+                        className={classes.label}
+                        label={<>
+                            I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?">
+                                <Typography>
+                                    If people know that their bounty can't be refunded, they are more likely to actually award the bounty to the bountyhunters after the issue has been closed. This decreases the chance of bountyhunters finishing their work, only to realize that the bounty isn't going to be awarded to them.
+                                </Typography>
+                                <Typography>
+                                    In the event that no one claims the bounty, the bounty is relocated to another issue in the open source community, among the most upvoted issues across all of GitHub.
+                                </Typography>
+                                <Typography>
+                                    Bountyhunt's only earnings are the fees.
+                                </Typography>
+                            </TooltipLink>
+                        </>}
+                        control={<Checkbox
+                            checked={consentNoRefunds}
+                            onChange={() => setConsentNoRefunds(!consentNoRefunds)}
+                            className={classes.consentCheckbox} />} />
+                </FormGroup>
+            </>}
         />
     </>;
 }

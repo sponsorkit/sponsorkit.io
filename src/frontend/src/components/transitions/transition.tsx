@@ -7,6 +7,7 @@ export function Transition(props: {
     transitionKey: any,
     children: (ref: Ref<any>) => React.ReactNode|undefined,
     timeout?: number,
+    className?: string,
     classNames?: {
         default: string,
         enter: string,
@@ -17,7 +18,7 @@ export function Transition(props: {
     if(!key)
         key = "transition-undefined";
 
-    return <AbsoluteBox>
+    return <AbsoluteBox className={props.className}>
         {ref => <TransitionGroup className={classes.root}>
             <CSSTransition 
                 key={key}
