@@ -60,20 +60,17 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                     signatureHeader,
                     stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
                 
-                return await dataContext.ExecuteInTransactionAsync<ActionResult>(async () =>
+                var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                    x.CanHandle(stripeEvent.Type));
+                foreach (var eventHandler in elligibleEventHandlers)
                 {
-                    var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                        x.CanHandle(stripeEvent.Type));
-                    foreach (var eventHandler in elligibleEventHandlers)
-                    {
-                        await eventHandler.HandleAsync(
-                            stripeEvent.Id,
-                            stripeEvent.Data.Object,
-                            cancellationToken);
-                    }
+                    await eventHandler.HandleAsync(
+                        stripeEvent.Id,
+                        stripeEvent.Data.Object,
+                        cancellationToken);
+                }
 
-                    return Ok();
-                });
+                return Ok();
             }
             catch (StripeException e)
             {

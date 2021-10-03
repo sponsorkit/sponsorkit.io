@@ -11,6 +11,8 @@ using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
+using System.Linq;
+using System.Text;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
@@ -66,32 +68,96 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             var gitHubOwnerName = data.Metadata[MetadataKeys.GitHubIssueOwnerName];
             var gitHubRepositoryName = data.Metadata[MetadataKeys.GitHubIssueRepositoryName];
             var userId = Guid.Parse(data.Metadata[MetadataKeys.UserId]);
+            
+            var databaseIssue = await dataContext.ExecuteInTransactionAsync(async () =>
+            {
+                var issue = await mediator.Send(
+                    new EnsureGitHubIssueInDatabaseCommand(
+                        gitHubOwnerName,
+                        gitHubRepositoryName,
+                        gitHubIssueNumber),
+                    cancellationToken);
 
-            var issue = await mediator.Send(
-                new EnsureGitHubIssueInDatabaseCommand(
+                var user = await dataContext.Users
+                    .AsQueryable()
+                    .SingleAsync(
+                        x => x.Id == userId,
+                        cancellationToken);
+
+                var bounty = await AddOrIncreaseBountyAsync(
+                    issue,
+                    user,
+                    amountInHundreds,
+                    cancellationToken);
+
+                await AddPaymentForBountyAsync(
+                    eventId,
+                    data,
+                    bounty,
+                    amountInHundreds,
+                    cancellationToken);
+
+                await dataContext.SaveChangesAsync(cancellationToken);
+
+                return issue.Value;
+            });
+
+            await UpsertIssueBountyCommentAsync(
+                gitHubOwnerName, 
+                gitHubRepositoryName, 
+                databaseIssue, 
+                cancellationToken);
+        }
+
+        private async Task UpsertIssueBountyCommentAsync(
+            string gitHubOwnerName, 
+            string gitHubRepositoryName, 
+            Issue issue, 
+            CancellationToken cancellationToken)
+        {
+            var totalBountyAmountInHundredsByContributors = await dataContext.Bounties
+                .Include(x => x.Creator.GitHub)
+                .AsQueryable()
+                .Where(x => x.IssueId == issue.Id)
+                .GroupBy(x => x.Creator)
+                .Select(x => new
+                {
+                    Creator = x.Key,
+                    AmountInHundreds = x.Sum(b => b.AmountInHundreds)
+                })
+                .OrderByDescending(x => x.AmountInHundreds)
+                .Take(10)
+                .ToArrayAsync(cancellationToken);
+
+            var totalAmountInHundreds = totalBountyAmountInHundredsByContributors.Sum(x => x.AmountInHundreds);
+            
+            var messageTextBuilder = new StringBuilder();
+            messageTextBuilder.AppendLine($"A ${totalAmountInHundreds / 100} bounty has been put on this issue over at bountyhunt.io.");
+
+            messageTextBuilder.AppendLine();
+            messageTextBuilder.AppendLine();
+            
+            messageTextBuilder.AppendLine("Top contributors:");
+
+            foreach (var pair in totalBountyAmountInHundredsByContributors)
+            {
+                if (pair.Creator.GitHub == null)
+                    throw new InvalidOperationException("A creator was not connected to GitHub.");
+
+                messageTextBuilder.AppendLine($"- ${pair.AmountInHundreds / 100} by @{pair.Creator.GitHub.Username}");
+            }
+
+            messageTextBuilder.AppendLine(GitHubCommentHelper.RenderSpoiler(
+                "What is this?",
+                "bountyhunt.io is an open source service that allows people to put bounties on issues, and allows bountyhunters to claim those bounties.\n\nIn a way, we're helping people get paid for the open source work they do, and for people to live off of open source development.\n\nAdditionally, we help bring attention to the issues that matter most in the open source community.\n\nThis comment will only appear once ever, and will be modified if new bounties arrive, to reduce spam."));
+
+            await mediator.Send(
+                new UpsertIssueCommentCommand(
                     gitHubOwnerName,
                     gitHubRepositoryName,
-                    gitHubIssueNumber),
+                    issue.GitHub.Number,
+                    messageTextBuilder.ToString()),
                 cancellationToken);
-
-            var user = await dataContext.Users.SingleAsync(
-                x => x.Id == userId,
-                cancellationToken);
-
-            var bounty = await AddOrIncreaseBountyAsync(
-                issue,
-                user,
-                amountInHundreds,
-                cancellationToken);
-
-            await AddPaymentForBountyAsync(
-                eventId,
-                data,
-                bounty,
-                amountInHundreds,
-                cancellationToken);
-
-            await dataContext.SaveChangesAsync(cancellationToken);
         }
 
         private async Task AddPaymentForBountyAsync(
@@ -176,6 +242,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         private async Task<Bounty?> GetExistingBountyAsync(Issue issue, User user, CancellationToken cancellationToken)
         {
             return await dataContext.Bounties
+                .AsQueryable()
                 .SingleOrDefaultAsync(
                     bounty =>
                         bounty.IssueId == issue.Id &&

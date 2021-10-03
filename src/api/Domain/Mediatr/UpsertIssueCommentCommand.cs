@@ -9,19 +9,19 @@ using Sponsorkit.Infrastructure.Options.GitHub;
 
 namespace Sponsorkit.Domain.Mediatr
 {
-    public record UpsertPullRequestCommentCommand(
+    public record UpsertIssueCommentCommand(
         string OwnerName,
         string RepositoryName,
-        long PullRequestNumber,
+        long IssueNumber,
         string Text) : IRequest;
     
-    public class UpsertPullRequestCommentCommandHandler : IRequestHandler<UpsertPullRequestCommentCommand>
+    public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueCommentCommand>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly IMediator mediator;
         private readonly IOptionsMonitor<GitHubOptions> gitHubOptions;
 
-        public UpsertPullRequestCommentCommandHandler(
+        public UpsertIssueCommentCommandHandler(
             IGitHubClientFactory gitHubClientFactory,
             IMediator mediator,
             IOptionsMonitor<GitHubOptions> gitHubOptions)
@@ -31,17 +31,17 @@ namespace Sponsorkit.Domain.Mediatr
             this.gitHubOptions = gitHubOptions;
         }
 
-        public async Task<Unit> Handle(UpsertPullRequestCommentCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)
         {
             var client = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(
                 gitHubOptions.CurrentValue.BountyhuntBot.PersonalAccessToken);
 
-            var pullRequest = await client.PullRequest.Get(
+            var pullRequest = await client.Issue.Get(
                 request.OwnerName,
                 request.RepositoryName,
-                (int)request.PullRequestNumber);
+                (int)request.IssueNumber);
 
-            var headRepository = pullRequest.Base.Repository;
+            var headRepository = pullRequest.Repository;
 
             var comments = await client
                 .Issue
