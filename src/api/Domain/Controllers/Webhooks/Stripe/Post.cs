@@ -47,7 +47,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
                 if (!IsValidStripeWebhookIpAddress(ipAddress))
                     return BadRequest("Invalid IP address.");
-                
+
                 await using var stream = HttpContext.Request.Body;
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -59,7 +59,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                     json,
                     signatureHeader,
                     stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
-                
+
                 var elligibleEventHandlers = webhookEventHandlers.Where(x =>
                     x.CanHandle(stripeEvent.Type));
                 foreach (var eventHandler in elligibleEventHandlers)

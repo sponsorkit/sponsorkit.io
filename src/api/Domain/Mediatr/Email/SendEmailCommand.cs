@@ -15,12 +15,18 @@ namespace Sponsorkit.Domain.Mediatr.Email
         Sponsorkit,
         Bountyhunt
     }
+
+    public enum TemplateDirectory
+    {
+        BountyClaimRequest,
+        VerifyEmailAddress
+    }
     
     public record SendEmailCommand(
         EmailSender Sender,
         string To,
         string Subject,
-        string TemplateDirectory,
+        TemplateDirectory TemplateDirectory,
         IMailModel Model) : IRequest;
     
     public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
@@ -85,7 +91,7 @@ namespace Sponsorkit.Domain.Mediatr.Email
                     "Mediatr",
                     "Email",
                     "Templates",
-                    request.TemplateDirectory,
+                    request.TemplateDirectory.ToString(),
                     "Template.cshtml"),
                 cancellationToken);
 
@@ -94,7 +100,10 @@ namespace Sponsorkit.Domain.Mediatr.Email
                 .UseMemoryCachingProvider()
                 .Build();
 
-            var html = await engine.CompileRenderStringAsync(request.TemplateDirectory, template, request.Model);
+            var html = await engine.CompileRenderStringAsync(
+                request.TemplateDirectory.ToString(), 
+                template, 
+                request.Model);
             return html;
         }
     }
