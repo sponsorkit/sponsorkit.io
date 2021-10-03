@@ -7,7 +7,9 @@ import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress/progress-list";
-import TooltipLink from "@components/tooltip-link";
+import BountyRelocationTooltip from "@components/tooltips/bounty-relocation-tooltip-contents";
+import FeesTooltip from "@components/tooltips/fees-tooltip-contents";
+import TooltipLink from "@components/tooltips/tooltip-link";
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { Transition } from "@components/transitions/transition";
 import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
@@ -452,7 +454,7 @@ function CreateBounty(props: {
                 <FormGroup className={classes.consent}>
                     <FormControlLabel 
                         className={classes.label}
-                        label={<>I agree to be charged <Currency amount={amount + (feeAmount || 0)} /> (including fees) whenever my bounty is awarded to someone.</>}
+                        label={<>I agree to be charged <Currency amount={amount + (feeAmount || 0)} /> (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>) whenever my bounty is awarded.</>}
                         control={<Checkbox
                             checked={consentChargedAferIssueClose}
                             onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
@@ -460,17 +462,7 @@ function CreateBounty(props: {
                     <FormControlLabel 
                         className={classes.label}
                         label={<>
-                            I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?">
-                                <Typography>
-                                    If people know that their bounty can't be refunded, they are more likely to actually award the bounty to the bountyhunters after the issue has been closed. This decreases the chance of bountyhunters finishing their work, only to realize that the bounty isn't going to be awarded to them.
-                                </Typography>
-                                <Typography>
-                                    In the event that no one claims the bounty, the bounty is relocated to another issue in the open source community, among the most upvoted issues across all of GitHub.
-                                </Typography>
-                                <Typography>
-                                    Bountyhunt's only earnings are the fees.
-                                </Typography>
-                            </TooltipLink>
+                            I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?"><BountyRelocationTooltip /></TooltipLink>
                         </>}
                         control={<Checkbox
                             checked={consentNoRefunds}

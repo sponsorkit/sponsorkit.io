@@ -1,7 +1,7 @@
 import Currency from "@components/currency";
-import { FeeDisplay } from "@components/financial/fee-display";
 import LoginDialog from "@components/login/login-dialog";
-import TooltipLink from "@components/tooltip-link";
+import BountyRelocationTooltip from "@components/tooltips/bounty-relocation-tooltip-contents";
+import TooltipLink from "@components/tooltips/tooltip-link";
 import { useApi, useOctokit } from "@hooks/clients";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Button, ButtonBase, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
@@ -75,17 +75,7 @@ function ClaimVerdictContents(props: {
                     <i>If you have not awarded the bounty to anyone before that date, the <Currency amount={amount} /> bounty amount will be charged from your card and redistributed into new bounties across the <a href="https://github.com/issues?q=is%3Aopen+sort%3Areactions-%2B1-desc+" target="_blank">most popular GitHub issues</a> automatically.</i>
                 </Typography>
                 <Typography>
-                    <TooltipLink text="Why isn't the amount refunded?">
-                        <Typography>
-                            If anyone could refund their bounty, it would lead to people working on solving a specific issue, only to find out that the reward they worked for, would have been retracted in the meanwhile.
-                        </Typography>
-                        <Typography>
-                            In the event that no one claims the bounty, the amount is instead given back to the open source community, by distributing the bounty amount among the most upvoted issues across all of GitHub.
-                        </Typography>
-                        <Typography>
-                            Bountyhunt's only income are the fees.
-                        </Typography>
-                    </TooltipLink>
+                    <TooltipLink text="Why isn't the amount refunded?"><BountyRelocationTooltip /></TooltipLink>
                 </Typography>
             </DialogContent>
             <DialogActions>
@@ -111,7 +101,8 @@ function ClaimVerdictContents(props: {
         >
             <DialogTitle>Award bounty</DialogTitle>
             <DialogContent>
-                <FeeDisplay amount={amount} />
+                {/* <FeeDisplay 
+                    amount={amount} /> */}
             </DialogContent>
             <DialogActions>
                 <Button 

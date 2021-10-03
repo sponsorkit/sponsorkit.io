@@ -1,3 +1,5 @@
+import FeesTooltip from "@components/tooltips/fees-tooltip-contents";
+import TooltipLink from "@components/tooltips/tooltip-link";
 import { Transition } from "@components/transitions/transition";
 import { CircularProgress, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
@@ -28,7 +30,7 @@ export function FeeDisplay(props: {
                     classes.calculated,
                     classes.text)}
             >
-                ${props.amount + props.fee} will be charged (including <a href="https://stripe.com/pricing" target="_blank">Stripe fee</a>)
+                ${props.amount + props.fee} will be charged (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>)
             </Typography>}
     </Transition>;
 }
