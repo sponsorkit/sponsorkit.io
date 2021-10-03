@@ -8,5 +8,7 @@ namespace Sponsorkit.Infrastructure.Options.GitHub
     {
         [NotLogged]
         public string PersonalAccessToken { get; set; } = null!;
+        
+        public long UserId { get; set; }
     }
 }
