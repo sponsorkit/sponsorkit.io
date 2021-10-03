@@ -1,9 +1,11 @@
-﻿using System.Threading;
+﻿using System.Data;
+using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
+using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Issue = Sponsorkit.Domain.Models.Issue;
@@ -14,8 +16,11 @@ namespace Sponsorkit.Domain.Mediatr
     public record EnsureGitHubIssueInDatabaseCommand(
         string OwnerName,
         string RepositoryName,
-        int IssueNumber) : IRequest<Result<Issue>>;
-    
+        int IssueNumber) : IRequest<Result<Issue>>, IDatabaseTransactionRequest
+    {
+        public IsolationLevel? TransactionIsolationLevel => default;
+    }
+
     public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureGitHubIssueInDatabaseCommand, Result<Issue>>
     {
         private readonly DataContext dataContext;

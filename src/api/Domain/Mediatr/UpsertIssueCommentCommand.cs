@@ -18,16 +18,13 @@ namespace Sponsorkit.Domain.Mediatr
     public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueCommentCommand>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
-        private readonly IMediator mediator;
         private readonly IOptionsMonitor<GitHubOptions> gitHubOptions;
 
         public UpsertIssueCommentCommandHandler(
             IGitHubClientFactory gitHubClientFactory,
-            IMediator mediator,
             IOptionsMonitor<GitHubOptions> gitHubOptions)
         {
             this.gitHubClientFactory = gitHubClientFactory;
-            this.mediator = mediator;
             this.gitHubOptions = gitHubOptions;
         }
 

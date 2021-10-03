@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
+using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
@@ -201,6 +202,8 @@ namespace Sponsorkit.Infrastructure.Ioc
         public void ConfigureMediatr(params Assembly[] assemblies)
         {
             Services.AddMediatR(x => x.AsTransient(), assemblies);
+            
+            Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(DatabaseTransactionBehavior<,>));
         }
 
         private void ConfigureAutoMapper()

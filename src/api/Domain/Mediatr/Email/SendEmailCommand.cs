@@ -85,7 +85,7 @@ namespace Sponsorkit.Domain.Mediatr.Email
 
         private static async Task<string> RenderRazorEmailTemplateAsync(SendEmailCommand request, CancellationToken cancellationToken)
         {
-            var template = await System.IO.File.ReadAllTextAsync(
+            var template = await File.ReadAllTextAsync(
                 Path.Combine(
                     "Domain",
                     "Mediatr",
