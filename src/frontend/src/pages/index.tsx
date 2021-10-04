@@ -103,6 +103,11 @@ function Footer() {
         target="_blank" 
         variant="sponsorkit" />
       <Box className={classes.sections}>
+        <FooterSection title="bountyhunt.io">
+          <FooterLink 
+            text="Become a bountyhunter"
+            href="/dashboard" />
+        </FooterSection>
         <FooterSection title="GitHub">
           <FooterLink 
             text="File an issue"
@@ -111,11 +116,6 @@ function Footer() {
           <FooterLink 
             text="Browse code"
             href="https://github.com/sponsorkit/sponsorkit.io" />
-        </FooterSection>
-        <FooterSection title="bountyhunt.io">
-          <FooterLink 
-            text="Become a bountyhunter"
-            href="/dashboard" />
         </FooterSection>
       </Box>
     </Container>
