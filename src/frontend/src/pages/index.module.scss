@@ -168,9 +168,9 @@
 
                         &:hover {
                             color: black;
-                            text-decoration: underline;
-                            text-decoration-style: dashed;
-                            text-underline-offset: 2px;
+                            text-decoration: underline !important;
+                            text-decoration-style: dashed !important;
+                            text-underline-offset: 2px !important;
                         }
                     }
                 }
