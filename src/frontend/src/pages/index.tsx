@@ -1,7 +1,7 @@
 import { AppBar, Box, Container, Toolbar, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
 import { navigate } from "gatsby-link";
-import { useEffect } from "react";
+import { forwardRef, useEffect } from "react";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import SponsorkitBlueIcon from './assets/Sponsorkit-blue.inline.svg';
 import * as classes from "./index.module.scss";
@@ -15,36 +15,62 @@ export default function IndexPage() {
   return null;
 }
 
-function BountyhuntLogo() {
-    return <Box className={`${classes.logo} ${classes.bountyhunt}`}>
-        <BountyhuntBlueIcon className={classes.image} />
-        <Box className={classes.textContainer}>
-            <Typography className={classes.mainText}>bountyhunt.io</Typography>
-            <Typography className={classes.secondaryText}>by sponsorkit.io</Typography>
-        </Box>
-    </Box>
-}
 
-function SponsorkitLogo() {
-    return <Box className={`${classes.logo} ${classes.sponsorkit}`}>
-        <SponsorkitBlueIcon className={classes.image} />
-        <Box className={classes.textContainer}>
-            <Typography className={classes.mainText}>sponsorkit.io</Typography>
-        </Box>
+
+const BountyhuntLogo = forwardRef(function (
+  props: {
+    href?: string,
+    target?: string
+  }, 
+  ref: React.Ref<HTMLAnchorElement>) 
+{
+  return <a 
+    {...props}
+    ref={ref} 
+    className={combineClassNames(
+      classes.logo, 
+      classes.bountyhunt)}
+  >
+    <BountyhuntBlueIcon className={classes.image} />
+    <Box className={classes.textContainer}>
+      <Typography className={classes.mainText}>bountyhunt.io</Typography>
+      <Typography className={classes.secondaryText}>by sponsorkit.io</Typography>
     </Box>
-}
+  </a>
+});
+
+const SponsorkitLogo = forwardRef(function (
+  props: {
+    href?: string,
+    target?: string
+  }, 
+  ref: React.Ref<HTMLAnchorElement>) 
+{
+  return <a 
+    {...props}
+    ref={ref} 
+    className={combineClassNames(
+      classes.logo, 
+      classes.sponsorkit)}
+  >
+    <SponsorkitBlueIcon className={classes.image} />
+    <Box className={classes.textContainer}>
+      <Typography className={classes.mainText}>sponsorkit.io</Typography>
+    </Box>
+  </a>
+});
 
 export function AppBarTemplate(props: {
-  logoVariant: "sponsorkit"|"bountyhunt",
+  logoVariant: "sponsorkit" | "bountyhunt",
   children: React.ReactNode,
   className?: string
 }) {
   return <>
     <AppBar color="default" className={classes.appBar}>
       <Toolbar>
-        {props.logoVariant === "bountyhunt" ? 
-          <BountyhuntLogo /> :
-          <SponsorkitLogo />}
+        <Container maxWidth="lg">
+          <Logo variant={props.logoVariant} />
+        </Container>
       </Toolbar>
     </AppBar>
     <Box className={combineClassNames(classes.spacer, classes.top)} />
@@ -52,5 +78,77 @@ export function AppBarTemplate(props: {
       {props.children}
     </Container>
     <Box className={combineClassNames(classes.spacer, classes.bottom)} />
+    <Footer />
   </>
+}
+
+const Logo = forwardRef(function (
+  props: {
+    variant: "sponsorkit" | "bountyhunt",
+    href?: string,
+    target?: string
+  },
+  ref: React.Ref<HTMLAnchorElement>
+) {
+  return props.variant === "bountyhunt" ?
+    <BountyhuntLogo {...props} ref={ref} /> :
+    <SponsorkitLogo {...props} ref={ref} />;
+});
+
+function Footer() {
+  return <Box className={classes.footer}>
+    <Container maxWidth="lg" className={classes.container}>
+      <Logo 
+        href="https://github.com/sponsorkit" 
+        target="_blank" 
+        variant="sponsorkit" />
+      <Box className={classes.sections}>
+        <FooterSection title="GitHub">
+          <FooterLink 
+            text="File an issue"
+            href="https://github.com/sponsorkit/sponsorkit.io/issues/new"
+            target="_blank" />
+          <FooterLink 
+            text="Browse code"
+            href="https://github.com/sponsorkit/sponsorkit.io" />
+        </FooterSection>
+        <FooterSection title="bountyhunt.io">
+          <FooterLink 
+            text="Become a bountyhunter"
+            href="/dashboard" />
+          <FooterLink 
+            text="Explore bounties"
+            href="/bounties" />
+        </FooterSection>
+      </Box>
+    </Container>
+  </Box>;
+}
+
+function FooterSection(props: {
+  title: React.ReactNode,
+  children: React.ReactNode
+}) {
+  return <Box className={classes.section}>
+    <Box className={classes.title}>
+        {props.title}
+    </Box>
+    <Box className={classes.links}>
+      {props.children}
+    </Box>
+  </Box>;
+}
+
+function FooterLink(props: {
+  text: React.ReactNode,
+  href: string,
+  target?: string
+}) {
+  return <a 
+    href={props.href} 
+    target={props.target}
+    className={classes.link}
+  >
+    {props.text}
+  </a>
 }

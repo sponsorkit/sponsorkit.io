@@ -21,14 +21,19 @@
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     min-height: 0;
+}
 
-    .logo.bountyhunt {
+.logo {
+    width: fit-content;
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    color: #0045FF;
+
+    &.bountyhunt {
         margin: 20px;
-        display: flex;
-        flex-direction: row;
-        color: #0045FF;
-        align-content: center;
-        justify-content: center;
 
         .text-container {
             display: flex;
@@ -64,13 +69,8 @@
         }
     }
 
-    .logo.sponsorkit {
+    &.sponsorkit {
         margin: 10px 0;
-        display: flex;
-        flex-direction: row;
-        color: #0045FF;
-        align-content: center;
-        justify-content: center;
 
         .text-container {
             display: flex;
@@ -95,6 +95,86 @@
             width: 70px;
             height: 70px;
             margin-left: 5px;
+        }
+    }
+}
+
+.footer {
+    background-color: rgba(0,0,0,0.0125);
+    border-top: 2px solid rgba(0,0,0,0.02);
+
+    .container {
+        width: 100%;
+        margin-bottom: 30px;
+        margin-top: 30px;
+
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+
+        .logo {
+            opacity: 0.2;
+            filter: grayscale(100%);
+
+            transition: 
+                opacity 0.2s ease-in-out,
+                filter 0.2s ease-in-out;
+
+            &:hover {
+                opacity: 1;
+                filter: grayscale(0%);
+            }
+        }
+
+        .sections {
+            display: flex;
+            flex-direction: row;
+            gap: 50px;
+            flex-wrap: wrap;
+
+            .section {
+                margin: 0 14px;
+                margin-top: 10px;
+
+                &:hover {
+                    .title {
+                        color: #0045FF;
+                    }
+                }
+
+                .title {
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    color: rgba(0,0,0,0.25);
+                    margin: 5px 0;
+                    margin-bottom: 10px;
+
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    
+                    transition: color 0.2s ease-in-out;
+                }
+
+                .links {
+                    .link {
+                        font-size: 16px;
+                        display: block;
+                        color: rgba(0,0,0,0.5);
+                        margin: 10px 0;
+                        text-decoration: none;
+                        transition: color 0.2s ease-in-out;
+
+                        &:hover {
+                            color: black;
+                            text-decoration: underline;
+                            text-decoration-style: dashed;
+                            text-underline-offset: 2px;
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -2,7 +2,6 @@ import FeesTooltip from "@components/tooltips/fees-tooltip-contents";
 import TooltipLink from "@components/tooltips/tooltip-link";
 import { Transition } from "@components/transitions/transition";
 import { CircularProgress, Typography } from "@mui/material";
-import { combineClassNames } from "@utils/strings";
 import React from "react";
 import * as classes from "./fee-display.module.scss";
 
@@ -17,18 +16,14 @@ export function FeeDisplay(props: {
         {ref => !props.fee ?
             <Typography
                 ref={ref} 
-                className={combineClassNames(
-                    classes.calculating,
-                    classes.text)}
+                className={classes.text}
             >
                 <CircularProgress className={classes.spinner} />
                 Calculating total charge amount...
             </Typography> :
             <Typography
                 ref={ref} 
-                className={combineClassNames(
-                    classes.calculated,
-                    classes.text)}
+                className={classes.text}
             >
                 ${props.amount + props.fee} will be charged (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>)
             </Typography>}

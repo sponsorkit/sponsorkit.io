@@ -2,6 +2,7 @@ import { AsynchronousProgressDialog } from "@components/progress/asynchronous-pr
 import { createApi } from "@hooks/clients";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
+import { combineClassNames } from "@utils/strings";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";
 import PoweredByStripeBadge from "./assets/powered-by-stripe.inline.svg";
@@ -150,7 +151,11 @@ function PaymentMethodModalContent(props: Props) {
         <DialogContent className={classes.root}>
             {props.beforeChildren}
             <Box className={classes.paymentVeil}>
-                <Box className={`${classes.creditCardWrapper} ${isReady && classes.ready} ${isInitializing && classes.initializing}`}>
+                <Box className={combineClassNames(
+                    classes.creditCardWrapper,
+                    isReady && classes.ready,
+                    isInitializing && classes.initializing)}
+                >
                     <Elements>
                         <StripeCreditCard
                             onInitialized={context => setStripe(context.stripe)}
@@ -159,7 +164,10 @@ function PaymentMethodModalContent(props: Props) {
                     </Elements>
                 </Box>
                 <Box className={classes.progressWrapper}>
-                    <CircularProgress className={`${classes.progress} ${isReady && classes.ready} ${isInitializing && classes.initializing}`} />
+                    <CircularProgress className={combineClassNames(
+                        classes.progress,
+                        isReady && classes.ready,
+                        isInitializing && classes.initializing)} />
                 </Box>
             </Box>
             {error && !isLoading &&

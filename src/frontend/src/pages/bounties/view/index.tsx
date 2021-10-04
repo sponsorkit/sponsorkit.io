@@ -353,7 +353,9 @@ function Bounties(props: {
                 </Box>
                 <Tooltip title={claimError} className={classes.buttonContainer}>
                     <Button
-                        className={`${classes.claimButton} ${!!claimError ? classes.disabled : ""}`}
+                        className={combineClassNames(
+                            classes.claimButton,
+                            !!claimError && classes.disabled)}
                         disableRipple={!!claimError}
                         variant="outlined"
                         onClick={onClaimClicked}
