@@ -1,13 +1,13 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Mediatr
+namespace Sponsorkit.Tests.Domain.Api.Account.StripeConnect
 {
     [TestClass]
-    public class UpsertIssueCommentCommandTest
+    public class SetupPostTest
     {
         [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnDevelopmentEnvironment_DoesNothing()
+        public async Task HandleAsync_NoExistingStripeConnectAccountFound_CreatesNewStripeConnectAccount()
         {
             //Arrange
             
@@ -18,7 +18,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
         }
         
         [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnProductionEnvironment_ExecutesCommand()
+        public async Task HandleAsync_NoExistingStripeConnectAccountFound_PersistsCreatedStripeConnectAccountToUserInDatabase()
         {
             //Arrange
             
@@ -29,7 +29,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
         }
         
         [TestMethod]
-        public async Task Handle_ExistingBotCommentFound_UpdatesExistingComment()
+        public async Task HandleAsync_CancellationSignaledBeforeStripeConnectAccountCreation_DoesNotCancelStripeAccountCreation()
         {
             //Arrange
             
@@ -40,7 +40,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
         }
         
         [TestMethod]
-        public async Task Handle_NoExistingBotCommentFound_CreatesNewComment()
+        public async Task HandleAsync_CancellationSignaledBeforeStripeConnectAccountCreation_DoesNotCancelUserDatabaseUpdate()
         {
             //Arrange
             

@@ -48,27 +48,21 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                     var user = await dataContext.Users.SingleAsync(
                         x => x.Id == userId,
                         cancellationToken);
-                    
-                    var account = await CreateStripeAccountForUserAsync(user, cancellationToken);
-                    user.StripeConnectId = account.Id;
-                    await dataContext.SaveChangesAsync(cancellationToken);
+
+                    if (user.StripeConnectId == null)
+                    {
+                        var account = await CreateStripeAccountForUserAsync(user);
+                        user.StripeConnectId = account.Id;
+                        await dataContext.SaveChangesAsync(default);
+                    }
 
                     return new Response(
                         LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"));
                 });
         }
 
-        private async Task<Stripe.Account> CreateStripeAccountForUserAsync(
-            User user, 
-            CancellationToken cancellationToken)
+        private async Task<Stripe.Account> CreateStripeAccountForUserAsync(User user)
         {
-            if (user.StripeConnectId != null)
-            {
-                return await accountService.GetAsync(
-                    user.StripeConnectId, 
-                    cancellationToken: cancellationToken);
-            }
-
             var email = await aesEncryptionHelper.DecryptAsync(user.EncryptedEmail);
             return await accountService.CreateAsync(
                 new AccountCreateOptions()
@@ -76,7 +70,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                     Email = email,
                     Type = "express"
                 },
-                cancellationToken: cancellationToken);
+                cancellationToken: default);
         }
     }
 }

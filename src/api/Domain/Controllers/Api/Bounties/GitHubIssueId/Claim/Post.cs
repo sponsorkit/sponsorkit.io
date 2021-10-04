@@ -139,7 +139,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
                         EmailSender.Bountyhunt,
                         emailAddress,
                         "Someone wants to claim your bounty",
-                        "BountyClaimRequest",
+                        TemplateDirectory.BountyClaimRequest,
                         new Model(
                             verdictUrl,
                             userGitHubInformation.Username)),

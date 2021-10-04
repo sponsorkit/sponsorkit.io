@@ -10,10 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
@@ -81,15 +81,12 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                         cancellationToken);
                     if (existingUser != null)
                     {
-                        existingUser.GitHub ??= new UserGitHubInformation()
-                        {
-                            Id = currentGitHubUser.Id,
-                            Username = currentGitHubUser.Login
-                        };
-                        
-                        existingUser.GitHub.EncryptedAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken);
-                        await dataContext.SaveChangesAsync(cancellationToken);
-                        
+                        await UpdateAccessTokenOnExistingUserAsync(
+                            existingUser, 
+                            currentGitHubUser, 
+                            gitHubAccessToken, 
+                            cancellationToken);
+
                         return existingUser;
                     }
 
@@ -105,15 +102,31 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                     await dataContext.Users.AddAsync(user, cancellationToken);
                     await dataContext.SaveChangesAsync(cancellationToken);
 
-                    var customer = await CreateStripeCustomerForUserAsync(user.Id, email, cancellationToken);
+                    var customer = await CreateStripeCustomerForUserAsync(user.Id, email);
                     user.StripeCustomerId = customer.Id;
-                    await dataContext.SaveChangesAsync(cancellationToken);
+                    await dataContext.SaveChangesAsync(default);
 
                     return user;
                 });
 
             var jwtToken = GenerateJwtTokenForUser(authenticatedUser);
             return new Response(jwtToken);
+        }
+
+        private async Task UpdateAccessTokenOnExistingUserAsync(
+            User existingUser, 
+            GitHubUser currentGitHubUser, 
+            string gitHubAccessToken, 
+            CancellationToken cancellationToken)
+        {
+            existingUser.GitHub ??= new UserGitHubInformation()
+            {
+                Id = currentGitHubUser.Id,
+                Username = currentGitHubUser.Login
+            };
+
+            existingUser.GitHub.EncryptedAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken);
+            await dataContext.SaveChangesAsync(cancellationToken);
         }
 
         private string GenerateJwtTokenForUser(User user)
@@ -134,8 +147,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
 
         private async Task<Customer> CreateStripeCustomerForUserAsync(
             Guid userId,
-            string email,
-            CancellationToken cancellationToken)
+            string email)
         {
             return await customerService.CreateAsync(
                 new CustomerCreateOptions()
@@ -146,7 +158,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                         { "UserId", userId.ToString() }
                     }
                 },
-                cancellationToken: cancellationToken);
+                cancellationToken: default);
         }
 
         private async Task<GitHubUser> GetCurrentGitHubUserFromTokenAsync(string token)

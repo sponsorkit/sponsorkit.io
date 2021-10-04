@@ -59,8 +59,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
                 return Unauthorized();
 
             var claim = principal.Claims.SingleOrDefault(x => x.Type == Post.NewEmailJwtTokenKey);
-            if(claim == null)
-                return BadRequest("The given token does not contain the new e-mail address to change to.");
+            if (claim == null)
+                throw new InvalidOperationException("No email claim found.");
 
             var userId = principal.GetRequiredId();
 

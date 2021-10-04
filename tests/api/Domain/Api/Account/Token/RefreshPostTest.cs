@@ -1,13 +1,13 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Mediatr
+namespace Sponsorkit.Tests.Domain.Api.Account.Token
 {
     [TestClass]
-    public class UpsertIssueCommentCommandTest
+    public class RefreshPostTest
     {
         [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnDevelopmentEnvironment_DoesNothing()
+        public async Task HandleAsync_NoClaimsPrincipalRetrievedFromToken_ReturnsUnauthorized()
         {
             //Arrange
             
@@ -18,7 +18,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
         }
         
         [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnProductionEnvironment_ExecutesCommand()
+        public async Task HandleAsync_NoUserFoundForTokenUserId_ReturnsUnauthorized()
         {
             //Arrange
             
@@ -29,18 +29,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
         }
         
         [TestMethod]
-        public async Task Handle_ExistingBotCommentFound_UpdatesExistingComment()
-        {
-            //Arrange
-            
-            //Act
-            
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
-        
-        [TestMethod]
-        public async Task Handle_NoExistingBotCommentFound_CreatesNewComment()
+        public async Task HandleAsync_ValidUserFound_ReturnsValidRefreshedToken()
         {
             //Arrange
             

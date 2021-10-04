@@ -6,7 +6,7 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub.GitHub;
+using Sponsorkit.Infrastructure.GitHub;
 
 namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.RepositoryName.Issues.IssueNumber
 {

@@ -62,7 +62,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail
                     EmailSender.Sponsorkit,
                     request.Email,
                     "Verify your e-mail address",
-                    "VerifyEmailAddress",
+                    TemplateDirectory.VerifyEmailAddress,
                     new Model(
                         verificationLink)),
                 cancellationToken);
