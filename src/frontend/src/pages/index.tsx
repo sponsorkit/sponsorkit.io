@@ -116,9 +116,6 @@ function Footer() {
           <FooterLink 
             text="Become a bountyhunter"
             href="/dashboard" />
-          <FooterLink 
-            text="Explore bounties"
-            href="/bounties" />
         </FooterSection>
       </Box>
     </Container>
