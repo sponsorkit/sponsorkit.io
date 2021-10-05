@@ -36,6 +36,13 @@ export default function AbsoluteBox(props: {
         },
         []);
 
+    useEffect(
+        () => {
+            const interval = setInterval(onUpdate, 1000);
+            return () => clearInterval(interval);
+        }
+    )
+
     return (
         <div
             className={combineClassNames(
