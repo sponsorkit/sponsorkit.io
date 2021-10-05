@@ -21,6 +21,10 @@ body, #___gatsby, #gatsby-focus-wrapper {
     backdrop-filter: blur(20px);
     background: none !important;
     background-color: rgba(245, 245, 245, 0.7) !important;
+    backface-visibility: hidden;
+    transform: translate3d(0,0,0);
+    transform: translateZ(0);
+    will-change: transform;
   }
 }
 

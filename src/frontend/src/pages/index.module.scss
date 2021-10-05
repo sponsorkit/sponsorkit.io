@@ -100,12 +100,12 @@
 }
 
 .footer {
-    background-color: rgba(0,0,0,0.0125);
-    border-top: 2px solid rgba(0,0,0,0.02);
+    background-color: rgba(0,0,0,0.02);
+    border-top: 1px solid rgba(0,0,0,0.04);
 
     .container {
         width: 100%;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
         margin-top: 30px;
 
         display: flex;
@@ -130,12 +130,13 @@
         .sections {
             display: flex;
             flex-direction: row;
-            gap: 50px;
             flex-wrap: wrap;
+            margin-top: 10px;
 
             .section {
                 margin: 0 14px;
-                margin-top: 10px;
+                margin-right: 50px;
+                margin-bottom: 10px;
 
                 &:hover {
                     .title {
