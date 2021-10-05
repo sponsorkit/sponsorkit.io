@@ -14,7 +14,7 @@ export default function AbsoluteBox(props: {
         () => console.log("height-absolute-box", height),
         [height]);
 
-    useEffect(() => {
+    const onUpdate = () => {
         if (!ref.current)
             return;
 
@@ -25,7 +25,16 @@ export default function AbsoluteBox(props: {
 
         if(rectHeight !== height) 
             setHeight(rectHeight);
-    });
+    }
+
+    useEffect(onUpdate);
+
+    useEffect(
+        () => {
+            window.addEventListener("resize", onUpdate);
+            return () => window.removeEventListener("resize", onUpdate);
+        },
+        []);
 
     return (
         <div
