@@ -120,6 +120,9 @@
             transition: 
                 opacity 0.2s ease-in-out,
                 filter 0.2s ease-in-out;
+            will-change: 
+                opacity, 
+                filter;
 
             &:hover {
                 opacity: 1;
@@ -156,6 +159,7 @@
                     align-items: center;
                     
                     transition: color 0.2s ease-in-out;
+                    will-change: color;
                 }
 
                 .links {
@@ -166,6 +170,7 @@
                         margin: 10px 0;
                         text-decoration: none;
                         transition: color 0.2s ease-in-out;
+                        will-change: color;
 
                         &:hover {
                             color: black;

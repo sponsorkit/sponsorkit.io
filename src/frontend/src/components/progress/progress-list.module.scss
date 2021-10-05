@@ -11,6 +11,7 @@
 
     .progress-bar {
         transition: opacity 1s ease-in-out;
+        will-change: opacity;
         opacity: 0.25;
 
         &.loaded {
@@ -38,6 +39,7 @@
                 height: 20px;
                 opacity: 1;
                 transition: opacity 1s ease-in-out;
+                will-change: opacity;
 
                 &.progress-bar {
                     color: rgba(145, 158, 171, 0.8);

@@ -13,6 +13,7 @@
         z-index: 10;
         opacity: 0.25;
         transition: opacity 250ms ease-in-out 250ms;
+        will-change: opacity;
         display: flex;
         flex-direction: column;
 
@@ -40,6 +41,7 @@
         .progress {
             opacity: 1;
             transition: opacity 250ms ease-in-out;
+            will-change: opacity;
             display: none;
 
             &.ready {

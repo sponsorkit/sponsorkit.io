@@ -39,6 +39,7 @@
 
         .open-in-new-icon {
             transition: opacity 0.2s ease-in-out;
+            will-change: opacity;
             opacity: 0.3;
         }
 
