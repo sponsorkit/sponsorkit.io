@@ -34,7 +34,6 @@
         "@utils/*": ["src/utils/*"],
         "@theme/*": ["src/theme/*"],
         "@pages/*": ["src/pages/*"],
-        "@api/*": ["src/api/*"],
         "@theme": ["src/theme/"]
       }
     }

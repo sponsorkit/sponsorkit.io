@@ -10,5 +10,6 @@
     },
     "javascript.preferences.importModuleSpecifier": "non-relative",
     "editor.unfoldOnClickAfterEndOfLine": true,
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "terminal.integrated.scrollback": 100000
 }
