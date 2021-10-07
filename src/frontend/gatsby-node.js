@@ -15,5 +15,6 @@ exports.onCreatePage = async ({ page, actions }) => {
 }
 
 exports.onCreateWebpackConfig = ({ actions }) => {
+  console.log("webpack-config", webpackConfig);
   actions.setWebpackConfig(webpackConfig);
 };
