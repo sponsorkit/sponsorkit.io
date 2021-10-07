@@ -9,7 +9,7 @@ exports.onCreatePage = async ({ page, actions }) => {
   const { createPage, deletePage } = actions;
 
   if (page.path.match(/\.stories$/)) {
-    console.warn("removing stories page", page.path);
+    console.info("removing stories page", page.path);
     deletePage(page);
   }
 }

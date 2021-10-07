@@ -1,5 +1,5 @@
 import { CssBaseline } from '@mui/material';
-import { createTheme, Direction, StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
+import { createTheme, Direction, ThemeProvider } from '@mui/material/styles';
 import { ReactNode } from 'react';
 import breakpoints from './breakpoints';
 import GlobalStyles from './globalStyles';
@@ -40,12 +40,10 @@ export default function ThemeConfig({ children }: ThemeConfigProps) {
   theme.components = componentsOverride(theme);
 
   return (
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <GlobalStyles />
-        {children}
-      </ThemeProvider>
-    </StyledEngineProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <GlobalStyles />
+      {children}
+    </ThemeProvider>
   );
 }

@@ -7,12 +7,10 @@ module.exports = {
   flags: {
   },
   plugins: [
+    'gatsby-plugin-top-layout',
+    `gatsby-plugin-react-helmet`,
     `gatsby-plugin-remove-trailing-slashes`,
     `gatsby-plugin-sass`,
-    'gatsby-plugin-top-layout',
-    `gatsby-plugin-material-ui`,
-    `gatsby-plugin-styled-components`,
-    `gatsby-plugin-react-helmet`,
     `gatsby-plugin-image`,
     {
       resolve: 'gatsby-plugin-react-svg',
@@ -23,6 +21,7 @@ module.exports = {
       },
     },
     `gatsby-transformer-sharp`,
-    `gatsby-plugin-gatsby-cloud`
+    `gatsby-plugin-gatsby-cloud`,
+    'gatsby-plugin-mui-emotion'
   ],
 }
