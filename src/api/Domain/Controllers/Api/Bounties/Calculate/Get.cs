@@ -12,10 +12,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Calculate
 {
     public record Request(
         [FromQuery] long AmountInHundreds);
-    
+
     public record Response(
         long FeeAmountInHundreds);
-    
+
     public class Get : BaseEndpoint
         .WithRequest<Request>
         .WithResponse<Response>
@@ -24,6 +24,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Calculate
         [AllowAnonymous]
         public override ActionResult<Response> Handle([FromQuery] Request request)
         {
+            if (request.AmountInHundreds < Constants.MinimumBountyAmountInHundreds)
+                return BadRequest("Minimum amount is 10 USD.");
+
             return new Response(
                 FeeCalculator.GetSponsorkitFeeInHundreds(request.AmountInHundreds));
         }
