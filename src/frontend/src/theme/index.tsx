@@ -1,8 +1,7 @@
 // material
 import { CssBaseline } from '@mui/material';
 import {
-  createTheme, StyledEngineProvider, ThemeOptions,
-  ThemeProvider
+  createTheme, StyledEngineProvider, ThemeProvider
 } from '@mui/material/styles';
 import { ReactNode } from 'react';
 import breakpoints from './breakpoints';
@@ -20,8 +19,7 @@ type ThemeConfigProps = {
 };
 
 export default function ThemeConfig({ children }: ThemeConfigProps) {
-
-  const themeOptions: ThemeOptions = {
+  const theme = createTheme({
     palette: { ...palette.light, mode: 'light' },
     shape,
     typography,
@@ -29,9 +27,7 @@ export default function ThemeConfig({ children }: ThemeConfigProps) {
     direction: "ltr",
     shadows: shadows.light,
     customShadows: customShadows.light
-  }
-
-  const theme = createTheme(themeOptions);
+  });
   theme.components = componentsOverride(theme);
 
   return (
