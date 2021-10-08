@@ -1,49 +1,41 @@
+// material
 import { CssBaseline } from '@mui/material';
-import { createTheme, Direction, ThemeProvider } from '@mui/material/styles';
+import {
+  createTheme, StyledEngineProvider, ThemeProvider
+} from '@mui/material/styles';
 import { ReactNode } from 'react';
 import breakpoints from './breakpoints';
-import GlobalStyles from './globalStyles';
 import componentsOverride from './overrides';
 import palette from './palette';
 import shadows, { customShadows } from './shadows';
+//
 import shape from './shape';
 import typography from './typography';
 
-
+// ----------------------------------------------------------------------
 
 type ThemeConfigProps = {
   children: ReactNode;
 };
 
 export default function ThemeConfig({ children }: ThemeConfigProps) {
-  const isLight = true;
-
-  const direction: Direction = "ltr";
-
   const theme = createTheme({
-    palette: isLight ? 
-      { 
-        ...palette.light, 
-        mode: 'light' 
-      } : 
-      { 
-        ...palette.dark, 
-        mode: 'dark' 
-      },
+    palette: { ...palette.light, mode: 'light' },
     shape,
     typography,
     breakpoints,
-    direction,
-    shadows: isLight ? shadows.light : shadows.dark,
-    customShadows: isLight ? customShadows.light : customShadows.dark
+    direction: "ltr",
+    shadows: shadows.light,
+    customShadows: customShadows.light
   });
   theme.components = componentsOverride(theme);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <GlobalStyles />
-      {children}
-    </ThemeProvider>
+    <StyledEngineProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 }

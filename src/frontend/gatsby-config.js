@@ -5,6 +5,7 @@ module.exports = {
     author: `@gatsbyjs`,
   },
   flags: {
+    DEV_SSR: true
   },
   plugins: [
     'gatsby-plugin-top-layout',

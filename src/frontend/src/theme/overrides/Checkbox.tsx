@@ -1,5 +1,5 @@
-import { SvgIcon, SvgIconProps } from '@mui/material';
 import { Theme } from '@mui/material/styles';
+import { SvgIcon, SvgIconProps } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -49,6 +49,12 @@ export default function Checkbox(theme: Theme) {
           '& .MuiSvgIcon-fontSizeSmall': {
             width: 20,
             height: 20
+          },
+          svg: {
+            fontSize: 24,
+            '&[font-size=small]': {
+              fontSize: 20
+            }
           }
         }
       }

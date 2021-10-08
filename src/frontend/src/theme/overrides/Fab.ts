@@ -9,18 +9,6 @@ export default function Fab(theme: Theme) {
         color: 'primary'
       },
 
-      variants: [
-        {
-          props: { color: 'primary' },
-          style: {
-            boxShadow: theme.customShadows.primary,
-            '&:hover': {
-              backgroundColor: theme.palette.primary.dark
-            }
-          }
-        }
-      ],
-
       styleOverrides: {
         root: {
           boxShadow: theme.customShadows.z8,
@@ -29,7 +17,18 @@ export default function Fab(theme: Theme) {
             backgroundColor: theme.palette.grey[400]
           }
         },
-        primary: {},
+        primary: {
+          boxShadow: theme.customShadows.primary,
+          '&:hover': {
+            backgroundColor: theme.palette.primary.dark
+          }
+        },
+        secondary: {
+          boxShadow: theme.customShadows.secondary,
+          '&:hover': {
+            backgroundColor: theme.palette.secondary.dark
+          }
+        },
         extended: {
           '& svg': {
             marginRight: theme.spacing(1)

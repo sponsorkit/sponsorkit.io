@@ -1,41 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-export function useLocalStorage(key: string): [string, (value: string) => void] {
-    const [currentValue, setCurrentValue] = useState(() => 
-        typeof localStorage === "undefined" ? 
-            "" : 
-            (localStorage?.getItem(key) ?? ""));
-    const setLocalStorage = useCallback(
-        (value: string) => {
-            localStorage.setItem(key, value);
-            onStorage({
-                key,
-                newValue: value
-            });
-        },
-        []);
-    const onStorage = useCallback(
-        (e: Partial<StorageEvent>) => {
-            if(e.key !== key)
-                return;
-                
-            const newValue = e.newValue;
-            if(newValue === currentValue)
-                return;
+// ----------------------------------------------------------------------
 
-            setCurrentValue(newValue ?? "");
-        },
-        []);
+export default function useLocalStorage<ValueType>(key: string, defaultValue: ValueType) {
+  const [value, setValue] = useState(() => {
+    if(typeof localStorage === "undefined")
+      return defaultValue;
 
-    useEffect(
-        () => {
-            window.addEventListener("storage", onStorage);
+    const storedValue = localStorage.getItem(key);
+    return storedValue === null ? defaultValue : JSON.parse(storedValue);
+  });
 
-            return () => {
-                window.removeEventListener("storage", onStorage);
-            };
-        },
-        []);
+  useEffect(() => {
+    const listener = (e: StorageEvent) => {
+      if (e.storageArea === localStorage && e.key === key) {
+        setValue(e.newValue ? JSON.parse(e.newValue) : e.newValue);
+      }
+    };
+    window.addEventListener('storage', listener);
 
-    return [currentValue, setLocalStorage];
+    return () => {
+      window.removeEventListener('storage', listener);
+    };
+  }, [key, defaultValue]);
+
+  const setValueInLocalStorage = (newValue: ValueType) => {
+    setValue((currentValue: any) => {
+      const result = typeof newValue === 'function' ? newValue(currentValue) : newValue;
+      localStorage.setItem(key, JSON.stringify(result));
+      return result;
+    });
+  };
+
+  return [value, setValueInLocalStorage];
 }

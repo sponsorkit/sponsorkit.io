@@ -1,5 +1,7 @@
+// material
 import { alpha } from '@mui/material/styles';
 import { Shadows } from '@mui/material/styles/shadows';
+//
 import palette from './palette';
 
 // ----------------------------------------------------------------------
@@ -19,7 +21,7 @@ interface CustomShadowOptions {
   error: string;
 }
 
-declare module '@mui/material/styles/createTheme' {
+declare module '@mui/material/styles' {
   interface Theme {
     customShadows: CustomShadowOptions;
   }
