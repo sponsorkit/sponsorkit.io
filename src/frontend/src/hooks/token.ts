@@ -81,7 +81,8 @@ function isExpired(token: string) {
 
     const now = new Date();
 
-    const isTokenExpired = now.getTime() > expiryDate.getTime();
+    const oneMinute = 1000 * 60;
+    const isTokenExpired = now.getTime() > expiryDate.getTime() - oneMinute;
     return isTokenExpired;
 }
 

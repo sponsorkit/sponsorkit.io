@@ -38,7 +38,7 @@ export default function AbsoluteBox(props: {
 
     useEffect(
         () => {
-            const interval = setInterval(onUpdate, 1000);
+            const interval = setInterval(onUpdate, 2000);
             return () => clearInterval(interval);
         }
     )

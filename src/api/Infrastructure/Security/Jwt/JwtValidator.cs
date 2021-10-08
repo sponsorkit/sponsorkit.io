@@ -23,7 +23,10 @@ namespace Sponsorkit.Infrastructure.Security.Jwt
                 ValidateLifetime = validateLifetime ?? true,
                 ValidateTokenReplay = false,
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(jwtOptions.PrivateKey))
+                    Encoding.UTF8.GetBytes(jwtOptions.PrivateKey)),
+                ClockSkew = validateLifetime == false ? 
+                    TimeSpan.FromDays(365 * 10) :
+                    TimeSpan.FromMinutes(5)
             };
         }
 
