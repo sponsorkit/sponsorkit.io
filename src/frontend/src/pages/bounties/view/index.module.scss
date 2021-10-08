@@ -9,12 +9,35 @@
         .card-content {
             width: 100%;
 
-            .text-field {
-                width: 100%;
-            }
+            .text-field-container {
+                position: relative;
 
-            .body {
-                margin-bottom: 30px;
+                .text-field {
+                    width: 100%;
+                }
+
+                .body {
+                    margin-bottom: 30px;
+                }
+
+                .spinner {
+                    opacity: 0;
+                    visibility: hidden;
+                    position: absolute;
+                    bottom: 0;
+                    top: 0;
+                    margin-bottom: auto;
+                    margin-top: auto;
+                    right: 20px;
+                    width: 20px !important;
+                    height: 20px !important;
+                    transition: opacity 0.2s ease-in-out;
+
+                    &.active {
+                        opacity: 1;
+                        visibility: visible;
+                    }
+                }
             }
         }
     }

@@ -84,7 +84,6 @@ export function createApi() {
                     persistToken(null);
 
                     try {
-                        console.log("client", client);
                         const refreshResponse = await client.accountTokenRefreshPost({
                             body: {
                                 token: token.raw

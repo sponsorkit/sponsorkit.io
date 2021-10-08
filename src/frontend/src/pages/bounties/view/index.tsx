@@ -18,7 +18,7 @@ import { useToken } from "@hooks/token";
 import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
-import { Autocomplete, Box, Button, Card, CardContent, Checkbox, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
 import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
@@ -162,27 +162,32 @@ function IssueInputField(props: {
 
     return <Card className={classes.issueLinkInput}>
         <CardContent className={classes.cardContent}>
-            <TextField
-                className={classes.textField}
-                label="GitHub issue URL"
-                error={!!errorMessage}
-                helperText={errorMessage}
-                autoFocus={!areAllIssueVariablesSet}
-                disabled={isLoading}
-                InputLabelProps={{
-                    shrink: true
-                }}
-                InputProps={{
-                    notched: true
-                }}
-                placeholder={!issue || !issueLink ?
-                    "Paste the full URL of the GitHub issue you want to put a bounty on" :
-                    issueLink}
-                value={!issue ?
-                    issueLink :
-                    ""}
-                variant="outlined"
-                onChange={e => setIssueLink(e.target.value)} />
+            <Box className={classes.textFieldContainer}>
+                <TextField
+                    className={classes.textField}
+                    label="GitHub issue URL"
+                    error={!!errorMessage}
+                    helperText={errorMessage}
+                    autoFocus={!areAllIssueVariablesSet}
+                    disabled={isLoading}
+                    InputLabelProps={{
+                        shrink: true
+                    }}
+                    InputProps={{
+                        notched: true
+                    }}
+                    placeholder={!issue || !issueLink ?
+                        "Paste the full URL of the GitHub issue you want to put a bounty on" :
+                        issueLink}
+                    value={!issue ?
+                        issueLink :
+                        ""}
+                    variant="outlined"
+                    onChange={e => setIssueLink(e.target.value)} />
+                <CircularProgress className={combineClassNames(
+                    classes.spinner,
+                    isLoading && classes.active)} />
+            </Box>
         </CardContent>
     </Card>
 }
