@@ -68,7 +68,7 @@ export function AppBarTemplate(props: {
   return <>
     <AppBar color="default" className={classes.appBar}>
       <Toolbar>
-        <Container maxWidth="lg">
+        <Container maxWidth="xl">
           <Logo variant={props.logoVariant} />
         </Container>
       </Toolbar>
