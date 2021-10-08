@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import useLocalStorage from "./useLocalStorage";
+import useLocalStorage from "./local-storage";
 
 type TokenData = {
     data: RawData,
