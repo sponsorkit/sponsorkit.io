@@ -68,13 +68,13 @@ export function AppBarTemplate(props: {
   return <>
     <AppBar color="default" className={classes.appBar}>
       <Toolbar>
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Logo variant={props.logoVariant} />
         </Container>
       </Toolbar>
     </AppBar>
     <Box className={combineClassNames(classes.spacer, classes.top)} />
-    <Container maxWidth="xl" className={combineClassNames(classes.contentRoot, props.className)}>
+    <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
       {props.children}
     </Container>
     <Box className={combineClassNames(classes.spacer, classes.bottom)} />
