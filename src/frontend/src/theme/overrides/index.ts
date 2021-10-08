@@ -1,49 +1,51 @@
-import { Theme } from '@mui/material/styles';
 import { merge } from 'lodash';
-import Accordion from './Accordion';
-import Alert from './Alert';
-import Autocomplete from './Autocomplete';
-import Avatar from './Avatar';
-import Backdrop from './Backdrop';
-import Badge from './Badge';
-import Breadcrumbs from './Breadcrumbs';
-import Button from './Button';
-import ButtonGroup from './ButtonGroup';
-import Card from './Card';
-import Checkbox from './Checkbox';
-import Chip from './Chip';
-import Container from './Container';
-import ControlLabel from './ControlLabel';
-import Dialog from './Dialog';
-import Drawer from './Drawer';
+import { Theme } from '@mui/material/styles';
 import Fab from './Fab';
-import Grid from './Grid';
-import IconButton from './IconButton';
-import Input from './Input';
-import Lists from './Lists';
-import LoadingButton from './LoadingButton';
-import Menu from './Menu';
-import Pagination from './Pagination';
-import Paper from './Paper';
-import Pickers from './Pickers';
-import Popover from './Popover';
-import Progress from './Progress';
-import Radio from './Radio';
-import Rating from './Rating';
-import Select from './Select';
-import Skeleton from './Skeleton';
-import Slider from './Slider';
-import Snackbar from './Snackbar';
-import Stepper from './Stepper';
-import SvgIcon from './SvgIcon';
-import Switch from './Switch';
-import Table from './Table';
+import Card from './Card';
+import Chip from './Chip';
 import Tabs from './Tabs';
-import Timeline from './Timeline';
-import ToggleButton from './ToggleButton';
+import Menu from './Menu';
+import Grid from './Grid';
+import Link from './Link';
+import Lists from './Lists';
+import Table from './Table';
+import Alert from './Alert';
+import Badge from './Badge';
+import Paper from './Paper';
+import Input from './Input';
+import Radio from './Radio';
+import Drawer from './Drawer';
+import Dialog from './Dialog';
+import Avatar from './Avatar';
+import Rating from './Rating';
+import Slider from './Slider';
+import Button from './Button';
+import Switch from './Switch';
+import Select from './Select';
+import SvgIcon from './SvgIcon';
 import Tooltip from './Tooltip';
+import Popover from './Popover';
+import Stepper from './Stepper';
+import Pickers from './Pickers';
+import DataGrid from './DataGrid';
+import Skeleton from './Skeleton';
+import Backdrop from './Backdrop';
+import Snackbar from './Snackbar';
+import Progress from './Progress';
+import Timeline from './Timeline';
 import TreeView from './TreeView';
+import Checkbox from './Checkbox';
+import Container from './Container';
+import Accordion from './Accordion';
 import Typography from './Typography';
+import Pagination from './Pagination';
+import IconButton from './IconButton';
+import Breadcrumbs from './Breadcrumbs';
+import ButtonGroup from './ButtonGroup';
+import Autocomplete from './Autocomplete';
+import ToggleButton from './ToggleButton';
+import ControlLabel from './ControlLabel';
+import LoadingButton from './LoadingButton';
 
 // ----------------------------------------------------------------------
 
@@ -55,6 +57,7 @@ export default function ComponentsOverrides(theme: Theme) {
     Card(theme),
     Menu(theme),
     Grid(theme),
+    Link(theme),
     Input(theme),
     Radio(theme),
     Badge(theme),
@@ -76,6 +79,7 @@ export default function ComponentsOverrides(theme: Theme) {
     Popover(theme),
     SvgIcon(theme),
     Checkbox(theme),
+    DataGrid(theme),
     Skeleton(theme),
     Timeline(theme),
     TreeView(theme),

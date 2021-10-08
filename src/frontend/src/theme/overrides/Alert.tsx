@@ -1,8 +1,8 @@
+import { Icon } from '@iconify/react';
+import infoFill from '@iconify/icons-eva/info-fill';
 import alertCircleFill from '@iconify/icons-eva/alert-circle-fill';
 import alertTriangleFill from '@iconify/icons-eva/alert-triangle-fill';
 import checkmarkCircle2Fill from '@iconify/icons-eva/checkmark-circle-2-fill';
-import infoFill from '@iconify/icons-eva/info-fill';
-import { Icon } from '@iconify/react';
 // material
 import { Theme } from '@mui/material/styles';
 // @types
@@ -15,7 +15,10 @@ export default function Alert(theme: Theme) {
 
   const standardStyle = (color: ColorSchema) => ({
     color: theme.palette[color][isLight ? 'darker' : 'lighter'],
-    backgroundColor: theme.palette[color][isLight ? 'lighter' : 'darker']
+    backgroundColor: theme.palette[color][isLight ? 'lighter' : 'darker'],
+    '& .MuiAlert-icon': {
+      color: theme.palette[color][isLight ? 'main' : 'light']
+    }
   });
 
   const filledStyle = (color: ColorSchema) => ({
@@ -25,7 +28,10 @@ export default function Alert(theme: Theme) {
   const outlinedStyle = (color: ColorSchema) => ({
     color: theme.palette[color][isLight ? 'darker' : 'lighter'],
     border: `solid 1px ${theme.palette[color][isLight ? 'light' : 'dark']}`,
-    backgroundColor: theme.palette[color][isLight ? 'lighter' : 'darker']
+    backgroundColor: theme.palette[color][isLight ? 'lighter' : 'darker'],
+    '& .MuiAlert-icon': {
+      color: theme.palette[color][isLight ? 'main' : 'light']
+    }
   });
 
   return {

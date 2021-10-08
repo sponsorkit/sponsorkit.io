@@ -2,9 +2,13 @@ import { Theme } from '@mui/material/styles';
 
 // ----------------------------------------------------------------------
 
-export default function IconButton(theme: Theme) {
+export default function Link(theme: Theme) {
   return {
-    MuiIconButton: {
+    MuiLink: {
+      defaultProps: {
+        underline: 'hover'
+      },
+
       styleOverrides: {
         root: {}
       }

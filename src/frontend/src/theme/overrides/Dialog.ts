@@ -9,7 +9,7 @@ export default function Dialog(theme: Theme) {
         paper: {
           boxShadow: theme.customShadows.z24,
           '&.MuiPaper-rounded': {
-            borderRadius: 12
+            borderRadius: theme.shape.borderRadiusMd
           },
           '&.MuiDialog-paperFullScreen': {
             borderRadius: 0

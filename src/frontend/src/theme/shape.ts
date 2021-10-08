@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------
 
-declare module '@mui/material/styles' {
+declare module '@mui/system' {
   interface Shape {
     borderRadiusSm: number | string;
     borderRadiusMd: number | string;

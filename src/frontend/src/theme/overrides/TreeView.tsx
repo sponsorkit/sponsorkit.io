@@ -1,9 +1,9 @@
-import closeSquareOutline from '@iconify/icons-eva/close-square-outline';
-import minusSquareOutline from '@iconify/icons-eva/minus-square-outline';
-import plusSquareOutline from '@iconify/icons-eva/plus-square-outline';
 import { Icon } from '@iconify/react';
-import { Box } from '@mui/material';
+import plusSquareOutline from '@iconify/icons-eva/plus-square-outline';
+import minusSquareOutline from '@iconify/icons-eva/minus-square-outline';
+import closeSquareOutline from '@iconify/icons-eva/close-square-outline';
 import { Theme } from '@mui/material/styles';
+import { Box } from '@mui/material';
 
 // ----------------------------------------------------------------------
 

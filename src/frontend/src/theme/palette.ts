@@ -14,6 +14,14 @@ interface GradientsPaletteOptions {
   error: string;
 }
 
+interface ChartPaletteOptions {
+  violet: string[];
+  blue: string[];
+  green: string[];
+  yellow: string[];
+  red: string[];
+}
+
 declare module '@mui/material/styles/createPalette' {
   interface TypeBackground {
     neutral: string;
@@ -28,9 +36,11 @@ declare module '@mui/material/styles/createPalette' {
   }
   interface Palette {
     gradients: GradientsPaletteOptions;
+    chart: ChartPaletteOptions;
   }
   interface PaletteOptions {
-    gradients?: GradientsPaletteOptions;
+    gradients: GradientsPaletteOptions;
+    chart: ChartPaletteOptions;
   }
 }
 
@@ -50,11 +60,11 @@ declare module '@mui/material' {
 
 // SETUP COLORS
 const PRIMARY = {
-  lighter: '#CCDFFF',
-  light: '#6697FF',
-  main: '#0045FF',
-  dark: '#0027B7',
-  darker: '#00137A'
+  lighter: '#C8FACD',
+  light: '#5BE584',
+  main: '#00AB55',
+  dark: '#007B55',
+  darker: '#005249'
 };
 const SECONDARY = {
   lighter: '#D6E4FF',
@@ -91,7 +101,9 @@ const ERROR = {
   dark: '#B72136',
   darker: '#7A0C2E'
 };
+
 const GREY = {
+  0: '#FFFFFF',
   100: '#F9FAFB',
   200: '#F4F6F8',
   300: '#DFE3E8',
@@ -110,6 +122,7 @@ const GREY = {
   500_56: alpha('#919EAB', 0.56),
   500_80: alpha('#919EAB', 0.8)
 };
+
 const GRADIENTS = {
   primary: createGradient(PRIMARY.light, PRIMARY.main),
   info: createGradient(INFO.light, INFO.main),
@@ -117,6 +130,15 @@ const GRADIENTS = {
   warning: createGradient(WARNING.light, WARNING.main),
   error: createGradient(ERROR.light, ERROR.main)
 };
+
+const CHART_COLORS = {
+  violet: ['#826AF9', '#9E86FF', '#D0AEFF', '#F7D2FF'],
+  blue: ['#2D99FF', '#83CFFF', '#A5F3FF', '#CCFAFF'],
+  green: ['#2CD9C5', '#60F1C8', '#A4F7CC', '#C0F2DC'],
+  yellow: ['#FFE700', '#FFEF5A', '#FFF7AE', '#FFF3D6'],
+  red: ['#FF6C40', '#FF8F6D', '#FFBD98', '#FFF2D4']
+};
+
 const COMMON = {
   common: { black: '#000', white: '#fff' },
   primary: { ...PRIMARY, contrastText: '#fff' },
@@ -127,6 +149,7 @@ const COMMON = {
   error: { ...ERROR, contrastText: '#fff' },
   grey: GREY,
   gradients: GRADIENTS,
+  chart: CHART_COLORS,
   divider: GREY[500_24],
   action: {
     hover: GREY[500_8],
