@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useLocalStorage } from "./local-storage";
+import useLocalStorage from "./useLocalStorage";
 
 type TokenData = {
     data: RawData,
@@ -26,7 +26,7 @@ export function persistToken(token: string|null|undefined) {
 }
 
 export function useToken(): [TokenData|null, (token: string) => void] {
-    const [token, setToken] = useLocalStorage("token");
+    const [token, setToken] = useLocalStorage<string|null>("token", null);
     const computedToken = useMemo(
         () => getTokenFromString(token),
         [token]);
