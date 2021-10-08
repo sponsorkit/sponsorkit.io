@@ -4,7 +4,7 @@ import {
   createTheme, StyledEngineProvider, ThemeOptions,
   ThemeProvider
 } from '@mui/material/styles';
-import { ReactNode, useMemo } from 'react';
+import { ReactNode } from 'react';
 import breakpoints from './breakpoints';
 import componentsOverride from './overrides';
 import palette from './palette';
@@ -21,24 +21,21 @@ type ThemeConfigProps = {
 
 export default function ThemeConfig({ children }: ThemeConfigProps) {
 
-  const themeOptions: ThemeOptions = useMemo(
-    () => ({
-      palette: { ...palette.light, mode: 'light' },
-      shape,
-      typography,
-      breakpoints,
-      direction: "ltr",
-      shadows: shadows.light,
-      customShadows: customShadows.light
-    }),
-    []
-  );
+  const themeOptions: ThemeOptions = {
+    palette: { ...palette.light, mode: 'light' },
+    shape,
+    typography,
+    breakpoints,
+    direction: "ltr",
+    shadows: shadows.light,
+    customShadows: customShadows.light
+  }
 
   const theme = createTheme(themeOptions);
   theme.components = componentsOverride(theme);
 
   return (
-    <StyledEngineProvider injectFirst>
+    <StyledEngineProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
