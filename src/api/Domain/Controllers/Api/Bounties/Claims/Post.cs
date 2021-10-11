@@ -49,7 +49,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
             this.gitHubClient = gitHubClient;
         }
 
-        [HttpPost("/bounties/claim")]
+        [HttpPost("/bounties/claims")]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
@@ -82,6 +82,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
                     .SingleAsync(
                         x => x.Id == userId,
                         cancellationToken);
+                if (pullRequest.User.Id != user.GitHub?.Id)
+                    return Unauthorized("The given pull request is not owned by the claimer.");
 
                 var existingClaimRequest = user.BountyClaimRequests.SingleOrDefault();
                 if (existingClaimRequest != null)

@@ -37,14 +37,11 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
             var matchingPayment = await dataContext.Payments
                 .Include(x => x.Bounty)
                 .SingleOrDefaultAsync(
-                    x => x.StripeId == request.IntentId,
+                    x => 
+                        x.StripeId == request.IntentId &&
+                        x.Bounty!.CreatorId == userId,
                     cancellationToken);
-            if (matchingPayment == null)
-                return new GetResponse(false);
-
-            return matchingPayment.Bounty?.CreatorId != userId ? 
-                new GetResponse(false) : 
-                new GetResponse(true);
+            return new GetResponse(matchingPayment != null);
         }
     }
 }

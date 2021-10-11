@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Sponsorkit.Domain.Controllers.Api.Bounties;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
@@ -60,6 +61,9 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
             var gitHubOwnerName = data.Metadata[MetadataKeys.GitHubIssueOwnerName];
             var gitHubRepositoryName = data.Metadata[MetadataKeys.GitHubIssueRepositoryName];
             var userId = Guid.Parse(data.Metadata[MetadataKeys.UserId]);
+
+            if (amountInHundreds < Constants.MinimumBountyAmountInHundreds)
+                throw new InvalidOperationException("Bounty amount is below minimum.");
             
             var databaseIssue = await dataContext.ExecuteInTransactionAsync(async () =>
             {

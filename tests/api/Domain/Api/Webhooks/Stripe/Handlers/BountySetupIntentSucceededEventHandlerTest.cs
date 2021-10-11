@@ -25,19 +25,6 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
     [TestClass]
     public class BountySetupIntentSucceededEventHandlerTest
     {
-        
-        [TestMethod]
-        public async Task HandleAsync_UnrecognizedMetadataTypeGiven_ThrowsExceptionAndSetsDefaultPaymentMethod()
-        {
-            //Arrange
-            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-            //Act
-            
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
-        
         [TestMethod]
         public async Task HandleAsync_NoUserFoundFromMetadata_ThrowsException()
         {
@@ -120,13 +107,7 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
             var issue = await environment.Database.CreateIssueAsync(new TestIssueBuilder()
                 .WithGitHubInformation(
                     id: 1338,
-                    number: 1339)
-                .WithRepository(new TestRepositoryBuilder()
-                    .WithGitHubInformation(
-                        gitHubId: 1337,
-                        "some-owner-name", 
-                        "some-repository-name")));
-            
+                    number: 1339));
             fakeMediator
                 .Send(
                     Arg.Any<EnsureGitHubIssueInDatabaseCommand>(),
@@ -157,7 +138,7 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
         }
         
         [TestMethod]
-        public async Task CanHandle_SetupEventSuccededTypeGiven_CanHandle()
+        public async Task CanHandle_ProperMetadataAndType_CanHandle()
         {
             //Arrange
             
@@ -169,6 +150,28 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
         
         [TestMethod]
         public async Task CanHandle_UnrecognizedTypeGiven_CanNotHandle()
+        {
+            //Arrange
+            
+            //Act
+            
+            //Assert
+            Assert.Fail("Not implemented.");
+        }
+        
+        [TestMethod]
+        public async Task CanHandle_UnrecognizedMetadataTypeGiven_CanNotHandle()
+        {
+            //Arrange
+            
+            //Act
+            
+            //Assert
+            Assert.Fail("Not implemented.");
+        }
+        
+        [TestMethod]
+        public async Task CanHandle_MetadataDoesNotContainTypeKey_CanNotHandle()
         {
             //Arrange
             

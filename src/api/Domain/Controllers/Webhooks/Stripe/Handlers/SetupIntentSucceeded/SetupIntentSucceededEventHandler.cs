@@ -22,17 +22,11 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
     /// </summary>
     public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
     {
-        private readonly DataContext dataContext;
-        private readonly IMediator mediator;
         private readonly CustomerService customerService;
 
         public SetupIntentSucceededEventHandler(
-            DataContext dataContext,
-            IMediator mediator,
             CustomerService customerService)
         {
-            this.dataContext = dataContext;
-            this.mediator = mediator;
             this.customerService = customerService;
         }
 

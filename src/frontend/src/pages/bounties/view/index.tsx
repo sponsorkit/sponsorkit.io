@@ -575,7 +575,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
 
         setIsClaiming(true);
         try {
-            await createApi().bountiesClaimPost({
+            await createApi().bountiesClaimsPost({
                 body: {
                     gitHubPullRequestNumber: selectedPullRequest.number,
                     gitHubIssueId: props.issue.id

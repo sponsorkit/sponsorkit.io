@@ -59,7 +59,7 @@ export function createApi() {
     client.pipeline.addPolicy({
         name: "timeout",
         sendRequest: async (request, next) => {
-            request.timeout = 10000;
+            request.timeout = 30000;
 
             const response = await next(request);
             return response;
