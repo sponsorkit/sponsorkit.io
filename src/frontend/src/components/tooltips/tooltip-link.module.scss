@@ -1,7 +1,8 @@
 .tooltip {
-    p {
-        font-size: 13px;
+    span {
+        font-size: 13px !important;
         padding-top: 10px;
+        display: block;
     
         &:first-child {
             padding-top: 0;
@@ -10,7 +11,7 @@
 }
 
 .typography {
-    font-size: inherit;
+    font-size: inherit !important;
     display: inline-block;
     font-weight: bold;
     text-decoration-style: dashed;
