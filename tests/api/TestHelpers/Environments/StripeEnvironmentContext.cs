@@ -25,4 +25,5 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
             this.serviceProvider = serviceProvider;
         }
     }
+
 }

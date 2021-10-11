@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Flurl;
 
 namespace Sponsorkit.Domain.Helpers
 {
@@ -14,6 +15,14 @@ namespace Sponsorkit.Domain.Helpers
         {
             var baseUrl = Debugger.IsAttached ? "http://localhost:8000" : "https://sponsorkit.io";
             return baseUrl + relativePath;
+        }
+
+        public static string GetBountyLink(
+            string OwnerName,
+            string RepositoryName,
+            int Number)
+        {
+            return GetWebUrl($"/bounties/view?owner={Url.Encode(OwnerName)}&repo={Url.Encode(RepositoryName)}&number={Number}");
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Sponsorkit.Domain.Models
         /// <summary>
         /// The amount of money in hundreds, UTC.
         /// </summary>
-        public int AmountInHundreds { get; set; }
+        public long AmountInHundreds { get; set; }
         
         /// <summary>
         /// The ID of the setup intent in Stripe.

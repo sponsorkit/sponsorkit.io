@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Octokit;
 using Serilog;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options.GitHub;
 
@@ -60,7 +61,7 @@ namespace Sponsorkit.Domain.Mediatr
             var requestContent = request.Text;
             if (!hostEnvironment.IsProduction())
             {
-                requestContent = $"**Warning:** This comment was posted with a dev version of Bountyhunt. This means that any bounties offered here are not real bounties that can be claimed with a production account.\n\n{requestContent}";
+                requestContent = $"{GitHubCommentHelper.RenderBold("Warning:")} This comment was posted with a dev version of Bountyhunt. This means that any bounties offered here are not real bounties that can be claimed with a production account.\n\n{requestContent}";
             }
 
             if (existingBotComment == null)

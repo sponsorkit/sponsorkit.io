@@ -28,7 +28,7 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public IssueBuilder WithGitHubInformation(
             long id,
-            long number)
+            int number)
         {
             this.gitHub = new IssueGitHubInformation()
             {

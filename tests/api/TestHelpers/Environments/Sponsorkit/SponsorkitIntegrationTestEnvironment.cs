@@ -4,7 +4,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
 {
     class SponsorkitIntegrationTestEnvironment : IntegrationTestEnvironment<SponsorkitEnvironmentSetupOptions>
     {
-        private SponsorkitIntegrationTestEnvironment(SponsorkitEnvironmentSetupOptions options = null) : base(options)
+        protected SponsorkitIntegrationTestEnvironment(SponsorkitEnvironmentSetupOptions options = null) : base(options)
         {
             
         }

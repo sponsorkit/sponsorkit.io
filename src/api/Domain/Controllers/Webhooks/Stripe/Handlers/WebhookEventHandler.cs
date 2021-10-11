@@ -8,7 +8,12 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         where TData : class
     {
         protected abstract Task HandleAsync(string eventId, TData data, CancellationToken cancellationToken);
-        public abstract bool CanHandle(string type);
+        protected abstract bool CanHandle(string type, TData data);
+
+        public bool CanHandle(string type, object data)
+        {
+            return data is TData castedData && CanHandle(type, castedData);
+        }
 
         public async Task HandleAsync(string eventId, object data, CancellationToken cancellationToken)
         {

@@ -11,7 +11,7 @@ namespace Sponsorkit.Domain.Models.Builders
         private DateTimeOffset? transferredToConnectedAccountAtUtc;
         private DateTimeOffset? feePayedOutToPlatformBankAccountAtUtc;
 
-        private int? amountInHundreds;
+        private long? amountInHundreds;
         private string? stripeId;
         private DateTimeOffset createdAtUtc;
         private string? stripeEventId;
@@ -57,7 +57,7 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public PaymentBuilder WithAmountInHundreds(int amountInHundreds)
+        public PaymentBuilder WithAmountInHundreds(long amountInHundreds)
         {
             this.amountInHundreds = amountInHundreds;
             return this;

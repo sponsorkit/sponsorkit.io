@@ -20,7 +20,7 @@ namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.
         [FromRoute] string RepositoryName);
 
     public record PullRequestResponse(
-        long Number,
+        int Number,
         string Title,
         DateTimeOffset? MergedAt,
         PullRequestState State);

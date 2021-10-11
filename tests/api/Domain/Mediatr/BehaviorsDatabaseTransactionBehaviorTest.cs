@@ -28,13 +28,13 @@ namespace Sponsorkit.Tests.Domain.Mediatr
             {
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                    await environment.DataContext.SaveChangesAsync();
+                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                    await environment.Database.Context.SaveChangesAsync();
 
                     await environment.Mediator.Send(new TestCommand(async () =>
                     {
-                        await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                        await environment.DataContext.SaveChangesAsync();
+                        await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                        await environment.Database.Context.SaveChangesAsync();
                     }));
 
                     throw new TestException();
@@ -44,7 +44,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
             //Assert
             Assert.IsNotNull(exception);
 
-            await environment.WithFreshDataContext(async (dataContext) =>
+            await environment.Database.WithoutCachingAsync(async (dataContext) =>
             {
                 var clusterCount = await dataContext.Users.CountAsync();
                 Assert.AreEqual(0, clusterCount);
@@ -61,18 +61,18 @@ namespace Sponsorkit.Tests.Domain.Mediatr
             //Act
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                await environment.DataContext.SaveChangesAsync();
+                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.SaveChangesAsync();
 
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                    await environment.DataContext.SaveChangesAsync();
+                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                    await environment.Database.Context.SaveChangesAsync();
                 }));
             }));
 
             //Assert
-            await environment.WithFreshDataContext(async (dataContext) =>
+            await environment.Database.WithoutCachingAsync(async (dataContext) =>
             {
                 var clusterCount = await dataContext.Users.CountAsync();
                 Assert.AreEqual(2, clusterCount);
@@ -91,13 +91,13 @@ namespace Sponsorkit.Tests.Domain.Mediatr
             {
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                    await environment.DataContext.SaveChangesAsync();
+                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                    await environment.Database.Context.SaveChangesAsync();
 
                     await environment.Mediator.Send(new TestCommand(async () =>
                     {
-                        await environment.DataContext.Users.AddAsync(new TestUserBuilder());
-                        await environment.DataContext.SaveChangesAsync();
+                        await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                        await environment.Database.Context.SaveChangesAsync();
 
                         throw new TestException();
                     }));
@@ -107,7 +107,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
             //Assert
             Assert.IsNotNull(exception);
 
-            await environment.WithFreshDataContext(async (dataContext) =>
+            await environment.Database.WithoutCachingAsync(async (dataContext) =>
             {
                 var clusterCount = await dataContext.Users.CountAsync();
                 Assert.AreEqual(0, clusterCount);

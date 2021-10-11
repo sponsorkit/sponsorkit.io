@@ -19,7 +19,7 @@ namespace Sponsorkit.Domain.Models
     public class PullRequestGitHubInformation
     {
         public long Id { get; set; }
-        public long Number { get; set; }
+        public int Number { get; set; }
     }
     
     public class PullRequestConfiguration : IEntityTypeConfiguration<PullRequest>

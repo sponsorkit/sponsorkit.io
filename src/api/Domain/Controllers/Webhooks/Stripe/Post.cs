@@ -61,7 +61,9 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                     stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
 
                 var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                    x.CanHandle(stripeEvent.Type));
+                    x.CanHandle(
+                        stripeEvent.Type,
+                        stripeEvent.Data.Object));
                 foreach (var eventHandler in elligibleEventHandlers)
                 {
                     await eventHandler.HandleAsync(

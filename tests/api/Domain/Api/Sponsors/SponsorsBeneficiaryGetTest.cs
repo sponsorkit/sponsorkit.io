@@ -22,11 +22,8 @@ namespace Sponsorkit.Tests.Domain.Api.Sponsors
 
             var beneficiaryId = Guid.NewGuid();
 
-            await environment.WithFreshDataContext(async dataContext =>
-            {
-                await dataContext.Users.AddAsync(new TestUserBuilder()
-                    .WithId(beneficiaryId));
-            });
+            await environment.Database.CreateUserAsync(new TestUserBuilder()
+                .WithId(beneficiaryId));
             
             //Act
             var response = await endpoint.HandleAsync(

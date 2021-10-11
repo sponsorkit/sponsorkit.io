@@ -21,7 +21,7 @@ namespace Sponsorkit.Domain.Models
     public class IssueGitHubInformation
     {
         public long Id { get; set; }
-        public long Number { get; set; }
+        public int Number { get; set; }
     }
     
     public class IssueConfiguration : IEntityTypeConfiguration<Issue>

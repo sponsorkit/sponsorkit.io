@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -11,59 +13,49 @@ using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
-using System.Linq;
-using System.Text;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
+namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded
 {
     /// <summary>
     /// Posts a bounty to the database once the 
     /// </summary>
-    public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
+    public class BountySetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
     {
         private readonly DataContext dataContext;
         private readonly IMediator mediator;
-        private readonly CustomerService customerService;
 
-        public SetupIntentSucceededEventHandler(
+        public BountySetupIntentSucceededEventHandler(
             DataContext dataContext,
-            IMediator mediator,
-            CustomerService customerService)
+            IMediator mediator)
         {
             this.dataContext = dataContext;
             this.mediator = mediator;
-            this.customerService = customerService;
+        }
+
+        protected override bool CanHandle(string type, SetupIntent data)
+        {
+            if (type != Events.SetupIntentSucceeded)
+                return false;
+
+            if (!data.Metadata.ContainsKey(UniversalMetadataKeys.Type))
+                return false;
+
+            var metadataType = data.Metadata[UniversalMetadataKeys.Type];
+            if (metadataType != UniversalMetadataTypes.BountySetupIntent)
+                return false;
+
+            return true;
         }
 
         protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
         {
-            await SetPaymentMethodAsDefaultAsync(data, cancellationToken);
-            
-            var type = data.Metadata[UniversalMetadataKeys.Type];
-            if (type != UniversalMetadataTypes.BountySetupIntent)
-                throw new InvalidOperationException($"Invalid payment intent type: {type}");
-
             await HandleBountySetupIntentAsync(eventId, data, cancellationToken);
-        }
-
-        private async Task SetPaymentMethodAsDefaultAsync(SetupIntent data, CancellationToken cancellationToken)
-        {
-            await customerService.UpdateAsync(
-                data.CustomerId,
-                new CustomerUpdateOptions()
-                {
-                    InvoiceSettings = new CustomerInvoiceSettingsOptions()
-                    {
-                        DefaultPaymentMethod = data.PaymentMethodId
-                    }
-                },
-                cancellationToken: cancellationToken);
         }
 
         private async Task HandleBountySetupIntentAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
         {
-            var amountInHundreds = int.Parse(data.Metadata[MetadataKeys.AmountInHundreds], CultureInfo.InvariantCulture);
+            var amountInHundreds = long.Parse(data.Metadata[MetadataKeys.AmountInHundreds], CultureInfo.InvariantCulture);
             var gitHubIssueNumber = int.Parse(data.Metadata[MetadataKeys.GitHubIssueNumber], CultureInfo.InvariantCulture);
             var gitHubOwnerName = data.Metadata[MetadataKeys.GitHubIssueOwnerName];
             var gitHubRepositoryName = data.Metadata[MetadataKeys.GitHubIssueRepositoryName];
@@ -71,18 +63,18 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             
             var databaseIssue = await dataContext.ExecuteInTransactionAsync(async () =>
             {
+                var user = await dataContext.Users
+                    .AsQueryable()
+                    .SingleAsync(
+                        x => x.Id == userId,
+                        cancellationToken);
+                
                 var issue = await mediator.Send(
                     new EnsureGitHubIssueInDatabaseCommand(
                         gitHubOwnerName,
                         gitHubRepositoryName,
                         gitHubIssueNumber),
                     cancellationToken);
-
-                var user = await dataContext.Users
-                    .AsQueryable()
-                    .SingleAsync(
-                        x => x.Id == userId,
-                        cancellationToken);
 
                 var bounty = await AddOrIncreaseBountyAsync(
                     issue,
@@ -135,16 +127,16 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             var totalAmountInHundreds = totalBountyAmountInHundredsByContributors.Sum(x => x.AmountInHundreds);
             
             var messageTextBuilder = new StringBuilder();
-            messageTextBuilder.AppendLine($"A **${totalAmountInHundreds / 100}** bounty has been put on this issue over at bountyhunt.io.");
+            messageTextBuilder.AppendLine($"A {GitHubCommentHelper.RenderBold($"${totalAmountInHundreds / 100}")} bounty has been put on {GitHubCommentHelper.RenderLink("this issue over at bountyhunt.io", LinkHelper.GetBountyLink(gitHubOwnerName, gitHubRepositoryName, issue.GitHub.Number))}.");
             
             messageTextBuilder.AppendLine();
             messageTextBuilder.AppendLine();
             
-            messageTextBuilder.AppendLine("Top contributors:");
+            messageTextBuilder.AppendLine(GitHubCommentHelper.RenderBold("Top contributors:"));
             
             foreach (var pair in totalBountyAmountInHundredsByContributors)
             {
-                messageTextBuilder.AppendLine($"- **${pair.AmountInHundreds / 100}** by @{pair.GitHubLogin}");
+                messageTextBuilder.AppendLine($"- {GitHubCommentHelper.RenderBold($"${pair.AmountInHundreds / 100}")} by @{pair.GitHubLogin}");
             }
             
             messageTextBuilder.AppendLine(GitHubCommentHelper.RenderSpoiler(
@@ -164,7 +156,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             string eventId,
             SetupIntent paymentIntent, 
             Bounty bounty, 
-            int amountInHundreds, 
+            long amountInHundreds, 
             CancellationToken cancellationToken)
         {
             var payment = new PaymentBuilder()
@@ -196,7 +188,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         private async Task<Bounty> AddOrIncreaseBountyAsync(
             Issue issue, 
             User user, 
-            int amountInHundreds,
+            long amountInHundreds,
             CancellationToken cancellationToken)
         {
             var bounty = await GetExistingBountyAsync(
@@ -224,7 +216,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
         private async Task<Bounty> CreateNewBountyAsync(
             User user, 
             Issue issue, 
-            int amountInHundreds, 
+            long amountInHundreds, 
             CancellationToken cancellationToken)
         {
             var newBounty = new BountyBuilder()
@@ -248,11 +240,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
                         bounty.IssueId == issue.Id &&
                         bounty.CreatorId == user.Id,
                     cancellationToken);
-        }
-
-        public override bool CanHandle(string type)
-        {
-            return type == Events.SetupIntentSucceeded;
         }
     }
 }

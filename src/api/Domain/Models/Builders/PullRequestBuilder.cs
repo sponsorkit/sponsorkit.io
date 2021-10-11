@@ -9,7 +9,7 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public PullRequestBuilder WithGitHubInformation(
             long id,
-            long number)
+            int number)
         {
             this.gitHub = new PullRequestGitHubInformation()
             {

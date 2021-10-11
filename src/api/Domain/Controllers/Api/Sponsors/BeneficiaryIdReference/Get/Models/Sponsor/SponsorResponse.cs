@@ -4,13 +4,13 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.
 {
     public class SponsorResponse
     {
-        public int? MonthlyAmountInHundreds { get; }
-        public int TotalAmountInHundreds { get; }
+        public long? MonthlyAmountInHundreds { get; }
+        public long TotalAmountInHundreds { get; }
         public DateTimeOffset StartedAtUtc { get; }
 
         public SponsorResponse(
-            int? monthlyAmountInHundreds,
-            int totalAmountInHundreds,
+            long? monthlyAmountInHundreds,
+            long totalAmountInHundreds,
             DateTimeOffset startedAtUtc)
         {
             MonthlyAmountInHundreds = monthlyAmountInHundreds;

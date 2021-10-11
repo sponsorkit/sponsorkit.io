@@ -26,7 +26,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
         public IGitHubClient GitHubMock => ServiceProvider.GetRequiredService<IGitHubClient>();
 
         public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
-        public DataContext DataContext => ServiceProvider.GetRequiredService<DataContext>();
+        public DatabaseContext Database => new (entrypoint);
         public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
         public StripeEnvironmentContext Stripe => new(ServiceProvider);
 
@@ -42,31 +42,12 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
             ServiceProvider = entrypoint.ScopeProvider;
         }
 
-        protected async Task InitializeAsync()
+        protected virtual async Task InitializeAsync()
         {
             var dockerDependencyService = new DockerDependencyService(ServiceProvider);
             await dockerDependencyService.StartAsync(default);
             
             await entrypoint.WaitUntilReadyAsync();
-        }
-
-        public async Task WithFreshDataContext(Func<DataContext, Task> action)
-        {
-            await WithFreshDataContext<object>(async (dataContext) =>
-            {
-                await action(dataContext);
-                return null;
-            });
-        }
-
-        public async Task<T> WithFreshDataContext<T>(Func<DataContext, Task<T>> action)
-        {
-            using var freshScope = entrypoint.RootProvider.CreateScope();
-            await using var dataContext = freshScope.ServiceProvider.GetRequiredService<DataContext>();
-
-            var result = await action(dataContext);
-            await dataContext.SaveChangesAsync();
-            return result;
         }
 
         public async ValueTask DisposeAsync()
@@ -77,9 +58,9 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         private async Task DowngradeDatabaseAsync()
         {
-            await WithFreshDataContext(async dataContext => await dataContext
+            await Database.Context
                 .GetService<IMigrator>()
-                .MigrateAsync(Migration.InitialDatabase));
+                .MigrateAsync(Migration.InitialDatabase);
         }
     }
 }

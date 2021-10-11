@@ -19,7 +19,7 @@ namespace Sponsorkit.Domain.Models
         public Repository? Repository { get; set; }
         public Guid? RepositoryId { get; set; }
 
-        public int? MonthlyAmountInHundreds { get; set; }
+        public long? MonthlyAmountInHundreds { get; set; }
         
         public string Reference { get; set; } = null!;
 

@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
+using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
@@ -160,6 +161,7 @@ namespace Sponsorkit.Infrastructure.Ioc
             Services.AddSingleton<PaymentIntentService>();
 
             Services.AddScoped<IWebhookEventHandler, SetupIntentSucceededEventHandler>();
+            Services.AddScoped<IWebhookEventHandler, BountySetupIntentSucceededEventHandler>();
 
             Services.AddSingleton<IStripeClient, StripeClient>(
                 _ => new StripeClient(
