@@ -5,7 +5,7 @@ import * as classes from "./amount-picker.module.scss";
 
 export function AmountPicker(props: {
   options: number[],
-  onAmountChanged: (amount: number) => void
+  onAmountChanged: (amount: number|null) => void
 }) {
   const [selectedOption, setSelectedOption] = useState(props.options[0] + "");
 
@@ -26,10 +26,9 @@ export function AmountPicker(props: {
 
   useEffect(
     () => {
-      if(getError())
-        return;
-      
-      props.onAmountChanged(+selectedOption);
+      props.onAmountChanged(getError() ?
+        null :
+        +selectedOption);
     },
     [selectedOption]);
 

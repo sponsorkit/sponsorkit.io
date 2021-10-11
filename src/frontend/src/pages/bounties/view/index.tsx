@@ -388,7 +388,7 @@ function CreateBounty(props: {
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
 }) {
-    const [amount, setAmount] = useState(0);
+    const [amount, setAmount] = useState<number|null>(10);
     const [shouldCreate, setShouldCreate] = useState(false);
     
     const [consentChargedAferIssueClose, setConsentChargedAferIssueClose] = useState(false);
@@ -400,8 +400,11 @@ function CreateBounty(props: {
 
     const feeAmount = useApi(
         async (client, abortSignal) => {
+            if(!amount)
+                return null;
+
             const response = await client.bountiesCalculateGet({
-                amountInHundreds: (amount || 0) * 100,
+                amountInHundreds: amount * 100,
                 abortSignal
             });
             return Math.floor(response.feeAmountInHundreds / 100);
@@ -461,7 +464,7 @@ function CreateBounty(props: {
                 <FormGroup className={classes.consent}>
                     <FormControlLabel 
                         className={classes.label}
-                        label={<>I agree to be charged <Currency amount={amount + (feeAmount || 0)} /> (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>) whenever my bounty is awarded.</>}
+                        label={<>I agree to be charged <Currency amount={(amount || 0) + (feeAmount || 0)} /> (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>) whenever my bounty is awarded.</>}
                         control={<Checkbox
                             checked={consentChargedAferIssueClose}
                             onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
