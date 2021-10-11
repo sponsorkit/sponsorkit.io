@@ -1,3 +1,5 @@
+Current project status: In active development, launching hopefully soon.
+
 # Sponsorkit & Bountyhunt
 
 ## Contributing
