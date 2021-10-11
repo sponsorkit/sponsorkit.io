@@ -1,4 +1,5 @@
 import { combineClassNames } from "@utils/strings";
+import { debounce } from "lodash";
 import { Ref, useEffect, useRef, useState } from "react";
 import * as classes from "./absolute-box.module.scss";
 
@@ -11,7 +12,7 @@ export default function AbsoluteBox(props: {
     const [height, setHeight] = useState(0);
 
     useEffect(
-        () => console.log("height-absolute-box", height),
+        () => console.debug("height-absolute-box", height),
         [height]);
 
     const onUpdate = () => {
@@ -27,21 +28,23 @@ export default function AbsoluteBox(props: {
             setHeight(rectHeight);
     }
 
-    useEffect(onUpdate);
-
     useEffect(
         () => {
-            window.addEventListener("resize", onUpdate);
-            return () => window.removeEventListener("resize", onUpdate);
+            if (!ref.current)
+                return;
+
+            console.debug("installed-observer");
+
+            const onResized = debounce(onUpdate, 250);
+
+            const observer = new ResizeObserver(onResized);
+            observer.observe(ref.current);
+
+            return () => {
+                observer.disconnect();
+            };
         },
-        []);
-
-    useEffect(
-        () => {
-            const interval = setInterval(onUpdate, 2000);
-            return () => clearInterval(interval);
-        }
-    )
+        [ref, ref.current]);
 
     return (
         <div

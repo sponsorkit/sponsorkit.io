@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 // ----------------------------------------------------------------------
 
-export default function useLocalStorage(key: string, defaultValue: string) {
+export default function useLocalStorage(key: string, defaultValue: string|null) {
   const [value, setValue] = useState<string|null>(() => {
     if(typeof localStorage === "undefined")
       return defaultValue;
@@ -34,5 +34,5 @@ export default function useLocalStorage(key: string, defaultValue: string) {
     });
   };
 
-  return [value, setValueInLocalStorage];
+  return [value, setValueInLocalStorage] as const;
 }

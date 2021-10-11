@@ -25,13 +25,13 @@ export function persistToken(token: string|null|undefined) {
     }
 }
 
-export function useToken(): [TokenData|null, (token: string) => void] {
-    const [token, setToken] = useLocalStorage<string|null>("token", null);
+export function useToken() {
+    const [token, setToken] = useLocalStorage("token", null);
     const computedToken = useMemo(
         () => getTokenFromString(token),
         [token]);
 
-    return [computedToken, setToken];
+    return [computedToken, setToken] as const;
 }
 
 export function getTokenFromString(token: string): TokenData

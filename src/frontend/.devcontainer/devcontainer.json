@@ -10,7 +10,8 @@
 	"extensions": [
 		"dbaeumer.vscode-eslint",
 		"ms-azuretools.vscode-docker",
-		"github.copilot"
+		"github.copilot",
+		"wraith13.zoombar-vscode"
 	],
 	"forwardPorts": [
 		8000,
