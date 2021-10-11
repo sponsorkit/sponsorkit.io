@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
@@ -11,6 +12,7 @@ using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
+using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Tests.TestHelpers.Builders.Models;
 using Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe;
@@ -103,35 +105,55 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
         }
         
         [TestMethod]
-        public async Task HandleAsync_NoGitHubCommentFound_CreatesNewGitHubComment()
+        public async Task HandleAsync_Success_UpsertsGitHubComment()
         {
             //Arrange
-            await using var environment = await TestEnvironment.CreateAsync();
+            var fakeMediator = Substitute.For<IMediator>();
+            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+            {
+                IocConfiguration = services =>
+                {
+                    services.AddSingleton(fakeMediator);
+                }
+            });
 
-            var issue = await environment.Database.CreateIssueAsync(new TestIssueBuilder());
+            var issue = await environment.Database.CreateIssueAsync(new TestIssueBuilder()
+                .WithGitHubInformation(
+                    id: 1338,
+                    number: 1339)
+                .WithRepository(new TestRepositoryBuilder()
+                    .WithGitHubInformation(
+                        gitHubId: 1337,
+                        "some-owner-name", 
+                        "some-repository-name")));
+            
+            fakeMediator
+                .Send(
+                    Arg.Any<EnsureGitHubIssueInDatabaseCommand>(),
+                    default)
+                .Returns(issue);
+            
             var user = await environment.Database.CreateUserAsync(new TestUserBuilder());
 
             //Act
-            await environment.HandleAsync(new Metadata(
-                10_00,
-                issue.GitHub.Number,
-                "some-issue-owner-name",
-                "some-issue-repository-name",
-                user.Id));
+            await CallHandleAsync(
+                environment,
+                new Metadata(
+                    10_00,
+                    issue.GitHub.Number,
+                    issue.Repository.GitHub.OwnerName,
+                    issue.Repository.GitHub.Name,
+                    user.Id));
             
             //Assert
-            Assert.Fail("Not implemented.");
-        }
-
-        [TestMethod]
-        public async Task HandleAsync_GitHubCommentFound_UpdatesExistingGitHubComment()
-        {
-            //Arrange
-            
-            //Act
-            
-            //Assert
-            Assert.Fail("Not implemented.");
+            await fakeMediator
+                .Received(1)
+                .Send(
+                    Arg.Is<UpsertIssueCommentCommand>(command => 
+                        command.OwnerName == "some-owner-name" &&
+                        command.RepositoryName == "some-repository-name" &&
+                        command.IssueNumber == 1339),
+                    default);
         }
         
         [TestMethod]
@@ -162,71 +184,43 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
             string GitHubOwnerName,
             string GitHubRepositoryName,
             Guid UserId);
-        
-        private class TestEnvironment : SponsorkitIntegrationTestEnvironment
+
+        private static async Task CallHandleAsync(
+            SponsorkitIntegrationTestEnvironment environment,
+            Metadata metadata)
         {
-            private BountySetupIntentSucceededEventHandler Handler => ServiceProvider
+            var handler = environment.ServiceProvider
                 .GetRequiredService<IEnumerable<IWebhookEventHandler>>()
                 .OfType<BountySetupIntentSucceededEventHandler>()
                 .Single();
-            
-            public static async Task<TestEnvironment> CreateAsync()
-            {
-                var environment = new TestEnvironment();
-                await environment.InitializeAsync();
-
-                return environment;
-            }
-
-            public async Task HandleAsync(Metadata metadata)
-            {
-                await Handler.HandleAsync(
-                    "some-event-id",
-                    new SetupIntent()
+            await handler.HandleAsync(
+                "some-event-id",
+                new SetupIntent()
+                {
+                    Id = "some-id",
+                    Metadata = new Dictionary<string, string>()
                     {
-                        Id = "some-id",
-                        Metadata = new Dictionary<string, string>()
                         {
-                            {
-                                UniversalMetadataKeys.Type, UniversalMetadataTypes.BountySetupIntent
-                            },
-                            {
-                                MetadataKeys.AmountInHundreds, metadata.AmountInHundreds.ToString(CultureInfo.InvariantCulture)
-                            },
-                            {
-                                MetadataKeys.GitHubIssueNumber, metadata.GitHubIssueNumber.ToString(CultureInfo.InvariantCulture)
-                            },
-                            {
-                                MetadataKeys.GitHubIssueOwnerName, metadata.GitHubOwnerName
-                            },
-                            {
-                                MetadataKeys.GitHubIssueRepositoryName, metadata.GitHubRepositoryName
-                            },
-                            {
-                                MetadataKeys.UserId, metadata.UserId.ToString()
-                            }
+                            UniversalMetadataKeys.Type, UniversalMetadataTypes.BountySetupIntent
+                        },
+                        {
+                            MetadataKeys.AmountInHundreds, metadata.AmountInHundreds.ToString(CultureInfo.InvariantCulture)
+                        },
+                        {
+                            MetadataKeys.GitHubIssueNumber, metadata.GitHubIssueNumber.ToString(CultureInfo.InvariantCulture)
+                        },
+                        {
+                            MetadataKeys.GitHubIssueOwnerName, metadata.GitHubOwnerName
+                        },
+                        {
+                            MetadataKeys.GitHubIssueRepositoryName, metadata.GitHubRepositoryName
+                        },
+                        {
+                            MetadataKeys.UserId, metadata.UserId.ToString()
                         }
-                    },
-                    default);
-            }
-
-            protected override async Task InitializeAsync()
-            {
-                await base.InitializeAsync();
-                
-                GitHubMock.Repository
-                    .Get(
-                        Arg.Any<string>(),
-                        Arg.Any<string>())
-                    .Returns(new TestRepository());
-
-                GitHubMock.Issue
-                    .Get(
-                        Arg.Any<string>(),
-                        Arg.Any<string>(),
-                        Arg.Any<int>())
-                    .Returns(new Issue());
-            }
+                    }
+                },
+                default);
         }
     }
 }

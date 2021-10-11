@@ -94,8 +94,7 @@ namespace Sponsorkit.Domain.Mediatr
             var newRepository = new RepositoryBuilder()
                 .WithGitHubInformation(
                     gitHubRepository.Id,
-                    gitHubRepository.Name,
-                    gitHubRepository.Owner.Login)
+                    gitHubRepository.Owner.Login, gitHubRepository.Name)
                 .Build();
             await dataContext.Repositories.AddAsync(
                 newRepository,

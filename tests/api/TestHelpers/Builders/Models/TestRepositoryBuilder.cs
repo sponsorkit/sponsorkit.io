@@ -8,8 +8,8 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Models
         {
             WithGitHubInformation(
                 1337,
-                "some-name",
-                "some-owner-name");
+                "some-owner-name", 
+                "some-name");
         }
     }
 }

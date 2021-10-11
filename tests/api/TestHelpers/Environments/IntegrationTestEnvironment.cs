@@ -58,9 +58,14 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         private async Task DowngradeDatabaseAsync()
         {
-            await Database.Context
-                .GetService<IMigrator>()
-                .MigrateAsync(Migration.InitialDatabase);
+            await Database.WithoutCachingAsync(async context =>
+            {
+                await context
+                    .GetService<IMigrator>()
+                    .MigrateAsync(Migration.InitialDatabase);
+
+                await context.SaveChangesAsync();
+            });
         }
     }
 }

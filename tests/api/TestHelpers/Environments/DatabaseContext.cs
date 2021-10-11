@@ -13,7 +13,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
     {
         private readonly IIntegrationTestEntrypoint entrypoint;
         public DataContext Context => entrypoint.ScopeProvider.GetRequiredService<DataContext>();
-        
+
         public DatabaseContext(IIntegrationTestEntrypoint entrypoint)
         {
             this.entrypoint = entrypoint;
@@ -56,13 +56,11 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
             Func<DataContext, DbSet<T>> setAccessor) where T : class
         {
             var entity = builder.Build();
-            await WithoutCachingAsync(async context =>
-            {
-                var set = setAccessor(context);
-                await set.AddAsync(entity);
-                
-                await context.SaveChangesAsync();
-            });
+
+            var set = setAccessor(Context);
+            await set.AddAsync(entity);
+
+            await Context.SaveChangesAsync();
 
             return entity;
         }

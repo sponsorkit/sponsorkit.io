@@ -19,10 +19,9 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public RepositoryBuilder WithGitHubInformation(
-            long gitHubId,
-            string name,
-            string ownerName)
+        public RepositoryBuilder WithGitHubInformation(long gitHubId,
+            string ownerName,
+            string name)
         {
             this.gitHub = new RepositoryGitHubInformation()
             {
