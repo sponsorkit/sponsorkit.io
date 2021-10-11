@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using Serilog;
 using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Ioc;
 
 namespace Sponsorkit.Tests.TestHelpers
@@ -51,6 +52,7 @@ namespace Sponsorkit.Tests.TestHelpers
             services.AddScoped<Mediator>();
 
             services.AddSingleton(Substitute.For<ILogger>());
+            services.AddSingleton(Substitute.For<IGitHubClientFactory>());
         }
     }
 }

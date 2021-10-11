@@ -1,5 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using Amazon.Extensions.Configuration.SystemsManager;
 using Microsoft.Extensions.Configuration;
+using Sponsorkit.Infrastructure;
 
 namespace Sponsorkit.Tests.TestHelpers
 {
@@ -7,9 +10,14 @@ namespace Sponsorkit.Tests.TestHelpers
     {
         public static IConfigurationBuilder ConfigureBuilder(IConfigurationBuilder builder)
         {
+            ConfigurationFactory.Configure(
+                builder,
+                Array.Empty<string>(),
+                null);
+            
             foreach (var source in builder.Sources.ToArray())
             {
-                if (source is ChainedConfigurationSource)
+                if (source is ChainedConfigurationSource or SystemsManagerConfigurationSource)
                     continue;
 
                 builder.Sources.Remove(source);

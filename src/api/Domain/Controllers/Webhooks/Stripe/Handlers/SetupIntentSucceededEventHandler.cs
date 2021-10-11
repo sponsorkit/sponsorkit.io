@@ -116,41 +116,41 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
             CancellationToken cancellationToken)
         {
             var totalBountyAmountInHundredsByContributors = await dataContext.Bounties
-                .Include(x => x.Creator.GitHub)
                 .AsQueryable()
                 .Where(x => x.IssueId == issue.Id)
-                .GroupBy(x => x.Creator)
+                .GroupBy(x => new
+                {
+                    x.Creator.Id,
+                    Username = x.Creator.GitHub!.Username
+                })
                 .Select(x => new
                 {
-                    Creator = x.Key,
+                    GitHubLogin = x.Key.Username,
                     AmountInHundreds = x.Sum(b => b.AmountInHundreds)
                 })
                 .OrderByDescending(x => x.AmountInHundreds)
                 .Take(10)
                 .ToArrayAsync(cancellationToken);
-
+            
             var totalAmountInHundreds = totalBountyAmountInHundredsByContributors.Sum(x => x.AmountInHundreds);
             
             var messageTextBuilder = new StringBuilder();
-            messageTextBuilder.AppendLine($"A ${totalAmountInHundreds / 100} bounty has been put on this issue over at bountyhunt.io.");
-
+            messageTextBuilder.AppendLine($"A **${totalAmountInHundreds / 100}** bounty has been put on this issue over at bountyhunt.io.");
+            
             messageTextBuilder.AppendLine();
             messageTextBuilder.AppendLine();
             
             messageTextBuilder.AppendLine("Top contributors:");
-
+            
             foreach (var pair in totalBountyAmountInHundredsByContributors)
             {
-                if (pair.Creator.GitHub == null)
-                    throw new InvalidOperationException("A creator was not connected to GitHub.");
-
-                messageTextBuilder.AppendLine($"- ${pair.AmountInHundreds / 100} by @{pair.Creator.GitHub.Username}");
+                messageTextBuilder.AppendLine($"- **${pair.AmountInHundreds / 100}** by @{pair.GitHubLogin}");
             }
-
+            
             messageTextBuilder.AppendLine(GitHubCommentHelper.RenderSpoiler(
                 "What is this?",
                 "bountyhunt.io is an open source service that allows people to put bounties on issues, and allows bountyhunters to claim those bounties.\n\nIn a way, we're helping people get paid for the open source work they do, and for people to live off of open source development.\n\nAdditionally, we help bring attention to the issues that matter most in the open source community.\n\nThis comment will only appear once ever, and will be modified if new bounties arrive, to reduce spam."));
-
+            
             await mediator.Send(
                 new UpsertIssueCommentCommand(
                     gitHubOwnerName,

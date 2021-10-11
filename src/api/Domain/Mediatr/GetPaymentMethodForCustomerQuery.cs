@@ -31,7 +31,7 @@ namespace Sponsorkit.Domain.Mediatr
             if (customer == null)
                 throw new InvalidOperationException("The customer could not be found.");
 
-            if (customer.InvoiceSettings.DefaultPaymentMethod != null)
+            if (customer.InvoiceSettings?.DefaultPaymentMethod != null)
                 return customer.InvoiceSettings.DefaultPaymentMethod;
             
             var paymentMethods = await paymentMethodService.ListAsync(

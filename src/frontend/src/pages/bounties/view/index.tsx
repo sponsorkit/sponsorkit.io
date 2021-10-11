@@ -422,10 +422,10 @@ function CreateBounty(props: {
         <AmountPicker
             options={[10, 25, 50, 100]}
             onAmountChanged={setAmount} />
-        <FeeDisplay 
+        {amount && <FeeDisplay 
             amount={amount}
             fee={feeAmount}
-        />
+        />}
         <Button
             disabled={
                 !props.issue ||

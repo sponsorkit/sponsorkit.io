@@ -12,6 +12,17 @@ namespace Sponsorkit.Infrastructure
         {
             var configurationBuilder = new ConfigurationBuilder();
 
+            Configure(configurationBuilder, args, secretId);
+
+            var configuration = configurationBuilder.Build();
+            return configuration;
+        }
+
+        public static void Configure(
+            IConfigurationBuilder configurationBuilder, 
+            string[] args, 
+            string? secretId)
+        {
             var environment = GetEnvironmentName();
             configurationBuilder.AddSystemsManager(configureSource =>
             {
@@ -22,19 +33,23 @@ namespace Sponsorkit.Infrastructure
                 {
                     Region = RegionEndpoint.EUNorth1
                 };
-                
+
                 configureSource.OnLoadException += exceptionContext =>
                 {
                     exceptionContext.Ignore = false;
                     throw exceptionContext.Exception;
                 };
             });
-            
+
             configurationBuilder.AddJsonFile("appsettings.json");
             configurationBuilder.AddEnvironmentVariables();
             configurationBuilder.AddCommandLine(args);
-            
-            if (Debugger.IsAttached && !EnvironmentHelper.IsRunningInTest)
+
+            if (EnvironmentHelper.IsRunningInTest)
+            {
+                configurationBuilder.AddJsonFile($"appsettings.Development.json");
+            }
+            else if (Debugger.IsAttached)
             {
                 configurationBuilder.AddJsonFile($"appsettings.{environment}.json");
 
@@ -45,9 +60,6 @@ namespace Sponsorkit.Infrastructure
             {
                 Console.WriteLine("Warning: Assuming production mode.");
             }
-
-            var configuration = configurationBuilder.Build();
-            return configuration;
         }
 
         private static string GetEnvironmentName()

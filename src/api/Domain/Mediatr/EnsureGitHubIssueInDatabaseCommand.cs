@@ -52,6 +52,8 @@ namespace Sponsorkit.Domain.Mediatr
             var repository = await EnsureRepositoryInDatabaseAsync(gitHubRepository, cancellationToken);
             var issue = await EnsureIssueInDatabaseAsync(gitHubIssue, repository, cancellationToken);
 
+            await dataContext.SaveChangesAsync(cancellationToken);
+
             return issue;
         }
 
