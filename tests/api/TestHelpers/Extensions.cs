@@ -28,5 +28,16 @@ namespace Sponsorkit.Tests.TestHelpers
 
             return value;
         }
+        
+        private static void EnsureControllerContext(this ControllerBase controller)
+        {
+            controller.ControllerContext.HttpContext = new DefaultHttpContext();
+        }
+
+        public static void FakeAuthentication(this ControllerBase controller, Guid userId)
+        {
+            controller.EnsureControllerContext();
+            controller.HttpContext.User = TestClaimsPrincipalFactory.CreateWithUserId(userId);
+        }
     }
 }
