@@ -81,7 +81,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
                     {
                         Email = newEmail
                     },
-                    cancellationToken: default);
+                    cancellationToken: CancellationToken.None);
             });
 
             return RedirectPermanent(

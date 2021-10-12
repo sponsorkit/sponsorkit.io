@@ -187,6 +187,9 @@ namespace Sponsorkit.Infrastructure.AspNet
             if (customerService == null)
                 throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
+            if (customerService.Client.ApiKey == null)
+                return;
+
             var customersToDelete = await customerService
                 .ListAutoPagingAsync()
                 .ToListAsync();
