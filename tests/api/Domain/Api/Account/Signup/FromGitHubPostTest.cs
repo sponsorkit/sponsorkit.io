@@ -11,6 +11,7 @@ using Sponsorkit.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers.Builders.Models;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
+using Stripe;
 using OctokitUser = Octokit.User;
 
 namespace Sponsorkit.Tests.Domain.Api.Account.Signup
@@ -192,22 +193,115 @@ namespace Sponsorkit.Tests.Domain.Api.Account.Signup
         public async Task HandleAsync_UserDoesNotExistInDatabase_CreatesNewDatabaseUser()
         {
             //Arrange
+            var fakeGitHubClient = Substitute.For<IGitHubClient>();
+            fakeGitHubClient.Oauth
+                .CreateAccessToken(
+                    Arg.Is<OauthTokenRequest>(request => 
+                        request.Code == "some-github-authentication-code"))
+                .Returns(new OauthToken(
+                    default,
+                    "some-new-github-token",
+                    default));
+
+            var gitHubUserId = 1337;
+            fakeGitHubClient.User
+                .Current()
+                .Returns(new TestUser()
+                {
+                    Id = gitHubUserId
+                });
+
+            var fakeTokenFactory = Substitute.For<ITokenFactory>();
+            fakeTokenFactory
+                .Create(Arg.Any<Claim[]>())
+                .Returns("some-jwt-token");
+
+            var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+            fakeGitHubClientFactory
+                .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
+                .Returns(fakeGitHubClient);
+            
+            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+            {
+                IocConfiguration = services =>
+                {
+                    services.AddSingleton(fakeGitHubClient);
+                    services.AddSingleton(fakeGitHubClientFactory);
+                    services.AddSingleton(fakeTokenFactory);
+                }
+            });
+
+            var handler = environment.ServiceProvider.GetRequiredService<Post>();
             
             //Act
+            var result = await handler.HandleAsync(new(
+                "some-github-authentication-code"));
+            Assert.IsNotNull(result.Value);
             
             //Assert
-            Assert.Fail("Not implemented.");
+            var user = await environment.Database.WithoutCachingAsync(async dataContext =>
+                await dataContext.Users.SingleAsync());
+            Assert.IsNotNull(user);
         }
         
         [TestMethod]
         public async Task HandleAsync_UserDoesNotExistInDatabase_AssignsNewStripeCustomerToCeatedUser()
         {
             //Arrange
+            var fakeGitHubClient = Substitute.For<IGitHubClient>();
+            fakeGitHubClient.Oauth
+                .CreateAccessToken(
+                    Arg.Is<OauthTokenRequest>(request => 
+                        request.Code == "some-github-authentication-code"))
+                .Returns(new OauthToken(
+                    default,
+                    "some-new-github-token",
+                    default));
+
+            var gitHubUserId = 1337;
+            fakeGitHubClient.User
+                .Current()
+                .Returns(new TestUser()
+                {
+                    Id = gitHubUserId
+                });
+
+            var fakeTokenFactory = Substitute.For<ITokenFactory>();
+            fakeTokenFactory
+                .Create(Arg.Any<Claim[]>())
+                .Returns("some-jwt-token");
+
+            var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+            fakeGitHubClientFactory
+                .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
+                .Returns(fakeGitHubClient);
+            
+            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+            {
+                IocConfiguration = services =>
+                {
+                    services.AddSingleton(fakeGitHubClient);
+                    services.AddSingleton(fakeGitHubClientFactory);
+                    services.AddSingleton(fakeTokenFactory);
+                }
+            });
+
+            var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
+
+            var handler = environment.ServiceProvider.GetRequiredService<Post>();
             
             //Act
+            var result = await handler.HandleAsync(new(
+                "some-github-authentication-code"));
+            Assert.IsNotNull(result.Value);
             
             //Assert
-            Assert.Fail("Not implemented.");
+            var user = await environment.Database.WithoutCachingAsync(async dataContext =>
+                await dataContext.Users.SingleAsync());
+            Assert.IsNotNull(user.StripeCustomerId);
+
+            var customer = await stripeCustomerService.GetAsync(user.StripeCustomerId);
+            Assert.IsNotNull(customer);
         }
         
         [TestMethod]
