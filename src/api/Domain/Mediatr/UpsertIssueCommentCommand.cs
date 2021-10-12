@@ -17,7 +17,7 @@ namespace Sponsorkit.Domain.Mediatr
     public record UpsertIssueCommentCommand(
         string OwnerName,
         string RepositoryName,
-        long IssueNumber,
+        int IssueNumber,
         string Text) : IRequest;
 
     public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueCommentCommand>
@@ -53,7 +53,7 @@ namespace Sponsorkit.Domain.Mediatr
                 .GetAllForIssue(
                     request.OwnerName,
                     request.RepositoryName,
-                    (int)request.IssueNumber);
+                    request.IssueNumber);
 
             var existingBotComment = comments.FirstOrDefault(x =>
                 x.User.Id == gitHubOptions.CurrentValue.BountyhuntBot.UserId);

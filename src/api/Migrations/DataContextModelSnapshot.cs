@@ -16,7 +16,7 @@ namespace Sponsorkit.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.9")
+                .HasAnnotation("ProductVersion", "5.0.10")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
@@ -113,8 +113,8 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AmountInHundreds")
-                        .HasColumnType("integer");
+                    b.Property<long>("AmountInHundreds")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid?>("BountyId")
                         .HasColumnType("uuid");
@@ -198,8 +198,8 @@ namespace Sponsorkit.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("MonthlyAmountInHundreds")
-                        .HasColumnType("integer");
+                    b.Property<long?>("MonthlyAmountInHundreds")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Reference")
                         .IsRequired()
@@ -316,8 +316,8 @@ namespace Sponsorkit.Migrations
                             b1.Property<long>("Id")
                                 .HasColumnType("bigint");
 
-                            b1.Property<long>("Number")
-                                .HasColumnType("bigint");
+                            b1.Property<int>("Number")
+                                .HasColumnType("integer");
 
                             b1.HasKey("IssueId");
 
@@ -365,8 +365,8 @@ namespace Sponsorkit.Migrations
                             b1.Property<long>("Id")
                                 .HasColumnType("bigint");
 
-                            b1.Property<long>("Number")
-                                .HasColumnType("bigint");
+                            b1.Property<int>("Number")
+                                .HasColumnType("integer");
 
                             b1.HasKey("PullRequestId");
 
