@@ -42,6 +42,9 @@ function getBaseUri() {
     if (currentUri.hostname === "localhost")
         return "http://localhost:5000/";
 
+    if(currentUri.hostname.endsWith(".gatsbyjs.io"))
+        return "https://api-staging.sponsorkit.io/";
+
     const requestUri = new URL(window.location.href);
     requestUri.hostname = `api.${currentUri.hostname}`;
     requestUri.pathname = "";
