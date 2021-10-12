@@ -9,5 +9,11 @@ namespace Sponsorkit.Tests.TestHelpers.Octokit
             Name = "some-name";
             Login = "some-login";
         }
+
+        public new int Id
+        {
+            get => base.Id;
+            set => base.Id = value;
+        }
     }
 }

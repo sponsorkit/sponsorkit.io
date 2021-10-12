@@ -10,6 +10,7 @@ using Octokit;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Migration = Microsoft.EntityFrameworkCore.Migrations.Migration;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments
@@ -23,9 +24,8 @@ namespace Sponsorkit.Tests.TestHelpers.Environments
 
         public IServiceProvider ServiceProvider { get; }
 
-        public IGitHubClient GitHubMock => ServiceProvider.GetRequiredService<IGitHubClient>();
-
         public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
+        public IAesEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
         public DatabaseContext Database => new (entrypoint);
         public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
         public StripeEnvironmentContext Stripe => new(ServiceProvider);
