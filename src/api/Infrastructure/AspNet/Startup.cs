@@ -120,6 +120,7 @@ namespace Sponsorkit.Infrastructure.AspNet
             {
                 options.AddDefaultPolicy(
                     builder => builder
+                        .SetIsOriginAllowedToAllowWildcardSubdomains()
                         .WithOrigins(Environment.EnvironmentName switch
                         {
                             "Development" => new []
