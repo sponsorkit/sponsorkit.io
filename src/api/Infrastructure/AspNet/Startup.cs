@@ -89,7 +89,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                 });
         }
 
-        private static void ConfigureAspNetCore(IServiceCollection services)
+        private void ConfigureAspNetCore(IServiceCollection services)
         {
             services.Configure<ForwardedHeadersOptions>(options =>
             {
@@ -120,17 +120,23 @@ namespace Sponsorkit.Infrastructure.AspNet
             {
                 options.AddDefaultPolicy(
                     builder => builder
-                        .WithOrigins(Debugger.IsAttached ? 
-                            new[]
+                        .WithOrigins(Environment.EnvironmentName switch
+                        {
+                            "Development" => new []
                             {
                                 "http://localhost:8000", 
                                 "http://localhost:9000", 
                                 "http://localhost:6006"
-                            } : 
-                            new[]
+                            },
+                            "Staging" => new [] {
+                                "https://*.gtsb.io"
+                            },
+                            "Production" => new []
                             {
                                 "https://sponsorkit.io"
-                            })
+                            },
+                            _ => throw new InvalidOperationException("Environment not recognized.")
+                        })
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials());
