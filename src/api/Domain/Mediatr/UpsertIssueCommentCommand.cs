@@ -41,7 +41,7 @@ namespace Sponsorkit.Domain.Mediatr
 
         public async Task<Unit> Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)
         {
-            if (request.OwnerName != "sponsorkit" || hostEnvironment.IsProduction())
+            if (!hostEnvironment.IsProduction())
                 return Unit.Value;
 
             var client = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(

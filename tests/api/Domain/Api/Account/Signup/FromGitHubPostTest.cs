@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -308,11 +310,60 @@ namespace Sponsorkit.Tests.Domain.Api.Account.Signup
         public async Task HandleAsync_CancellationSignaledBeforeDatabaseUserCreation_CancelsDatabaseUpdateBeforeStripeCustomerCreation()
         {
             //Arrange
+            var fakeGitHubClient = Substitute.For<IGitHubClient>();
+            fakeGitHubClient.Oauth
+                .CreateAccessToken(
+                    Arg.Is<OauthTokenRequest>(request => 
+                        request.Code == "some-github-authentication-code"))
+                .Returns(new OauthToken(
+                    default,
+                    "some-new-github-token",
+                    default));
+
+            var gitHubUserId = 1337;
+            fakeGitHubClient.User
+                .Current()
+                .Returns(new TestUser()
+                {
+                    Id = gitHubUserId
+                });
+
+            var fakeTokenFactory = Substitute.For<ITokenFactory>();
+            fakeTokenFactory
+                .Create(Arg.Any<Claim[]>())
+                .Returns("some-jwt-token");
+
+            var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+            fakeGitHubClientFactory
+                .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
+                .Returns(fakeGitHubClient);
+            
+            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+            {
+                IocConfiguration = services =>
+                {
+                    services.AddSingleton(fakeGitHubClient);
+                    services.AddSingleton(fakeGitHubClientFactory);
+                    services.AddSingleton(fakeTokenFactory);
+                }
+            });
+
+            var handler = environment.ServiceProvider.GetRequiredService<Post>();
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
             
             //Act
+            var exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => 
+                await handler.HandleAsync(
+                    new("some-github-authentication-code"),
+                    cancellationTokenSource.Token));
+            Assert.IsNotNull(exception);
             
             //Assert
-            Assert.Fail("Not implemented.");
+            var userCount = await environment.Database.WithoutCachingAsync(async dataContext =>
+                await dataContext.Users.CountAsync(default));
+            Assert.AreEqual(0, userCount);
         }
         
         [TestMethod]

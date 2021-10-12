@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -104,7 +105,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
 
                     var customer = await CreateStripeCustomerForUserAsync(user.Id, email);
                     user.StripeCustomerId = customer.Id;
-                    await dataContext.SaveChangesAsync(default);
+                    await dataContext.SaveChangesAsync(CancellationToken.None);
 
                     return user;
                 });
@@ -158,7 +159,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                         { "UserId", userId.ToString() }
                     }
                 },
-                cancellationToken: default);
+                cancellationToken: CancellationToken.None);
         }
 
         private async Task<GitHubUser> GetCurrentGitHubUserFromTokenAsync(string token)
