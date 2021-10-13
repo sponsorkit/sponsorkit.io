@@ -23,10 +23,10 @@ jobs:
       run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
 
     - name: Build Docker images
-      run: docker-compose build --build-arg DOCKER_TAG=${{ github.ref }}
+      run: docker-compose build --build-arg DOCKER_TAG=${{ github.sha }}
 
     - name: Push Docker images
-      run: docker-compose push --build-arg DOCKER_TAG=${{ github.ref }}
+      run: docker-compose push --build-arg DOCKER_TAG=${{ github.sha }}
 
 #    - name: Run tests
 #      working-directory: src/api
