@@ -1,6 +1,7 @@
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
+import { useConfiguration } from "@hooks/configuration";
 import { GitHub } from "@mui/icons-material";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RouteComponentProps } from "@reach/router";
 import React, { useState } from "react";
 import LoginDialog from "./login-dialog";
@@ -10,6 +11,7 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
     component: any
 }>) {
     const [shouldShowLoginDialog, setShouldShowLoginDialog] = useState(true);
+    const configuration = useConfiguration();
 
     const ComponentToUse = component;
     if(!ComponentToUse)
@@ -49,11 +51,15 @@ export default function PrivateRoute({ component, location, ...rest }: RouteComp
             </DialogActions>
         </Dialog>
     }
+    
+    if(!configuration)
+        return <CircularProgress />;
 
     return <LoginDialog 
         isOpen={shouldShowLoginDialog}
         onDismissed={onDismissed}
         onPopupFailed={onPopupFailed}
+        configuration={configuration}
     >
         {() => <ComponentToUse {...rest} />}
     </LoginDialog>;

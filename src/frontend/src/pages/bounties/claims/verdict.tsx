@@ -3,8 +3,9 @@ import LoginDialog from "@components/login/login-dialog";
 import BountyRelocationTooltip from "@components/tooltips/bounty-relocation-tooltip-contents";
 import TooltipLink from "@components/tooltips/tooltip-link";
 import { useApi, useOctokit } from "@hooks/clients";
+import { useConfiguration } from "@hooks/configuration";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Button, ButtonBase, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
+import { Button, ButtonBase, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarTemplate } from "@pages/index";
 import { getUrlParameter } from "@utils/url";
@@ -14,12 +15,16 @@ import * as classes from "./verdict.module.scss";
 export default function ClaimVerdictPage(props: {
     location: Location
 }) {
+    const configuration = useConfiguration();
     const claimId = getUrlParameter(props.location, "claimId");
     if(!claimId)
         return null;
+
+    if(!configuration)
+        return <CircularProgress />;
     
     return <AppBarTemplate logoVariant="bountyhunt">
-        <LoginDialog isOpen>
+        <LoginDialog isOpen configuration={configuration}>
             {() => <ClaimVerdictContents claimId={claimId} />}
         </LoginDialog>
     </AppBarTemplate>

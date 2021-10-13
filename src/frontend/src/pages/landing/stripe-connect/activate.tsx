@@ -1,10 +1,15 @@
 import LoginDialog from "@components/login/login-dialog";
 import { useApi } from "@hooks/clients";
+import { useConfiguration } from "@hooks/configuration";
 import { CircularProgress } from "@mui/material";
 import { useEffect } from "react";
 
 export default function () {
-    return <LoginDialog isOpen>
+    const configuration = useConfiguration();
+    if(!configuration)
+        return <CircularProgress />;
+
+    return <LoginDialog isOpen configuration={configuration}>
         {() => <ActivateContents />}
     </LoginDialog>
 }

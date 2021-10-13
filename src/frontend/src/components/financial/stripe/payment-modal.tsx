@@ -1,6 +1,7 @@
 import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { createApi } from "@hooks/clients";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
+import { GeneralConfigurationGetResponse } from "@sponsorkit/client";
 import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import { combineClassNames } from "@utils/strings";
 import React, { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ type IntentResponse = {
 
 type Props = {
     isOpen: boolean,
+    configuration: GeneralConfigurationGetResponse,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
     onComplete: () => Promise<void> | void,
@@ -182,7 +184,10 @@ function PaymentMethodModalContent(props: Props) {
 }
 
 export function PaymentMethodModal(props: Props) {
-    return <LoginDialog isOpen={props.isOpen}>
+    return <LoginDialog 
+        isOpen={props.isOpen}
+        configuration={props.configuration}
+    >
         {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
 }

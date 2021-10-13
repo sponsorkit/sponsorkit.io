@@ -1,13 +1,13 @@
 import { createApi } from '@hooks/clients';
-import { useConfiguration } from '@hooks/configuration';
 import { useToken } from '@hooks/token';
-import { SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
+import { GeneralConfigurationGetResponse, SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
 import { newGuid } from '@utils/guid';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
     isOpen: boolean,
+    configuration: GeneralConfigurationGetResponse,
     onDismissed?: () => void,
     onPopupFailed?: () => void,
     children: () => JSX.Element|null|undefined
@@ -15,7 +15,6 @@ export default function LoginDialog(props: {
     const [isOpen, setIsOpen] = useState(() => props.isOpen);
     const state = useMemo(newGuid, []);
     const [token, setToken] = useToken();
-    const configuration = useConfiguration();
     const wasDismissed = useRef(true);
 
     useEffect(
@@ -28,7 +27,7 @@ export default function LoginDialog(props: {
         },
         [props.isOpen]);
 
-    if(configuration === undefined || !isOpen)
+    if(!isOpen)
         return <></>;
 
     if(token) {
@@ -46,7 +45,7 @@ export default function LoginDialog(props: {
     }
 
     return <IframeDialog 
-        url={getAuthorizeUrl(state, configuration).toString()}
+        url={getAuthorizeUrl(state, props.configuration).toString()}
         onClose={onClose}
         onPopupFailed={props.onPopupFailed}
         onMessageReceived={async e => {

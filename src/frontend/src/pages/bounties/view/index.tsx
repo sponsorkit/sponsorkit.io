@@ -13,6 +13,7 @@ import TooltipLink from "@components/tooltips/tooltip-link";
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { Transition } from "@components/transitions/transition";
 import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
+import { useConfiguration } from "@hooks/configuration";
 import { useAnimatedCount } from "@hooks/count-up";
 import { useToken } from "@hooks/token";
 import { GitHub, SvgIconComponent } from '@mui/icons-material';
@@ -28,6 +29,7 @@ import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { GeneralConfigurationGetResponse } from "src/generated/openapi/types/client";
 import uri from "uri-tag";
 import * as classes from './index.module.scss';
 
@@ -200,6 +202,8 @@ const Issue = forwardRef(function (
     },
     ref: React.Ref<HTMLDivElement>
 ) {
+    const configuration = useConfiguration();
+
     const events: Array<Event | null> = !props.issue ?
         [] :
         [
@@ -238,6 +242,9 @@ const Issue = forwardRef(function (
     const repo = extractReposApiLinkDetails(props.issue.url);
     if (!repo)
         throw new Error("Expected repo details.");
+
+    if(!configuration)
+        return null;
 
     return <Box
         className={combineClassNames(classes.issueRoot)}
@@ -291,6 +298,7 @@ const Issue = forwardRef(function (
             </Card>
         </Box>
         <Bounties
+            configuration={configuration}
             issue={props.issue}
             bounties={props.bounties}
             onBountyCreated={props.onBountyCreated} />
@@ -298,6 +306,7 @@ const Issue = forwardRef(function (
 });
 
 function Bounties(props: {
+    configuration: GeneralConfigurationGetResponse,
     issue: OctokitIssueResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
@@ -344,6 +353,7 @@ function Bounties(props: {
     return <Card className={classes.bounties}>
         <>
             <ClaimDialog
+                configuration={props.configuration}
                 issue={props.issue}
                 isOpen={isClaiming}
                 onClose={() => setIsClaiming(false)} />
@@ -371,6 +381,7 @@ function Bounties(props: {
             </CardContent>
             <CardContent>
                 <CreateBounty
+                    configuration={props.configuration}
                     currentAmount={totalBountyReward.current}
                     issue={issueDetails && {
                         issueNumber: issueDetails.number,
@@ -384,6 +395,7 @@ function Bounties(props: {
 }
 
 function CreateBounty(props: {
+    configuration: GeneralConfigurationGetResponse,
     issue?: SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
@@ -442,6 +454,7 @@ function CreateBounty(props: {
             isDisabled={!hasConsent}
             onComplete={props.onBountyCreated}
             onClose={() => setShouldCreate(false)}
+            configuration={props.configuration}
             onAcquirePaymentIntent={async () => {
                 if (!props.issue)
                     throw new Error("Issue was not set.");
@@ -486,6 +499,7 @@ function CreateBounty(props: {
 
 type ClaimDialogProps = {
     issue: OctokitIssueResponse,
+    configuration: GeneralConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
 };
@@ -497,6 +511,7 @@ function ClaimDialog(props: ClaimDialogProps) {
         key={key}
         isOpen={props.isOpen}
         onDismissed={props.onClose}
+        configuration={props.configuration}
     >
         {() => <Dialog
             open={props.isOpen}
