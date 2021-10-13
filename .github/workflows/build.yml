@@ -25,12 +25,12 @@ jobs:
     - name: Build Docker images
       run: docker-compose build
       env:
-        - DOCKER_TAG: ${{ github.sha }}
+        DOCKER_TAG: ${{ github.sha }}
 
     - name: Push Docker images
       run: docker-compose push
       env:
-        - DOCKER_TAG: ${{ github.sha }}
+        DOCKER_TAG: ${{ github.sha }}
 
 #    - name: Run tests
 #      working-directory: src/api
