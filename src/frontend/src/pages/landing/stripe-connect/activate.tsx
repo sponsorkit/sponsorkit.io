@@ -9,7 +9,11 @@ export default function () {
     if(!configuration)
         return <CircularProgress />;
 
-    return <LoginDialog isOpen configuration={configuration}>
+    return <LoginDialog 
+        isOpen
+        configuration={configuration}
+        onDismissed={() => {}}
+    >
         {() => <ActivateContents />}
     </LoginDialog>
 }

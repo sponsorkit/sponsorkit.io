@@ -24,7 +24,11 @@ export default function ClaimVerdictPage(props: {
         return <CircularProgress />;
     
     return <AppBarTemplate logoVariant="bountyhunt">
-        <LoginDialog isOpen configuration={configuration}>
+        <LoginDialog 
+            isOpen 
+            configuration={configuration}
+            onDismissed={() => {}}
+        >
             {() => <ClaimVerdictContents claimId={claimId} />}
         </LoginDialog>
     </AppBarTemplate>

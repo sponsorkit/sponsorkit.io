@@ -187,6 +187,7 @@ export function PaymentMethodModal(props: Props) {
     return <LoginDialog 
         isOpen={props.isOpen}
         configuration={props.configuration}
+        onDismissed={props.onClose}
     >
         {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
