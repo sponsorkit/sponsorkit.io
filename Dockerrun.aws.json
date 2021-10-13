@@ -1,0 +1,22 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+      "Name": "%SPONSORKIT_IMAGE%"
+    },
+    "Ports": [
+      {
+        "ContainerPort": 80,
+        "HostPort": 80
+      },
+      {
+        "ContainerPort": 443,
+        "HostPort": 443
+      }
+    ],
+    "Volumes": [
+      {
+        "HostDirectory": "/var/app/current/volume",
+        "ContainerDirectory": "/app/volume"
+      }
+    ]
+  }
