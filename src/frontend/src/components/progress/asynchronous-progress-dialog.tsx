@@ -25,12 +25,15 @@ export function AsynchronousProgressDialog(props: {
             let timerId: any;
 
             async function effect() {
-                console.log("asynchronous-progress-dialog", "tick");
+                console.debug("asynchronous-progress-dialog", "tick");
 
                 if(isWaitingForVerification) {
                     const isDone = await Promise.resolve(props.isDoneAccessor());
-                    if(isDone === null) 
-                        return setIsWaitingForVerification(false);
+                    if(isDone === null) {
+                        setIsLoading(false);
+                        setIsWaitingForVerification(false);
+                        return;
+                    }
 
                     if(isDone) {
                         setIsLoading(false);
