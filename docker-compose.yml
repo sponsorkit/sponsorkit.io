@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   sponsorkit:
-    image: ghcr.io/sponsorkit/api:${DOCKER_TAG}
+    image: ${DOCKER_IMAGE}
     build:
       context: .
       dockerfile: Dockerfile

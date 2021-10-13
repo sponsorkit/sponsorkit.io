@@ -19,18 +19,8 @@ jobs:
     - name: Checkout Github Action
       uses: actions/checkout@master
 
-    - name: Authenticate Docker
-      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
-
     - name: Build Docker images
       run: docker-compose build
-      env:
-        DOCKER_TAG: ${{ github.sha }}
-
-    - name: Push Docker images
-      run: docker-compose push
-      env:
-        DOCKER_TAG: ${{ github.sha }}
 
 #    - name: Run tests
 #      working-directory: src/api
