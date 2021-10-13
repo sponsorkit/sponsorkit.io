@@ -19,6 +19,9 @@ jobs:
     - name: Checkout Github Action
       uses: actions/checkout@master
 
+    - name: Authenticate Docker
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
+
     - name: Build Docker images
       run: docker-compose build --build-arg DOCKER_TAG=${{ github.ref }}
 
