@@ -1,0 +1,17 @@
+version: '3.4'
+
+services:
+  sponsorkit-tests:
+    image: ${DOCKER_REGISTRY-}sponsorkit-tests
+    networks:
+    - network
+    build:
+      context: .
+      dockerfile: tests/api/Dockerfile
+    volumes:
+      - "./TestResults/Sponsorkit:/tests/api/Sponsorkit/TestResults/Sponsorkit"
+    environment:
+    - DOTNET_RUNNING_IN_TEST=true
+
+networks:
+  network:

@@ -1,0 +1,17 @@
+version: '3.4'
+
+services:
+  sponsorkit:
+    image: ghcr.io/sponsorkit/sponsorkit.io/api:${DOCKER_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+    - network
+    ports:
+    - "80:80"
+    - "443:443"
+
+networks:
+  network:

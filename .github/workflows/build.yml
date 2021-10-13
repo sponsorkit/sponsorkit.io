@@ -16,35 +16,18 @@ jobs:
       with: 
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 'Checkout Github Action'
+    - name: Checkout Github Action
       uses: actions/checkout@master
 
-    - name: Set up .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '5.0.x'
+    - name: Build Docker images
+      run: docker-compose build
 
-    - uses: actions/cache@v2
-      id: nuget
-      with:
-        path: |
-          ~/.nuget/packages
-          src/api/**/obj/**
-        key: nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: nuget
-
-    - name: Restore with dotnet
-      if: steps.nuget.outputs.cache-hit != 'true'
-      working-directory: src/api
-      run: dotnet restore
+    - name: Push Docker images
+      run: docker-compose push
 
 #    - name: Run tests
 #      working-directory: src/api
 #      run: dotnet test
-
-    - name: Publish with dotnet
-      working-directory: src/api
-      run: dotnet publish --no-restore -c Release -o ${{env.DOTNET_ROOT}}/sponsorkit
 
     - name: Run staging deploy step in AWS CodePipeline
       if: github.ref == 'refs/heads/develop'
