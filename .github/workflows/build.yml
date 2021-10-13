@@ -45,4 +45,4 @@ jobs:
         aws-region: eu-north-1
         aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        pipeline-name: sponsorkit-prod
+        pipeline-name: sponsorkit-staging
