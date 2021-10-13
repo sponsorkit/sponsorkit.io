@@ -83,7 +83,7 @@ function PaymentMethodModalContent(props: Props) {
             return false;
 
         if (setupIntent?.status !== "succeeded") {
-            console.error("Did not expect payment intent status", setupIntent?.status);
+            console.warn("Did not expect payment intent status", setupIntent?.status);
             return null;
         }
 
@@ -106,6 +106,7 @@ function PaymentMethodModalContent(props: Props) {
                         intentResponse.existingPaymentMethodId ??
                         { card: cardNumberElement! }
                 });
+            console.debug("confirmation-response", confirmationResponse);
             if (confirmationResponse?.error)
                 return setError(confirmationResponse.error);
 
@@ -113,8 +114,10 @@ function PaymentMethodModalContent(props: Props) {
             if (!setupIntent)
                 throw new Error("No payment intent found.");
         } catch (e) {
-            setIsLoading(false);
+            console.warn("on-submit-payment-error", e);
             throw e;
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -128,7 +131,6 @@ function PaymentMethodModalContent(props: Props) {
         isOpen={props.isOpen}
         isSubmitDisabled={
             isLoading || 
-            !!error || 
             !cardNumberElement ||
             props.isDisabled}
         onClose={onCancelClicked}
@@ -170,13 +172,11 @@ function PaymentMethodModalContent(props: Props) {
                         isInitializing && classes.initializing)} />
                 </Box>
             </Box>
-            {error && !isLoading &&
-                <Box>
-                    <FormHelperText error>
-                        {error.message}
-                    </FormHelperText>
-                </Box>}
             {props.afterChildren}
+            {error && !isLoading &&
+                <FormHelperText className={classes.error} error>
+                    {error.message}
+                </FormHelperText>}
         </DialogContent>
     </AsynchronousProgressDialog>;
 }

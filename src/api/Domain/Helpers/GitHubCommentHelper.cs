@@ -13,12 +13,12 @@ namespace Sponsorkit.Domain.Helpers
         
         public static string RenderSpoiler(string title, string content)
         {
-            return $"<details>\n<summary{RenderBold(title)}</summary>\n\n{content}\n</details>";
+            return $"<details>\n<summary>{RenderBold(title)}</summary>\n\n{content}\n</details>";
         }
 
         public static string RenderLink(string text, string url)
         {
-            return $"[{text}]({Url.Encode(url)})";
+            return $"[{text}]({url})";
         }
 
         public static string RenderCodeBlock(string language, string content)
