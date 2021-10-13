@@ -20,10 +20,10 @@ jobs:
       uses: actions/checkout@master
 
     - name: Build Docker images
-      run: docker-compose build
+      run: docker-compose build --build-arg DOCKER_TAG=${{ github.ref }}
 
     - name: Push Docker images
-      run: docker-compose push
+      run: docker-compose push --build-arg DOCKER_TAG=${{ github.ref }}
 
 #    - name: Run tests
 #      working-directory: src/api
