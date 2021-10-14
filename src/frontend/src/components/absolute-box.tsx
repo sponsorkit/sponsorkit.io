@@ -9,7 +9,7 @@ export default function AbsoluteBox(props: {
 }) {
     const ref = useRef<any|null>(null);
 
-    const [height, setHeight] = useState(0);
+    const [height, setHeight] = useState<number|null>(null);
 
     useEffect(
         () => console.debug("height-absolute-box", height),
@@ -33,14 +33,14 @@ export default function AbsoluteBox(props: {
             if (!ref.current)
                 return;
 
-            console.debug("installed-observer");
+            console.debug("installed-observer", ref.current);
 
             const onResized = debounce(onUpdate, 300);
 
             const observer = new ResizeObserver(onResized);
             observer.observe(ref.current);
 
-            onResized();
+            onUpdate();
 
             return () => {
                 observer.disconnect();
@@ -53,7 +53,7 @@ export default function AbsoluteBox(props: {
             className={combineClassNames(
                 classes.root,
                 props.className)}
-            style={{
+            style={height === null ? {} : {
                 height: height
             }}
         >

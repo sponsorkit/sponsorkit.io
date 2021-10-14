@@ -40,6 +40,7 @@ export default function IssueByIdPage(props: {
 }) {
     const [issue, setIssue] = useState<OctokitIssueResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
+    const configuration = useConfiguration();
 
     const loadBountiesFromIssue = async (forIssue: OctokitIssueResponse) => {
         setBounties(null);
@@ -52,21 +53,22 @@ export default function IssueByIdPage(props: {
         <IssueInputField
             location={props.location}
             onChange={async e => {
-                console.log("issue-input-field-changed", e);
+                console.debug("issue-input-field-changed", e);
 
                 setIssue(e.issue);
                 window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
 
                 await loadBountiesFromIssue(e.issue);
             }} />
-        <Transition transitionKey={issue?.number}>
-            {ref => issue && <Issue
+        {issue && configuration && <Transition transitionKey={issue.number}>
+            {ref => <Issue
                 ref={ref}
                 issue={issue}
                 bounties={bounties}
+                configuration={configuration}
                 onBountyCreated={async () =>
                     await loadBountiesFromIssue(issue)} />}
-        </Transition>
+        </Transition>}
     </AppBarTemplate>
 }
 
@@ -196,47 +198,43 @@ function IssueInputField(props: {
 
 const Issue = forwardRef(function (
     props: {
+        configuration: GeneralConfigurationGetResponse,
         issue: OctokitIssueResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
         onBountyCreated: () => Promise<void> | void
     },
     ref: React.Ref<HTMLDivElement>
 ) {
-    const configuration = useConfiguration();
-
-    const events: Array<Event | null> = !props.issue ?
-        [] :
-        [
+    const events: Array<Event | null> = [
+        {
+            time: new Date(props.issue.created_at),
+            title: "Issue created",
+            description: <>By <b>{props.issue.user?.login}</b></>,
+            icon: GitHub
+        },
+        props.issue.updated_at && props.issue.updated_at !== props.issue.created_at ?
             {
-                time: new Date(props.issue.created_at),
-                title: "Issue created",
-                description: <>By <b>{props.issue.user?.login}</b></>,
+                time: new Date(props.issue.updated_at),
+                title: "Issue updated",
+                description: null,
                 icon: GitHub
-            },
-            props.issue.updated_at && props.issue.updated_at !== props.issue.created_at ?
-                {
-                    time: new Date(props.issue.updated_at),
-                    title: "Issue updated",
-                    description: null,
-                    icon: GitHub
-                } :
-                null,
-            props.issue.closed_at ?
-                {
-                    time: new Date(props.issue.closed_at),
-                    title: "Issue closed",
-                    description: <>By <b>{props.issue.closed_by?.login}</b></>,
-                    icon: GitHub
-                } :
-                null,
-            ...(props.bounties?.map(b => ({
-                time: b.createdAtUtc,
-                title: "Bounty added",
-                description: <><b>${b.amountInHundreds / 100}</b> by <b>{b.creatorUser.gitHubUsername}</b></>,
-                icon: AttachMoneyIcon
-            })) ?? [])
-        ]
-            .filter(x => !!x);
+            } :
+            null,
+        props.issue.closed_at ?
+            {
+                time: new Date(props.issue.closed_at),
+                title: "Issue closed",
+                description: <>By <b>{props.issue.closed_by?.login}</b></>,
+                icon: GitHub
+            } :
+            null,
+        ...(props.bounties?.map(b => ({
+            time: b.createdAtUtc,
+            title: "Bounty added",
+            description: <><b>${b.amountInHundreds / 100}</b> by <b>{b.creatorUser.gitHubUsername}</b></>,
+            icon: AttachMoneyIcon
+        })) ?? [])
+    ].filter(x => !!x);
     const eventsOrdered = orderBy(events, x => x?.time.getTime(), "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.url);
@@ -298,7 +296,7 @@ const Issue = forwardRef(function (
             </Card>
         </Box>
         <Bounties
-            configuration={configuration}
+            configuration={props.configuration}
             issue={props.issue}
             bounties={props.bounties}
             onBountyCreated={props.onBountyCreated} />
