@@ -660,6 +660,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                         label: "Verify payment details",
                         description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
                         validate: account => !!account?.sponsor?.creditCard,
+                        onClick: () => setIsFillingInPaymentDetails(true)
                     },
                     {
                         label: "Specify payout details",

@@ -79,7 +79,8 @@ function DashboardPage() {
                                 {
                                     label: "Save payment details for later",
                                     description: "Payment information is stored with Stripe. Saving it makes it easier for you to create bounties, donations or sponsor someone in the future.",
-                                    validate: account => !!account?.sponsor?.creditCard
+                                    validate: account => !!account?.sponsor?.creditCard,
+                                    onClick: () => setIsFillingInPaymentDetails(true)
                                 },
                                 {
                                     label: "Fill in your bank account details",
