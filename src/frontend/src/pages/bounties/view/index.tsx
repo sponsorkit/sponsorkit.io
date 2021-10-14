@@ -39,7 +39,7 @@ export default function IssueByIdPage(props: {
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
 
-    const loadBountiesFromIssue = async (forIssue: OctokitIssueResponse) => {
+    const loadBountiesFromIssue = async (forIssue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
         setBounties(null);
 
         const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
@@ -79,7 +79,7 @@ type Event = {
 function IssueInputField(props: {
     location: Location,
     onChange: (e: {
-        issue: OctokitIssueResponse,
+        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
             number: number,
             owner: string,
@@ -107,7 +107,7 @@ function IssueInputField(props: {
             return "No issue was found with the given URL.";
     };
 
-    const [issue, setIssue] = useState<OctokitIssueResponse | null>();
+    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
     const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
         `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
@@ -139,7 +139,9 @@ function IssueInputField(props: {
                             owner: issueDetails.owner,
                             repo: issueDetails.repo
                         }));
-                    const issue = issueResponse?.data || null;
+                    const issue = 
+                        issueResponse?.data as any as GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
+                        null;
                     setIssue(issue);
 
                     if (issue) {
@@ -299,7 +301,7 @@ const Issue = forwardRef(function (
 
 function Bounties(props: {
     configuration: GeneralConfigurationGetResponse,
-    issue: OctokitIssueResponse,
+    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -494,7 +496,7 @@ function CreateBounty(props: {
 }
 
 type ClaimDialogProps = {
-    issue: OctokitIssueResponse,
+    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     configuration: GeneralConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
