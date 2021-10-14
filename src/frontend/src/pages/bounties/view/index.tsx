@@ -20,9 +20,8 @@ import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
-import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
-import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
@@ -33,12 +32,10 @@ import { GeneralConfigurationGetResponse } from "src/generated/openapi/types/cli
 import uri from "uri-tag";
 import * as classes from './index.module.scss';
 
-type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
-
 export default function IssueByIdPage(props: {
     location: Location
 }) {
-    const [issue, setIssue] = useState<OctokitIssueResponse | null>();
+    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
 
@@ -199,7 +196,7 @@ function IssueInputField(props: {
 const Issue = forwardRef(function (
     props: {
         configuration: GeneralConfigurationGetResponse,
-        issue: OctokitIssueResponse,
+        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
         onBountyCreated: () => Promise<void> | void
     },
@@ -207,24 +204,24 @@ const Issue = forwardRef(function (
 ) {
     const events: Array<Event | null> = [
         {
-            time: new Date(props.issue.created_at),
+            time: props.issue.createdAt,
             title: "Issue created",
             description: <>By <b>{props.issue.user?.login}</b></>,
             icon: GitHub
         },
-        props.issue.updated_at && props.issue.updated_at !== props.issue.created_at ?
+        props.issue.updatedAt && props.issue.updatedAt !== props.issue.createdAt ?
             {
-                time: new Date(props.issue.updated_at),
+                time: props.issue.updatedAt,
                 title: "Issue updated",
                 description: null,
                 icon: GitHub
             } :
             null,
-        props.issue.closed_at ?
+        props.issue.closedAt ?
             {
-                time: new Date(props.issue.closed_at),
+                time: props.issue.closedAt,
                 title: "Issue closed",
-                description: <>By <b>{props.issue.closed_by?.login}</b></>,
+                description: <>By <b>{props.issue.closedBy?.login}</b></>,
                 icon: GitHub
             } :
             null,

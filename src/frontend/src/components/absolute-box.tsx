@@ -9,7 +9,7 @@ export default function AbsoluteBox(props: {
 }) {
     const ref = useRef<any|null>(null);
 
-    const [height, setHeight] = useState<number|null>(null);
+    const [height, setHeight] = useState(0);
 
     useEffect(
         () => console.debug("height-absolute-box", height),
@@ -53,7 +53,7 @@ export default function AbsoluteBox(props: {
             className={combineClassNames(
                 classes.root,
                 props.className)}
-            style={height === null ? {} : {
+            style={{
                 height: height
             }}
         >
