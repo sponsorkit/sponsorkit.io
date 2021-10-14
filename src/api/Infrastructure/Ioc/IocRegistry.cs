@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Octokit.Internal;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
@@ -78,6 +79,8 @@ namespace Sponsorkit.Infrastructure.Ioc
                 .CreateGraphQlClientFromOAuthAuthenticationToken(null));
             
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
+            Services.AddSingleton(_ => new HttpClientAdapter(HttpMessageHandlerFactory.CreateDefault));
+            Services.AddHttpClient<IGitHubClientFactory, GitHubClientFactory>();
         }
 
         private void ConfigureAws()

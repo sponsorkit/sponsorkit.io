@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using Sponsorkit.Infrastructure.Security.Encryption;
 using IConnection = Octokit.GraphQL.IConnection;
 using Connection = Octokit.GraphQL.Connection;
 using User = Sponsorkit.Domain.Models.User;
+using OctokitConnection = Octokit.Connection;
 
 namespace Sponsorkit.Infrastructure.GitHub
 {
@@ -21,6 +23,8 @@ namespace Sponsorkit.Infrastructure.GitHub
     {
         private readonly IOptionsMonitor<GitHubOptions> githubOptionsMonitor;
         private readonly IAesEncryptionHelper aesEncryptionHelper;
+        private readonly HttpClientAdapter httpClientAdapter;
+        private readonly HttpClient httpClient;
         private readonly DataContext dataContext;
 
         private const string ProductHeaderValue = "sponsorkit.io";
@@ -28,21 +32,30 @@ namespace Sponsorkit.Infrastructure.GitHub
         public GitHubClientFactory(
             IOptionsMonitor<GitHubOptions> githubOptionsMonitor,
             IAesEncryptionHelper aesEncryptionHelper,
+            HttpClientAdapter httpClientAdapter,
+            HttpClient httpClient,
             DataContext dataContext)
         {
             this.githubOptionsMonitor = githubOptionsMonitor;
             this.aesEncryptionHelper = aesEncryptionHelper;
+            this.httpClientAdapter = httpClientAdapter;
+            this.httpClient = httpClient;
             this.dataContext = dataContext;
         }
 
         public IGitHubClient CreateClientFromOAuthAuthenticationToken(string? token)
         {
-            var client = new GitHubClient(
-                new (ProductHeaderValue),
+            var connection = new OctokitConnection(
+                new ProductHeaderValue(ProductHeaderValue),
+                GitHubClient.GitHubApiUrl,
                 new InMemoryCredentialStore(
-                    new Credentials(PickToken(token))));
-            client.Connection.SetRequestTimeout(TimeSpan.FromSeconds(5));
+                    new Credentials(PickToken(token))),
+                httpClientAdapter,
+                new SimpleJsonSerializer());
             
+            var client = new GitHubClient(connection);
+            client.SetRequestTimeout(TimeSpan.FromSeconds(5));
+
             return client;
         }
 
@@ -50,7 +63,9 @@ namespace Sponsorkit.Infrastructure.GitHub
         {
             return new Connection(
                 new (ProductHeaderValue),
-                PickToken(token));
+                new Octokit.GraphQL.Internal.InMemoryCredentialStore(
+                    PickToken(token)),
+                httpClient);
         }
 
         public async Task<string?> GetAccessTokenFromUserIfPresentAsync(
