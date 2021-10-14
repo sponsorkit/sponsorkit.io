@@ -1,7 +1,7 @@
 import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
-import { createApi } from "@hooks/clients";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
-import { Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
+import { GeneralConfigurationGetResponse } from "@sponsorkit/client";
+import { SetupIntent, Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import { combineClassNames } from "@utils/strings";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";
@@ -17,8 +17,10 @@ type IntentResponse = {
 
 type Props = {
     isOpen: boolean,
+    configuration: GeneralConfigurationGetResponse,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
+    isDoneAccessor?: (intent: SetupIntent) => Promise<boolean>,
     onComplete: () => Promise<void> | void,
     beforeChildren?: React.ReactNode,
     afterChildren?: React.ReactNode,
@@ -87,8 +89,10 @@ function PaymentMethodModalContent(props: Props) {
             return null;
         }
 
-        const bountyIntentResponse = await createApi().bountiesPaymentIntentIdGet(setupIntent.id);
-        return bountyIntentResponse.isProcessed;
+        if(props.isDoneAccessor)
+            return await props.isDoneAccessor(setupIntent);
+
+        return true;
     }
 
     const onSubmitPayment = async () => {
@@ -182,7 +186,11 @@ function PaymentMethodModalContent(props: Props) {
 }
 
 export function PaymentMethodModal(props: Props) {
-    return <LoginDialog isOpen={props.isOpen}>
+    return <LoginDialog 
+        isOpen={props.isOpen}
+        configuration={props.configuration}
+        onDismissed={props.onClose}
+    >
         {() => <PaymentMethodModalContent {...props} />}
     </LoginDialog>;
 }

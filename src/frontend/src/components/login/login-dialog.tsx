@@ -1,34 +1,22 @@
 import { createApi } from '@hooks/clients';
-import { useConfiguration } from '@hooks/configuration';
 import { useToken } from '@hooks/token';
-import { SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
+import { GeneralConfigurationGetResponse, SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
 import { newGuid } from '@utils/guid';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
     isOpen: boolean,
-    onDismissed?: () => void,
+    configuration: GeneralConfigurationGetResponse,
+    onDismissed: () => void,
     onPopupFailed?: () => void,
     children: () => JSX.Element|null|undefined
 }) {
-    const [isOpen, setIsOpen] = useState(() => props.isOpen);
     const state = useMemo(newGuid, []);
     const [token, setToken] = useToken();
-    const configuration = useConfiguration();
-    const wasDismissed = useRef(true);
 
-    useEffect(
-        () => {
-            if(props.isOpen) {
-                setIsOpen(true);
-            } else if(!token) {
-                setIsOpen(false);
-            }
-        },
-        [props.isOpen]);
 
-    if(configuration === undefined || !isOpen)
+    if(!props.isOpen)
         return <></>;
 
     if(token) {
@@ -36,17 +24,13 @@ export default function LoginDialog(props: {
     }
 
     const onClose = () => {
-        if(!props.onDismissed)
-            return;
-
-        if(!wasDismissed.current)
-            return;
+        console.debug("on-close");
 
         props.onDismissed();
     }
 
     return <IframeDialog 
-        url={getAuthorizeUrl(state, configuration).toString()}
+        url={getAuthorizeUrl(state, props.configuration).toString()}
         onClose={onClose}
         onPopupFailed={props.onPopupFailed}
         onMessageReceived={async e => {
@@ -56,8 +40,6 @@ export default function LoginDialog(props: {
             if(e.data.state !== state)
                 return;
 
-            wasDismissed.current = false;
-            
             const response = await createApi().accountSignupFromGithubPost({
                 body: {
                   gitHubAuthenticationCode: e.data.code

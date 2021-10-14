@@ -1,6 +1,6 @@
 import { tryCreateUrl } from "./url";
 
-export function extractIssueLinkDetails(issueLink: string) {
+export function extractIssueLinkDetails(issueLink?: string) {
     let owner: string;
     let repo: string;
     let type: string;
@@ -28,7 +28,7 @@ export function extractIssueLinkDetails(issueLink: string) {
     }
 }
 
-export function extractReposApiLinkDetails(reposLink: string) {
+export function extractReposApiLinkDetails(reposLink?: string) {
     const [type, owner, repo] = tryGetPathNames(reposLink);
     if(type !== "repos")
         return null;
@@ -39,7 +39,7 @@ export function extractReposApiLinkDetails(reposLink: string) {
     };
 }
 
-function tryGetPathNames(url: string) {
+function tryGetPathNames(url?: string) {
     const uri = tryCreateUrl(url);
     if(!uri)
         return [];

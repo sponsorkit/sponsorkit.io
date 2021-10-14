@@ -1,3 +1,4 @@
+import { useConfiguration } from '@hooks/configuration';
 import { Button } from '@mui/material';
 import { Meta, Story } from '@storybook/react';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ type Props = {}
 const Template: Story<Props> = (args) => {
     const [isReady, setIsReady] = useState(false);
     const [shouldLogIn, setShouldLogIn] = useState(false);
+    const configuration = useConfiguration();
 
     useEffect(() => {
         if(typeof localStorage === "undefined")
@@ -22,7 +24,7 @@ const Template: Story<Props> = (args) => {
         setIsReady(true);
     }, []);
 
-    if(!isReady)
+    if(!isReady || !configuration)
         return <>Not ready yet</>;
     
     return !shouldLogIn ?
@@ -31,6 +33,7 @@ const Template: Story<Props> = (args) => {
         </Button> :
         <LoginDialog 
             isOpen
+            configuration={configuration}
             onDismissed={() => setShouldLogIn(false)}
         >
             {() => <>Logged in!</>}

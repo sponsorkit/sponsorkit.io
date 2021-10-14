@@ -8,7 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Sponsorkit.Domain.Controllers.Api.Bounties;
-using Sponsorkit.Domain.Controllers.Api.Bounties.Intent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;

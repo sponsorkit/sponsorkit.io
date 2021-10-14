@@ -33,14 +33,14 @@ export default function AbsoluteBox(props: {
             if (!ref.current)
                 return;
 
-            console.debug("installed-observer");
+            console.debug("installed-observer", ref.current);
+
+            onUpdate();
 
             const onResized = debounce(onUpdate, 300);
 
             const observer = new ResizeObserver(onResized);
             observer.observe(ref.current);
-
-            onResized();
 
             return () => {
                 observer.disconnect();

@@ -9,7 +9,10 @@ export function getUrlParameter(url: string|Location, key: string): string|undef
     return uri.searchParams.get(key) || undefined;
 }
 
-export function tryCreateUrl(url: string) {
+export function tryCreateUrl(url?: string) {
+    if(!url)
+        return null;
+
     try {
         return new URL(url);
     } catch {

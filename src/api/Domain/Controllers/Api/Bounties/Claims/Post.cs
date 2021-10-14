@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
 using Ardalis.ApiEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +19,7 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
 
-namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId.Claim
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims
 {
     public record PostRequest(
         long GitHubIssueId,

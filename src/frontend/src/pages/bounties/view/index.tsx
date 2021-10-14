@@ -13,33 +13,33 @@ import TooltipLink from "@components/tooltips/tooltip-link";
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
 import { Transition } from "@components/transitions/transition";
 import { createApi, makeOctokitCall, useApi } from "@hooks/clients";
+import { useConfiguration } from "@hooks/configuration";
 import { useAnimatedCount } from "@hooks/count-up";
 import { useToken } from "@hooks/token";
 import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
-import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
-import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { GeneralConfigurationGetResponse } from "src/generated/openapi/types/client";
 import uri from "uri-tag";
 import * as classes from './index.module.scss';
-
-type OctokitIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
 export default function IssueByIdPage(props: {
     location: Location
 }) {
-    const [issue, setIssue] = useState<OctokitIssueResponse | null>();
+    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
+    const configuration = useConfiguration();
 
-    const loadBountiesFromIssue = async (forIssue: OctokitIssueResponse) => {
+    const loadBountiesFromIssue = async (forIssue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
         setBounties(null);
 
         const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
@@ -50,21 +50,23 @@ export default function IssueByIdPage(props: {
         <IssueInputField
             location={props.location}
             onChange={async e => {
-                console.log("issue-input-field-changed", e);
+                console.debug("issue-input-field-changed", e);
 
                 setIssue(e.issue);
                 window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
 
                 await loadBountiesFromIssue(e.issue);
             }} />
-        <Transition transitionKey={issue?.number}>
-            {ref => issue && <Issue
-                ref={ref}
-                issue={issue}
-                bounties={bounties}
-                onBountyCreated={async () =>
-                    await loadBountiesFromIssue(issue)} />}
-        </Transition>
+        {<Transition transitionKey={`transition-${issue?.number}-${configuration && "config-loaded"}`}>
+            {ref => configuration && issue && 
+                <Issue
+                    ref={ref}
+                    issue={issue}
+                    bounties={bounties}
+                    configuration={configuration}
+                    onBountyCreated={async () =>
+                        await loadBountiesFromIssue(issue)} />}
+        </Transition>}
     </AppBarTemplate>
 }
 
@@ -78,7 +80,7 @@ type Event = {
 function IssueInputField(props: {
     location: Location,
     onChange: (e: {
-        issue: OctokitIssueResponse,
+        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
             number: number,
             owner: string,
@@ -106,7 +108,7 @@ function IssueInputField(props: {
             return "No issue was found with the given URL.";
     };
 
-    const [issue, setIssue] = useState<OctokitIssueResponse | null>();
+    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
     const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
         `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
@@ -138,7 +140,9 @@ function IssueInputField(props: {
                             owner: issueDetails.owner,
                             repo: issueDetails.repo
                         }));
-                    const issue = issueResponse?.data || null;
+                    const issue = 
+                        issueResponse?.data as any as GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
+                        null;
                     setIssue(issue);
 
                     if (issue) {
@@ -194,46 +198,44 @@ function IssueInputField(props: {
 
 const Issue = forwardRef(function (
     props: {
-        issue: OctokitIssueResponse,
+        configuration: GeneralConfigurationGetResponse,
+        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
         onBountyCreated: () => Promise<void> | void
     },
     ref: React.Ref<HTMLDivElement>
 ) {
-    const events: Array<Event | null> = !props.issue ?
-        [] :
-        [
+    const events: Array<Event | null> = [
+        {
+            time: new Date(props.issue.createdAt),
+            title: "Issue created",
+            description: <>By <b>{props.issue.user?.login}</b></>,
+            icon: GitHub
+        },
+        props.issue.updatedAt && props.issue.updatedAt !== props.issue.createdAt ?
             {
-                time: new Date(props.issue.created_at),
-                title: "Issue created",
-                description: <>By <b>{props.issue.user?.login}</b></>,
+                time: new Date(props.issue.updatedAt),
+                title: "Issue updated",
+                description: null,
                 icon: GitHub
-            },
-            props.issue.updated_at && props.issue.updated_at !== props.issue.created_at ?
-                {
-                    time: new Date(props.issue.updated_at),
-                    title: "Issue updated",
-                    description: null,
-                    icon: GitHub
-                } :
-                null,
-            props.issue.closed_at ?
-                {
-                    time: new Date(props.issue.closed_at),
-                    title: "Issue closed",
-                    description: <>By <b>{props.issue.closed_by?.login}</b></>,
-                    icon: GitHub
-                } :
-                null,
-            ...(props.bounties?.map(b => ({
-                time: b.createdAtUtc,
-                title: "Bounty added",
-                description: <><b>${b.amountInHundreds / 100}</b> by <b>{b.creatorUser.gitHubUsername}</b></>,
-                icon: AttachMoneyIcon
-            })) ?? [])
-        ]
-            .filter(x => !!x);
-    const eventsOrdered = orderBy(events, x => x?.time.getTime(), "desc");
+            } :
+            null,
+        props.issue.closedAt ?
+            {
+                time: new Date(props.issue.closedAt),
+                title: "Issue closed",
+                description: <>By <b>{props.issue.closedBy?.login}</b></>,
+                icon: GitHub
+            } :
+            null,
+        ...(props.bounties?.map(b => ({
+            time: new Date(b.createdAtUtc),
+            title: "Bounty added",
+            description: <><b>${b.amountInHundreds / 100}</b> by <b>{b.creatorUser.gitHubUsername}</b></>,
+            icon: AttachMoneyIcon
+        })) ?? [])
+    ].filter(x => !!x);
+    const eventsOrdered = orderBy(events, x => x?.time?.getTime(), "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.url);
     if (!repo)
@@ -291,6 +293,7 @@ const Issue = forwardRef(function (
             </Card>
         </Box>
         <Bounties
+            configuration={props.configuration}
             issue={props.issue}
             bounties={props.bounties}
             onBountyCreated={props.onBountyCreated} />
@@ -298,7 +301,8 @@ const Issue = forwardRef(function (
 });
 
 function Bounties(props: {
-    issue: OctokitIssueResponse,
+    configuration: GeneralConfigurationGetResponse,
+    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -344,6 +348,7 @@ function Bounties(props: {
     return <Card className={classes.bounties}>
         <>
             <ClaimDialog
+                configuration={props.configuration}
                 issue={props.issue}
                 isOpen={isClaiming}
                 onClose={() => setIsClaiming(false)} />
@@ -371,6 +376,7 @@ function Bounties(props: {
             </CardContent>
             <CardContent>
                 <CreateBounty
+                    configuration={props.configuration}
                     currentAmount={totalBountyReward.current}
                     issue={issueDetails && {
                         issueNumber: issueDetails.number,
@@ -384,7 +390,8 @@ function Bounties(props: {
 }
 
 function CreateBounty(props: {
-    issue?: SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest | null,
+    configuration: GeneralConfigurationGetResponse,
+    issue?: SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -442,6 +449,11 @@ function CreateBounty(props: {
             isDisabled={!hasConsent}
             onComplete={props.onBountyCreated}
             onClose={() => setShouldCreate(false)}
+            configuration={props.configuration}
+            isDoneAccessor={async intent => {
+                const bountyIntentResponse = await createApi().bountiesPaymentIntentIdGet(intent.id);
+                return bountyIntentResponse.isProcessed;
+            }}
             onAcquirePaymentIntent={async () => {
                 if (!props.issue)
                     throw new Error("Issue was not set.");
@@ -485,7 +497,8 @@ function CreateBounty(props: {
 }
 
 type ClaimDialogProps = {
-    issue: OctokitIssueResponse,
+    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    configuration: GeneralConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
 };
@@ -497,6 +510,7 @@ function ClaimDialog(props: ClaimDialogProps) {
         key={key}
         isOpen={props.isOpen}
         onDismissed={props.onClose}
+        configuration={props.configuration}
     >
         {() => <Dialog
             open={props.isOpen}
@@ -516,6 +530,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const [isFillingInBankDetails, setIsFillingInBankDetails] = useState(false);
     const [isClaiming, setIsClaiming] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
+    const [isFillingInPaymentDetails, setIsFillingInPaymentDetails] = useState(false);
 
     const [isValidated, setIsValidated] = useState(false);
 
@@ -603,6 +618,22 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 isOpen={isFillingInBankDetails}
                 onValidated={() => setLastProgressChange(new Date())}
                 onClose={() => setIsFillingInBankDetails(false)} />
+            <PaymentMethodModal
+                isOpen={isFillingInPaymentDetails}
+                onComplete={() => setLastProgressChange(new Date())}
+                onClose={() => setIsFillingInPaymentDetails(false)}
+                configuration={props.configuration}
+                onAcquirePaymentIntent={async () => {
+                    const response = await createApi().accountPaymentMethodIntentPost();
+                    if (!response)
+                        throw new Error("Could not create intent for payment method update.");
+    
+                    return {
+                        clientSecret: response.paymentIntentClientSecret,
+                        existingPaymentMethodId: response.existingPaymentMethodId
+                    }
+                }}
+            />
             <ProgressList
                 validationTarget={account}
                 title="Claim bounty"
@@ -624,6 +655,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                         label: "Verify payment details",
                         description: "While your card won't be charged when claiming bounties, we store a hash of your card number to prevent fake accounts from being created.",
                         validate: account => !!account?.sponsor?.creditCard,
+                        onClick: () => setIsFillingInPaymentDetails(true)
                     },
                     {
                         label: "Specify payout details",

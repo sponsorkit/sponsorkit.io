@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 
-namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent
 {
     public record GetRequest(
         string IntentId);

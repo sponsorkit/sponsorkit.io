@@ -19,30 +19,37 @@ export function Transition(props: {
         key = "transition-undefined";
 
     return <AbsoluteBox className={props.className}>
-        {ref => <TransitionGroup className={classes.root}>
-            <CSSTransition 
-                key={key}
-                timeout={props.timeout || 500}
-                mountOnEnter
-                unmountOnExit
-                classNames={props.classNames ?
-                    {
-                        enter: props.classNames.default,
-                        enterActive: props.classNames.enter,
-                        exit: props.classNames.enter,
-                        exitActive: 
-                            props.classNames.exit || 
-                            props.classNames.default
-                    } : {
-                        enter: classes.initial,
-                        enterActive: classes.fadingIn,
-                        exit: classes.fadingIn,
-                        exitActive: classes.fadingOut,
-                        exitDone: classes.initial
-                    }}
-            >
-                {props.children(ref) || <></>}
-            </CSSTransition>
-        </TransitionGroup>}
+        {ref => {
+            return <TransitionGroup className={classes.root}>
+                <CSSTransition 
+                    key={key}
+                    timeout={props.timeout || 250}
+                    mountOnEnter
+                    unmountOnExit
+                    classNames={props.classNames ?
+                        {
+                            enter: props.classNames.default,
+                            enterActive: props.classNames.enter,
+                            exit: props.classNames.enter,
+                            exitActive: 
+                                props.classNames.exit || 
+                                props.classNames.default
+                        } : {
+                            enter: classes.initial,
+                            enterActive: classes.fadingIn,
+                            exit: classes.fadingIn,
+                            exitActive: classes.fadingOut,
+                            exitDone: classes.initial
+                        }}
+                >
+                    {props.children(ref) || <div ref={ref} style={{
+                        width: 0,
+                        height: 0,
+                        padding: 0,
+                        margin: 0
+                    }} />}
+                </CSSTransition>
+            </TransitionGroup>;
+        }}
     </AbsoluteBox>
 }
