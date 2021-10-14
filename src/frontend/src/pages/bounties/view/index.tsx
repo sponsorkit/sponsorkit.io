@@ -241,9 +241,6 @@ const Issue = forwardRef(function (
     if (!repo)
         throw new Error("Expected repo details.");
 
-    if(!configuration)
-        return null;
-
     return <Box
         className={combineClassNames(classes.issueRoot)}
         ref={ref}
