@@ -1,4 +1,6 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,7 @@ using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using IConnection = Octokit.GraphQL.IConnection;
 using Connection = Octokit.GraphQL.Connection;
+using User = Sponsorkit.Domain.Models.User;
 
 namespace Sponsorkit.Infrastructure.GitHub
 {
@@ -34,10 +37,13 @@ namespace Sponsorkit.Infrastructure.GitHub
 
         public IGitHubClient CreateClientFromOAuthAuthenticationToken(string? token)
         {
-            return new GitHubClient(
+            var client = new GitHubClient(
                 new (ProductHeaderValue),
                 new InMemoryCredentialStore(
                     new Credentials(PickToken(token))));
+            client.Connection.SetRequestTimeout(TimeSpan.FromSeconds(5));
+            
+            return client;
         }
 
         public IConnection CreateGraphQlClientFromOAuthAuthenticationToken(string? token)
@@ -55,22 +61,25 @@ namespace Sponsorkit.Infrastructure.GitHub
             if (userId == null) 
                 return null;
             
-            var databaseUser = await dataContext.Users.SingleOrDefaultAsync(
-                x => x.Id == userId,
-                cancellationToken);
-            if (databaseUser == null)
-                return null;
-
-            return await GetAccessTokenFromUserIfPresentAsync(databaseUser);
+            var encryptedAccessToken = await dataContext.Users
+                .AsQueryable()
+                .Where(x => x.Id == userId)
+                .Select(x => x.GitHub!.EncryptedAccessToken)
+                .SingleOrDefaultAsync(cancellationToken);
+            return await DecryptAccessTokenAsync(encryptedAccessToken);
         }
 
-        public async Task<string?> GetAccessTokenFromUserIfPresentAsync(
-            Sponsorkit.Domain.Models.User user)
+        private async Task<string?> DecryptAccessTokenAsync(byte[]? encryptedAccessToken)
         {
-            var encryptedToken = user.GitHub?.EncryptedAccessToken;
-            return encryptedToken != null ? 
-                await aesEncryptionHelper.DecryptAsync(encryptedToken) :
-                null;
+            if (encryptedAccessToken == null)
+                return null;
+
+            return await aesEncryptionHelper.DecryptAsync(encryptedAccessToken);
+        }
+
+        public async Task<string?> GetAccessTokenFromUserIfPresentAsync(User user)
+        {
+            return await DecryptAccessTokenAsync(user.GitHub?.EncryptedAccessToken);
         }
 
         private string PickToken(string? token)

@@ -13,7 +13,7 @@ namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.Repository
     public record GetRequest(
         [FromRoute] string RepositoryOwner,
         [FromRoute] string RepositoryName,
-        [FromRoute] long IssueNumber);
+        [FromRoute] int IssueNumber);
     
     public class Get : BaseAsyncEndpoint
         .WithRequest<GetRequest>
@@ -39,7 +39,7 @@ namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.Repository
             var issue = await client.Issue.Get(
                 request.RepositoryOwner,
                 request.RepositoryName,
-                (int)request.IssueNumber);
+                request.IssueNumber);
             if (issue == null)
                 return NotFound("Repository not found.");
             
