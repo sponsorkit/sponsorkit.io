@@ -206,14 +206,14 @@ const Issue = forwardRef(function (
 ) {
     const events: Array<Event | null> = [
         {
-            time: props.issue.createdAt,
+            time: new Date(props.issue.createdAt),
             title: "Issue created",
             description: <>By <b>{props.issue.user?.login}</b></>,
             icon: GitHub
         },
         props.issue.updatedAt && props.issue.updatedAt !== props.issue.createdAt ?
             {
-                time: props.issue.updatedAt,
+                time: new Date(props.issue.updatedAt),
                 title: "Issue updated",
                 description: null,
                 icon: GitHub
@@ -221,14 +221,14 @@ const Issue = forwardRef(function (
             null,
         props.issue.closedAt ?
             {
-                time: props.issue.closedAt,
+                time: new Date(props.issue.closedAt),
                 title: "Issue closed",
                 description: <>By <b>{props.issue.closedBy?.login}</b></>,
                 icon: GitHub
             } :
             null,
         ...(props.bounties?.map(b => ({
-            time: b.createdAtUtc,
+            time: new Date(b.createdAtUtc),
             title: "Bounty added",
             description: <><b>${b.amountInHundreds / 100}</b> by <b>{b.creatorUser.gitHubUsername}</b></>,
             icon: AttachMoneyIcon
