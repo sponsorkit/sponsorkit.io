@@ -7,7 +7,7 @@ export default function AbsoluteBox(props: {
     children: (ref: Ref<any>) => React.ReactNode,
     className?: string
 }) {
-    const ref = useRef<any|null>(null);
+    const ref = useRef<HTMLElement|null>(null);
 
     const [height, setHeight] = useState(0);
 
@@ -15,34 +15,38 @@ export default function AbsoluteBox(props: {
         () => console.debug("height-absolute-box", height),
         [height]);
 
-    const onUpdate = () => {
-        if (!ref.current)
-            return;
-
-        const rect = ref.current.getBoundingClientRect();
-        const rectHeight = Math.ceil(rect.height);
-        if(isNaN(rectHeight))
-            return;
-
-        if(rectHeight !== height) 
-            setHeight(rectHeight);
-    }
-
     useEffect(
         () => {
             if (!ref.current)
                 return;
 
-            console.debug("installed-observer", ref.current);
+            const absoluteBoxDom = ref.current;
 
+            console.debug("installed-observer", absoluteBoxDom);
+
+            const observer = new ResizeObserver(() => onResized());
+
+            var onUpdate = () => {
+                if (!absoluteBoxDom)
+                    return;
+        
+                const rect = absoluteBoxDom.getBoundingClientRect();
+                const rectHeight = Math.ceil(rect.height);
+                if(isNaN(rectHeight))
+                    return;
+        
+                if(rectHeight !== height) {
+                    setHeight(rectHeight);
+                }
+            }
+
+            var onResized = debounce(onUpdate, 300);
             onUpdate();
 
-            const onResized = debounce(onUpdate, 300);
-
-            const observer = new ResizeObserver(onResized);
-            observer.observe(ref.current);
+            observer.observe(absoluteBoxDom);
 
             return () => {
+                console.info("disconnect-observer");
                 observer.disconnect();
             };
         },
