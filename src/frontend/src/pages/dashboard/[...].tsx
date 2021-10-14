@@ -11,6 +11,7 @@ import * as classes from "./[...].module.scss";
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
     const [isFillingInBankDetails, setIsFillingInBankDetails] = useState(false);
+    const [isFillingInPaymentDetails, setIsFillingInPaymentDetails] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
 
     const account = useApi(
@@ -27,6 +28,7 @@ function DashboardPage() {
             isOpen={isFillingInBankDetails}
             onValidated={() => setLastProgressChange(new Date())}
             onClose={() => setIsFillingInBankDetails(false)} />
+        
         <Container
             maxWidth="lg"
             className={classes.root}
