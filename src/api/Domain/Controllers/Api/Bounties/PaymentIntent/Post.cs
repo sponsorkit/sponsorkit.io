@@ -14,7 +14,7 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Api.Bounties.Intent
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent
 {
     public record GitHubIssueRequest(
         string OwnerName,

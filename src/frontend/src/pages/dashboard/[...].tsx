@@ -1,11 +1,13 @@
 import BankDetailsDialog from "@components/account/bank-details-dialog";
 import EmailValidationDialog from "@components/account/email-validation-dialog";
+import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
+import PrivateRoute from "@components/login/private-route";
 import ProgressList from "@components/progress/progress-list";
-import { Box, Card, CardContent, Container, Typography } from "@mui/material";
+import { createApi, useApi } from "@hooks/clients";
+import { useConfiguration } from "@hooks/configuration";
+import { Box, Card, CardContent, CircularProgress, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
-import PrivateRoute from "../../components/login/private-route";
-import { useApi } from "../../hooks/clients";
 import * as classes from "./[...].module.scss";
 
 function DashboardPage() {
@@ -18,6 +20,10 @@ function DashboardPage() {
         async client => await client.accountGet(),
         [lastProgressChange]);
 
+    const configuration = useConfiguration();
+    if(!configuration)
+        return <CircularProgress />;
+
     return <AppBarTemplate logoVariant="sponsorkit">
         {account && <EmailValidationDialog
             email={account.email}
@@ -28,7 +34,22 @@ function DashboardPage() {
             isOpen={isFillingInBankDetails}
             onValidated={() => setLastProgressChange(new Date())}
             onClose={() => setIsFillingInBankDetails(false)} />
-        
+        <PaymentMethodModal
+            isOpen={isFillingInPaymentDetails}
+            onComplete={() => setLastProgressChange(new Date())}
+            onClose={() => setIsFillingInPaymentDetails(false)}
+            configuration={configuration}
+            onAcquirePaymentIntent={async () => {
+                const response = await createApi().accountPaymentMethodIntentPost();
+                if (!response)
+                    throw new Error("Could not create intent for payment method update.");
+
+                return {
+                    clientSecret: response.paymentIntentClientSecret,
+                    existingPaymentMethodId: response.existingPaymentMethodId
+                }
+            }}
+        />
         <Container
             maxWidth="lg"
             className={classes.root}

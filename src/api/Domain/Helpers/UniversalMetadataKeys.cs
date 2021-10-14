@@ -7,6 +7,7 @@
 
     public static class UniversalMetadataTypes
     {
+        public const string PaymentMethodUpdateSetupIntent = "PaymentMethodUpdateSetupIntent";
         public const string BountySetupIntent = "BountySetupIntent";
     }
 }

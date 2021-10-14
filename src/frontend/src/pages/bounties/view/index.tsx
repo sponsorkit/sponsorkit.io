@@ -455,6 +455,10 @@ function CreateBounty(props: {
             onComplete={props.onBountyCreated}
             onClose={() => setShouldCreate(false)}
             configuration={props.configuration}
+            isDoneAccessor={async intent => {
+                const bountyIntentResponse = await createApi().bountiesPaymentIntentIdGet(intent.id);
+                return bountyIntentResponse.isProcessed;
+            }}
             onAcquirePaymentIntent={async () => {
                 if (!props.issue)
                     throw new Error("Issue was not set.");
@@ -531,6 +535,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
     const [isFillingInBankDetails, setIsFillingInBankDetails] = useState(false);
     const [isClaiming, setIsClaiming] = useState(false);
     const [lastProgressChange, setLastProgressChange] = useState(new Date());
+    const [isFillingInPaymentDetails, setIsFillingInPaymentDetails] = useState(false);
 
     const [isValidated, setIsValidated] = useState(false);
 
@@ -618,6 +623,22 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 isOpen={isFillingInBankDetails}
                 onValidated={() => setLastProgressChange(new Date())}
                 onClose={() => setIsFillingInBankDetails(false)} />
+            <PaymentMethodModal
+                isOpen={isFillingInPaymentDetails}
+                onComplete={() => setLastProgressChange(new Date())}
+                onClose={() => setIsFillingInPaymentDetails(false)}
+                configuration={configuration}
+                onAcquirePaymentIntent={async () => {
+                    const response = await createApi().accountPaymentMethodIntentPost();
+                    if (!response)
+                        throw new Error("Could not create intent for payment method update.");
+    
+                    return {
+                        clientSecret: response.paymentIntentClientSecret,
+                        existingPaymentMethodId: response.existingPaymentMethodId
+                    }
+                }}
+            />
             <ProgressList
                 validationTarget={account}
                 title="Claim bounty"
