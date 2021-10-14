@@ -22,7 +22,7 @@ export function Transition(props: {
         {ref => <TransitionGroup className={classes.root}>
             <CSSTransition 
                 key={key}
-                timeout={props.timeout || 500}
+                timeout={props.timeout || 250}
                 mountOnEnter
                 unmountOnExit
                 classNames={props.classNames ?

@@ -40,7 +40,7 @@ export default function AbsoluteBox(props: {
             const observer = new ResizeObserver(onResized);
             observer.observe(ref.current);
 
-            onUpdate();
+            onResized();
 
             return () => {
                 observer.disconnect();
