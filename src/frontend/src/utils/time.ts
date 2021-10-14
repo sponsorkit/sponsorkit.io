@@ -10,7 +10,6 @@ export async function delay(milliseconds: number, signal?: AbortSignal) {
             milliseconds));
 }
 
-export async function defer<T>(action: () => Promise<T>) {
+export async function defer<T>() {
     await delay(0);
-    await action();
 }

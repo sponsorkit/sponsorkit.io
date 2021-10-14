@@ -26,4 +26,8 @@ class GitHubMarkdownRenderer extends Renderer {
     public heading(text: string, level: 1 | 2 | 3 | 4 | 5 | 6, raw: string) {
         return `<h${level} class="${classes[`headingh${level}`]}">${raw}</h${level}>`
     }
+
+    public image(href: string | null, title: string | null, text: string) {
+        return `<img class="${classes.image}" src="${href}" alt="${text}" title="${title}" />`;
+    }
 }
