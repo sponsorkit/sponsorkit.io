@@ -22,7 +22,7 @@ import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from '@octokit/rest';
 import { AppBarTemplate } from "@pages/index";
-import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
@@ -396,7 +396,7 @@ function Bounties(props: {
 
 function CreateBounty(props: {
     configuration: GeneralConfigurationGetResponse,
-    issue?: SponsorkitDomainControllersApiBountiesIntentGitHubIssueRequest | null,
+    issue?: SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -627,7 +627,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                 isOpen={isFillingInPaymentDetails}
                 onComplete={() => setLastProgressChange(new Date())}
                 onClose={() => setIsFillingInPaymentDetails(false)}
-                configuration={configuration}
+                configuration={props.configuration}
                 onAcquirePaymentIntent={async () => {
                     const response = await createApi().accountPaymentMethodIntentPost();
                     if (!response)
