@@ -57,14 +57,15 @@ export default function IssueByIdPage(props: {
 
                 await loadBountiesFromIssue(e.issue);
             }} />
-        {issue && configuration && <Transition transitionKey={issue.number}>
-            {ref => <Issue
-                ref={ref}
-                issue={issue}
-                bounties={bounties}
-                configuration={configuration}
-                onBountyCreated={async () =>
-                    await loadBountiesFromIssue(issue)} />}
+        {<Transition transitionKey={`transition-${issue?.number}-${configuration && "config-loaded"}`}>
+            {ref => configuration && issue && 
+                <Issue
+                    ref={ref}
+                    issue={issue}
+                    bounties={bounties}
+                    configuration={configuration}
+                    onBountyCreated={async () =>
+                        await loadBountiesFromIssue(issue)} />}
         </Transition>}
     </AppBarTemplate>
 }
