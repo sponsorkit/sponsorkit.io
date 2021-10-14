@@ -44,10 +44,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
         {
             try
             {
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                if (!IsValidStripeWebhookIpAddress(ipAddress))
-                    return BadRequest("Invalid IP address.");
-
                 await using var stream = HttpContext.Request.Body;
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -84,22 +80,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
                 logger.Information(ex, "Already handled event.");
                 return Ok("Already handled.");
             }
-        }
-
-        /// <summary>
-        /// Validates whether or not the request is coming from Stripe's servers.
-        /// The list comes from: https://stripe.com/docs/ips
-        /// </summary>
-        private static bool IsValidStripeWebhookIpAddress(string? ipAddress)
-        {
-            if (ipAddress == null)
-                return false;
-
-            var allowedIpAddresses = new[]
-            {
-                "3.18.12.63", "3.130.192.231", "13.235.14.237", "13.235.122.149", "35.154.171.200", "52.15.183.38", "54.187.174.169", "54.187.205.235", "54.187.216.72", "54.241.31.99", "54.241.31.102", "54.241.34.107"
-            };
-            return allowedIpAddresses.Contains(ipAddress);
         }
     }
 }
