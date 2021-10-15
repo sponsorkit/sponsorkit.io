@@ -321,7 +321,7 @@ function Bounties(props: {
             if (totalBountyReward.current === 0)
                 return "There is no bounty to claim";
 
-            if (props.issue.state === "closed")
+            if (props.issue.state !== "closed")
                 return "The reward can't be claimed when the issue isn't closed";
 
             if(props.bounties?.find(x => x.claimRequests.find(c => c.creatorId === token?.userId)))
