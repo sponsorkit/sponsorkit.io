@@ -22,14 +22,13 @@ import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { AppBarTemplate } from "@pages/index";
 import { GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
-import { extractIssueLinkDetails, extractReposApiLinkDetails } from "@utils/github-url-extraction";
+import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
 import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { GeneralConfigurationGetResponse } from "src/generated/openapi/types/client";
-import uri from "uri-tag";
 import * as classes from './index.module.scss';
 
 export default function IssueByIdPage(props: {
@@ -53,7 +52,7 @@ export default function IssueByIdPage(props: {
                 console.debug("issue-input-field-changed", e);
 
                 setIssue(e.issue);
-                window.history.pushState({}, '', uri`/bounties/view?owner=${e.details.owner}&repo=${e.details.repo}&number=${e.details.number}`);
+                window.history.pushState({}, '', getBountyhuntUrlFromIssueLinkDetails(e.details));
 
                 await loadBountiesFromIssue(e.issue);
             }} />
