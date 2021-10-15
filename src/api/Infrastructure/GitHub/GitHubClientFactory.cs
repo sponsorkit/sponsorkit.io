@@ -54,8 +54,6 @@ namespace Sponsorkit.Infrastructure.GitHub
                 new SimpleJsonSerializer());
             
             var client = new GitHubClient(connection);
-            client.SetRequestTimeout(TimeSpan.FromSeconds(5));
-
             return client;
         }
 

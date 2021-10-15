@@ -79,7 +79,13 @@ namespace Sponsorkit.Infrastructure.Ioc
                 .CreateGraphQlClientFromOAuthAuthenticationToken(null));
             
             Services.AddScoped<IGitHubClientFactory, GitHubClientFactory>();
-            Services.AddSingleton(_ => new HttpClientAdapter(HttpMessageHandlerFactory.CreateDefault));
+            Services.AddSingleton(_ =>
+            {
+                var adapter = new HttpClientAdapter(HttpMessageHandlerFactory.CreateDefault);
+                adapter.SetRequestTimeout(TimeSpan.FromSeconds(5));
+
+                return adapter;
+            });
             Services.AddHttpClient<IGitHubClientFactory, GitHubClientFactory>();
         }
 
