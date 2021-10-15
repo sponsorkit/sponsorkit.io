@@ -35,7 +35,7 @@ export default function AbsoluteBox(props: {
                 if(isNaN(rectHeight))
                     return;
         
-                if(rectHeight !== height) {
+                if(rectHeight !== height && rectHeight > 0) {
                     setHeight(rectHeight);
                 }
             }

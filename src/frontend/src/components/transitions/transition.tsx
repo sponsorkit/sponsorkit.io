@@ -15,14 +15,11 @@ export function Transition(props: {
     }
 }) {
     let key = props.transitionKey;
-    if(!key)
-        key = "transition-undefined";
-
     return <AbsoluteBox className={props.className}>
         {ref => {
             return <TransitionGroup className={classes.root}>
                 <CSSTransition 
-                    key={key}
+                    key={`transition-${key}`}
                     timeout={props.timeout || 250}
                     mountOnEnter
                     unmountOnExit
