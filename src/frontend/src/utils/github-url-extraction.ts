@@ -1,3 +1,4 @@
+import uri from "uri-tag";
 import { tryCreateUrl } from "./url";
 
 export function extractIssueLinkDetails(issueLink?: string) {
@@ -26,6 +27,14 @@ export function extractIssueLinkDetails(issueLink?: string) {
         type,
         number: parsedNumber
     }
+}
+
+export function getBountyhuntUrlFromIssueLinkDetails(details: {
+    owner: string,
+    repo: string,
+    number: number
+}) {
+    return uri`/bounties/view?owner=${details.owner}&repo=${details.repo}&number=${details.number}`;
 }
 
 export function extractReposApiLinkDetails(reposLink?: string) {
