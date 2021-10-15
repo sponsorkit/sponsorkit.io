@@ -44,11 +44,6 @@ export default function AbsoluteBox(props: {
             onUpdate();
 
             observer.observe(absoluteBoxDom);
-
-            return () => {
-                console.info("disconnect-observer");
-                observer.disconnect();
-            };
         },
         [ref, ref.current]);
 
