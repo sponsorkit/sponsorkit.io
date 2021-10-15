@@ -35,7 +35,7 @@ export default function AbsoluteBox(props: {
                 if(isNaN(rectHeight))
                     return;
         
-                if(rectHeight !== height) {
+                if(rectHeight !== height && rectHeight > 0) {
                     setHeight(rectHeight);
                 }
             }
@@ -44,6 +44,11 @@ export default function AbsoluteBox(props: {
             onUpdate();
 
             observer.observe(absoluteBoxDom);
+
+            return () => {
+                console.info("disconnect-observer");
+                observer.disconnect();
+            };
         },
         [ref, ref.current]);
 
