@@ -319,10 +319,10 @@ function Bounties(props: {
     const claimError = useMemo(
         () => {
             if (totalBountyReward.current === 0)
-                return "There is no bounty to claim";
+                return "There is no bounty to claim.";
 
             if (props.issue.state !== "closed")
-                return "The reward can't be claimed when the issue isn't closed";
+                return "The reward can't be claimed when the issue isn't closed.";
 
             if(props.bounties?.find(x => x.claimRequests.find(c => c.creatorId === token?.userId)))
                 return "You have already sent a claim request for this reward.";
