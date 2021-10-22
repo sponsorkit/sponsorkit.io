@@ -22,6 +22,8 @@ namespace Sponsorkit.Domain.Models
     {
         public long Id { get; set; }
         public int Number { get; set; }
+
+        public string TitleSnapshot { get; set; } = null!;
     }
     
     public class IssueConfiguration : IEntityTypeConfiguration<Issue>

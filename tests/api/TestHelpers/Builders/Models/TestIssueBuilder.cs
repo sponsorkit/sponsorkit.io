@@ -8,7 +8,8 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Models
         {
             WithGitHubInformation(
                 1337,
-                1338);
+                1338,
+                "dummy-title");
             WithRepository(new TestRepositoryBuilder());
         }   
     }

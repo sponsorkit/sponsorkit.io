@@ -28,12 +28,14 @@ namespace Sponsorkit.Domain.Models.Builders
 
         public IssueBuilder WithGitHubInformation(
             long id,
-            int number)
+            int number,
+            string titleSnapshot)
         {
             this.gitHub = new IssueGitHubInformation()
             {
                 Id = id,
-                Number = number
+                Number = number,
+                TitleSnapshot = titleSnapshot
             };
             return this;
         }

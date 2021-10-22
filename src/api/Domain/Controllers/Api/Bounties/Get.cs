@@ -5,6 +5,7 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Octokit.GraphQL;
 using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties
@@ -14,8 +15,14 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
 
     public record BountyResponse(
         long AmountInHundreds,
-        long GitHubIssueId,
-        int BountyCount);
+        int BountyCount,
+        BountyGitHubResponse GitHub);
+
+    public record BountyGitHubResponse(
+        int Number,
+        string Title,
+        string OwnerName,
+        string RepositoryName);
     
     public class Get : BaseAsyncEndpoint
         .WithoutRequest
@@ -33,16 +40,37 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
         [AllowAnonymous]
         public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
         {
-            var groupedResponse = await dataContext.Bounties
+            var databaseResponse = await dataContext.Bounties
                 .AsQueryable()
-                .GroupBy(x => x.Issue.GitHub.Id)
-                .Select(x => new BountyResponse(
-                    x.Sum(b => b.AmountInHundreds),
-                    x.Key,
-                    x.Count()))
-                .OrderByDescending(x => x.AmountInHundreds)
+                .GroupBy(x => new
+                {
+                    x.Issue.GitHub.Number,
+                    Title = x.Issue.GitHub.TitleSnapshot,
+                    x.Issue.Repository.GitHub.OwnerName,
+                    RepositoryName = x.Issue.Repository.GitHub.Name
+                })
+                .Select(x => new
+                {
+                    TotalAmountInHundreds = x.Sum(b => b.AmountInHundreds),
+                    Number = x.Key.Number,
+                    Title = x.Key.Title,
+                    BountyCount = x.Count(),
+                    x.Key.OwnerName,
+                    x.Key.RepositoryName
+                })
+                .OrderByDescending(x => x.TotalAmountInHundreds)
                 .ToArrayAsync(cancellationToken);
-            return new Response(groupedResponse);
+            
+            return new Response(databaseResponse
+                .Select(x => new BountyResponse(
+                    x.TotalAmountInHundreds,
+                    x.BountyCount,
+                    new BountyGitHubResponse(
+                        x.Number,
+                        x.Title,
+                        x.OwnerName,
+                        x.RepositoryName)))
+                .ToArray());
         }
     }
 }

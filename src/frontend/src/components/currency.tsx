@@ -1,7 +1,17 @@
 import { Tooltip } from "@mui/material";
+import { combineClassNames } from "@utils/strings";
+import * as classes from "./currency.module.scss";
 
 export default function Currency(props: {
-    amount: number
+    amount: number,
+    className?: string
 }) {
-    return <Tooltip title={`$${props.amount} USD`}><b>${props.amount}</b></Tooltip>;
+    return <Tooltip title={`$${props.amount} USD`}>
+        <span className={combineClassNames(
+            classes.span,
+            props.className)}
+        >
+            ${props.amount}
+        </span>
+    </Tooltip>;
 }

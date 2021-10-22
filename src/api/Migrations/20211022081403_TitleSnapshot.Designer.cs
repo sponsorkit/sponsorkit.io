@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sponsorkit.Domain.Models.Context;
@@ -9,9 +10,10 @@ using Sponsorkit.Domain.Models.Context;
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20211022081403_TitleSnapshot")]
+    partial class TitleSnapshot
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -320,7 +322,6 @@ namespace Sponsorkit.Migrations
                                 .HasColumnType("integer");
 
                             b1.Property<string>("TitleSnapshot")
-                                .IsRequired()
                                 .HasColumnType("text");
 
                             b1.HasKey("IssueId");

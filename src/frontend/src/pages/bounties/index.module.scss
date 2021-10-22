@@ -1,0 +1,13 @@
+.bounty {
+    display: flex;
+    flex-direction: row;
+    cursor: pointer;
+
+    .header-column {
+        .currency {
+            font-size: 30px;
+            font-weight: 100;
+            color: #0045FF;
+        }
+    }
+}

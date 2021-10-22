@@ -33,20 +33,20 @@ namespace Sponsorkit.Domain.Mediatr
             this.dataContext = dataContext;
             this.gitHubClient = gitHubClient;
         }
-        
+
         public async Task<Result<Issue>> Handle(EnsureGitHubIssueInDatabaseCommand request, CancellationToken cancellationToken)
         {
             var gitHubRepository = await gitHubClient.Repository.Get(
                 request.OwnerName,
                 request.RepositoryName);
-            if(gitHubRepository == null)
+            if (gitHubRepository == null)
                 return Result<Issue>.NotFound();
-            
+
             var gitHubIssue = await gitHubClient.Issue.Get(
                 request.OwnerName,
                 request.RepositoryName,
                 request.IssueNumber);
-            if(gitHubIssue == null)
+            if (gitHubIssue == null)
                 return Result<Issue>.NotFound();
 
             var repository = await EnsureRepositoryInDatabaseAsync(gitHubRepository, cancellationToken);
@@ -58,20 +58,25 @@ namespace Sponsorkit.Domain.Mediatr
         }
 
         private async Task<Issue> EnsureIssueInDatabaseAsync(
-            Octokit.Issue gitHubIssue, 
-            Repository repository, 
+            Octokit.Issue gitHubIssue,
+            Repository repository,
             CancellationToken cancellationToken)
         {
             var issue = await dataContext.Issues.SingleOrDefaultAsync(
                 x => x.GitHub.Id == gitHubIssue.Id,
                 cancellationToken);
-            if (issue != null) 
+
+            if (issue != null)
+            {
+                issue.GitHub.TitleSnapshot = gitHubIssue.Title;
                 return issue;
-            
+            }
+
             var newIssue = new IssueBuilder()
                 .WithGitHubInformation(
                     gitHubIssue.Id,
-                    gitHubIssue.Number)
+                    gitHubIssue.Number,
+                    gitHubIssue.Title)
                 .WithRepository(repository)
                 .Build();
             await dataContext.Issues.AddAsync(
@@ -82,7 +87,7 @@ namespace Sponsorkit.Domain.Mediatr
         }
 
         private async Task<Repository> EnsureRepositoryInDatabaseAsync(
-            Octokit.Repository gitHubRepository, 
+            Octokit.Repository gitHubRepository,
             CancellationToken cancellationToken)
         {
             var repository = await dataContext.Repositories.SingleOrDefaultAsync(
@@ -90,7 +95,7 @@ namespace Sponsorkit.Domain.Mediatr
                 cancellationToken);
             if (repository != null)
                 return repository;
-            
+
             var newRepository = new RepositoryBuilder()
                 .WithGitHubInformation(
                     gitHubRepository.Id,

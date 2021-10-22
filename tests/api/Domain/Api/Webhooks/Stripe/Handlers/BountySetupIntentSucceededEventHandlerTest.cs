@@ -107,7 +107,8 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
             var issue = await environment.Database.CreateIssueAsync(new TestIssueBuilder()
                 .WithGitHubInformation(
                     id: 1338,
-                    number: 1339));
+                    number: 1339,
+                    titleSnapshot: ""));
             fakeMediator
                 .Send(
                     Arg.Any<EnsureGitHubIssueInDatabaseCommand>(),
