@@ -59,6 +59,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
                     x.Key.RepositoryName
                 })
                 .OrderByDescending(x => x.TotalAmountInHundreds)
+                .Take(100)
                 .ToArrayAsync(cancellationToken);
             
             return new Response(databaseResponse
