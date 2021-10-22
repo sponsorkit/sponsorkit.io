@@ -1,13 +1,34 @@
+.header {
+    text-align: center;
+}
+
 .bounty {
     display: flex;
     flex-direction: row;
     cursor: pointer;
+    gap: 30px;
+    padding: 20px 30px;
+    font-weight: 100;
 
     .header-column {
         .currency {
             font-size: 30px;
-            font-weight: 100;
             color: #0045FF;
+        }
+    }
+
+    .title-column {
+        .title-box {
+            font-size: 30px;
+
+            .issue-number {
+                opacity: 0.25;
+                padding-right: 10px;
+            }
+
+            .title {
+                font-weight: normal;
+            }
         }
     }
 }
