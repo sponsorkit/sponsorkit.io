@@ -2,51 +2,51 @@ import { AmountPicker } from "@components/financial/amount-picker";
 import StripeCreditCard from '@components/financial/stripe/credit-card';
 import Elements from "@components/financial/stripe/elements";
 import VerticalLinearStepper from "@components/progress/vertical-linear-stepper";
-import { useOctokit } from "@hooks/clients";
-import { Avatar, Box, CircularProgress, Container, Paper, TextField, Typography } from "@mui/material";
+import { Container, Paper, TextField } from "@mui/material";
 import { Stripe, StripeCardNumberElement } from "@stripe/stripe-js";
 import React, { useEffect, useMemo, useState } from "react";
 
 function SponsorDetails(props: {
   gitHubUsername: string
 }) {
-  const user = useOctokit(
-    (octokit, signal) => octokit.users.getByUsername({
-      username: props.gitHubUsername,
-      request: {
-        signal
-      }
-    }),
-    []);
-  if(!user?.data)
-    return <CircularProgress />;
+  // const user = useOctokit(
+  //   (octokit, signal) => octokit.users.getByUsername({
+  //     username: props.gitHubUsername,
+  //     request: {
+  //       signal
+  //     }
+  //   }),
+  //   []);
+  // if(!user?.data)
+  //   return <CircularProgress />;
 
-  return <>
-    <Paper elevation={1} style={{
-      display: "flex",
-      alignSelf: 'flex-start',
-      margin: 32,
-      marginLeft: 0,
-      padding: 16
-    }}>
-      <Avatar 
-        src={user.data.avatar_url} 
-        style={{
-          width: 64,
-          height: 64,
-          margin: 8
-        }} />
-      <Box style={{
-        display: "flex",
-        flexDirection: "column",
-        margin: 8,
-        alignSelf: 'center'
-      }}>
-        <Typography style={{ fontSize: 20 }}>{user.data.name}</Typography>
-        <Typography style={{ fontSize: 14 }}>~{user.data.public_repos} open-source projects</Typography>
-      </Box>
-    </Paper>
-  </>;
+  // return <>
+  //   <Paper elevation={1} style={{
+  //     display: "flex",
+  //     alignSelf: 'flex-start',
+  //     margin: 32,
+  //     marginLeft: 0,
+  //     padding: 16
+  //   }}>
+  //     <Avatar 
+  //       src={user.data.avatar_url} 
+  //       style={{
+  //         width: 64,
+  //         height: 64,
+  //         margin: 8
+  //       }} />
+  //     <Box style={{
+  //       display: "flex",
+  //       flexDirection: "column",
+  //       margin: 8,
+  //       alignSelf: 'center'
+  //     }}>
+  //       <Typography style={{ fontSize: 20 }}>{user.data.name}</Typography>
+  //       <Typography style={{ fontSize: 14 }}>~{user.data.public_repos} open-source projects</Typography>
+  //     </Box>
+  //   </Paper>
+  // </>;
+  return null;
 }
 
 export type PaymentDetails = {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -96,7 +97,7 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
                 await dataContext.SaveChangesAsync(cancellationToken);
 
                 return issue.Value;
-            });
+            }, IsolationLevel.Serializable);
 
             await UpsertIssueBountyCommentAsync(
                 gitHubOwnerName, 

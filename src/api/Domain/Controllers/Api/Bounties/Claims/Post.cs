@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -111,7 +112,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims
                 await dataContext.SaveChangesAsync(cancellationToken);
 
                 return null;
-            });
+            }, IsolationLevel.Serializable);
 
             if (result != null)
                 return result;

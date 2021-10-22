@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
@@ -108,7 +109,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                     await dataContext.SaveChangesAsync(CancellationToken.None);
 
                     return user;
-                });
+                },
+                IsolationLevel.Serializable);
 
             var jwtToken = GenerateJwtTokenForUser(authenticatedUser);
             return new Response(jwtToken);

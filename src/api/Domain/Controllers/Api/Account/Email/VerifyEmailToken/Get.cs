@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
@@ -82,7 +83,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
                         Email = newEmail
                     },
                     cancellationToken: CancellationToken.None);
-            });
+            }, IsolationLevel.ReadCommitted);
 
             return RedirectPermanent(
                 LinkHelper.GetWebUrl("/landing/email/verification-success"));

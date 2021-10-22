@@ -18,7 +18,7 @@ namespace Sponsorkit.Domain.Mediatr
         string RepositoryName,
         int IssueNumber) : IRequest<Result<Issue>>, IDatabaseTransactionRequest
     {
-        public IsolationLevel? TransactionIsolationLevel => default;
+        public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
     }
 
     public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureGitHubIssueInDatabaseCommand, Result<Issue>>

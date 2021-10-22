@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Data;
+using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Http;
@@ -58,7 +59,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
 
                     return new Response(
                         LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"));
-                });
+                },
+                IsolationLevel.Serializable);
         }
 
         private async Task<Stripe.Account> CreateStripeAccountForUserAsync(User user)

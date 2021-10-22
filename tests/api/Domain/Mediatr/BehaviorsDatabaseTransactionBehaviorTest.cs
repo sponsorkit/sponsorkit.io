@@ -124,7 +124,7 @@ namespace Sponsorkit.Tests.Domain.Mediatr
                 this.Action = action;
             }
 
-            public IsolationLevel? TransactionIsolationLevel => default;
+            public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
         }
 
         public class TestCommandHandler : IRequestHandler<TestCommand>
