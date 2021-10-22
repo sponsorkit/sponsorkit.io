@@ -1,8 +1,8 @@
 import Currency from "@components/currency";
-import { Box, Card } from "@mui/material";
+import { Box, Card, CircularProgress } from "@mui/material";
 import { SponsorkitDomainControllersApiBountiesBountyResponse } from "@sponsorkit/client";
 import { getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
-import React from "react";
+import React, { useState } from "react";
 import { AppBarTemplate } from "..";
 import { useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
@@ -17,7 +17,12 @@ export default function BountiesPage() {
 
     return <AppBarTemplate logoVariant="bountyhunt">
         <h1 className={classes.header}>Top bounties</h1>
-        {bounties?.map(b => <Bounty bounty={b} />)}
+        {bounties ?
+            bounties.map(b => 
+                <Bounty 
+                    key={`bounty-${b.gitHub.number}`}
+                    bounty={b} />) :
+            <CircularProgress />}
     </AppBarTemplate>
 }
 
@@ -32,10 +37,16 @@ function Bounty(props: {
         });
     };
 
+    const [raised, setRaised] = useState(false);
+
+    const toggleRaised = () => setRaised(!raised);
+
     return <Card 
         className={classes.bounty}
+        onMouseOver={toggleRaised} 
+        onMouseOut={toggleRaised} 
         onClick={onClick}
-        elevation={0}
+        raised={raised}
     >
         <Box className={classes.headerColumn}>
             <Currency 
