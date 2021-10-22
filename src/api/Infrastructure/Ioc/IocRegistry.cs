@@ -116,7 +116,9 @@ namespace Sponsorkit.Infrastructure.Ioc
 
         private void ConfigureHealthChecks()
         {
-            Services.AddHealthChecks();
+            Services
+                .AddHealthChecks()
+                .AddDbContextCheck<DataContext>();
         }
 
         private void ConfigureOptions()
