@@ -3,10 +3,11 @@
 }
 
 .bounty {
+    align-items: center;
     display: flex;
     flex-direction: row;
     cursor: pointer;
-    gap: 40px;
+    gap: 35px;
     padding: 20px 30px;
     font-weight: 100;
     margin-bottom: 10px;
