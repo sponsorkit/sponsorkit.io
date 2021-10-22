@@ -193,13 +193,11 @@
         transform: scale(0.75);
 
         &.sponsorkit {
-            margin: 0;
-            margin-left: -25px;
+            margin: 0 0 0 -25px;
         }
 
         &.bountyhunt {
-            margin: 0;
-            margin-left: -25px;
+            margin: 0 0 0 -25px;
         }
     }
 }
