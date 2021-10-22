@@ -1,5 +1,5 @@
 .root {
-    $max-width: min(816px, calc(100vw - (40px * 2)));
+    $max-width: calc(min(816px, 100vw) - (40px * 2));
 
     .heading {
         &h1,
