@@ -25,6 +25,7 @@ const BountyhuntLogo = forwardRef(function (
   ref: React.Ref<HTMLAnchorElement>) 
 {
   return <a 
+    href="https://bountyhunt.io"
     {...props}
     ref={ref} 
     className={combineClassNames(
@@ -47,6 +48,7 @@ const SponsorkitLogo = forwardRef(function (
   ref: React.Ref<HTMLAnchorElement>) 
 {
   return <a 
+    href="https://sponsorkit.io"
     {...props}
     ref={ref} 
     className={combineClassNames(

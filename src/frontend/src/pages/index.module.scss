@@ -33,6 +33,8 @@
     justify-content: center;
     color: #0045FF;
 
+    transition: transform 0.25s ease-in-out;
+
     &.bountyhunt {
         margin: 20px;
 
@@ -182,6 +184,22 @@
                     }
                 }
             }
+        }
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    .logo {
+        transform: scale(0.75);
+
+        &.sponsorkit {
+            margin: 0;
+            margin-left: -25px;
+        }
+
+        &.bountyhunt {
+            margin: 0;
+            margin-left: -25px;
         }
     }
 }

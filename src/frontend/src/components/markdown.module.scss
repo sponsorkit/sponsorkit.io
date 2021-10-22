@@ -1,27 +1,36 @@
-.heading {
-    &h1,
-    &h2 {
-        padding-bottom: .3em;
-        border-bottom: 1px solid rgba(0,0,0, 0.075);
+.root {
+    $max-width: min(816px, calc(100vw - (40px * 2)));
+
+    .heading {
+        &h1,
+        &h2 {
+            padding-bottom: .3em;
+            border-bottom: 1px solid rgba(0,0,0, 0.075);
+        }
+
+        &h1,
+        &h2,
+        &h3,
+        &h4,
+        &h5,
+        &h6 {
+            font-weight: 600;
+            line-height: 1.25;
+            margin-bottom: 16px;
+            margin-top: 24px;
+        }
+
+        &h2 {
+            font-size: 1.5em;
+        }
     }
 
-    &h1,
-    &h2,
-    &h3,
-    &h4,
-    &h5,
-    &h6 {
-        font-weight: 600;
-        line-height: 1.25;
-        margin-bottom: 16px;
-        margin-top: 24px;
+    .image {
+        max-width: $max-width;
     }
 
-    &h2 {
-        font-size: 1.5em;
+    p {
+        max-width: $max-width;
+        overflow-wrap: anywhere;
     }
-}
-
-.image {
-    max-width: 816px;
 }
