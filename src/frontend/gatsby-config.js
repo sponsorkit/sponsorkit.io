@@ -8,6 +8,7 @@ module.exports = {
     DEV_SSR: true
   },
   plugins: [
+    'gatsby-plugin-mui-emotion',
     'gatsby-plugin-top-layout',
     `gatsby-plugin-react-helmet`,
     `gatsby-plugin-remove-trailing-slashes`,
@@ -22,7 +23,6 @@ module.exports = {
       },
     },
     `gatsby-transformer-sharp`,
-    `gatsby-plugin-gatsby-cloud`,
-    'gatsby-plugin-mui-emotion'
+    `gatsby-plugin-gatsby-cloud`
   ],
 }
