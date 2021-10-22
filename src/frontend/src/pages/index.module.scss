@@ -7,6 +7,8 @@
 }
 
 .spacer {
+    transition: margin-top 0.25s ease-in-out;
+
     &.top {
         flex-grow: 1;
         margin-top: 120px;
@@ -33,7 +35,7 @@
     justify-content: center;
     color: #0045FF;
 
-    transition: transform 0.25s ease-in-out;
+    transition: all 0.25s ease-in-out;
 
     &.bountyhunt {
         margin: 20px;
@@ -199,5 +201,9 @@
         &.bountyhunt {
             margin: 0 0 0 -25px;
         }
+    }
+
+    .spacer.top {
+        margin-top: 80px;
     }
 }
