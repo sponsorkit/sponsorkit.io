@@ -43,6 +43,9 @@ function Bounty(props: {
                 className={classes.currency} />
         </Box>
         <Box className={classes.titleColumn}>
+            <Box className={classes.repositoryBox}>
+                {props.bounty.gitHub.ownerName}/{props.bounty.gitHub.repositoryName}
+            </Box>
             <Box className={classes.titleBox}>
                 <span className={classes.issueNumber}>#{props.bounty.gitHub.number}</span>
                 <span className={classes.title}>{props.bounty.gitHub.title}</span>
