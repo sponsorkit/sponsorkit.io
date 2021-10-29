@@ -1,4 +1,4 @@
-**Current project status:** In active development, launching hopefully soon.
+**Current project status:** Launched as stable MVP, working on new features.
 
 # Sponsorkit & Bountyhunt
 
