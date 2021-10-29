@@ -73,7 +73,7 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid>("PullRequestId")
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("Verdict")
+                    b.Property<int>("Verdict")
                         .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("VerdictAt")

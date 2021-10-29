@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -8,11 +9,18 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
 {
     public abstract class TimedHostedService : IHostedService, IDisposable
     {
+        private readonly IServiceProvider serviceProvider;
+        
         private Timer? timer;
         private Task? executingTask;
         private readonly CancellationTokenSource stoppingCancellationTokenSource = new();
 
         protected abstract TimeSpan Interval { get; }
+
+        protected TimedHostedService(IServiceProvider serviceProvider)
+        {
+            this.serviceProvider = serviceProvider;
+        }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -34,7 +42,8 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
         {
             try
             {
-                await RunJobAsync(stoppingToken);
+                using var scope = serviceProvider.CreateScope();
+                await RunJobAsync(scope.ServiceProvider, stoppingToken);
             }
             catch (Exception ex)
             {
@@ -49,7 +58,7 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
             }
         }
 
-        protected abstract Task RunJobAsync(CancellationToken cancellationToken);
+        protected abstract Task RunJobAsync(IServiceProvider serviceProvider, CancellationToken cancellationToken);
 
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {

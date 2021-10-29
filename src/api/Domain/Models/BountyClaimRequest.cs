@@ -7,6 +7,7 @@ namespace Sponsorkit.Domain.Models
 {
     public enum ClaimVerdict
     {
+        Undecided,
         Solved,
         Unsolved,
         Scam
@@ -23,7 +24,7 @@ namespace Sponsorkit.Domain.Models
         public User Creator { get; set; } = null!;
         public Guid CreatorId { get; set; }
 
-        public ClaimVerdict? Verdict { get; set; }
+        public ClaimVerdict Verdict { get; set; }
         public DateTimeOffset? VerdictAt { get; set; }
 
         public PullRequest PullRequest { get; set; } = null!;
