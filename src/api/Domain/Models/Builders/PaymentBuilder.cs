@@ -8,17 +8,18 @@ namespace Sponsorkit.Domain.Models.Builders
         private Bounty? bounty;
         private Sponsorship? sponsorship;
         
-        private DateTimeOffset? transferredToConnectedAccountAtUtc;
-        private DateTimeOffset? feePayedOutToPlatformBankAccountAtUtc;
+        private DateTimeOffset? transferredToConnectedAccountAt;
+        private DateTimeOffset? feePayedOutToPlatformBankAccountAt;
 
         private long? amountInHundreds;
         private string? stripeId;
-        private DateTimeOffset createdAtUtc;
         private string? stripeEventId;
+        
+        private readonly DateTimeOffset createdAt;
 
         public PaymentBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public PaymentBuilder WithStripeEventId(string eventId)
@@ -45,15 +46,15 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public PaymentBuilder WithTransferredToConnectedAccountAtcUtc(DateTimeOffset date)
+        public PaymentBuilder WithTransferredToConnectedAccountAt(DateTimeOffset date)
         {
-            this.transferredToConnectedAccountAtUtc = date;
+            this.transferredToConnectedAccountAt = date;
             return this;
         }
 
-        public PaymentBuilder WithFeePayedOutToPlatformBankAccountAtUtc(DateTimeOffset date)
+        public PaymentBuilder WithFeePayedOutToPlatformBankAccountAt(DateTimeOffset date)
         {
-            this.feePayedOutToPlatformBankAccountAtUtc = date;
+            this.feePayedOutToPlatformBankAccountAt = date;
             return this;
         }
 
@@ -66,12 +67,6 @@ namespace Sponsorkit.Domain.Models.Builders
         public PaymentBuilder WithStripeId(string stripeId)
         {
             this.stripeId = stripeId;
-            return this;
-        }
-
-        public PaymentBuilder WithCreatedAtUtc(DateTimeOffset createdAtUtc)
-        {
-            this.createdAtUtc = createdAtUtc;
             return this;
         }
         
@@ -96,9 +91,9 @@ namespace Sponsorkit.Domain.Models.Builders
                 Sponsorship = sponsorship,
                 StripeId = stripeId,
                 AmountInHundreds = amountInHundreds.Value,
-                CreatedAtUtc = createdAtUtc,
-                TransferredToConnectedAccountAtUtc = transferredToConnectedAccountAtUtc,
-                FeePayedOutToPlatformBankAccountAtUtc = feePayedOutToPlatformBankAccountAtUtc,
+                CreatedAt = createdAt,
+                TransferredToConnectedAccountAt = transferredToConnectedAccountAt,
+                FeePayedOutToPlatformBankAccountAt = feePayedOutToPlatformBankAccountAt,
                 StripeEventId = stripeEventId
             };
         }

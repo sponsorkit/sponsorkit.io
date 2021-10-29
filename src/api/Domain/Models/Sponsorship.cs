@@ -11,7 +11,7 @@ namespace Sponsorkit.Domain.Models
         [Key]
         public Guid Id { get; set; }
 
-        public DateTimeOffset CreatedAtUtc { get; set; } = new();
+        public DateTimeOffset CreatedAt { get; set; } = new();
 
         /// <summary>
         /// The repository that this sponsorship is regarding.

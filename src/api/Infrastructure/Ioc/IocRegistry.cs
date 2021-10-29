@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Octokit.Internal;
 using Serilog;
@@ -18,6 +19,7 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceede
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
@@ -66,6 +68,13 @@ namespace Sponsorkit.Infrastructure.Ioc
             ConfigureLogging();
 
             ConfigureAws();
+
+            ConfigureHostedServices();
+        }
+
+        private void ConfigureHostedServices()
+        {
+            Services.AddScoped<PayoutHostedService>();
         }
 
         private void ConfigureGitHub()

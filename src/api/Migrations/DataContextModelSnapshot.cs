@@ -16,7 +16,7 @@ namespace Sponsorkit.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.10")
+                .HasAnnotation("ProductVersion", "5.0.11")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
@@ -31,7 +31,7 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid?>("AwardedToId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatorId")
@@ -61,13 +61,13 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid>("BountyId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatorId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset?>("ExpiredAtUtc")
+                    b.Property<DateTimeOffset?>("ExpiredAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("PullRequestId")
@@ -76,7 +76,7 @@ namespace Sponsorkit.Migrations
                     b.Property<int?>("Verdict")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset?>("VerdictAtUtc")
+                    b.Property<DateTimeOffset?>("VerdictAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -119,10 +119,10 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid?>("BountyId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("FeePayedOutToPlatformBankAccountAtUtc")
+                    b.Property<DateTimeOffset?>("FeePayedOutToPlatformBankAccountAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("SponsorshipId")
@@ -136,7 +136,7 @@ namespace Sponsorkit.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTimeOffset?>("TransferredToConnectedAccountAtUtc")
+                    b.Property<DateTimeOffset?>("TransferredToConnectedAccountAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -195,7 +195,7 @@ namespace Sponsorkit.Migrations
                     b.Property<Guid>("BeneficiaryId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<long?>("MonthlyAmountInHundreds")
@@ -226,10 +226,10 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("EmailVerifiedAtUtc")
+                    b.Property<DateTimeOffset?>("EmailVerifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<byte[]>("EncryptedEmail")

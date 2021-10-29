@@ -9,11 +9,11 @@ namespace Sponsorkit.Domain.Models.Builders
 
         private long? amountInHundreds;
 
-        private DateTimeOffset createdAtUtc;
+        private readonly DateTimeOffset createdAt;
 
         public BountyBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public BountyBuilder WithCreator(User creator)
@@ -53,7 +53,7 @@ namespace Sponsorkit.Domain.Models.Builders
                 Creator = creator,
                 Issue = issue,
                 AmountInHundreds = amountInHundreds.Value,
-                CreatedAtUtc = createdAtUtc
+                CreatedAt = createdAt
             };
         }
     }

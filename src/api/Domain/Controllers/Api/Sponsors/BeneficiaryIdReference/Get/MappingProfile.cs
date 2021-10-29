@@ -14,7 +14,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get
                     x.MonthlyAmountInHundreds,
                     x.Payments.Sum(
                         p => p.AmountInHundreds),
-                    x.CreatedAtUtc));
+                    x.CreatedAt));
         }
     }
 }

@@ -62,7 +62,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
             return new GetResponse(issue.Bounties
                 .Select(x => new BountyResponse(
                     x.AmountInHundreds,
-                    x.CreatedAtUtc,
+                    x.CreatedAt,
                     new BountyUserResponse(
                         x.Creator.GitHub!.Id,
                         x.Creator.GitHub.Username),

@@ -24,14 +24,14 @@ namespace Sponsorkit.Domain.Models
         public Guid CreatorId { get; set; }
 
         public ClaimVerdict? Verdict { get; set; }
-        public DateTimeOffset? VerdictAtUtc { get; set; }
+        public DateTimeOffset? VerdictAt { get; set; }
 
         public PullRequest PullRequest { get; set; } = null!;
         public Guid PullRequestId { get; set; }
         
-        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
         
-        public DateTimeOffset? ExpiredAtUtc { get; set; }
+        public DateTimeOffset? ExpiredAt { get; set; }
     }
     
     public class BountyClaimRequestConfiguration : IEntityTypeConfiguration<BountyClaimRequest>

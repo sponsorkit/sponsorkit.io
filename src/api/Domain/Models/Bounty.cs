@@ -13,7 +13,7 @@ namespace Sponsorkit.Domain.Models
         
         public long AmountInHundreds { get; set; }
         
-        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
         public User Creator { get; set; } = null!;
         public Guid CreatorId { get; set; }

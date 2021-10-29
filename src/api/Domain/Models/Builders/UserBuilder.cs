@@ -13,11 +13,11 @@ namespace Sponsorkit.Domain.Models.Builders
 
         private UserGitHubInformation? gitHub;
         
-        private DateTimeOffset createdAtUtc;
+        private readonly DateTimeOffset createdAt;
         
         public UserBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public UserBuilder WithId(Guid id)
@@ -72,7 +72,7 @@ namespace Sponsorkit.Domain.Models.Builders
                 EncryptedEmail = encryptedEmail,
                 StripeCustomerId = stripeCustomerId,
                 StripeConnectId = stripeConnectId,
-                CreatedAtUtc = createdAtUtc,
+                CreatedAt = createdAt,
                 GitHub = gitHub
             };
 

@@ -19,12 +19,12 @@ namespace Sponsorkit.Domain.Models
         /// <summary>
         /// The date at which the amount (after fees are deducted) has been sent to the connected account (the receiver of the sponsorship, or the claimer of the bounty).
         /// </summary>
-        public DateTimeOffset? TransferredToConnectedAccountAtUtc { get; set; }
+        public DateTimeOffset? TransferredToConnectedAccountAt { get; set; }
         
         /// <summary>
         /// The date at which the fees for this transfer have been payed out to the platform (Sponsorkit's) bank account.
         /// </summary>
-        public DateTimeOffset? FeePayedOutToPlatformBankAccountAtUtc { get; set; }
+        public DateTimeOffset? FeePayedOutToPlatformBankAccountAt { get; set; }
         
         /// <summary>
         /// The amount of money in hundreds, UTC.
@@ -36,7 +36,7 @@ namespace Sponsorkit.Domain.Models
         /// </summary>
         public string StripeId { get; set; } = null!;
         
-        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
         /// <summary>
         /// The ID of the webhook event that created this bounty. Bounties are always created from webhook calls from Stripe, despite being initiated by the user. This is because some forms of payment attempts require additional processing time.

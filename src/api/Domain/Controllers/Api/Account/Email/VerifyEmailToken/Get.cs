@@ -72,7 +72,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken
                 var user = await dataContext.Users.SingleAsync(
                     x => x.Id == userId,
                     cancellationToken);
-                user.EmailVerifiedAtUtc = DateTimeOffset.UtcNow;
+                user.EmailVerifiedAt = DateTimeOffset.UtcNow;
                 user.EncryptedEmail = await aesEncryptionHelper.EncryptAsync(newEmail);
                 await dataContext.SaveChangesAsync(cancellationToken);
 
