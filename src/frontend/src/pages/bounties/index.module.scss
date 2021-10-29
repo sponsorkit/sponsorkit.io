@@ -1,41 +1,81 @@
-.header {
-    text-align: center;
-}
-
-.bounty {
+.root {
     align-items: center;
     display: flex;
-    flex-direction: row;
-    cursor: pointer;
-    gap: 35px;
-    padding: 20px 30px;
-    font-weight: 100;
-    margin-bottom: 10px;
+    flex-direction: column;
 
-    .header-column {
-        .currency {
-            font-size: 25px;
-            font-weight: bold;
-        }
+    .header {
+        text-align: center;
     }
 
-    .title-column {
-        .repository-box {
-            color: #0045FF;
-            text-transform: uppercase;
-            font-size: 14px;
+    .bounty {
+        align-self: stretch;
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+        cursor: pointer;
+        gap: 35px;
+        padding: 20px 30px;
+        margin-bottom: 10px;
+
+        transition: all 0.2s ease-in-out;
+
+        .header-column .currency {
+            font-size: 25px;
+            font-weight: bold;
+
+            transition: all 0.2s ease-in-out;
         }
 
-        .title-box {
-            font-size: 20px;
+        .title-column {
+            overflow-wrap: anywhere;
 
-            .issue-number {
-                opacity: 0.4;
-                padding-right: 8px;
+            .repository-box {
+                color: #0045FF;
+                text-transform: uppercase;
+                font-size: 14px;
+                transition: all 0.2s ease-in-out;
             }
 
-            .title {
-                font-weight: normal;
+            .title-box {
+                font-size: 20px;
+                transition: all 0.2s ease-in-out;
+
+                .issue-number {
+                    opacity: 0.4;
+                    padding-right: 8px;
+                    transition: all 0.2s ease-in-out;
+                }
+
+                .title {
+                    font-weight: normal;
+                }
+            }
+        }
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    .root .bounty {
+        gap: 15px;
+        padding: 10px 15px;
+
+        .header-column .currency {
+            font-size: 20px;
+        }
+
+        .title-column {
+            .repository-box {
+                font-size: 13px;
+                margin-top: 3px;
+            }
+    
+            .title-box {
+                margin-top: -3px;
+                font-size: 17px;
+    
+                .issue-number {
+                    padding-right: 4px;
+                }
             }
         }
     }

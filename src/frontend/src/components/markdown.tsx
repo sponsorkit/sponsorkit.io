@@ -1,3 +1,4 @@
+import { combineClassNames } from "@utils/strings";
 import DOMPurify from "dompurify";
 import marked, { Renderer } from "marked";
 import * as classes from "./markdown.module.scss";
@@ -14,7 +15,9 @@ export function Markdown(props: {
     });
     const sanitizedHtml = DOMPurify.sanitize(html);
     return <div 
-        className={props.className} 
+        className={combineClassNames(
+            classes.root,
+            props.className)} 
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
 }
 

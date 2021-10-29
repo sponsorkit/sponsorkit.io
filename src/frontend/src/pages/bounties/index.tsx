@@ -1,10 +1,10 @@
 import Currency from "@components/currency";
+import { useApi } from "@hooks/clients";
 import { Box, Card, CircularProgress } from "@mui/material";
 import { SponsorkitDomainControllersApiBountiesBountyResponse } from "@sponsorkit/client";
 import { getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import React, { useState } from "react";
 import { AppBarTemplate } from "..";
-import { useApi } from "../../hooks/clients";
 import * as classes from "./index.module.scss";
 
 export default function BountiesPage() {
@@ -16,13 +16,15 @@ export default function BountiesPage() {
         []);
 
     return <AppBarTemplate logoVariant="bountyhunt">
-        <h1 className={classes.header}>Top bounties</h1>
-        {bounties ?
-            bounties.map(b => 
-                <Bounty 
-                    key={`bounty-${b.gitHub.number}`}
-                    bounty={b} />) :
-            <CircularProgress />}
+        <Box className={classes.root}>
+            <h1 className={classes.header}>Top bounties</h1>
+            {bounties ?
+                bounties.map(b => 
+                    <Bounty 
+                        key={`bounty-${b.gitHub.number}`}
+                        bounty={b} />) :
+                <CircularProgress />}
+        </Box>
     </AppBarTemplate>
 }
 
