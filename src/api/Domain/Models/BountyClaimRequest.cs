@@ -7,10 +7,10 @@ namespace Sponsorkit.Domain.Models
 {
     public enum ClaimVerdict
     {
-        Undecided,
-        Solved,
-        Unsolved,
-        Scam
+        Undecided = 0,
+        Solved = 1,
+        Unsolved = 2,
+        Scam = 3
     }
     
     public class BountyClaimRequest
