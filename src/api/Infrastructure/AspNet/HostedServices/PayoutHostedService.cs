@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
 
@@ -36,13 +37,15 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
                     .ToDictionary(
                         x => x.Key,
                         x => x.Count());
-
-                var undecidedVoteCount = amountOfVotesByVerdictType[ClaimVerdict.Undecided];
-                var scamVoteCount = amountOfVotesByVerdictType[ClaimVerdict.Scam];
-                var solvedCount = amountOfVotesByVerdictType[ClaimVerdict.Solved];
-                var unsolvedCount = amountOfVotesByVerdictType[ClaimVerdict.Unsolved];
                 
                 var totalCount = amountOfVotesByVerdictType.Sum(x => x.Value);
+                
+                var decision = BountyPayoutDecisionCalculator.CalculatePayoutDecision(new VerdictDistribution(
+                    totalCount,
+                    amountOfVotesByVerdictType[ClaimVerdict.Undecided],
+                    amountOfVotesByVerdictType[ClaimVerdict.Scam],
+                    amountOfVotesByVerdictType[ClaimVerdict.Solved],
+                    amountOfVotesByVerdictType[ClaimVerdict.Unsolved]));
             }
         }
 
