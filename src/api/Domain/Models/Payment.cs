@@ -27,10 +27,13 @@ namespace Sponsorkit.Domain.Models
         public DateTimeOffset? FeePayedOutToPlatformBankAccountAt { get; set; }
         
         /// <summary>
-        /// The amount of money in hundreds.
+        /// The amount in hundreds, excluding the fee.
         /// </summary>
         public long AmountInHundreds { get; set; }
         
+        /// <summary>
+        /// The fee in hundreds.
+        /// </summary>
         public long FeeInHundreds { get; set; }
         
         /// <summary>
