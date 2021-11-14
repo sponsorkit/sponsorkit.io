@@ -17,7 +17,7 @@ namespace Sponsorkit.Migrations
                 nullable: false,
                 defaultValue: 0L);
 
-            migrationBuilder.Sql("UPDATE Payments SET FeeInHundreds=AmountInHundreds / 100 * 10 WHERE FeeInHundreds=0");
+            migrationBuilder.Sql("UPDATE \"Payments\" SET \"FeeInHundreds\"=\"AmountInHundreds\" / 100 * 10 WHERE \"FeeInHundreds\"=0");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

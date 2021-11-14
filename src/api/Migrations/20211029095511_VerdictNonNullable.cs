@@ -6,6 +6,8 @@ namespace Sponsorkit.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("UPDATE \"BountyClaimRequests\" SET \"Verdict\"=0");
+            
             migrationBuilder.AlterColumn<int>(
                 name: "Verdict",
                 table: "BountyClaimRequests",
