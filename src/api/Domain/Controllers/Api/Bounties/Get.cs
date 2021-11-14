@@ -51,7 +51,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties
                 })
                 .Select(x => new
                 {
-                    TotalAmountInHundreds = x.Sum(b => b.AmountInHundreds),
+                    TotalAmountInHundreds = x.Sum(b => b.Payments
+                        .Sum(p => p.AmountInHundreds)),
                     Number = x.Key.Number,
                     Title = x.Key.Title,
                     BountyCount = x.Count(),

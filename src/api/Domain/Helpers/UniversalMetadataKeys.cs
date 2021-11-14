@@ -9,5 +9,6 @@
     {
         public const string PaymentMethodUpdateSetupIntent = "PaymentMethodUpdateSetupIntent";
         public const string BountySetupIntent = "BountySetupIntent";
+        public const string BountyPayoutPaymentIntent = "BountyPayoutPaymentIntent";
     }
 }

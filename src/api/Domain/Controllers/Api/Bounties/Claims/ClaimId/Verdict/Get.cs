@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -45,6 +46,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
             var userId = User.GetRequiredId();
             
             var claimRequest = await dataContext.BountyClaimRequests
+                .Include(x => x.Bounty).ThenInclude(x => x.Payments)
                 .Include(x => x.Bounty).ThenInclude(x => x.Issue).ThenInclude(x => x.Repository)
                 .Include(x => x.PullRequest)
                 .SingleOrDefaultAsync(
@@ -60,7 +62,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
                 throw new InvalidOperationException("The given issue does not have a repository attached.");
 
             return new GetResponse(
-                claimRequest.Bounty.AmountInHundreds,
+                claimRequest.Bounty.Payments.Sum(x => x.AmountInHundreds),
                 new GitHubResponse(
                     issueRepository.GitHub.OwnerName,
                     issueRepository.GitHub.Name,

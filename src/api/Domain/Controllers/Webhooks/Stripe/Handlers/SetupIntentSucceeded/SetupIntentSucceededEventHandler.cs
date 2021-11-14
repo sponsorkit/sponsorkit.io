@@ -16,9 +16,6 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded
 {
-    /// <summary>
-    /// Posts a bounty to the database once the 
-    /// </summary>
     public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
     {
         private readonly CustomerService customerService;

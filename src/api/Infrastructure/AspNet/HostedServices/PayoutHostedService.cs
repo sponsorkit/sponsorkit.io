@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;
@@ -63,7 +65,6 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
                     {
                         await PayoutFundsAsync(
                             claimRequest,
-                            dataContext,
                             serviceProvider);
                     }
                     else
@@ -87,38 +88,45 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
 
         private static async Task PayoutFundsAsync(
             BountyClaimRequest claimRequest,
-            DataContext dataContext,
             IServiceProvider serviceProvider)
         {
             var stripeConnectId = claimRequest.Creator.StripeConnectId;
             if (stripeConnectId == null)
                 throw new InvalidOperationException("The creator of the claim request does not have a Stripe Connect ID.");
 
-            //TODO: handle transactional logic.
+            var amountSumInHundreds = claimRequest.Bounty.Payments.Sum(p => p.AmountInHundreds);
+            var feeSumInHundreds = claimRequest.Bounty.Payments.Sum(p => p.FeeInHundreds);
             
             var paymentIntentService = serviceProvider.GetRequiredService<PaymentIntentService>();
-            var paymentIntent = await paymentIntentService.CreateAsync(
+            await paymentIntentService.CreateAsync(
                 new PaymentIntentCreateOptions()
                 {
-                    //TODO: verify that amount in hundreds is including fees.
                     Customer = claimRequest.Bounty.Creator.StripeCustomerId,
-                    Amount = claimRequest.Bounty.AmountInHundreds,
+                    Amount = amountSumInHundreds + feeSumInHundreds,
                     Currency = "usd",
                     Confirm = true,
+                    ApplicationFeeAmount = feeSumInHundreds,
                     TransferData = new PaymentIntentTransferDataOptions()
                     {
-                        Amount = FeeCalculator.GetSponsorkitFeeInHundreds(
-                            claimRequest.Bounty.AmountInHundreds),
+                        Amount = amountSumInHundreds,
                         Destination = stripeConnectId
                     },
+                    OnBehalfOf = stripeConnectId,
+                    ErrorOnRequiresAction = true,
                     Metadata = new Dictionary<string, string>()
                     {
-                        //TODO: provide metadata for webhook to react to.
-                    },
-                    ErrorOnRequiresAction = true
+                        {
+                            UniversalMetadataKeys.Type, UniversalMetadataTypes.BountyPayoutPaymentIntent
+                        },
+                        {
+                            MetadataKeys.BountyId, claimRequest.BountyId.ToString()
+                        }
+                    }
+                },
+                new RequestOptions()
+                {
+                    IdempotencyKey = $"bounty-payment-intent-{claimRequest.BountyId}"
                 });
-            
-            //TODO: handle actual data on webhook.
         }
 
         public PayoutHostedService(IServiceProvider serviceProvider) : base(serviceProvider)

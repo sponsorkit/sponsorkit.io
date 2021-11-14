@@ -25,9 +25,6 @@ namespace Sponsorkit.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("AmountInHundreds")
-                        .HasColumnType("bigint");
-
                     b.Property<Guid?>("AwardedToId")
                         .HasColumnType("uuid");
 
@@ -121,6 +118,9 @@ namespace Sponsorkit.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("FeeInHundreds")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("FeePayedOutToPlatformBankAccountAt")
                         .HasColumnType("timestamp with time zone");

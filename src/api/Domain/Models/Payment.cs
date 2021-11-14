@@ -27,9 +27,11 @@ namespace Sponsorkit.Domain.Models
         public DateTimeOffset? FeePayedOutToPlatformBankAccountAt { get; set; }
         
         /// <summary>
-        /// The amount of money in hundreds, UTC.
+        /// The amount of money in hundreds.
         /// </summary>
         public long AmountInHundreds { get; set; }
+        
+        public long FeeInHundreds { get; set; }
         
         /// <summary>
         /// The ID of the setup intent in Stripe.
