@@ -163,7 +163,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                 },
                 new RequestOptions()
                 {
-                    IdempotencyKey = userId.ToString()
+                    IdempotencyKey = $"stripe-customer-{userId.ToString()}"
                 },
                 cancellationToken: CancellationToken.None);
         }

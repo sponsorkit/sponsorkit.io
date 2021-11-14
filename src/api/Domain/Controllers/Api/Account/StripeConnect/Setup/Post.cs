@@ -74,7 +74,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                 },
                 new RequestOptions()
                 {
-                    IdempotencyKey = user.Id.ToString()
+                    IdempotencyKey = $"stripe-account-{user.Id.ToString()}"
                 },
                 cancellationToken: default);
         }

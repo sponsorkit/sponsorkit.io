@@ -38,6 +38,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent
         public const string UserId = "UserId";
         public const string FeeInHundreds = "FeeInHundreds";
         public const string BountyId = "BountyId";
+        public const string PaymentId = "PaymentId";
+        public const string ClaimRequestId = "ClaimRequestId";
     }
 
     public class Post : BaseAsyncEndpoint
