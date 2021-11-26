@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
@@ -23,6 +24,7 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
             CancellationToken cancellationToken)
         {
             var dataContext = serviceProvider.GetRequiredService<DataContext>();
+            var gitHubClient = serviceProvider.GetRequiredService<IGitHubClient>();
             
             //each issue has multiple bounties. up to one per user.
             var bountyClaimRequestsByIssueId = await dataContext.BountyClaimRequests
@@ -72,18 +74,32 @@ namespace Sponsorkit.Infrastructure.AspNet.HostedServices
                         await RedistributeFundsToTopOpenSourceIssuesAsync(
                             claimRequest,
                             dataContext,
-                            serviceProvider);
+                            serviceProvider,
+                            gitHubClient);
                     }
                 }
             }
         }
 
-        private static Task RedistributeFundsToTopOpenSourceIssuesAsync(
+        private static async Task RedistributeFundsToTopOpenSourceIssuesAsync(
             BountyClaimRequest claimRequest,
             DataContext dataContext,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IGitHubClient gitHubClient)
         {
-            return Task.FromException(new NotImplementedException());
+            await gitHubClient.Search.SearchIssues(new()
+            {
+                Archived = false,
+                State = ItemState.Open,
+                Type = IssueTypeQualifier.Issue,
+                Parameters =
+                {
+                    {"sort", "bar"}
+                }
+                //is:open is:issue archived:false sort:reactions-+1-desc 
+            });
+            
+            throw new NotImplementedException();
         }
 
         private static async Task PayoutFundsAsync(

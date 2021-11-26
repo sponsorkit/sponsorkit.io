@@ -98,7 +98,7 @@
     "clean": "gatsby clean",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
     "swagger": "npm run clean && npm run swagger:autorest",
-    "swagger:autorest": "npm i -g autorest@latest && autorest --reset && npm run swagger:autorest:generate && cd ./src/generated/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/generated/openapi/sponsorkit-client-1.0.0.tgz",
+    "swagger:autorest": "npm i -g autorest@latest && npm cache clear --force && autorest --reset && autorest --latest && npm run swagger:autorest:generate && cd ./src/generated/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/generated/openapi/sponsorkit-client-1.0.0.tgz",
     "swagger:autorest:generate": "npm run swagger:autorest:generate:debug:devcontainer || npm run swagger:autorest:generate:debug:localhost",
     "swagger:autorest:generate:debug:devcontainer": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://host.docker.internal:5000/swagger/v1/swagger.json --output-folder=./src/generated/openapi",
     "swagger:autorest:generate:debug:localhost": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/generated/openapi",
