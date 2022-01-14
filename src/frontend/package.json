@@ -61,17 +61,6 @@
     "builtin-modules": "^3.2.0",
     "dotenv-webpack": "^1.8.0",
     "fs-extra": "^10.0.0",
-    "gatsby-plugin-gatsby-cloud": "^4.0.0",
-    "gatsby-plugin-image": "^2.0.0",
-    "gatsby-plugin-manifest": "^4.0.0",
-    "gatsby-plugin-react-helmet": "^5.0.0",
-    "gatsby-plugin-react-svg": "^3.1.0",
-    "gatsby-plugin-remove-trailing-slashes": "^4.0.0",
-    "gatsby-plugin-sass": "^5.0.0",
-    "gatsby-plugin-sharp": "^4.0.0",
-    "gatsby-plugin-typescript": "^4.0.0",
-    "gatsby-source-filesystem": "^4.0.0",
-    "gatsby-transformer-sharp": "^4.0.0",
     "lmdb-store": "^1.6.6",
     "postcss": "^8.3.11",
     "prettier": "2.2.1",
@@ -95,11 +84,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "develop": "gatsby develop",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
-    "serve": "gatsby serve",
-    "clean": "gatsby clean",
-    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1",
     "swagger": "npm run clean && npm run swagger:autorest",
     "swagger:autorest": "npm i -g autorest@latest && npm cache clear --force && autorest --reset && autorest --latest && npm run swagger:autorest:generate && cd ./src/generated/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/generated/openapi/sponsorkit-client-1.0.0.tgz",
     "swagger:autorest:generate": "npm run swagger:autorest:generate:debug:devcontainer || npm run swagger:autorest:generate:debug:localhost",
@@ -110,10 +95,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gatsbyjs/gatsby-starter-default"
+    "url": "https://github.com/sponsorkit/sponsorkit.io"
   },
   "bugs": {
-    "url": "https://github.com/gatsbyjs/gatsby/issues"
+    "url": "https://github.com/sponsorkit/sponsorkit.io/issues"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"
