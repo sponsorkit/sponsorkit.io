@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import * as React from "react";
-import ThemeConfig from '../../src/theme';
+import ThemeConfig from '../src/theme';
 import "./layout.scss";
 
 export default function ({ children }: any) {

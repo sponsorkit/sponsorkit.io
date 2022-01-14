@@ -6,9 +6,9 @@ import React, { useState } from "react";
 import LoginDialog from "./login-dialog";
 import * as classes from "./private-route.module.scss";
 
-export default function PrivateRoute({ component, location, ...rest }: RouteComponentProps<{
+export default function PrivateRoute({ component, ...rest }: {
     component: any
-}>) {
+}) {
     const [shouldShowLoginDialog, setShouldShowLoginDialog] = useState(true);
     const configuration = useConfiguration();
 

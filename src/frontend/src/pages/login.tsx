@@ -1,13 +1,13 @@
+import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { createMessage } from "../utils/window-messages";
 
-export default function LoginPage(props: RouteComponentProps<{}>) {
+export default function LoginPage() {
+  const router = useRouter();
+
   useEffect(
     () => {
-      if (!props.location)
-        return;
-
-      const uri = new URL(props.location.href);
+      const uri = new URL(router.asPath);
 
       const code = uri.searchParams.get("code");
       const state = uri.searchParams.get("state");
