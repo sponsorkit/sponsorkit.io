@@ -1,15 +1,16 @@
 import { AppBar, Box, Container, Toolbar, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
-import { navigate } from "gatsby-link";
+import { useRouter } from 'next/router';
 import { forwardRef, useEffect } from "react";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import SponsorkitBlueIcon from './assets/Sponsorkit-blue.inline.svg';
 import * as classes from "./index.module.scss";
 
 export default function IndexPage() {
+  const router = useRouter();
   useEffect(
     () => {
-      navigate("/bounties/view");
+      router.push("/bounties/view");
     },
     []);
   return null;

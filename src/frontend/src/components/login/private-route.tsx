@@ -2,7 +2,6 @@ import getDialogTransitionProps from "@components/transitions/dialog-transition"
 import { useConfiguration } from "@hooks/configuration";
 import { GitHub } from "@mui/icons-material";
 import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
-import { RouteComponentProps } from "@reach/router";
 import React, { useState } from "react";
 import LoginDialog from "./login-dialog";
 import * as classes from "./private-route.module.scss";

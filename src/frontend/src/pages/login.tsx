@@ -1,4 +1,3 @@
-import { RouteComponentProps } from "@reach/router";
 import { useEffect } from "react";
 import { createMessage } from "../utils/window-messages";
 

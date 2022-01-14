@@ -1,4 +1,3 @@
-import { useLocation } from '@reach/router';
 import { useEffect, useRef } from 'react';
 import { getMessage, WindowMessages } from '../utils/window-messages';
 

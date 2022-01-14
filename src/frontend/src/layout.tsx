@@ -1,22 +1,19 @@
-import { LocationProvider } from "@reach/router";
+import Head from 'next/head';
 import * as React from "react";
-import Helmet from 'react-helmet';
 import ThemeConfig from '../../src/theme';
 import "./layout.scss";
 
 export default function ({ children }: any) {
   return (<React.StrictMode>
-    <Helmet>
+    <Head>
       <meta
         name="viewport"
         content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no"
       />
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;display=swap" />
-    </Helmet>
+    </Head>
     <ThemeConfig>
-      <LocationProvider>
-        {children}
-      </LocationProvider>
+      {children}
     </ThemeConfig>
   </React.StrictMode>)
 }
