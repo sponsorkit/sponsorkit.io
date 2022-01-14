@@ -25,8 +25,6 @@
     "@stripe/react-stripe-js": "^1.4.0",
     "@stripe/stripe-js": "^1.13.2",
     "dompurify": "^2.2.9",
-    "gatsby": "^4.0.0",
-    "gatsby-link": "^4.0.0",
     "lodash": "^4.17.21",
     "marked": "^2.0.7",
     "next": "^12.0.8",
@@ -57,7 +55,6 @@
     "autorest": "^3.4.2",
     "babel-loader": "^8.2.3",
     "babel-plugin-styled-components": "^1.13.3",
-    "babel-preset-gatsby": "^2.0.0",
     "builtin-modules": "^3.2.0",
     "dotenv-webpack": "^1.8.0",
     "fs-extra": "^10.0.0",
@@ -75,10 +72,6 @@
     "typescript-plugin-css-modules": "3.2.0",
     "webpack": "^5.39.1"
   },
-  "keywords": [
-    "gatsby"
-  ],
-  "license": "0BSD",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

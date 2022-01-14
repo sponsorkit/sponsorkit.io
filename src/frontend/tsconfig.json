@@ -1,8 +1,13 @@
 {
-    "include": ["./src/**/*"],
-    "exclude": ["./src/**/*.stories.tsx"],
-    "compilerOptions": {
-      "plugins": [{
+  "include": [
+    "./src/**/*"
+  ],
+  "exclude": [
+    "./src/**/*.stories.tsx"
+  ],
+  "compilerOptions": {
+    "plugins": [
+      {
         "name": "typescript-plugin-css-modules",
         "options": {
           "classnameTransform": "dashes",
@@ -10,32 +15,57 @@
           "postCssOptions": {},
           "rendererOptions": {}
         }
-      }],
-      "module": "ESNext",
-      "moduleResolution": "node",
-      "lib": ["dom", "ES2015", "ES2016", "ES2017"],
-      "jsx": "react-jsx",
-      "assumeChangesOnlyAffectDirectDependencies": true,
-      "removeComments": true,
-      "target": "ESNext",
-      "strict": true,
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "experimentalDecorators": true,
-      "emitDecoratorMetadata": true,
-      "noEmit": true,
-      "skipLibCheck": true,
-      "importHelpers": true,
-      "noEmitHelpers": false,
-      "baseUrl": ".",
-      "paths": {
-        "tslib" : ["./node_modules/tslib/tslib.d.ts"],
-        "@components/*": ["src/components/*"],
-        "@hooks/*": ["src/hooks/*"],
-        "@utils/*": ["src/utils/*"],
-        "@theme/*": ["src/theme/*"],
-        "@pages/*": ["src/pages/*"],
-        "@theme": ["src/theme/"]
       }
-    }
+    ],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": [
+      "dom",
+      "ES2015",
+      "ES2016",
+      "ES2017"
+    ],
+    "jsx": "preserve",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "removeComments": true,
+    "target": "ESNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "importHelpers": true,
+    "noEmitHelpers": false,
+    "baseUrl": ".",
+    "paths": {
+      "tslib": [
+        "./node_modules/tslib/tslib.d.ts"
+      ],
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@hooks/*": [
+        "src/hooks/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ],
+      "@theme/*": [
+        "src/theme/*"
+      ],
+      "@pages/*": [
+        "src/pages/*"
+      ],
+      "@theme": [
+        "src/theme/"
+      ]
+    },
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  }
 }
