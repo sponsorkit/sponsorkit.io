@@ -125,7 +125,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                         {
                             "Development" => new []
                             {
-                                "http://localhost:8000", 
+                                "http://localhost:3000", 
                                 "http://localhost:9000", 
                                 "http://localhost:6006"
                             },
