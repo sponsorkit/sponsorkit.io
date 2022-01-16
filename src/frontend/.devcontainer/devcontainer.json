@@ -14,7 +14,7 @@
 		"wraith13.zoombar-vscode"
 	],
 	"forwardPorts": [
-		8000,
+		3000,
 		6006
 	],
 	"remoteUser": "node",

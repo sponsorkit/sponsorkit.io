@@ -56,6 +56,7 @@ typings/
 
 # Next.js
 .next/
+tsconfig.tsbuildinfo
 
 # Mac files
 .DS_Store

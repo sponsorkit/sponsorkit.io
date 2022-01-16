@@ -7,7 +7,8 @@ import LoginDialog from "./login-dialog";
 import * as classes from "./private-route.module.scss";
 
 export default function PrivateRoute({ component, ...rest }: {
-    component: any
+    component: any,
+    path: string
 }) {
     const [shouldShowLoginDialog, setShouldShowLoginDialog] = useState(true);
     const configuration = useConfiguration();
