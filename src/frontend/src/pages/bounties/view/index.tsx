@@ -21,7 +21,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { AppBarLayout } from "@pages/index";
-import { GeneralConfigurationGetResponse, GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
@@ -33,11 +33,11 @@ import classes from './index.module.scss';
 export default function IssueByIdPage(props: {
     location: Location
 }) {
-    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
+    const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
 
-    const loadBountiesFromIssue = async (forIssue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
+    const loadBountiesFromIssue = async (forIssue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
         setBounties(null);
 
         const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
@@ -78,7 +78,7 @@ type Event = {
 function IssueInputField(props: {
     location: Location,
     onChange: (e: {
-        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+        issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
             number: number,
             owner: string,
@@ -108,7 +108,7 @@ function IssueInputField(props: {
             return "No issue was found with the given URL.";
     };
 
-    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
+    const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
     const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
         `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
@@ -141,7 +141,7 @@ function IssueInputField(props: {
                             repo: issueDetails.repo
                         }));
                     const issue = 
-                        issueResponse?.data as any as GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
+                        issueResponse?.data as any as OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
                         null;
                     setIssue(issue);
 
@@ -198,8 +198,8 @@ function IssueInputField(props: {
 
 const Issue = forwardRef(function (
     props: {
-        configuration: GeneralConfigurationGetResponse,
-        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+        configuration: ConfigurationGetResponse,
+        issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
         onBountyCreated: () => Promise<void> | void
     },
@@ -301,8 +301,8 @@ const Issue = forwardRef(function (
 });
 
 function Bounties(props: {
-    configuration: GeneralConfigurationGetResponse,
-    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    configuration: ConfigurationGetResponse,
+    issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -390,7 +390,7 @@ function Bounties(props: {
 }
 
 function CreateBounty(props: {
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     issue?: SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
@@ -498,7 +498,7 @@ function CreateBounty(props: {
 
 type ClaimDialogProps = {
     issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
 };
