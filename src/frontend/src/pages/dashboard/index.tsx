@@ -8,7 +8,7 @@ import { useConfiguration } from "@hooks/configuration";
 import { Box, Card, CardContent, CircularProgress, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { AppBarLayout } from "..";
-import classes from "./[...].module.scss";
+import classes from "./index.module.scss";
 
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
@@ -99,6 +99,5 @@ function DashboardPage() {
 
 export default function () {
     return <PrivateRoute
-        component={DashboardPage}
-        path="/dashboard" />
+        component={DashboardPage} />
 }
