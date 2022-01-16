@@ -1,13 +1,13 @@
 import { createApi } from '@hooks/clients';
 import { useToken } from '@hooks/token';
-import { GeneralConfigurationGetResponse, SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
+import { ConfigurationGetResponse, SponsorkitDomainControllersApiConfigurationResponse } from '@sponsorkit/client';
 import { newGuid } from '@utils/guid';
 import React, { useMemo } from 'react';
 import IframeDialog from '../iframe-dialog';
 
 export default function LoginDialog(props: {
     isOpen: boolean,
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     onDismissed: () => void,
     onPopupFailed?: () => void,
     children: () => JSX.Element|null|undefined
