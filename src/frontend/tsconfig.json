@@ -1,6 +1,8 @@
 {
   "include": [
-    "./src/**/*"
+    "next-env.d.ts",
+    "./src/**/*.ts",
+    "./src/**/*.tsx"
   ],
   "exclude": [
     "./src/**/*.stories.tsx"
@@ -10,7 +12,6 @@
       {
         "name": "typescript-plugin-css-modules",
         "options": {
-          "classnameTransform": "dashes",
           "dotenvOptions": {},
           "postCssOptions": {},
           "rendererOptions": {}
@@ -60,6 +61,9 @@
       ],
       "@theme": [
         "src/theme/"
+      ],
+      "@layout": [
+        "src/layout.tsx"
       ]
     },
     "allowJs": true,

@@ -7,8 +7,8 @@ import { createApi, useApi } from "@hooks/clients";
 import { useConfiguration } from "@hooks/configuration";
 import { Box, Card, CardContent, CircularProgress, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
-import { AppBarTemplate } from "..";
-import * as classes from "./[...].module.scss";
+import { AppBarLayout } from "..";
+import classes from "./[...].module.scss";
 
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
@@ -24,7 +24,7 @@ function DashboardPage() {
     if(!configuration)
         return <CircularProgress />;
 
-    return <AppBarTemplate logoVariant="sponsorkit">
+    return <AppBarLayout logoVariant="sponsorkit">
         {account && <EmailValidationDialog
             email={account.email}
             isOpen={isValidatingEmail}
@@ -94,7 +94,7 @@ function DashboardPage() {
                 </Card>
             </Box>
         </Container>
-    </AppBarTemplate>;
+    </AppBarLayout>;
 }
 
 export default function () {

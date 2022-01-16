@@ -4,8 +4,8 @@ import { Box, Card, CircularProgress } from "@mui/material";
 import { SponsorkitDomainControllersApiBountiesBountyResponse } from "@sponsorkit/client";
 import { getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import React, { useState } from "react";
-import { AppBarTemplate } from "..";
-import * as classes from "./index.module.scss";
+import { AppBarLayout } from "..";
+import classes from "./index.module.scss";
 
 export default function BountiesPage() {
     const bounties = useApi(
@@ -15,7 +15,7 @@ export default function BountiesPage() {
         },
         []);
 
-    return <AppBarTemplate logoVariant="bountyhunt">
+    return <AppBarLayout logoVariant="bountyhunt">
         <Box className={classes.root}>
             <h1 className={classes.header}>Top bounties</h1>
             {bounties ?
@@ -25,7 +25,7 @@ export default function BountiesPage() {
                         bounty={b} />) :
                 <CircularProgress />}
         </Box>
-    </AppBarTemplate>
+    </AppBarLayout>
 }
 
 function Bounty(props: {
@@ -50,17 +50,17 @@ function Bounty(props: {
         onClick={onClick}
         raised={raised}
     >
-        <Box className={classes.headerColumn}>
+        <Box className={classes["header-column"]}>
             <Currency 
                 amount={props.bounty.amountInHundreds / 100}
                 className={classes.currency} />
         </Box>
-        <Box className={classes.titleColumn}>
-            <Box className={classes.repositoryBox}>
+        <Box className={classes["title-column"]}>
+            <Box className={classes["repository-box"]}>
                 {props.bounty.gitHub.ownerName}/{props.bounty.gitHub.repositoryName}
             </Box>
-            <Box className={classes.titleBox}>
-                <span className={classes.issueNumber}>#{props.bounty.gitHub.number}</span>
+            <Box className={classes["title-box"]}>
+                <span className={classes["issue-number"]}>#{props.bounty.gitHub.number}</span>
                 <span className={classes.title}>{props.bounty.gitHub.title}</span>
             </Box>
         </Box>

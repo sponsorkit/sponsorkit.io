@@ -3,7 +3,7 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularPro
 import { combineClassNames } from "@utils/strings";
 import { useEffect, useState } from "react";
 import CircularProgressBar from "./circular-progress-bar";
-import * as classes from "./progress-list.module.scss";
+import classes from "./progress-list.module.scss";
 
 type CheckpointProps<TValidationTarget> = {
     validate: (validationTarget: TValidationTarget) => boolean,

@@ -1,5 +1,5 @@
-body {
-  background-color: #F5F5F5 !important;
+body, #__next {
+  background-color: #F5F5F5;
   cursor: default;
   user-select: none;
 
@@ -19,8 +19,8 @@ body {
 
   .MuiBackdrop-root {
     backdrop-filter: blur(20px);
-    background: none !important;
-    background-color: rgba(245, 245, 245, 0.7) !important;
+    background: none;
+    background-color: rgba(245, 245, 245, 0.7);
     backface-visibility: hidden;
     transform: translate3d(0,0,0);
     transform: translateZ(0);

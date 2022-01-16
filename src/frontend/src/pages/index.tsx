@@ -1,10 +1,11 @@
 import { AppBar, Box, Container, Toolbar, Typography } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
+import Image from "next/image";
 import { useRouter } from 'next/router';
 import { forwardRef, useEffect } from "react";
 import BountyhuntBlueIcon from './assets/Bountyhunt-blue.inline.svg';
 import SponsorkitBlueIcon from './assets/Sponsorkit-blue.inline.svg';
-import * as classes from "./index.module.scss";
+import classes from "./index.module.scss";
 
 export default function IndexPage() {
   const router = useRouter();
@@ -22,21 +23,22 @@ const BountyhuntLogo = forwardRef(function (
   props: {
     href?: string,
     target?: string
-  }, 
-  ref: React.Ref<HTMLAnchorElement>) 
-{
-  return <a 
+  },
+  ref: React.Ref<HTMLAnchorElement>) {
+  return <a
     href="https://bountyhunt.io"
     {...props}
-    ref={ref} 
+    ref={ref}
     className={combineClassNames(
-      classes.logo, 
+      classes.logo,
       classes.bountyhunt)}
   >
-    <BountyhuntBlueIcon className={classes.image} />
-    <Box className={classes.textContainer}>
-      <Typography className={classes.mainText}>bountyhunt.io</Typography>
-      <Typography className={classes.secondaryText}>by sponsorkit.io</Typography>
+    <Box className={classes.image}>
+      <Image width={50} height={50} src={BountyhuntBlueIcon} />
+    </Box>
+    <Box className={classes["text-container"]}>
+      <Typography className={classes["main-text"]}>bountyhunt.io</Typography>
+      <Typography className={classes["secondary-text"]}>by sponsorkit.io</Typography>
     </Box>
   </a>
 });
@@ -45,31 +47,30 @@ const SponsorkitLogo = forwardRef(function (
   props: {
     href?: string,
     target?: string
-  }, 
-  ref: React.Ref<HTMLAnchorElement>) 
-{
-  return <a 
+  },
+  ref: React.Ref<HTMLAnchorElement>) {
+  return <a
     href="https://sponsorkit.io"
     {...props}
-    ref={ref} 
+    ref={ref}
     className={combineClassNames(
-      classes.logo, 
+      classes.logo,
       classes.sponsorkit)}
   >
-    <SponsorkitBlueIcon className={classes.image} />
-    <Box className={classes.textContainer}>
-      <Typography className={classes.mainText}>sponsorkit.io</Typography>
+    <Image width={70} height={70} src={SponsorkitBlueIcon} className={classes.image} />
+    <Box className={classes["text-container"]}>
+      <Typography className={classes["main-text"]}>sponsorkit.io</Typography>
     </Box>
   </a>
 });
 
-export function AppBarTemplate(props: {
+export function AppBarLayout(props: {
   logoVariant: "sponsorkit" | "bountyhunt",
   children: React.ReactNode,
   className?: string
 }) {
   return <>
-    <AppBar color="default" className={classes.appBar}>
+    <AppBar color="default" className={classes["app-bar"]}>
       <Toolbar>
         <Container maxWidth="lg">
           <Logo variant={props.logoVariant} />
@@ -77,7 +78,7 @@ export function AppBarTemplate(props: {
       </Toolbar>
     </AppBar>
     <Box className={combineClassNames(classes.spacer, classes.top)} />
-    <Container maxWidth="lg" className={combineClassNames(classes.contentRoot, props.className)}>
+    <Container maxWidth="lg" className={combineClassNames(classes["content-root"], props.className)}>
       {props.children}
     </Container>
     <Box className={combineClassNames(classes.spacer, classes.bottom)} />
@@ -101,25 +102,25 @@ const Logo = forwardRef(function (
 function Footer() {
   return <Box className={classes.footer}>
     <Container maxWidth="lg" className={classes.container}>
-      <Logo 
-        href="https://github.com/sponsorkit" 
-        target="_blank" 
+      <Logo
+        href="https://github.com/sponsorkit"
+        target="_blank"
         variant="sponsorkit" />
       <Box className={classes.sections}>
         <FooterSection title="bountyhunt.io">
-          <FooterLink 
+          <FooterLink
             text="Become a bountyhunter"
             href="/dashboard" />
-          <FooterLink 
+          <FooterLink
             text="Top bounties"
             href="/bounties" />
         </FooterSection>
         <FooterSection title="GitHub">
-          <FooterLink 
+          <FooterLink
             text="File an issue"
             href="https://github.com/sponsorkit/sponsorkit.io/issues/new"
             target="_blank" />
-          <FooterLink 
+          <FooterLink
             text="Browse code"
             href="https://github.com/sponsorkit/sponsorkit.io" />
         </FooterSection>
@@ -134,7 +135,7 @@ function FooterSection(props: {
 }) {
   return <Box className={classes.section}>
     <Box className={classes.title}>
-        {props.title}
+      {props.title}
     </Box>
     <Box className={classes.links}>
       {props.children}
@@ -147,8 +148,8 @@ function FooterLink(props: {
   href: string,
   target?: string
 }) {
-  return <a 
-    href={props.href} 
+  return <a
+    href={props.href}
     target={props.target}
     className={classes.link}
   >

@@ -3,7 +3,7 @@ import TooltipLink from "@components/tooltips/tooltip-link";
 import { Transition } from "@components/transitions/transition";
 import { CircularProgress, Typography } from "@mui/material";
 import React from "react";
-import * as classes from "./fee-display.module.scss";
+import classes from "./fee-display.module.scss";
 
 export function FeeDisplay(props: {
     amount: number,

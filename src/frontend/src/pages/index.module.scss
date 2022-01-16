@@ -1,9 +1,9 @@
 .content-root {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     flex-wrap: wrap;
     justify-content: center;
-    max-width: 1265px !important;
+    max-width: 1265px;
 }
 
 .spacer {
@@ -34,6 +34,7 @@
     align-content: center;
     justify-content: center;
     color: #0045FF;
+    position: relative;
 
     transition: all 0.25s ease-in-out;
 
@@ -68,8 +69,6 @@
         }
 
         .image {
-            width: 50px;
-            height: 50px;
             margin-left: 5px;
         }
     }
@@ -97,8 +96,6 @@
         }
 
         .image {
-            width: 70px;
-            height: 70px;
             margin-left: 5px;
         }
     }
@@ -179,9 +176,9 @@
 
                         &:hover {
                             color: black;
-                            text-decoration: underline !important;
-                            text-decoration-style: dashed !important;
-                            text-underline-offset: 2px !important;
+                            text-decoration: underline;
+                            text-decoration-style: dashed;
+                            text-underline-offset: 2px;
                         }
                     }
                 }

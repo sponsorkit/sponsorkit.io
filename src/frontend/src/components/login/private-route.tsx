@@ -4,7 +4,7 @@ import { GitHub } from "@mui/icons-material";
 import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import React, { useState } from "react";
 import LoginDialog from "./login-dialog";
-import * as classes from "./private-route.module.scss";
+import classes from "./private-route.module.scss";
 
 export default function PrivateRoute({ component, ...rest }: {
     component: any,

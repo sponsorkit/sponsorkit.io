@@ -1,7 +1,7 @@
 import { combineClassNames } from "@utils/strings";
 import DOMPurify from "dompurify";
 import marked, { Renderer } from "marked";
-import * as classes from "./markdown.module.scss";
+import classes from "./markdown.module.scss";
 
 export function Markdown(props: {
     markdown: string|undefined|null,
