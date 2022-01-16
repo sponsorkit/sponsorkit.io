@@ -1,6 +1,6 @@
 import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
-import { GeneralConfigurationGetResponse } from "@sponsorkit/client";
+import { ConfigurationGetResponse } from "@sponsorkit/client";
 import { SetupIntent, Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import { combineClassNames } from "@utils/strings";
 import Image from "next/image";
@@ -18,7 +18,7 @@ type IntentResponse = {
 
 type Props = {
     isOpen: boolean,
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
     isDoneAccessor?: (intent: SetupIntent) => Promise<boolean>,
