@@ -497,7 +497,7 @@ function CreateBounty(props: {
 }
 
 type ClaimDialogProps = {
-    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     configuration: ConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
