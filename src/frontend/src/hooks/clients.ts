@@ -42,7 +42,7 @@ function getBaseUri() {
     if (currentUri.hostname === "localhost")
         return "http://localhost:5000/";
 
-    if(currentUri.hostname.endsWith(".gtsb.io"))
+    if(currentUri.hostname.endsWith(".vercel.app"))
         return "https://api-staging.sponsorkit.io/";
 
     const requestUri = new URL(window.location.href);
