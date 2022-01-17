@@ -34,7 +34,7 @@ export default function ThemeConfig({ children }: ThemeConfigProps) {
   theme.components = componentsOverride(theme);
 
   return (
-    <StyledEngineProvider injectFirst={true}>
+    <StyledEngineProvider injectFirst={false}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
