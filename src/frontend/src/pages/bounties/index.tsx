@@ -41,12 +41,10 @@ function Bounty(props: {
 
     const [raised, setRaised] = useState(false);
 
-    const toggleRaised = () => setRaised(!raised);
-
     return <Card 
         className={classes.bounty}
-        onMouseOver={toggleRaised} 
-        onMouseOut={toggleRaised} 
+        onMouseEnter={() => setRaised(true)} 
+        onMouseOut={() => setRaised(false)} 
         onClick={onClick}
         raised={raised}
     >
