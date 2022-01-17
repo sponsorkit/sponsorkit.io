@@ -7,10 +7,8 @@ export default function LoginPage() {
 
   useEffect(
     () => {
-      const uri = new URL(router.asPath);
-
-      const code = uri.searchParams.get("code");
-      const state = uri.searchParams.get("state");
+      const code = router.query.code as string;
+      const state = router.query.state as string;
       if (!code || !state)
         return;
 

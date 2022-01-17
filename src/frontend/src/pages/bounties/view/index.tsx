@@ -30,9 +30,7 @@ import { useRouter } from "next/router";
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import classes from './index.module.scss';
 
-export default function IssueByIdPage(props: {
-    location: Location
-}) {
+export default function IssueByIdPage() {
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
@@ -46,7 +44,6 @@ export default function IssueByIdPage(props: {
 
     return <AppBarLayout logoVariant="bountyhunt" className={classes.root}>
         <IssueInputField
-            location={props.location}
             onChange={async e => {
                 console.debug("issue-input-field-changed", e);
 
@@ -76,7 +73,6 @@ type Event = {
 }
 
 function IssueInputField(props: {
-    location: Location,
     onChange: (e: {
         issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
