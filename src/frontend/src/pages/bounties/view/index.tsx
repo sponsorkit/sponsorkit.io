@@ -20,32 +20,31 @@ import { GitHub, SvgIconComponent } from '@mui/icons-material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
-import { AppBarTemplate } from "@pages/index";
-import { GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { AppBarLayout } from "@pages/index";
+import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
-import { getUrlParameter } from "@utils/url";
 import { orderBy, sum } from 'lodash';
+import { useRouter } from "next/router";
 import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { GeneralConfigurationGetResponse } from "src/generated/openapi/types/client";
-import * as classes from './index.module.scss';
+import classes from './index.module.scss';
 
 export default function IssueByIdPage(props: {
     location: Location
 }) {
-    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
+    const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
 
-    const loadBountiesFromIssue = async (forIssue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
+    const loadBountiesFromIssue = async (forIssue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
         setBounties(null);
 
         const response = await createApi().bountiesGitHubIssueIdGet(forIssue.id);
         setBounties(response?.bounties || null);
     }
 
-    return <AppBarTemplate logoVariant="bountyhunt" className={classes.root}>
+    return <AppBarLayout logoVariant="bountyhunt" className={classes.root}>
         <IssueInputField
             location={props.location}
             onChange={async e => {
@@ -66,7 +65,7 @@ export default function IssueByIdPage(props: {
                     onBountyCreated={async () =>
                         await loadBountiesFromIssue(issue)} />}
         </Transition>}
-    </AppBarTemplate>
+    </AppBarLayout>
 }
 
 type Event = {
@@ -79,7 +78,7 @@ type Event = {
 function IssueInputField(props: {
     location: Location,
     onChange: (e: {
-        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+        issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
             number: number,
             owner: string,
@@ -87,9 +86,11 @@ function IssueInputField(props: {
         }
     }) => Promise<any>
 }) {
-    const issueNumber = getUrlParameter(props.location, "number");
-    const owner = getUrlParameter(props.location, "owner");
-    const repo = getUrlParameter(props.location, "repo");
+    const router = useRouter();
+
+    const issueNumber = router.query.number as string;
+    const owner = router.query.owner as string;
+    const repo = router.query.repo as string;
 
     const areAllIssueVariablesSet =
         issueNumber &&
@@ -107,7 +108,7 @@ function IssueInputField(props: {
             return "No issue was found with the given URL.";
     };
 
-    const [issue, setIssue] = useState<GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
+    const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
     const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
         `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
@@ -140,7 +141,7 @@ function IssueInputField(props: {
                             repo: issueDetails.repo
                         }));
                     const issue = 
-                        issueResponse?.data as any as GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
+                        issueResponse?.data as any as OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse || 
                         null;
                     setIssue(issue);
 
@@ -163,11 +164,11 @@ function IssueInputField(props: {
         getErrorMessage,
         [issue, isLoading, issueLink, issueDetails]);
 
-    return <Card className={classes.issueLinkInput}>
-        <CardContent className={classes.cardContent}>
-            <Box className={classes.textFieldContainer}>
+    return <Card className={classes["issue-link-input"]}>
+        <CardContent className={classes["card-content"]}>
+            <Box className={classes["text-field-container"]}>
                 <TextField
-                    className={classes.textField}
+                    className={classes["text-field"]}
                     label="GitHub issue URL"
                     error={!!errorMessage}
                     helperText={errorMessage}
@@ -197,8 +198,8 @@ function IssueInputField(props: {
 
 const Issue = forwardRef(function (
     props: {
-        configuration: GeneralConfigurationGetResponse,
-        issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+        configuration: ConfigurationGetResponse,
+        issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
         onBountyCreated: () => Promise<void> | void
     },
@@ -241,24 +242,24 @@ const Issue = forwardRef(function (
         throw new Error("Expected repo details.");
 
     return <Box
-        className={combineClassNames(classes.issueRoot)}
+        className={combineClassNames(classes["issue-root"])}
         ref={ref}
     >
-        <Box className={classes.issueBox}>
+        <Box className={classes["issue-box"]}>
             <Card className={classes.issue}>
                 <CardContent>
-                    <Typography color="textSecondary" gutterBottom className={classes.repoTitle}>
+                    <Typography color="textSecondary" gutterBottom className={classes["repo-title"]}>
                         {repo.owner}/{repo.name}
                     </Typography>
-                    <Typography variant="h3" component="h1" className={classes.issueTitle}>
-                        {props.issue.title} <span className={classes.issueNumber}>#{props.issue.number}</span>
+                    <Typography variant="h3" component="h1" className={classes["issue-title"]}>
+                        {props.issue.title} <span className={classes["issue-number"]}>#{props.issue.number}</span>
                     </Typography>
                     <Markdown
                         className={classes.markdown}
                         markdown={props.issue.body} />
                 </CardContent>
             </Card>
-            <Card className={classes.bountyActivity}>
+            <Card className={classes["bounty-activity"]}>
                 <Timeline>
                     {eventsOrdered.map((e, i) => {
                         if (!e)
@@ -268,7 +269,7 @@ const Issue = forwardRef(function (
                         const isLast = i === events.length - 1;
                         return <TimelineItem key={`timeline-${e.time.getTime()}`}>
                             <TimelineOppositeContent>
-                                <Typography variant="body2" color="textSecondary" className={classes.dateMark}>
+                                <Typography variant="body2" color="textSecondary" className={classes["date-mark"]}>
                                     <span className={classes.date}>{e.time.toLocaleDateString()}</span>
                                     <span className={classes.time}>{e.time.toLocaleTimeString()}</span>
                                 </Typography>
@@ -279,7 +280,7 @@ const Issue = forwardRef(function (
                                 </TimelineDot>
                                 {!isLast && <TimelineConnector />}
                             </TimelineSeparator>
-                            <TimelineContent className={classes.timelineContent}>
+                            <TimelineContent className={classes["timeline-content"]}>
                                 <Typography fontWeight="bold" color="primary" className={classes.title}>{e.title}</Typography>
                                 {e.description &&
                                     <Typography fontSize="14px" color="textSecondary" className={classes.subtext}>
@@ -300,8 +301,8 @@ const Issue = forwardRef(function (
 });
 
 function Bounties(props: {
-    configuration: GeneralConfigurationGetResponse,
-    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    configuration: ConfigurationGetResponse,
+    issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
     bounties: SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null | undefined,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -351,19 +352,19 @@ function Bounties(props: {
                 issue={props.issue}
                 isOpen={isClaiming}
                 onClose={() => setIsClaiming(false)} />
-            <CardContent className={classes.bountyAmount}>
-                <Box className={classes.labelContainer}>
-                    <Typography component="div" variant="h3" className={classes.amountRaised}>
+            <CardContent className={classes["bounty-amount"]}>
+                <Box className={classes["label-container"]}>
+                    <Typography component="div" variant="h3" className={classes["amount-raised"]}>
                         <Currency amount={totalBountyReward.animated} /> reward
                     </Typography>
-                    <Typography component="div" className={classes.amountOfSponsors}>
+                    <Typography component="div" className={classes["amount-of-sponsors"]}>
                         <b>{totalBountyCount.animated}</b> bount{totalBountyCount.current === 1 ? "y" : "ies"}
                     </Typography>
                 </Box>
-                <Tooltip title={claimError} className={classes.buttonContainer}>
+                <Tooltip title={claimError} className={classes["button-container"]}>
                     <Button
                         className={combineClassNames(
-                            classes.claimButton,
+                            classes["claim-button"],
                             !!claimError && classes.disabled)}
                         disableRipple={!!claimError}
                         variant="outlined"
@@ -389,7 +390,7 @@ function Bounties(props: {
 }
 
 function CreateBounty(props: {
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     issue?: SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
@@ -437,7 +438,7 @@ function CreateBounty(props: {
                 !props.issue ||
                 !amount ||
                 !feeAmount}
-            className={classes.addButton}
+            className={classes["add-button"]}
             variant="contained"
             onClick={onCreateClicked}
         >
@@ -479,7 +480,7 @@ function CreateBounty(props: {
                         control={<Checkbox
                             checked={consentChargedAferIssueClose}
                             onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
-                            className={classes.consentCheckbox} />} />
+                            className={classes["consent-checkbox"]} />} />
                     <FormControlLabel 
                         className={classes.label}
                         label={<>
@@ -488,7 +489,7 @@ function CreateBounty(props: {
                         control={<Checkbox
                             checked={consentNoRefunds}
                             onChange={() => setConsentNoRefunds(!consentNoRefunds)}
-                            className={classes.consentCheckbox} />} />
+                            className={classes["consent-checkbox"]} />} />
                 </FormGroup>
             </>}
         />
@@ -496,8 +497,8 @@ function CreateBounty(props: {
 }
 
 type ClaimDialogProps = {
-    issue: GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
-    configuration: GeneralConfigurationGetResponse,
+    issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    configuration: ConfigurationGetResponse,
     isOpen: boolean,
     onClose: () => void
 };
@@ -676,7 +677,7 @@ function ClaimDialogContents(props: ClaimDialogProps) {
                                     "Valid" :
                                     `Invalid`}
                                 renderOption={(props, option) => <Box {...props as any} key={`pullrequest-${option.number}`}>
-                                    <Typography className={classes.pullRequest}>
+                                    <Typography className={classes["pull-request"]}>
                                         <span className={classes.number}>#{option.number}</span>
                                         <span className={classes.title}>{option.title}</span>
                                     </Typography>

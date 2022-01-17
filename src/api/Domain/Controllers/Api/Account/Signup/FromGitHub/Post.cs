@@ -161,6 +161,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub
                         { "UserId", userId.ToString() }
                     }
                 },
+                new RequestOptions()
+                {
+                    IdempotencyKey = $"stripe-customer-{userId.ToString()}"
+                },
                 cancellationToken: CancellationToken.None);
         }
 

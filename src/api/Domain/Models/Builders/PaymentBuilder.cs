@@ -4,32 +4,25 @@ namespace Sponsorkit.Domain.Models.Builders
 {
     public class PaymentBuilder : ModelBuilder<Payment>
     {
-        private Guid id;
         private Bounty? bounty;
         private Sponsorship? sponsorship;
-        
-        private DateTimeOffset? transferredToConnectedAccountAtUtc;
-        private DateTimeOffset? feePayedOutToPlatformBankAccountAtUtc;
 
         private long? amountInHundreds;
+        private long? feeInHundreds;
+        
         private string? stripeId;
-        private DateTimeOffset createdAtUtc;
         private string? stripeEventId;
+        
+        private readonly DateTimeOffset createdAt;
 
         public PaymentBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public PaymentBuilder WithStripeEventId(string eventId)
         {
             this.stripeEventId = eventId;
-            return this;
-        }
-
-        public PaymentBuilder WithId(Guid id)
-        {
-            this.id = id;
             return this;
         }
 
@@ -45,21 +38,12 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public PaymentBuilder WithTransferredToConnectedAccountAtcUtc(DateTimeOffset date)
-        {
-            this.transferredToConnectedAccountAtUtc = date;
-            return this;
-        }
-
-        public PaymentBuilder WithFeePayedOutToPlatformBankAccountAtUtc(DateTimeOffset date)
-        {
-            this.feePayedOutToPlatformBankAccountAtUtc = date;
-            return this;
-        }
-
-        public PaymentBuilder WithAmountInHundreds(long amountInHundreds)
+        public PaymentBuilder WithAmount(
+            long amountInHundreds,
+            long feeInHundreds)
         {
             this.amountInHundreds = amountInHundreds;
+            this.feeInHundreds = feeInHundreds;
             return this;
         }
 
@@ -68,17 +52,14 @@ namespace Sponsorkit.Domain.Models.Builders
             this.stripeId = stripeId;
             return this;
         }
-
-        public PaymentBuilder WithCreatedAtUtc(DateTimeOffset createdAtUtc)
-        {
-            this.createdAtUtc = createdAtUtc;
-            return this;
-        }
         
         public override Payment Build()
         {
             if (amountInHundreds == null)
                 throw new InvalidOperationException("An amount must be specified.");
+            
+            if (feeInHundreds == null)
+                throw new InvalidOperationException("A fee must be specified.");
 
             if (stripeId == null)
                 throw new InvalidOperationException("Stripe ID must be set.");
@@ -89,16 +70,17 @@ namespace Sponsorkit.Domain.Models.Builders
             if (amountInHundreds <= 0)
                 throw new InvalidOperationException("Amount must be positive.");
 
-                return new Payment()
+            if (feeInHundreds <= 0)
+                throw new InvalidOperationException("Fee must be positive.");
+
+            return new Payment()
             {
                 Bounty = bounty,
-                Id = id,
                 Sponsorship = sponsorship,
                 StripeId = stripeId,
                 AmountInHundreds = amountInHundreds.Value,
-                CreatedAtUtc = createdAtUtc,
-                TransferredToConnectedAccountAtUtc = transferredToConnectedAccountAtUtc,
-                FeePayedOutToPlatformBankAccountAtUtc = feePayedOutToPlatformBankAccountAtUtc,
+                FeeInHundreds = feeInHundreds.Value,
+                CreatedAt = createdAt,
                 StripeEventId = stripeEventId
             };
         }

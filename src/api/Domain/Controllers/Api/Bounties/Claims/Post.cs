@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
-using Serilog;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
 using Sponsorkit.Domain.Mediatr.Email.Templates.BountyClaimRequest;
@@ -33,20 +32,17 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims
         private readonly DataContext dataContext;
         private readonly IMediator mediator;
         private readonly IAesEncryptionHelper aesEncryptionHelper;
-        private readonly ILogger logger;
         private readonly IGitHubClient gitHubClient;
 
         public Post(
             DataContext dataContext,
             IMediator mediator,
             IAesEncryptionHelper aesEncryptionHelper,
-            ILogger logger,
             IGitHubClient gitHubClient)
         {
             this.dataContext = dataContext;
             this.mediator = mediator;
             this.aesEncryptionHelper = aesEncryptionHelper;
-            this.logger = logger;
             this.gitHubClient = gitHubClient;
         }
 

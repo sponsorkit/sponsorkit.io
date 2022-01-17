@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Octokit;
+using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.GitHub;
 
 namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.RepositoryName.Issues.IssueNumber
@@ -20,11 +22,14 @@ namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.Repository
         .WithResponse<Issue>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
+        private readonly DataContext dataContext;
 
         public Get(
-            IGitHubClientFactory gitHubClientFactory)
+            IGitHubClientFactory gitHubClientFactory,
+            DataContext dataContext)
         {
             this.gitHubClientFactory = gitHubClientFactory;
+            this.dataContext = dataContext;
         }
         
         [AllowAnonymous]
@@ -42,8 +47,32 @@ namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.Repository
                 request.IssueNumber);
             if (issue == null)
                 return NotFound("Repository not found.");
-            
+
+            await UpdateIssueInDatabaseAsync(request, issue, cancellationToken);
+
             return issue;
+        }
+
+        private async Task UpdateIssueInDatabaseAsync(
+            GetRequest request, 
+            Issue issue, 
+            CancellationToken cancellationToken)
+        {
+            var databaseIssue = await dataContext.Issues
+                .AsQueryable()
+                .FirstOrDefaultAsync(
+                    x =>
+                        x.GitHub.Number == request.IssueNumber &&
+                        x.Repository.GitHub.OwnerName == request.RepositoryOwner &&
+                        x.Repository.GitHub.Name == request.RepositoryName,
+                    cancellationToken);
+            if (databaseIssue == null)
+                return;
+            
+            databaseIssue.GitHub.ClosedAt = issue.ClosedAt;
+            databaseIssue.GitHub.TitleSnapshot = issue.Title;
+            
+            await dataContext.SaveChangesAsync(cancellationToken);
         }
     }
 }

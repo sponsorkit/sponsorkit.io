@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sponsorkit.Infrastructure.AspNet
+namespace Sponsorkit.Infrastructure.AspNet.HostedServices
 {
     public interface IDockerDependencyService
     {

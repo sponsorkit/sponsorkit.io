@@ -8,11 +8,11 @@ namespace Sponsorkit.Domain.Models.Builders
         private User? creator;
         private PullRequest? pullRequest;
         
-        private DateTimeOffset createdAtUtc;
+        private readonly DateTimeOffset createdAt;
 
         public BountyClaimRequestBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public BountyClaimRequestBuilder WithBounty(Bounty bounty)
@@ -48,7 +48,7 @@ namespace Sponsorkit.Domain.Models.Builders
             {
                 Bounty = bounty,
                 Creator = creator,
-                CreatedAtUtc = createdAtUtc,
+                CreatedAt = createdAt,
                 PullRequest = pullRequest
             };
         }

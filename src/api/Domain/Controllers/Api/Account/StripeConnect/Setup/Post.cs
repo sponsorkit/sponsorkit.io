@@ -72,6 +72,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup
                     Email = email,
                     Type = "express"
                 },
+                new RequestOptions()
+                {
+                    IdempotencyKey = $"stripe-account-{user.Id.ToString()}"
+                },
                 cancellationToken: default);
         }
     }

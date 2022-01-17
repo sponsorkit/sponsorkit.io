@@ -79,7 +79,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Account
             return Ok(new Response(
                 email,
                 user.GitHub?.Username,
-                user.EmailVerifiedAtUtc != null,
+                user.EmailVerifiedAt != null,
                 await GetBeneficiaryResponseAsync(user),
                 GetSponsorResponse(paymentMethod)));
         }

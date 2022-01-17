@@ -7,9 +7,10 @@ namespace Sponsorkit.Domain.Models
 {
     public enum ClaimVerdict
     {
-        Solved,
-        Unsolved,
-        Scam
+        Undecided = 0,
+        Solved = 1,
+        Unsolved = 2,
+        Scam = 3
     }
     
     public class BountyClaimRequest
@@ -23,15 +24,15 @@ namespace Sponsorkit.Domain.Models
         public User Creator { get; set; } = null!;
         public Guid CreatorId { get; set; }
 
-        public ClaimVerdict? Verdict { get; set; }
-        public DateTimeOffset? VerdictAtUtc { get; set; }
+        public ClaimVerdict Verdict { get; set; }
+        public DateTimeOffset? VerdictAt { get; set; }
 
         public PullRequest PullRequest { get; set; } = null!;
         public Guid PullRequestId { get; set; }
         
-        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
         
-        public DateTimeOffset? ExpiredAtUtc { get; set; }
+        public DateTimeOffset? ExpiredAt { get; set; }
     }
     
     public class BountyClaimRequestConfiguration : IEntityTypeConfiguration<BountyClaimRequest>

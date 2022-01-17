@@ -1,7 +1,7 @@
 import { Box, Button, FormHelperText, InputAdornment, TextField } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import palette from "../../theme/palette";
-import * as classes from "./amount-picker.module.scss";
+import classes from "./amount-picker.module.scss";
 
 export function AmountPicker(props: {
   options: number[],

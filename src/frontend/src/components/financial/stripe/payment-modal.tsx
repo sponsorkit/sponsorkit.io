@@ -1,14 +1,15 @@
 import { AsynchronousProgressDialog } from "@components/progress/asynchronous-progress-dialog";
 import { Box, CircularProgress, DialogContent, DialogTitle, FormHelperText, Tooltip } from "@mui/material";
-import { GeneralConfigurationGetResponse } from "@sponsorkit/client";
+import { ConfigurationGetResponse } from "@sponsorkit/client";
 import { SetupIntent, Stripe, StripeCardNumberElement, StripeError } from "@stripe/stripe-js";
 import { combineClassNames } from "@utils/strings";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import LoginDialog from "../../login/login-dialog";
 import PoweredByStripeBadge from "./assets/powered-by-stripe.inline.svg";
 import StripeCreditCard from "./credit-card";
 import Elements from "./elements";
-import * as classes from "./payment-modal.module.scss";
+import classes from "./payment-modal.module.scss";
 
 type IntentResponse = {
     clientSecret: string,
@@ -17,7 +18,7 @@ type IntentResponse = {
 
 type Props = {
     isOpen: boolean,
-    configuration: GeneralConfigurationGetResponse,
+    configuration: ConfigurationGetResponse,
     onClose: () => void,
     onAcquirePaymentIntent: () => Promise<IntentResponse>,
     isDoneAccessor?: (intent: SetupIntent) => Promise<boolean>,
@@ -146,8 +147,8 @@ function PaymentMethodModalContent(props: Props) {
         onDone={props.onComplete}
         actionChildren={<>
             <Tooltip title="Stripe is one of the most popular and trusted payment providers in the world. Your credit card details are safe with them, and never touches our own servers.">
-                <Box className={classes.stripeBadge}>
-                    <PoweredByStripeBadge className={classes.svg} />
+                <Box className={classes["stripe-badge"]}>
+                    <Image layout="fill" src={PoweredByStripeBadge} className={classes.svg} />
                 </Box>
             </Tooltip>
             <Box className={classes.spacer} />
@@ -156,9 +157,9 @@ function PaymentMethodModalContent(props: Props) {
         <DialogTitle>Enter payment details</DialogTitle>
         <DialogContent className={classes.root}>
             {props.beforeChildren}
-            <Box className={classes.paymentVeil}>
+            <Box className={classes["payment-veil"]}>
                 <Box className={combineClassNames(
-                    classes.creditCardWrapper,
+                    classes["credit-card-wrapper"],
                     isReady && classes.ready,
                     isInitializing && classes.initializing)}
                 >
@@ -169,7 +170,7 @@ function PaymentMethodModalContent(props: Props) {
                         />
                     </Elements>
                 </Box>
-                <Box className={classes.progressWrapper}>
+                <Box className={classes["progress-wrapper"]}>
                     <CircularProgress className={combineClassNames(
                         classes.progress,
                         isReady && classes.ready,

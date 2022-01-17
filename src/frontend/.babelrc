@@ -1,33 +1,5 @@
 {
-  "presets": [
-    [
-      "babel-preset-gatsby",
-      {
-        "reactRuntime": "automatic",
-        "targets": {
-          "browsers": [
-            "last 1 versions",
-            "not ie <= 11"
-          ]
-        }
-      }
+    "presets": [
+        "next/babel"
     ]
-  ],
-  "plugins": [
-    [
-      "@babel/plugin-proposal-class-properties",
-      {
-        "loose": true
-      }
-    ],
-    [
-      "@babel/plugin-transform-classes",
-      {
-        "loose": true
-      }
-    ],
-    [
-      "babel-plugin-styled-components"
-    ]
-  ]
 }

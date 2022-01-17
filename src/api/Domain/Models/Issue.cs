@@ -24,6 +24,8 @@ namespace Sponsorkit.Domain.Models
         public int Number { get; set; }
 
         public string TitleSnapshot { get; set; } = null!;
+
+        public DateTimeOffset? ClosedAt;
     }
     
     public class IssueConfiguration : IEntityTypeConfiguration<Issue>

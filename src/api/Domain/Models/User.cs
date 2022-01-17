@@ -14,7 +14,7 @@ namespace Sponsorkit.Domain.Models
         public Guid Id { get; set; }
         
         public byte[] EncryptedEmail { get; set; } = null!;
-        public DateTimeOffset? EmailVerifiedAtUtc { get; set; }
+        public DateTimeOffset? EmailVerifiedAt { get; set; }
 
         public string StripeCustomerId { get; set; } = null!;
 
@@ -22,7 +22,7 @@ namespace Sponsorkit.Domain.Models
 
         public UserGitHubInformation? GitHub { get; set; }
 
-        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
         
         public List<Repository> Repositories { get; set; } = new();
         

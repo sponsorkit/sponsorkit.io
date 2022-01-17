@@ -1,7 +1,7 @@
 import { combineClassNames } from "@utils/strings";
 import { debounce } from "lodash";
 import { Ref, useEffect, useRef, useState } from "react";
-import * as classes from "./absolute-box.module.scss";
+import classes from "./absolute-box.module.scss";
 
 export default function AbsoluteBox(props: {
     children: (ref: Ref<any>) => React.ReactNode,

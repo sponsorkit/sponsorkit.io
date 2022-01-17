@@ -7,13 +7,11 @@ namespace Sponsorkit.Domain.Models.Builders
         private User? creator;
         private Issue? issue;
 
-        private long? amountInHundreds;
-
-        private DateTimeOffset createdAtUtc;
+        private readonly DateTimeOffset createdAt;
 
         public BountyBuilder()
         {
-            createdAtUtc = DateTimeOffset.UtcNow;
+            createdAt = DateTimeOffset.UtcNow;
         }
 
         public BountyBuilder WithCreator(User creator)
@@ -28,12 +26,6 @@ namespace Sponsorkit.Domain.Models.Builders
             return this;
         }
 
-        public BountyBuilder WithAmountInHundreds(long amountInHundreds)
-        {
-            this.amountInHundreds = amountInHundreds;
-            return this;
-        }
-
         public override Bounty Build()
         {
             if (creator == null)
@@ -42,18 +34,11 @@ namespace Sponsorkit.Domain.Models.Builders
             if (issue == null)
                 throw new InvalidOperationException("No issue set.");
 
-            if (amountInHundreds == null)
-                throw new InvalidOperationException("Amount not specified.");
-
-            if (amountInHundreds <= 0)
-                throw new InvalidOperationException("Amount must be positive.");
-
             return new Bounty()
             {
                 Creator = creator,
                 Issue = issue,
-                AmountInHundreds = amountInHundreds.Value,
-                CreatedAtUtc = createdAtUtc
+                CreatedAt = createdAt
             };
         }
     }

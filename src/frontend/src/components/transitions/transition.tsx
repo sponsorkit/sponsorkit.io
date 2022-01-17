@@ -1,7 +1,7 @@
 import AbsoluteBox from "@components/absolute-box";
 import { Ref } from "react";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
-import * as classes from "./transition.module.scss";
+import classes from "./transition.module.scss";
 
 export function Transition(props: {
     transitionKey: any,

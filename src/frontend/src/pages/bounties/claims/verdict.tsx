@@ -7,23 +7,27 @@ import { useConfiguration } from "@hooks/configuration";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Button, ButtonBase, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
-import { AppBarTemplate } from "@pages/index";
-import { getUrlParameter } from "@utils/url";
+import { AppBarLayout } from "@pages/index";
+import { useRouter } from "next/router";
 import { useState } from "react";
-import * as classes from "./verdict.module.scss";
+import classes from "./verdict.module.scss";
 
-export default function ClaimVerdictPage(props: {
-    location: Location
-}) {
+export default function ClaimVerdictPage() {
+    return <ClaimVerdictPageContents />
+}
+
+function ClaimVerdictPageContents() {
     const configuration = useConfiguration();
-    const claimId = getUrlParameter(props.location, "claimId");
+    const router = useRouter();
+
+    const claimId = router.query.claimId as string;
     if(!claimId)
         return null;
 
     if(!configuration)
         return <CircularProgress />;
     
-    return <AppBarTemplate logoVariant="bountyhunt">
+    return <AppBarLayout logoVariant="bountyhunt">
         <LoginDialog 
             isOpen 
             configuration={configuration}
@@ -31,7 +35,7 @@ export default function ClaimVerdictPage(props: {
         >
             {() => <ClaimVerdictContents claimId={claimId} />}
         </LoginDialog>
-    </AppBarTemplate>
+    </AppBarLayout>
 }
 
 type GitHubPullRequest = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];
@@ -147,7 +151,7 @@ function ClaimVerdictContents(props: {
             </Typography>
             <Issue issue={pullRequest.data} />
 
-            <div className={classes.buttonContainer}>
+            <div className={classes["button-container"]}>
                 <DetailedButton
                     variant="outlined" 
                     title="Reject claim"
@@ -176,7 +180,7 @@ function Issue(props: {
                 <span>{props.issue.title}</span>
             </div>
         </div>
-        <OpenInNewIcon className={classes.openInNewIcon} />
+        <OpenInNewIcon className={classes["open-in-new-icon"]} />
     </ButtonBase>;
 }
 
@@ -189,7 +193,7 @@ function DetailedButton(props: {
     return <Button
         variant={props.variant}
         onClick={props.onClick} 
-        className={classes.detailedButton}
+        className={classes["detailed-button"]}
     >
         <span className={classes.title}>{props.title}</span>
         <span className={classes.subtitle}>{props.subtitle}</span>

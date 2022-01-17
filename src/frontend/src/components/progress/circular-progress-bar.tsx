@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import palette from '@theme/palette';
 import { combineClassNames } from '@utils/strings';
 import { CircularProgressbarWithChildren as ReactCircularProgressBar } from 'react-circular-progressbar';
-import * as classes from "./circular-progress-bar.module.scss";
+import classes from "./circular-progress-bar.module.scss";
 
 export default function CircularProgressBar(props: {
     maximum: number,

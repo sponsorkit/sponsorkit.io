@@ -146,10 +146,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get
             return direction == SortDirection.Ascending ?
                 property == SummarySortProperty.ByAmount ?
                     sponsorships.OrderBy(x => x.MonthlyAmountInHundreds) :
-                    sponsorships.OrderBy(x => x.CreatedAtUtc) :
+                    sponsorships.OrderBy(x => x.CreatedAt) :
                 property == SummarySortProperty.ByAmount ?
                     sponsorships.OrderByDescending(x => x.MonthlyAmountInHundreds) :
-                    sponsorships.OrderByDescending(x => x.CreatedAtUtc);
+                    sponsorships.OrderByDescending(x => x.CreatedAt);
         }
     }
 }

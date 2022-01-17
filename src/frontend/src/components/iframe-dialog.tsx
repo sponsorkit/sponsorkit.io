@@ -1,4 +1,3 @@
-import { useLocation } from '@reach/router';
 import { useEffect, useRef } from 'react';
 import { getMessage, WindowMessages } from '../utils/window-messages';
 
@@ -27,7 +26,6 @@ type Options = {
 
 export default function IframeDialog(props: Props) {
     const windowRef = useRef<Window | null>();
-    const location = useLocation();
 
     useEffect(
         () => {
@@ -46,9 +44,6 @@ export default function IframeDialog(props: Props) {
                 250);
 
             const onMessageReceived = (e: MessageEvent<any>) => {
-                if (e.origin !== location.origin)
-                    return;
-
                 var message = getMessage(e.data);
                 if (!message)
                     return;

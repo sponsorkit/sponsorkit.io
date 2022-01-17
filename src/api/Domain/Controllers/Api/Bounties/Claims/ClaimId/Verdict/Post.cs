@@ -43,7 +43,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict
                 return NotFound();
 
             claimRequest.Verdict = request.Verdict;
-            claimRequest.VerdictAtUtc = DateTimeOffset.UtcNow;
+            claimRequest.VerdictAt = DateTimeOffset.UtcNow;
             await dataContext.SaveChangesAsync(cancellationToken);
 
             return Ok();

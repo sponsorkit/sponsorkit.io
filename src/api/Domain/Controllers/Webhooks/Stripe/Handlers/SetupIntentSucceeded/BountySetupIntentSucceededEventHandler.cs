@@ -19,9 +19,6 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded
 {
-    /// <summary>
-    /// Posts a bounty to the database once the 
-    /// </summary>
     public class BountySetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
     {
         private readonly DataContext dataContext;
@@ -81,10 +78,9 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
                         gitHubIssueNumber),
                     cancellationToken);
 
-                var bounty = await AddOrIncreaseBountyAsync(
+                var bounty = await GetOrCreateBountyAsync(
                     issue,
                     user,
-                    amountInHundreds,
                     cancellationToken);
 
                 await AddPaymentForBountyAsync(
@@ -123,7 +119,8 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
                 .Select(x => new
                 {
                     GitHubLogin = x.Key.Username,
-                    AmountInHundreds = x.Sum(b => b.AmountInHundreds)
+                    AmountInHundreds = x.Sum(b => b.Payments
+                        .Sum(p => p.AmountInHundreds))
                 })
                 .OrderByDescending(x => x.AmountInHundreds)
                 .Take(10)
@@ -166,7 +163,10 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
         {
             var payment = new PaymentBuilder()
                 .WithBounty(bounty)
-                .WithAmountInHundreds(amountInHundreds)
+                .WithAmount(
+                    amountInHundreds,
+                    FeeCalculator.GetSponsorkitFeeInHundreds(
+                        amountInHundreds))
                 .WithStripeId(paymentIntent.Id)
                 .WithStripeEventId(eventId)
                 .Build();
@@ -190,10 +190,9 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
             }
         }
 
-        private async Task<Bounty> AddOrIncreaseBountyAsync(
+        private async Task<Bounty> GetOrCreateBountyAsync(
             Issue issue, 
             User user, 
-            long amountInHundreds,
             CancellationToken cancellationToken)
         {
             var bounty = await GetExistingBountyAsync(
@@ -202,18 +201,11 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
                 cancellationToken);
             if (bounty == null)
             {
-                bounty = await CreateNewBountyAsync(
+                return await CreateNewBountyAsync(
                     user,
                     issue,
-                    amountInHundreds,
                     cancellationToken);
             }
-            else
-            {
-                bounty.AmountInHundreds += amountInHundreds;
-            }
-
-            await dataContext.SaveChangesAsync(cancellationToken);
 
             return bounty;
         }
@@ -221,17 +213,17 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucc
         private async Task<Bounty> CreateNewBountyAsync(
             User user, 
             Issue issue, 
-            long amountInHundreds, 
             CancellationToken cancellationToken)
         {
             var newBounty = new BountyBuilder()
-                .WithAmountInHundreds(amountInHundreds)
                 .WithCreator(user)
                 .WithIssue(issue)
                 .Build();
             await dataContext.Bounties.AddAsync(
                 newBounty,
                 cancellationToken);
+
+            await dataContext.SaveChangesAsync(cancellationToken);
 
             return newBounty;
         }

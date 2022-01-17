@@ -1,13 +1,13 @@
 import { Button, Card, CardActions, CardContent, Typography } from "@mui/material";
-import { AppBarTemplate } from "@pages/index";
-import * as classes from "./landing-page.module.scss";
+import { AppBarLayout } from "@pages/index";
+import classes from "./landing-page.module.scss";
 
 export default function LandingPage(props: {
     logoVariant: "sponsorkit" | "bountyhunt",
     title: string,
     continueUrl?: string
 }) {
-    return <AppBarTemplate logoVariant={props.logoVariant}>
+    return <AppBarLayout logoVariant={props.logoVariant}>
         <Card>
             <CardContent>
                 <Typography>
@@ -42,5 +42,5 @@ export default function LandingPage(props: {
                 </Button>}
             </CardActions>
         </Card>
-    </AppBarTemplate>
+    </AppBarLayout>
 }

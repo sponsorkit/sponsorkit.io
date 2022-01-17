@@ -29,8 +29,8 @@
                     margin-bottom: auto;
                     margin-top: auto;
                     right: 20px;
-                    width: 20px !important;
-                    height: 20px !important;
+                    width: 20px;
+                    height: 20px;
                     transition: opacity 0.2s ease-in-out;
 
                     &.active {
@@ -213,8 +213,8 @@
                 $size: 30px;
 
                 font-size: $size;
-                width: $size !important;
-                height: $size !important;
+                width: $size;
+                height: $size;
             }
         }
     }

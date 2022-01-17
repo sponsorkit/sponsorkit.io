@@ -1,6 +1,6 @@
 import { Tooltip } from "@mui/material";
 import { combineClassNames } from "@utils/strings";
-import * as classes from "./currency.module.scss";
+import classes from "./currency.module.scss";
 
 export default function Currency(props: {
     amount: number,

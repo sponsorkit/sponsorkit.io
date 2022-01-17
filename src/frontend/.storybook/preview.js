@@ -1,5 +1,4 @@
 import { addDecorator } from '@storybook/react';
-import Layout from "../plugins/gatsby-plugin-top-layout/layout";
 
 export const parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },

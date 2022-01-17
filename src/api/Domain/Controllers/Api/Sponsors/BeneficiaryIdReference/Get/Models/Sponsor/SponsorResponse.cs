@@ -6,16 +6,16 @@ namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.
     {
         public long? MonthlyAmountInHundreds { get; }
         public long TotalAmountInHundreds { get; }
-        public DateTimeOffset StartedAtUtc { get; }
+        public DateTimeOffset StartedAt { get; }
 
         public SponsorResponse(
             long? monthlyAmountInHundreds,
             long totalAmountInHundreds,
-            DateTimeOffset startedAtUtc)
+            DateTimeOffset startedAt)
         {
             MonthlyAmountInHundreds = monthlyAmountInHundreds;
             TotalAmountInHundreds = totalAmountInHundreds;
-            StartedAtUtc = startedAtUtc;
+            StartedAt = startedAt;
         }
     }
 }

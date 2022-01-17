@@ -50,6 +50,7 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
         public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             var issue = await dataContext.Issues
+                .Include(x => x.Bounties).ThenInclude(x => x.Payments)
                 .Include(x => x.Bounties).ThenInclude(x => x.Creator)
                 .Include(x => x.Bounties).ThenInclude(x => x.AwardedTo)
                 .Include(x => x.Bounties).ThenInclude(x => x.ClaimRequests)
@@ -61,8 +62,8 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId
 
             return new GetResponse(issue.Bounties
                 .Select(x => new BountyResponse(
-                    x.AmountInHundreds,
-                    x.CreatedAtUtc,
+                    x.Payments.Sum(p => p.AmountInHundreds),
+                    x.CreatedAt,
                     new BountyUserResponse(
                         x.Creator.GitHub!.Id,
                         x.Creator.GitHub.Username),

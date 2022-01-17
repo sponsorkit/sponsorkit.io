@@ -1,7 +1,7 @@
 
 import { Button, Step, StepContent, StepLabel, Stepper } from "@mui/material";
 import React, { useEffect, useMemo, useState } from 'react';
-import * as classes from './vertical-linear-stepper.module.scss';
+import classes from './vertical-linear-stepper.module.scss';
 
 
 

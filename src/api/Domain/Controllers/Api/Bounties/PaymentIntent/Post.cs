@@ -37,6 +37,9 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent
         public const string AmountInHundreds = "AmountInHundreds";
         public const string UserId = "UserId";
         public const string FeeInHundreds = "FeeInHundreds";
+        public const string BountyId = "BountyId";
+        public const string PaymentId = "PaymentId";
+        public const string ClaimRequestId = "ClaimRequestId";
     }
 
     public class Post : BaseAsyncEndpoint
@@ -102,6 +105,10 @@ namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent
                         { MetadataKeys.GitHubIssueRepositoryName, request.Issue.RepositoryName },
                         { MetadataKeys.UserId, user.Id.ToString() }
                     }
+                },
+                new RequestOptions()
+                {
+                    IdempotencyKey = $"bounty-setup-intent-{request.Issue.OwnerName}-{request.Issue.RepositoryName}-{request.Issue.IssueNumber}-{request.AmountInHundreds}"
                 },
                 cancellationToken: cancellationToken);
 

@@ -7,8 +7,8 @@ import { createApi, useApi } from "@hooks/clients";
 import { useConfiguration } from "@hooks/configuration";
 import { Box, Card, CardContent, CircularProgress, Container, Typography } from "@mui/material";
 import React, { useState } from "react";
-import { AppBarTemplate } from "..";
-import * as classes from "./[...].module.scss";
+import { AppBarLayout } from "..";
+import classes from "./index.module.scss";
 
 function DashboardPage() {
     const [isValidatingEmail, setIsValidatingEmail] = useState(false);
@@ -24,7 +24,7 @@ function DashboardPage() {
     if(!configuration)
         return <CircularProgress />;
 
-    return <AppBarTemplate logoVariant="sponsorkit">
+    return <AppBarLayout logoVariant="sponsorkit">
         {account && <EmailValidationDialog
             email={account.email}
             isOpen={isValidatingEmail}
@@ -54,11 +54,11 @@ function DashboardPage() {
             maxWidth="lg"
             className={classes.root}
         >
-            <Typography variant="h2" component="h2" className={classes.profileCompletionHeader}>
+            <Typography variant="h2" component="h2" className={classes["profile-completion-header"]}>
                 Profile
             </Typography>
-            <Box className={classes.accountOverviews}>
-                <Card className={classes.accountOverview}>
+            <Box className={classes["account-overviews"]}>
+                <Card className={classes["account-overview"]}>
                     <CardContent>
                         <ProgressList
                             validationTarget={account}
@@ -94,11 +94,10 @@ function DashboardPage() {
                 </Card>
             </Box>
         </Container>
-    </AppBarTemplate>;
+    </AppBarLayout>;
 }
 
 export default function () {
     return <PrivateRoute
-        component={DashboardPage}
-        path="/dashboard" />
+        component={DashboardPage} />
 }

@@ -1,5 +1,5 @@
 import { Box, Tooltip, Typography, useTheme } from "@mui/material";
-import * as classes from "./tooltip-link.module.scss";
+import classes from "./tooltip-link.module.scss";
 
 export default function TooltipLink(props: {
     children: React.ReactNode,
