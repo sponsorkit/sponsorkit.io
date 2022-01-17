@@ -2,25 +2,24 @@
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Sponsorkit.Infrastructure.Logging
+namespace Sponsorkit.Infrastructure.Logging;
+
+public class NonDisposableSinkProxy : ILogEventSink, IDisposable
 {
-    public class NonDisposableSinkProxy : ILogEventSink, IDisposable
+    private readonly ILogEventSink inner;
+
+    public NonDisposableSinkProxy(
+        ILogEventSink inner)
     {
-        private readonly ILogEventSink inner;
+        this.inner = inner;
+    }
 
-        public NonDisposableSinkProxy(
-            ILogEventSink inner)
-        {
-            this.inner = inner;
-        }
+    public void Emit(LogEvent logEvent)
+    {
+        inner.Emit(logEvent);
+    }
 
-        public void Emit(LogEvent logEvent)
-        {
-            inner.Emit(logEvent);
-        }
-
-        public void Dispose()
-        {
-        }
+    public void Dispose()
+    {
     }
 }

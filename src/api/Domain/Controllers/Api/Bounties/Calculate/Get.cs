@@ -8,27 +8,26 @@ using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Context;
 
-namespace Sponsorkit.Domain.Controllers.Api.Bounties.Calculate
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.Calculate;
+
+public record Request(
+    [FromQuery] long AmountInHundreds);
+
+public record Response(
+    long FeeAmountInHundreds);
+
+public class Get : EndpointBaseSync
+    .WithRequest<Request>
+    .WithActionResult<Response>
 {
-    public record Request(
-        [FromQuery] long AmountInHundreds);
-
-    public record Response(
-        long FeeAmountInHundreds);
-
-    public class Get : BaseEndpoint
-        .WithRequest<Request>
-        .WithResponse<Response>
+    [HttpGet("/bounties/calculate")]
+    [AllowAnonymous]
+    public override ActionResult<Response> Handle([FromQuery] Request request)
     {
-        [HttpGet("/bounties/calculate")]
-        [AllowAnonymous]
-        public override ActionResult<Response> Handle([FromQuery] Request request)
-        {
-            if (request.AmountInHundreds < Constants.MinimumBountyAmountInHundreds)
-                return BadRequest("Minimum amount is 10 USD.");
+        if (request.AmountInHundreds < Constants.MinimumBountyAmountInHundreds)
+            return BadRequest("Minimum amount is 10 USD.");
 
-            return new Response(
-                FeeCalculator.GetSponsorkitFeeInHundreds(request.AmountInHundreds));
-        }
+        return new Response(
+            FeeCalculator.GetSponsorkitFeeInHundreds(request.AmountInHundreds));
     }
 }

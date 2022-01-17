@@ -11,54 +11,21 @@ using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Builders.Models;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
-namespace Sponsorkit.Tests.Domain.Mediatr
+namespace Sponsorkit.Tests.Domain.Mediatr;
+
+[TestClass]
+public class DatabaseTransactionBehaviorTest
 {
-    [TestClass]
-    public class DatabaseTransactionBehaviorTest
+    [TestMethod]
+    [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+    public async Task Handle_NestedTransactionsOuterExceptionThrown_InnerAndOuterTransactionContentsReverted()
     {
-        [TestMethod]
-        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-        public async Task Handle_NestedTransactionsOuterExceptionThrown_InnerAndOuterTransactionContentsReverted()
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        //Act
+        var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
         {
-            //Arrange
-            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-            //Act
-            var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
-            {
-                await environment.Mediator.Send(new TestCommand(async () =>
-                {
-                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
-                    await environment.Database.Context.SaveChangesAsync();
-
-                    await environment.Mediator.Send(new TestCommand(async () =>
-                    {
-                        await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
-                        await environment.Database.Context.SaveChangesAsync();
-                    }));
-
-                    throw new TestException();
-                }));
-            });
-
-            //Assert
-            Assert.IsNotNull(exception);
-
-            await environment.Database.WithoutCachingAsync(async (dataContext) =>
-            {
-                var clusterCount = await dataContext.Users.CountAsync();
-                Assert.AreEqual(0, clusterCount);
-            });
-        }
-
-        [TestMethod]
-        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-        public async Task Handle_NestedTransactionsWithNoException_InnerAndOuterTransactionContentsSaved()
-        {
-            //Arrange
-            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-            //Act
             await environment.Mediator.Send(new TestCommand(async () =>
             {
                 await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
@@ -69,71 +36,103 @@ namespace Sponsorkit.Tests.Domain.Mediatr
                     await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
                     await environment.Database.Context.SaveChangesAsync();
                 }));
+
+                throw new TestException();
             }));
+        });
 
-            //Assert
-            await environment.Database.WithoutCachingAsync(async (dataContext) =>
-            {
-                var clusterCount = await dataContext.Users.CountAsync();
-                Assert.AreEqual(2, clusterCount);
-            });
-        }
+        //Assert
+        Assert.IsNotNull(exception);
 
-        [TestMethod]
-        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
-        public async Task Handle_NestedTransactionsInnerExceptionThrown_InnerAndOuterTransactionContentsReverted()
+        await environment.Database.WithoutCachingAsync(async (dataContext) =>
         {
-            //Arrange
-            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+            var clusterCount = await dataContext.Users.CountAsync();
+            Assert.AreEqual(0, clusterCount);
+        });
+    }
 
-            //Act
-            var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
+    [TestMethod]
+    [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+    public async Task Handle_NestedTransactionsWithNoException_InnerAndOuterTransactionContentsSaved()
+    {
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        //Act
+        await environment.Mediator.Send(new TestCommand(async () =>
+        {
+            await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+            await environment.Database.Context.SaveChangesAsync();
+
+            await environment.Mediator.Send(new TestCommand(async () =>
             {
+                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.SaveChangesAsync();
+            }));
+        }));
+
+        //Assert
+        await environment.Database.WithoutCachingAsync(async (dataContext) =>
+        {
+            var clusterCount = await dataContext.Users.CountAsync();
+            Assert.AreEqual(2, clusterCount);
+        });
+    }
+
+    [TestMethod]
+    [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+    public async Task Handle_NestedTransactionsInnerExceptionThrown_InnerAndOuterTransactionContentsReverted()
+    {
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        //Act
+        var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
+        {
+            await environment.Mediator.Send(new TestCommand(async () =>
+            {
+                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.SaveChangesAsync();
+
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
                     await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
                     await environment.Database.Context.SaveChangesAsync();
 
-                    await environment.Mediator.Send(new TestCommand(async () =>
-                    {
-                        await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
-                        await environment.Database.Context.SaveChangesAsync();
-
-                        throw new TestException();
-                    }));
+                    throw new TestException();
                 }));
-            });
+            }));
+        });
 
-            //Assert
-            Assert.IsNotNull(exception);
+        //Assert
+        Assert.IsNotNull(exception);
 
-            await environment.Database.WithoutCachingAsync(async (dataContext) =>
-            {
-                var clusterCount = await dataContext.Users.CountAsync();
-                Assert.AreEqual(0, clusterCount);
-            });
+        await environment.Database.WithoutCachingAsync(async (dataContext) =>
+        {
+            var clusterCount = await dataContext.Users.CountAsync();
+            Assert.AreEqual(0, clusterCount);
+        });
+    }
+
+    public class TestCommand : IRequest, IDatabaseTransactionRequest
+    {
+        public Func<Task> Action { get; }
+
+        public TestCommand(
+            Func<Task> action)
+        {
+            this.Action = action;
         }
 
-        public class TestCommand : IRequest, IDatabaseTransactionRequest
+        public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
+    }
+
+    public class TestCommandHandler : IRequestHandler<TestCommand>
+    {
+        public async Task<Unit> Handle(TestCommand request, CancellationToken cancellationToken)
         {
-            public Func<Task> Action { get; }
-
-            public TestCommand(
-                Func<Task> action)
-            {
-                this.Action = action;
-            }
-
-            public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
-        }
-
-        public class TestCommandHandler : IRequestHandler<TestCommand>
-        {
-            public async Task<Unit> Handle(TestCommand request, CancellationToken cancellationToken)
-            {
-                await request.Action();
-                return Unit.Value;
-            }
+            await request.Action();
+            return Unit.Value;
         }
     }
 }

@@ -19,42 +19,41 @@ using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 
-namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers
+namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers;
+
+[TestClass]
+public class SetupIntentSucceededEventHandlerTest
 {
-    [TestClass]
-    public class SetupIntentSucceededEventHandlerTest
+    [TestMethod]
+    public async Task HandleAsync_CUstomerExistsInStripe_UpdatesDefaultPaymentMethod()
     {
-        [TestMethod]
-        public async Task HandleAsync_CUstomerExistsInStripe_UpdatesDefaultPaymentMethod()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task CanHandle_TypeIsNotRight_CanNotHandle()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task CanHandle_TypeIsNotRight_CanNotHandle()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task CanHandle_TypeIsRight_CanHandle()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task CanHandle_TypeIsRight_CanHandle()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

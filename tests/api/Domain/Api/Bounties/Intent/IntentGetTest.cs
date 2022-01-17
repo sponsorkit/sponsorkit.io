@@ -1,42 +1,41 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Intent
+namespace Sponsorkit.Tests.Domain.Api.Bounties.Intent;
+
+[TestClass]
+public class IntentGetTest
 {
-    [TestClass]
-    public class IntentGetTest
+    [TestMethod]
+    public async Task HandleAsync_PaymentNotFound_ReturnsFalse()
     {
-        [TestMethod]
-        public async Task HandleAsync_PaymentNotFound_ReturnsFalse()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_PaymentFoundNotCreatedByBountyCreator_ReturnsFalse()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_PaymentFoundNotCreatedByBountyCreator_ReturnsFalse()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_PaymentFound_ReturnsTrue()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_PaymentFound_ReturnsTrue()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

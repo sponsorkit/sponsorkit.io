@@ -14,72 +14,71 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
+namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe;
+
+public class Post : EndpointBaseAsync
+    .WithoutRequest
+    .WithoutResult
 {
-    public class Post : BaseAsyncEndpoint
-        .WithoutRequest
-        .WithoutResponse
+    private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
+    private readonly IEnumerable<IWebhookEventHandler> webhookEventHandlers;
+    private readonly ILogger logger;
+    private readonly DataContext dataContext;
+
+    public Post(
+        IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
+        IEnumerable<IWebhookEventHandler> webhookEventHandlers,
+        ILogger logger,
+        DataContext dataContext)
     {
-        private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
-        private readonly IEnumerable<IWebhookEventHandler> webhookEventHandlers;
-        private readonly ILogger logger;
-        private readonly DataContext dataContext;
+        this.stripeOptionsMonitor = stripeOptionsMonitor;
+        this.webhookEventHandlers = webhookEventHandlers;
+        this.logger = logger;
+        this.dataContext = dataContext;
+    }
 
-        public Post(
-            IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
-            IEnumerable<IWebhookEventHandler> webhookEventHandlers,
-            ILogger logger,
-            DataContext dataContext)
+    [HttpPost("/webhooks/stripe")]
+    [AllowAnonymous]
+    [DisableCors]
+    public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = default)
+    {
+        try
         {
-            this.stripeOptionsMonitor = stripeOptionsMonitor;
-            this.webhookEventHandlers = webhookEventHandlers;
-            this.logger = logger;
-            this.dataContext = dataContext;
+            await using var stream = HttpContext.Request.Body;
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+
+            var signatureHeader = Request.Headers["Stripe-Signature"];
+            var stripeEvent = EventUtility.ConstructEvent(
+                json,
+                signatureHeader,
+                stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
+
+            var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                x.CanHandle(
+                    stripeEvent.Type,
+                    stripeEvent.Data.Object));
+            foreach (var eventHandler in elligibleEventHandlers)
+            {
+                await eventHandler.HandleAsync(
+                    stripeEvent.Id,
+                    stripeEvent.Data.Object,
+                    cancellationToken);
+            }
+
+            return Ok();
         }
-
-        [HttpPost("/webhooks/stripe")]
-        [AllowAnonymous]
-        [DisableCors]
-        public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = default)
+        catch (StripeException e)
         {
-            try
-            {
-                await using var stream = HttpContext.Request.Body;
-                stream.Seek(0, SeekOrigin.Begin);
-
-                using var reader = new StreamReader(stream);
-                var json = await reader.ReadToEndAsync();
-
-                var signatureHeader = Request.Headers["Stripe-Signature"];
-                var stripeEvent = EventUtility.ConstructEvent(
-                    json,
-                    signatureHeader,
-                    stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
-
-                var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                    x.CanHandle(
-                        stripeEvent.Type,
-                        stripeEvent.Data.Object));
-                foreach (var eventHandler in elligibleEventHandlers)
-                {
-                    await eventHandler.HandleAsync(
-                        stripeEvent.Id,
-                        stripeEvent.Data.Object,
-                        cancellationToken);
-                }
-
-                return Ok();
-            }
-            catch (StripeException e)
-            {
-                logger.Error(e, "A Stripe webhook error occured.");
-                return BadRequest("A Stripe webhook error occured.");
-            }
-            catch (EventAlreadyHandledException ex)
-            {
-                logger.Information(ex, "Already handled event.");
-                return Ok("Already handled.");
-            }
+            logger.Error(e, "A Stripe webhook error occured.");
+            return BadRequest("A Stripe webhook error occured.");
+        }
+        catch (EventAlreadyHandledException ex)
+        {
+            logger.Information(ex, "Already handled event.");
+            return Ok("Already handled.");
         }
     }
 }

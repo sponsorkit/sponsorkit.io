@@ -3,30 +3,29 @@ using Hangfire.Console;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Sponsorkit.Infrastructure.Hangfire
+namespace Sponsorkit.Infrastructure.Hangfire;
+
+public class ContextSink : ILogEventSink
 {
-    public class ContextSink : ILogEventSink
+    public const string PerformContextProperty = "PerformContext";
+
+    public void Emit(LogEvent logEvent)
     {
-        public const string PerformContextProperty = "PerformContext";
+        if (!logEvent.Properties.TryGetValue(PerformContextProperty, out var propertyValue)) 
+            return;
 
-        public void Emit(LogEvent logEvent)
+        var context = (propertyValue as PerformContextProperty)?.PerformContext;
+
+        var color = logEvent.Level switch
         {
-            if (!logEvent.Properties.TryGetValue(PerformContextProperty, out var propertyValue)) 
-                return;
+            LogEventLevel.Information => ConsoleTextColor.White,
+            LogEventLevel.Warning => ConsoleTextColor.Yellow,
+            LogEventLevel.Error => ConsoleTextColor.Red,
+            LogEventLevel.Fatal => ConsoleTextColor.Red,
+            _ => ConsoleTextColor.Gray
+        };
 
-            var context = (propertyValue as PerformContextProperty)?.PerformContext;
-
-            var color = logEvent.Level switch
-            {
-                LogEventLevel.Information => ConsoleTextColor.White,
-                LogEventLevel.Warning => ConsoleTextColor.Yellow,
-                LogEventLevel.Error => ConsoleTextColor.Red,
-                LogEventLevel.Fatal => ConsoleTextColor.Red,
-                _ => ConsoleTextColor.Gray
-            };
-
-            var message = logEvent.RenderMessage();
-            context?.WriteLine(color, DateTime.UtcNow + " " + message);
-        }
+        var message = logEvent.RenderMessage();
+        context?.WriteLine(color, DateTime.UtcNow + " " + message);
     }
 }

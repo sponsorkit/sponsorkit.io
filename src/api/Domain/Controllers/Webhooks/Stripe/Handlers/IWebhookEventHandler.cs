@@ -1,16 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers
+namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
+
+public interface IWebhookEventHandler
 {
-    public interface IWebhookEventHandler
-    {
-        bool CanHandle(string type, object data);
+    bool CanHandle(string type, object data);
 
-        Task HandleAsync(
-            string eventId,
-            object data, 
-            CancellationToken cancellationToken);
-    }
-
+    Task HandleAsync(
+        string eventId,
+        object data, 
+        CancellationToken cancellationToken);
 }

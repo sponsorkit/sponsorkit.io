@@ -9,50 +9,49 @@ using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Ioc;
 
-namespace Sponsorkit.Tests.TestHelpers
+namespace Sponsorkit.Tests.TestHelpers;
+
+public class TestServiceProviderFactory
 {
-    public class TestServiceProviderFactory
+    public static IServiceProvider CreateUsingStartup(Action<IServiceCollection> configure = null)
     {
-        public static IServiceProvider CreateUsingStartup(Action<IServiceCollection> configure = null)
-        {
-            var services = new ServiceCollection();
+        var services = new ServiceCollection();
 
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.Development.json")
-                .AddEnvironmentVariables()
-                .Build();
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.Development.json")
+            .AddEnvironmentVariables()
+            .Build();
 
-            var environment = Substitute.For<IHostEnvironment>();
-            environment.EnvironmentName.Returns("Development");
-            services.AddSingleton(environment);
+        var environment = Substitute.For<IHostEnvironment>();
+        environment.EnvironmentName.Returns("Development");
+        services.AddSingleton(environment);
 
-            var startup = new Startup(
-                configuration,
-                environment);
-            startup.ConfigureServices(services);
+        var startup = new Startup(
+            configuration,
+            environment);
+        startup.ConfigureServices(services);
 
-            ConfigureServicesForTesting(
-                services,
-                configuration);
+        ConfigureServicesForTesting(
+            services,
+            configuration);
 
-            configure?.Invoke(services);
+        configure?.Invoke(services);
 
-            return services.BuildServiceProvider();
-        }
+        return services.BuildServiceProvider();
+    }
 
-        public static void ConfigureServicesForTesting(
-            IServiceCollection services,
-            IConfiguration configuration)
-        {
-            var registry = new IocRegistry(
-                services,
-                configuration);
-            registry.ConfigureMediatr(typeof(TestServiceProviderFactory).Assembly);
+    public static void ConfigureServicesForTesting(
+        IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var registry = new IocRegistry(
+            services,
+            configuration);
+        registry.ConfigureMediatr(typeof(TestServiceProviderFactory).Assembly);
 
-            services.AddScoped<Mediator>();
+        services.AddScoped<Mediator>();
 
-            services.AddSingleton(Substitute.For<ILogger>());
-            services.AddSingleton(Substitute.For<IGitHubClientFactory>());
-        }
+        services.AddSingleton(Substitute.For<ILogger>());
+        services.AddSingleton(Substitute.For<IGitHubClientFactory>());
     }
 }

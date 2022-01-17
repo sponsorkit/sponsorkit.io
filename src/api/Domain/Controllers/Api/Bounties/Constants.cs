@@ -1,7 +1,6 @@
-﻿namespace Sponsorkit.Domain.Controllers.Api.Bounties
+﻿namespace Sponsorkit.Domain.Controllers.Api.Bounties;
+
+public class Constants
 {
-    public class Constants
-    {
-        public const int MinimumBountyAmountInHundreds = 10_00;
-    }
+    public const int MinimumBountyAmountInHundreds = 10_00;
 }
