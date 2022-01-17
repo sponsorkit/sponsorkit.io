@@ -1,86 +1,85 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe
+namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe;
+
+[TestClass]
+public class PostTest
 {
-    [TestClass]
-    public class PostTest
+    [TestMethod]
+    public async Task HandleAsync_IpAddressNotApproved_ReturnsBadRequest()
     {
-        [TestMethod]
-        public async Task HandleAsync_IpAddressNotApproved_ReturnsBadRequest()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_StripeSignatureNotPresent_ThrowsException()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_StripeSignatureNotPresent_ThrowsException()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_StripeSignatureNotPresent_ReturnsBadRequest()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_StripeSignatureNotPresent_ReturnsBadRequest()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_MultipleElligibleHandlersFound_ExecutesEveryHandler()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_MultipleElligibleHandlersFound_ExecutesEveryHandler()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_MultipleElligibleHandlersFound_ReturnsOk()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_MultipleElligibleHandlersFound_ReturnsOk()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_NoHandlersFound_ReturnsOk()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_NoHandlersFound_ReturnsOk()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_EventAlreadyHandled_ReturnsOk()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_EventAlreadyHandled_ReturnsOk()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

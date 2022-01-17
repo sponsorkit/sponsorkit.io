@@ -4,67 +4,66 @@ using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Microsoft.Extensions.Configuration;
 
-namespace Sponsorkit.Infrastructure
+namespace Sponsorkit.Infrastructure;
+
+public static class ConfigurationFactory
 {
-    public static class ConfigurationFactory
+    public static IConfigurationRoot BuildConfiguration(string? secretId, string[] args)
     {
-        public static IConfigurationRoot BuildConfiguration(string? secretId, string[] args)
+        var configurationBuilder = new ConfigurationBuilder();
+
+        Configure(configurationBuilder, args, secretId);
+
+        var configuration = configurationBuilder.Build();
+        return configuration;
+    }
+
+    public static void Configure(
+        IConfigurationBuilder configurationBuilder, 
+        string[] args, 
+        string? secretId)
+    {
+        var environment = GetEnvironmentName();
+        configurationBuilder.AddSystemsManager(configureSource =>
         {
-            var configurationBuilder = new ConfigurationBuilder();
+            configureSource.Path = $"/sponsorkit/{environment}";
+            configureSource.ReloadAfter = TimeSpan.FromHours(24);
+            configureSource.Optional = false;
+            configureSource.AwsOptions = new AWSOptions()
+            {
+                Region = RegionEndpoint.EUNorth1
+            };
 
-            Configure(configurationBuilder, args, secretId);
+            configureSource.OnLoadException += exceptionContext =>
+            {
+                exceptionContext.Ignore = false;
+                throw exceptionContext.Exception;
+            };
+        });
 
-            var configuration = configurationBuilder.Build();
-            return configuration;
-        }
+        configurationBuilder.AddJsonFile("appsettings.json");
+        configurationBuilder.AddEnvironmentVariables();
+        configurationBuilder.AddCommandLine(args);
 
-        public static void Configure(
-            IConfigurationBuilder configurationBuilder, 
-            string[] args, 
-            string? secretId)
+        if (EnvironmentHelper.IsRunningInTest)
         {
-            var environment = GetEnvironmentName();
-            configurationBuilder.AddSystemsManager(configureSource =>
-            {
-                configureSource.Path = $"/sponsorkit/{environment}";
-                configureSource.ReloadAfter = TimeSpan.FromHours(24);
-                configureSource.Optional = false;
-                configureSource.AwsOptions = new AWSOptions()
-                {
-                    Region = RegionEndpoint.EUNorth1
-                };
-
-                configureSource.OnLoadException += exceptionContext =>
-                {
-                    exceptionContext.Ignore = false;
-                    throw exceptionContext.Exception;
-                };
-            });
-
-            configurationBuilder.AddJsonFile("appsettings.json");
-            configurationBuilder.AddEnvironmentVariables();
-            configurationBuilder.AddCommandLine(args);
-
-            if (EnvironmentHelper.IsRunningInTest)
-            {
-                configurationBuilder.AddJsonFile($"appsettings.Development.json");
-            }
-            else if (Debugger.IsAttached)
-            {
-                configurationBuilder.AddJsonFile($"appsettings.{environment}.json");
-
-                if (secretId != null)
-                    configurationBuilder.AddUserSecrets(secretId);
-            }
-            else
-            {
-                Console.WriteLine("Warning: Assuming production mode.");
-            }
+            configurationBuilder.AddJsonFile($"appsettings.Development.json");
         }
-
-        private static string GetEnvironmentName()
+        else if (Debugger.IsAttached)
         {
-            return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            configurationBuilder.AddJsonFile($"appsettings.{environment}.json");
+
+            if (secretId != null)
+                configurationBuilder.AddUserSecrets(secretId);
         }
+        else
+        {
+            Console.WriteLine("Warning: Assuming production mode.");
+        }
+    }
+
+    private static string GetEnvironmentName()
+    {
+        return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
     }
 }

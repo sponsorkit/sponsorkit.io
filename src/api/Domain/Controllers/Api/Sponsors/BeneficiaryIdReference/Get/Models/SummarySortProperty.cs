@@ -1,8 +1,7 @@
-﻿namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models
+﻿namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models;
+
+public enum SummarySortProperty
 {
-    public enum SummarySortProperty
-    {
-        ByAmount,
-        ByDate
-    }
+    ByAmount,
+    ByDate
 }

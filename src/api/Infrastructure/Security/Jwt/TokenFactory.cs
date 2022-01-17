@@ -9,37 +9,36 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Sponsorkit.Infrastructure.Options;
 
-namespace Sponsorkit.Infrastructure.Security.Jwt
+namespace Sponsorkit.Infrastructure.Security.Jwt;
+
+public class TokenFactory : ITokenFactory
 {
-    public class TokenFactory : ITokenFactory
+    private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
+
+    public TokenFactory(
+        IOptionsMonitor<JwtOptions> jwtOptionsMonitor)
     {
-        private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
-
-        public TokenFactory(
-            IOptionsMonitor<JwtOptions> jwtOptionsMonitor)
-        {
-            this.jwtOptionsMonitor = jwtOptionsMonitor;
-        }
+        this.jwtOptionsMonitor = jwtOptionsMonitor;
+    }
         
-        public string Create(IEnumerable<Claim> claims)
+    public string Create(IEnumerable<Claim> claims)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims.Distinct()),
-                Expires = Debugger.IsAttached ? 
-                    DateTime.UtcNow.AddSeconds(30) : 
-                    DateTime.UtcNow.AddMinutes(15),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
-                    SecurityAlgorithms.HmacSha512Signature),
-                Audience = "sponsorkit.io",
-                Issuer = "sponsorkit.io"
-            };
+            Subject = new ClaimsIdentity(claims.Distinct()),
+            Expires = Debugger.IsAttached ? 
+                DateTime.UtcNow.AddSeconds(30) : 
+                DateTime.UtcNow.AddMinutes(15),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(
+                    Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
+                SecurityAlgorithms.HmacSha512Signature),
+            Audience = "sponsorkit.io",
+            Issuer = "sponsorkit.io"
+        };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 }

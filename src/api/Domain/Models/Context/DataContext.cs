@@ -7,66 +7,65 @@ using Sponsorkit.Domain.Models.Builders;
 
 #pragma warning disable 8618
 
-namespace Sponsorkit.Domain.Models.Context
+namespace Sponsorkit.Domain.Models.Context;
+
+public class DataContext : DbContext
 {
-    public class DataContext : DbContext
+    public DbSet<Bounty> Bounties { get; set; }
+    public DbSet<Issue> Issues { get; set; }
+    public DbSet<Payment> Payments { get; set; }
+    public DbSet<Repository> Repositories { get; set; }
+    public DbSet<Sponsorship> Sponsorships { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<BountyClaimRequest> BountyClaimRequests { get; set; }
+    public DbSet<PullRequest> PullRequests { get; set; }
+
+    public DataContext(DbContextOptions<DataContext> options) : base(options)
     {
-        public DbSet<Bounty> Bounties { get; set; }
-        public DbSet<Issue> Issues { get; set; }
-        public DbSet<Payment> Payments { get; set; }
-        public DbSet<Repository> Repositories { get; set; }
-        public DbSet<Sponsorship> Sponsorships { get; set; }
-        public DbSet<User> Users { get; set; }
-        public DbSet<BountyClaimRequest> BountyClaimRequests { get; set; }
-        public DbSet<PullRequest> PullRequests { get; set; }
+    }
 
-        public DataContext(DbContextOptions<DataContext> options) : base(options)
-        {
-        }
-
-        public async Task ExecuteInTransactionAsync(
-            Func<Task> action,
-            IsolationLevel isolationLevel)
-        {
-            await ExecuteInTransactionAsync<object?>(
-                async () =>
-                {
-                    await action();
-                    return null;
-                },
-                isolationLevel);
-        }
-
-        public async Task<T> ExecuteInTransactionAsync<T>(
-            Func<Task<T>> action,
-            IsolationLevel isolationLevel)
-        {
-            if (Database.CurrentTransaction != null)
-                return await action();
-
-            var strategy = Database.CreateExecutionStrategy();
-            return await strategy.ExecuteAsync(async () =>
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> action,
+        IsolationLevel isolationLevel)
+    {
+        await ExecuteInTransactionAsync<object?>(
+            async () =>
             {
-                await using var transaction = await Database.BeginTransactionAsync(isolationLevel);
+                await action();
+                return null;
+            },
+            isolationLevel);
+    }
 
-                try
-                {
-                    var result = await action();
-                    await transaction.CommitAsync();
+    public async Task<T> ExecuteInTransactionAsync<T>(
+        Func<Task<T>> action,
+        IsolationLevel isolationLevel)
+    {
+        if (Database.CurrentTransaction != null)
+            return await action();
 
-                    return result;
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            });
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        var strategy = Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);
-        }
+            await using var transaction = await Database.BeginTransactionAsync(isolationLevel);
+
+            try
+            {
+                var result = await action();
+                await transaction.CommitAsync();
+
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);
     }
 }

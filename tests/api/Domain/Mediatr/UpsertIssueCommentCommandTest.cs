@@ -1,53 +1,52 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Mediatr
+namespace Sponsorkit.Tests.Domain.Mediatr;
+
+[TestClass]
+public class UpsertIssueCommentCommandTest
 {
-    [TestClass]
-    public class UpsertIssueCommentCommandTest
+    [TestMethod]
+    public async Task Handle_OwnerDifferentThanSponsorkitOnDevelopmentEnvironment_DoesNothing()
     {
-        [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnDevelopmentEnvironment_DoesNothing()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_OwnerDifferentThanSponsorkitOnProductionEnvironment_ExecutesCommand()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_OwnerDifferentThanSponsorkitOnProductionEnvironment_ExecutesCommand()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_ExistingBotCommentFound_UpdatesExistingComment()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_ExistingBotCommentFound_UpdatesExistingComment()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_NoExistingBotCommentFound_CreatesNewComment()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_NoExistingBotCommentFound_CreatesNewComment()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

@@ -1,7 +1,6 @@
-﻿namespace Sponsorkit.Domain.Models.Builders
+﻿namespace Sponsorkit.Domain.Models.Builders;
+
+public interface IModelBuilder<out TModel> where TModel : class
 {
-    public interface IModelBuilder<out TModel> where TModel : class
-    {
-        public TModel Build();
-    }
+    public TModel Build();
 }

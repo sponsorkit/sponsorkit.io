@@ -14,59 +14,57 @@ using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Migration = Microsoft.EntityFrameworkCore.Migrations.Migration;
 
-namespace Sponsorkit.Tests.TestHelpers.Environments
+namespace Sponsorkit.Tests.TestHelpers.Environments;
+
+[ExcludeFromCodeCoverage]
+public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable
+    where TOptions : class, new()
 {
+    private readonly IIntegrationTestEntrypoint entrypoint;
 
-    [ExcludeFromCodeCoverage]
-    public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable
-        where TOptions : class, new()
+    public IServiceProvider ServiceProvider { get; }
+
+    public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
+    public IAesEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
+    public DatabaseContext Database => new (entrypoint);
+    public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
+    public StripeEnvironmentContext Stripe => new(ServiceProvider);
+
+    protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
+
+    protected IntegrationTestEnvironment(TOptions options = null)
     {
-        private readonly IIntegrationTestEntrypoint entrypoint;
+        options ??= new TOptions();
 
-        public IServiceProvider ServiceProvider { get; }
+        EnvironmentHelper.SetRunningInTestFlag();
 
-        public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
-        public IAesEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
-        public DatabaseContext Database => new (entrypoint);
-        public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
-        public StripeEnvironmentContext Stripe => new(ServiceProvider);
+        entrypoint = GetEntrypoint(options);
+        ServiceProvider = entrypoint.ScopeProvider;
+    }
 
-        protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
-
-        protected IntegrationTestEnvironment(TOptions options = null)
-        {
-            options ??= new TOptions();
-
-            EnvironmentHelper.SetRunningInTestFlag();
-
-            entrypoint = GetEntrypoint(options);
-            ServiceProvider = entrypoint.ScopeProvider;
-        }
-
-        protected virtual async Task InitializeAsync()
-        {
-            var dockerDependencyService = new DockerDependencyService(ServiceProvider);
-            await dockerDependencyService.StartAsync(default);
+    protected virtual async Task InitializeAsync()
+    {
+        var dockerDependencyService = new DockerDependencyService(ServiceProvider);
+        await dockerDependencyService.StartAsync(default);
             
-            await entrypoint.WaitUntilReadyAsync();
-        }
+        await entrypoint.WaitUntilReadyAsync();
+    }
 
-        public async ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
+    {
+        await DowngradeDatabaseAsync();
+        await entrypoint.DisposeAsync();
+    }
+
+    private async Task DowngradeDatabaseAsync()
+    {
+        await Database.WithoutCachingAsync(async context =>
         {
-            await DowngradeDatabaseAsync();
-            await entrypoint.DisposeAsync();
-        }
+            await context
+                .GetService<IMigrator>()
+                .MigrateAsync(Migration.InitialDatabase);
 
-        private async Task DowngradeDatabaseAsync()
-        {
-            await Database.WithoutCachingAsync(async context =>
-            {
-                await context
-                    .GetService<IMigrator>()
-                    .MigrateAsync(Migration.InitialDatabase);
-
-                await context.SaveChangesAsync();
-            });
-        }
+            await context.SaveChangesAsync();
+        });
     }
 }

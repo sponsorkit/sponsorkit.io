@@ -1,75 +1,74 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims
+namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims;
+
+[TestClass]
+public class ClaimsPostTest
 {
-    [TestClass]
-    public class ClaimsPostTest
+    [TestMethod]
+    public async Task HandleAsync_IssueNotFound_ReturnsNotFound()
     {
-        [TestMethod]
-        public async Task HandleAsync_IssueNotFound_ReturnsNotFound()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_PullRequestNotFound_ReturnsNotFound()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_PullRequestNotFound_ReturnsNotFound()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_ClaimAlreadyExistsForIssue_ReturnsBadRequest()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_ClaimAlreadyExistsForIssue_ReturnsBadRequest()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_ClaimerDoesNotOwnGivenPullRequest_ReturnsUnauthorized()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_ClaimerDoesNotOwnGivenPullRequest_ReturnsUnauthorized()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_ErrorDuringSecondClaimRequestCreation_RollsBackFirstClaimRequestCreation()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_ErrorDuringSecondClaimRequestCreation_RollsBackFirstClaimRequestCreation()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_MultipleClaimRequestsCreated_EmailsAreSentOutToBountyCreators()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_MultipleClaimRequestsCreated_EmailsAreSentOutToBountyCreators()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

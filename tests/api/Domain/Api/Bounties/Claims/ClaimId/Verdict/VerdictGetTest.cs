@@ -1,53 +1,52 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims.ClaimId.Verdict
+namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims.ClaimId.Verdict;
+
+[TestClass]
+public class VerdictGetTest
 {
-    [TestClass]
-    public class VerdictGetTest
+    [TestMethod]
+    public async Task HandleAsync_ClaimRequestBountyDoesNotBelongToAuthenticatedUser_ReturnsNotFound()
     {
-        [TestMethod]
-        public async Task HandleAsync_ClaimRequestBountyDoesNotBelongToAuthenticatedUser_ReturnsNotFound()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_MultipleClaimsPresent_PicksClaimById()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_MultipleClaimsPresent_PicksClaimById()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_NoMatchingClaimsPresent_ReturnsNotFound()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_NoMatchingClaimsPresent_ReturnsNotFound()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_MatchingClaimPresent_ReturnsResponse()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_MatchingClaimPresent_ReturnsResponse()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

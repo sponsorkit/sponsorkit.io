@@ -1,31 +1,30 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Calculate
+namespace Sponsorkit.Tests.Domain.Api.Bounties.Calculate;
+
+[TestClass]
+public class CalculateGetTest
 {
-    [TestClass]
-    public class CalculateGetTest
+    [TestMethod]
+    public async Task HandleAsync_AmountUnderMinimumAmount_ReturnsBadRequest()
     {
-        [TestMethod]
-        public async Task HandleAsync_AmountUnderMinimumAmount_ReturnsBadRequest()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_AmountEqualToMinimumAmount_ReturnsCalculationAmount()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_AmountEqualToMinimumAmount_ReturnsCalculationAmount()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

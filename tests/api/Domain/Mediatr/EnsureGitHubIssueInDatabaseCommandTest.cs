@@ -1,86 +1,85 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Mediatr
+namespace Sponsorkit.Tests.Domain.Mediatr;
+
+[TestClass]
+public class EnsureGitHubIssueInDatabaseCommandTest
 {
-    [TestClass]
-    public class EnsureGitHubIssueInDatabaseCommandTest
+    [TestMethod]
+    public async Task Handle_NoRepositoryFound_ReturnsNotFound()
     {
-        [TestMethod]
-        public async Task Handle_NoRepositoryFound_ReturnsNotFound()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_NoIssueFound_ReturnsNotFound()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_NoIssueFound_ReturnsNotFound()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_NoDatabaseRepositoryFound_CreatesNewRepository()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_NoDatabaseRepositoryFound_CreatesNewRepository()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_ExistingDatabaseRepositoryFound_UsesExistingRepository()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_ExistingDatabaseRepositoryFound_UsesExistingRepository()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_NoDatabaseIssueFound_CreatesNewIssue()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_NoDatabaseIssueFound_CreatesNewIssue()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_ExistingDatabaseIssueFound_ReturnsExistingIssue()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_ExistingDatabaseIssueFound_ReturnsExistingIssue()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task Handle_IssueHappensDuringIssueCreation_RepositoryChangesAreRolledBack()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task Handle_IssueHappensDuringIssueCreation_RepositoryChangesAreRolledBack()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

@@ -2,17 +2,15 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Sponsorkit.Domain
+namespace Sponsorkit.Domain;
+
+public class HealthCheckEndpoint : EndpointBaseSync
+    .WithoutRequest
+    .WithoutResult
 {
-    public class HealthCheckEndpoint : BaseEndpoint
-        .WithoutRequest
-        .WithoutResponse
+    [AllowAnonymous]
+    [HttpGet("/health")]
+    public override void Handle()
     {
-        [AllowAnonymous]
-        [HttpGet("/health")]
-        public override ActionResult Handle()
-        {
-            return new OkResult();
-        }
     }
 }

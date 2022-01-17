@@ -1,4 +1,3 @@
-﻿namespace Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress
-{
-    public record Model(string VerificationUrl) : IMailModel;
-}
+﻿namespace Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
+
+public record Model(string VerificationUrl) : IMailModel;
