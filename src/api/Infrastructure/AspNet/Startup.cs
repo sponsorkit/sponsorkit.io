@@ -130,7 +130,7 @@ namespace Sponsorkit.Infrastructure.AspNet
                                 "http://localhost:6006"
                             },
                             "Staging" => new [] {
-                                "https://*.gtsb.io"
+                                "https://*.vercel.app"
                             },
                             "Production" => new []
                             {
