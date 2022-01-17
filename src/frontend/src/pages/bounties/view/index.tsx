@@ -88,10 +88,9 @@ function IssueInputField(props: {
     const owner = router.query.owner as string;
     const repo = router.query.repo as string;
 
-    const areAllIssueVariablesSet =
-        issueNumber &&
-        owner &&
-        repo;
+    const areAllIssueVariablesSet = useMemo(
+        () => issueNumber && owner && repo, 
+        [issueNumber, owner, repo]);
 
     const getErrorMessage = () => {
         if (isLoading || issueLink === undefined)
@@ -106,13 +105,13 @@ function IssueInputField(props: {
 
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
-    const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
+    const [issueLink, setIssueLink] = useState(() => areAllIssueVariablesSet ?
         `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
         undefined);
     const [isLoading, setIsLoading] = useState(false);
 
     const issueDetails = useMemo(
-        () => issueLink ?
+        () => issueNumber && owner && repo ?
             extractIssueLinkDetails(issueLink) :
             null,
         [issueLink]);
