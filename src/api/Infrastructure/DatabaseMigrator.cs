@@ -5,19 +5,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sponsorkit.Domain.Models.Context;
 
-namespace Sponsorkit.Infrastructure
+namespace Sponsorkit.Infrastructure;
+
+public class DatabaseMigrator
 {
-    public class DatabaseMigrator
+    public static async Task MigrateDatabaseForHostAsync(IHost host)
     {
-        public static async Task MigrateDatabaseForHostAsync(IHost host)
-        {
-            if (Debugger.IsAttached)
-                return;
+        if (Debugger.IsAttached)
+            return;
 
-            using var scope = host.Services.CreateScope();
+        using var scope = host.Services.CreateScope();
 
-            var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-            await dataContext.Database.MigrateAsync();
-        }
+        var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+        await dataContext.Database.MigrateAsync();
     }
 }

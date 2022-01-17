@@ -30,9 +30,7 @@ import { useRouter } from "next/router";
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import classes from './index.module.scss';
 
-export default function IssueByIdPage(props: {
-    location: Location
-}) {
+export default function IssueByIdPage() {
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
@@ -46,7 +44,6 @@ export default function IssueByIdPage(props: {
 
     return <AppBarLayout logoVariant="bountyhunt" className={classes.root}>
         <IssueInputField
-            location={props.location}
             onChange={async e => {
                 console.debug("issue-input-field-changed", e);
 
@@ -76,7 +73,6 @@ type Event = {
 }
 
 function IssueInputField(props: {
-    location: Location,
     onChange: (e: {
         issue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
         details: {
@@ -92,10 +88,17 @@ function IssueInputField(props: {
     const owner = router.query.owner as string;
     const repo = router.query.repo as string;
 
-    const areAllIssueVariablesSet =
-        issueNumber &&
-        owner &&
-        repo;
+    const areAllIssueVariablesSet = useMemo(
+        () => issueNumber && owner && repo, 
+        [issueNumber, owner, repo]);
+    useEffect(
+        () => {
+            if(!areAllIssueVariablesSet)
+                return;
+            
+            setIssueLink(`https://github.com/${owner}/${repo}/issues/${issueNumber}`);
+        },
+        [areAllIssueVariablesSet]);
 
     const getErrorMessage = () => {
         if (isLoading || issueLink === undefined)
@@ -110,13 +113,11 @@ function IssueInputField(props: {
 
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
-    const [issueLink, setIssueLink] = useState(areAllIssueVariablesSet ?
-        `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
-        undefined);
+    const [issueLink, setIssueLink] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
 
     const issueDetails = useMemo(
-        () => issueLink ?
+        () => issueNumber && owner && repo ?
             extractIssueLinkDetails(issueLink) :
             null,
         [issueLink]);

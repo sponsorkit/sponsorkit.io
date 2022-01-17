@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Sponsorkit.Domain.Helpers
+namespace Sponsorkit.Domain.Helpers;
+
+public static class FeeCalculator
 {
-    public static class FeeCalculator
+    public static long GetSponsorkitFeeInHundreds(long amountInHundreds)
     {
-        public static long GetSponsorkitFeeInHundreds(long amountInHundreds)
-        {
-            return (long)Math.Round(amountInHundreds / 100M * 10M);
-        }
+        return (long)Math.Round(amountInHundreds / 100M * 10M);
     }
 }

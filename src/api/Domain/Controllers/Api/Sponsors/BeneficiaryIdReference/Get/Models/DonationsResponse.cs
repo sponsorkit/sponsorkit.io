@@ -1,16 +1,15 @@
-﻿namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models
-{
-    public class DonationsResponse
-    {
-        public DonationsResponse(
-            long totalInHundreds,
-            long monthlyInHundreds)
-        {
-            TotalInHundreds = totalInHundreds;
-            MonthlyInHundreds = monthlyInHundreds;
-        }
+﻿namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models;
 
-        public long TotalInHundreds { get; }
-        public long MonthlyInHundreds { get; }
+public class DonationsResponse
+{
+    public DonationsResponse(
+        long totalInHundreds,
+        long monthlyInHundreds)
+    {
+        TotalInHundreds = totalInHundreds;
+        MonthlyInHundreds = monthlyInHundreds;
     }
+
+    public long TotalInHundreds { get; }
+    public long MonthlyInHundreds { get; }
 }

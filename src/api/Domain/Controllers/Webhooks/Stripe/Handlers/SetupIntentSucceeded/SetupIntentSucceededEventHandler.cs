@@ -14,40 +14,39 @@ using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded
+namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
+
+public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
 {
-    public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
+    private readonly CustomerService customerService;
+
+    public SetupIntentSucceededEventHandler(
+        CustomerService customerService)
     {
-        private readonly CustomerService customerService;
+        this.customerService = customerService;
+    }
 
-        public SetupIntentSucceededEventHandler(
-            CustomerService customerService)
-        {
-            this.customerService = customerService;
-        }
+    protected override bool CanHandle(string type, SetupIntent data)
+    {
+        return type == Events.SetupIntentSucceeded;
+    }
 
-        protected override bool CanHandle(string type, SetupIntent data)
-        {
-            return type == Events.SetupIntentSucceeded;
-        }
+    protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
+    {
+        await SetPaymentMethodAsDefaultAsync(data, cancellationToken);
+    }
 
-        protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
-        {
-            await SetPaymentMethodAsDefaultAsync(data, cancellationToken);
-        }
-
-        private async Task SetPaymentMethodAsDefaultAsync(SetupIntent data, CancellationToken cancellationToken)
-        {
-            await customerService.UpdateAsync(
-                data.CustomerId,
-                new CustomerUpdateOptions()
+    private async Task SetPaymentMethodAsDefaultAsync(SetupIntent data, CancellationToken cancellationToken)
+    {
+        await customerService.UpdateAsync(
+            data.CustomerId,
+            new CustomerUpdateOptions()
+            {
+                InvoiceSettings = new CustomerInvoiceSettingsOptions()
                 {
-                    InvoiceSettings = new CustomerInvoiceSettingsOptions()
-                    {
-                        DefaultPaymentMethod = data.PaymentMethodId
-                    }
-                },
-                cancellationToken: cancellationToken);
-        }
+                    DefaultPaymentMethod = data.PaymentMethodId
+                }
+            },
+            cancellationToken: cancellationToken);
     }
 }

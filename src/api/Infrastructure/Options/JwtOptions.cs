@@ -1,9 +1,8 @@
 ﻿using Destructurama.Attributed;
 
-namespace Sponsorkit.Infrastructure.Options
+namespace Sponsorkit.Infrastructure.Options;
+
+public class JwtOptions
 {
-    public class JwtOptions
-    {
-        [NotLogged] public string PrivateKey { get; set; } = null!;
-    }
+    [NotLogged] public string PrivateKey { get; set; } = null!;
 }

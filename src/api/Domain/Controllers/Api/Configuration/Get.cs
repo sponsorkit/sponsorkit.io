@@ -5,34 +5,33 @@ using Microsoft.Extensions.Options;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Options.GitHub;
 
-namespace Sponsorkit.Domain.Controllers.Api.Configuration
-{
-    public record Response(
-        string StripeClientId,
-        string GitHubClientId);
-    
-    public class Get : BaseEndpoint
-        .WithoutRequest
-        .WithResponse<Response>
-    {
-        private readonly IOptionsMonitor<StripeOptions> stripeOptions;
-        private readonly IOptionsMonitor<GitHubOptions> gitHubOptions;
+namespace Sponsorkit.Domain.Controllers.Api.Configuration;
 
-        public Get(
-            IOptionsMonitor<StripeOptions> stripeOptions,
-            IOptionsMonitor<GitHubOptions> gitHubOptions)
-        {
-            this.stripeOptions = stripeOptions;
-            this.gitHubOptions = gitHubOptions;
-        }
+public record Response(
+    string StripeClientId,
+    string GitHubClientId);
+    
+public class Get : EndpointBaseSync
+    .WithoutRequest
+    .WithActionResult<Response>
+{
+    private readonly IOptionsMonitor<StripeOptions> stripeOptions;
+    private readonly IOptionsMonitor<GitHubOptions> gitHubOptions;
+
+    public Get(
+        IOptionsMonitor<StripeOptions> stripeOptions,
+        IOptionsMonitor<GitHubOptions> gitHubOptions)
+    {
+        this.stripeOptions = stripeOptions;
+        this.gitHubOptions = gitHubOptions;
+    }
         
-        [HttpGet("/configuration")]
-        [AllowAnonymous]
-        public override ActionResult<Response> Handle()
-        {
-            return new Response(
-                stripeOptions.CurrentValue.PublishableKey,
-                gitHubOptions.CurrentValue.OAuth.ClientId);
-        }
+    [HttpGet("/configuration")]
+    [AllowAnonymous]
+    public override ActionResult<Response> Handle()
+    {
+        return new Response(
+            stripeOptions.CurrentValue.PublishableKey,
+            gitHubOptions.CurrentValue.OAuth.ClientId);
     }
 }

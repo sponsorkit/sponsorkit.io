@@ -1,7 +1,6 @@
-﻿namespace Sponsorkit.Domain.Mediatr.Email
+﻿namespace Sponsorkit.Domain.Mediatr.Email;
+
+public interface IMailModel
 {
-    public interface IMailModel
-    {
         
-    }
 }

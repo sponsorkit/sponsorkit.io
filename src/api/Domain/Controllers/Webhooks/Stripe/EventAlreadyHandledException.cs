@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe
+namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe;
+
+public class EventAlreadyHandledException : Exception
 {
-    public class EventAlreadyHandledException : Exception
-    {
         
-    }
 }

@@ -7,37 +7,36 @@ using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Filters;
 
-namespace Sponsorkit.Infrastructure.Logging
+namespace Sponsorkit.Infrastructure.Logging;
+
+[ExcludeFromCodeCoverage]
+public static class LoggerFactory
 {
-    [ExcludeFromCodeCoverage]
-    public static class LoggerFactory
+    private static LoggerConfiguration CreateBaseLoggingConfiguration()
     {
-        private static LoggerConfiguration CreateBaseLoggingConfiguration()
-        {
-            return new LoggerConfiguration()
-                .Destructure.UsingAttributes()
-                .MinimumLevel.Verbose()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-                .MinimumLevel.Override("Microsoft.Extensions.Http", LogEventLevel.Information)
-                .Filter.ByExcluding(Matching.FromSource("Microsoft.EntityFrameworkCore"));
-        }
+        return new LoggerConfiguration()
+            .Destructure.UsingAttributes()
+            .MinimumLevel.Verbose()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.Extensions.Http", LogEventLevel.Information)
+            .Filter.ByExcluding(Matching.FromSource("Microsoft.EntityFrameworkCore"));
+    }
 
-        public static ILogger BuildWebApplicationLogger(IConfiguration configuration)
-        {
-            return BuildWebApplicationLogConfiguration(configuration)
-                .CreateLogger();
-        }
+    public static ILogger BuildWebApplicationLogger(IConfiguration configuration)
+    {
+        return BuildWebApplicationLogConfiguration(configuration)
+            .CreateLogger();
+    }
 
-        public static LoggerConfiguration BuildWebApplicationLogConfiguration(IConfiguration configuration)
-        {
-            SelfLog.Enable(Console.Error);
+    public static LoggerConfiguration BuildWebApplicationLogConfiguration(IConfiguration configuration)
+    {
+        SelfLog.Enable(Console.Error);
 
-            var loggerConfiguration = CreateBaseLoggingConfiguration()
-                .Enrich.FromLogContext()
-                .Filter.ByExcluding(Matching.FromSource("Elastic.Apm"))
-                .WriteTo.Console();
+        var loggerConfiguration = CreateBaseLoggingConfiguration()
+            .Enrich.FromLogContext()
+            .Filter.ByExcluding(Matching.FromSource("Elastic.Apm"))
+            .WriteTo.Console();
 
-            return loggerConfiguration;
-        }
+        return loggerConfiguration;
     }
 }

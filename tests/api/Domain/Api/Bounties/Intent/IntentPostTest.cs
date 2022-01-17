@@ -1,42 +1,41 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Intent
+namespace Sponsorkit.Tests.Domain.Api.Bounties.Intent;
+
+[TestClass]
+public class IntentPostTest
 {
-    [TestClass]
-    public class IntentPostTest
+    [TestMethod]
+    public async Task HandleAsync_GitHubIssueOrRepositoryNotFound_ReturnsNotFound()
     {
-        [TestMethod]
-        public async Task HandleAsync_GitHubIssueOrRepositoryNotFound_ReturnsNotFound()
-        {
-            //Arrange
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_AmountBelowMinimumAmount_ReturnsBadRequest()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_AmountBelowMinimumAmount_ReturnsBadRequest()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
+    }
         
-        [TestMethod]
-        public async Task HandleAsync_PaymentMethodPresent_ReturnsCreatedSetupIntent()
-        {
-            //Arrange
+    [TestMethod]
+    public async Task HandleAsync_PaymentMethodPresent_ReturnsCreatedSetupIntent()
+    {
+        //Arrange
             
-            //Act
+        //Act
             
-            //Assert
-            Assert.Fail("Not implemented.");
-        }
+        //Assert
+        Assert.Fail("Not implemented.");
     }
 }

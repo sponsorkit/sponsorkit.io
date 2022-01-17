@@ -1,12 +1,11 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit
+namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+
+class SponsorkitEnvironmentSetupOptions
 {
-    class SponsorkitEnvironmentSetupOptions
-    {
-        public string EnvironmentName { get; set; }
-        public Action<IServiceCollection> IocConfiguration { get; set; }
-        public bool IncludeWebServer { get; set; }
-    }
+    public string EnvironmentName { get; set; }
+    public Action<IServiceCollection> IocConfiguration { get; set; }
+    public bool IncludeWebServer { get; set; }
 }

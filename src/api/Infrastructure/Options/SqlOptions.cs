@@ -1,10 +1,9 @@
 ﻿using Destructurama.Attributed;
 
-namespace Sponsorkit.Infrastructure.Options
+namespace Sponsorkit.Infrastructure.Options;
+
+public class SqlOptions
 {
-    public class SqlOptions
-    {
-        [NotLogged]
-        public string ConnectionString { get; set; } = null!;
-    }
+    [NotLogged]
+    public string ConnectionString { get; set; } = null!;
 }

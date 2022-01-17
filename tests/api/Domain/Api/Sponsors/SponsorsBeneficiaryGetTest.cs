@@ -7,34 +7,33 @@ using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Builders.Models;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
-namespace Sponsorkit.Tests.Domain.Api.Sponsors
+namespace Sponsorkit.Tests.Domain.Api.Sponsors;
+
+[TestClass]
+public class SponsorsBeneficiaryGetTest
 {
-    [TestClass]
-    public class SponsorsBeneficiaryGetTest
+    [TestMethod]
+    public async Task SponsorsBeneficiaryGet_BeneficiaryFound_ReturnsProperResponse()
     {
-        [TestMethod]
-        public async Task SponsorsBeneficiaryGet_BeneficiaryFound_ReturnsProperResponse()
-        {
-            //Arrange
-            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-            var endpoint = environment.ServiceProvider.GetRequiredService<Get>();
+        var endpoint = environment.ServiceProvider.GetRequiredService<Get>();
 
-            var beneficiaryId = Guid.NewGuid();
+        var beneficiaryId = Guid.NewGuid();
 
-            await environment.Database.CreateUserAsync(new TestUserBuilder()
-                .WithId(beneficiaryId));
+        await environment.Database.CreateUserAsync(new TestUserBuilder()
+            .WithId(beneficiaryId));
             
-            //Act
-            var response = await endpoint.HandleAsync(
-                new Request(beneficiaryId),
-                default);
+        //Act
+        var response = await endpoint.HandleAsync(
+            new Request(beneficiaryId),
+            default);
             
-            //Assert
-            var responseObject = response.ToObject();
+        //Assert
+        var responseObject = response.ToObject();
 
-            Assert.AreEqual("some-user-id", responseObject.Id);
-            Assert.AreEqual("some-github-id", responseObject.GitHubId);
-        }
+        Assert.AreEqual("some-user-id", responseObject.Id);
+        Assert.AreEqual("some-github-id", responseObject.GitHubId);
     }
 }
