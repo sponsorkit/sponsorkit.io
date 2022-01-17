@@ -1,17 +1,14 @@
 import { extractIssueLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
+import { useRouter } from "next/router";
 
-export default function RedirectPage(props: {
-    location: Location
-}) {
-    if(!props.location?.href)
+export default function RedirectPage() {
+    const router = useRouter();
+    if(!Array.isArray(router.query.all))
         return null;
 
     try {
-        const url = new URL(props.location.href);
-        url.pathname = url.pathname.replace(/^\/bounties\/redirect\//, '');
-        url.host = "github.com";
-
-        const metadata = extractIssueLinkDetails(url.href);
+        const url = `https://github.com/${router.query.all.join('/')}`;
+        const metadata = extractIssueLinkDetails(url);
         if(!metadata)
             return null;
 
