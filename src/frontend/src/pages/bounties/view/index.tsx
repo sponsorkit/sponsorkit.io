@@ -91,6 +91,14 @@ function IssueInputField(props: {
     const areAllIssueVariablesSet = useMemo(
         () => issueNumber && owner && repo, 
         [issueNumber, owner, repo]);
+    useEffect(
+        () => {
+            if(!areAllIssueVariablesSet)
+                return;
+            
+            setIssueLink(`https://github.com/${owner}/${repo}/issues/${issueNumber}`);
+        },
+        [areAllIssueVariablesSet]);
 
     const getErrorMessage = () => {
         if (isLoading || issueLink === undefined)
@@ -105,9 +113,7 @@ function IssueInputField(props: {
 
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
 
-    const [issueLink, setIssueLink] = useState(() => areAllIssueVariablesSet ?
-        `https://github.com/${owner}/${repo}/issues/${issueNumber}` :
-        undefined);
+    const [issueLink, setIssueLink] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
 
     const issueDetails = useMemo(
