@@ -33,9 +33,9 @@ export function Transition(props: {
                                 props.classNames.default
                         } : {
                             enter: classes.initial,
-                            enterActive: classes.fadingIn,
-                            exit: classes.fadingIn,
-                            exitActive: classes.fadingOut,
+                            enterActive: classes["fading-in"],
+                            exit: classes["fading-in"],
+                            exitActive: classes["fading-out"],
                             exitDone: classes.initial
                         }}
                 >

@@ -36,7 +36,7 @@ export function AmountPicker(props: {
     getError,
     [selectedOption]);
 
-  return <Box className={classes.sponsorshipOptions}>
+  return <Box className={classes["sponsorship-options"]}>
     <Box>
       {props.options.map(option =>
         <Button
@@ -45,7 +45,7 @@ export function AmountPicker(props: {
           color="secondary"
           disableElevation
           onClick={() => setSelectedOption(option.toString())}
-          className={classes.amountButton}
+          className={classes["amount-button"]}
           style={{
             backgroundColor: selectedOption == option.toString() ?
               palette.light.primary.main :
@@ -72,7 +72,7 @@ export function AmountPicker(props: {
       onChange={e => setSelectedOption(e.target.value)}
     />
     {amountError && <FormHelperText 
-      className={classes.errorText}
+      className={classes["error-text"]}
       error={!!amountError}
     >
       {amountError}

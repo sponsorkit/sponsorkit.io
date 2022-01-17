@@ -71,8 +71,8 @@ export default function VerticalLinearStepper(props: {
                 <Step key={label.title}>
                     <StepLabel>{label.title}</StepLabel>
                     <StepContent>
-                        <div className={classes.stepContainer}>{activeStep.component}</div>
-                        <div className={classes.actionsContainer}>
+                        <div className={classes["step-container"]}>{activeStep.component}</div>
+                        <div className={classes["actions-container"]}>
                             <div>
                                 <Button
                                     variant="outlined"

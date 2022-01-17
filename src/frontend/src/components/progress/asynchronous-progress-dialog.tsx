@@ -91,7 +91,7 @@ export function AsynchronousProgressDialog(props: {
                     <CircularProgress 
                         size={25}
                         variant="indeterminate" />
-                    <Typography className={classes.loadingText}>
+                    <Typography className={classes["loading-text"]}>
                         {isWaitingForVerification ? 
                             props.requestSentText : 
                             props.requestSendingText}

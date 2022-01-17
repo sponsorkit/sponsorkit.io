@@ -32,7 +32,7 @@ export default function EmailValidationDialog(props: {
         onDone={props.onValidated}
     >
         <DialogTitle>Is this your e-mail?</DialogTitle>
-        <DialogContent className={classes.verifyEmailDialog}>
+        <DialogContent className={classes["verify-email-dialog"]}>
             <Typography>
                 Make sure your e-mail is correct. We'll send you an e-mail with a verification link.
             </Typography>
@@ -40,7 +40,7 @@ export default function EmailValidationDialog(props: {
                 label="E-mail"
                 variant="outlined"
                 autoFocus
-                className={classes.textBox}
+                className={classes["text-box"]}
                 value={email}
                 onChange={e => setEmail(e.target.value)} />
         </DialogContent>

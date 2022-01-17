@@ -14,7 +14,7 @@ export default function LandingPage(props: {
                     {props.title}
                 </Typography>
             </CardContent>
-            <CardActions className={classes.cardActions}>
+            <CardActions className={classes["card-actions"]}>
                 <Button
                     variant={props.continueUrl ?
                         "text" :

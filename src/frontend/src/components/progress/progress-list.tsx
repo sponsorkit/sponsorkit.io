@@ -83,7 +83,7 @@ export default function ProgressList<TValidationTarget>(props: {
                 current={getValidatedCheckpointCount()}
                 maximum={totalCheckpointCount}
                 className={combineClassNames(
-                    classes.progressBar,
+                    classes["progress-bar"],
                     props.validationTarget && classes.loaded)}
                 text={props.validationTarget ?
                     `${getValidatedCheckpointCount()} / ${totalCheckpointCount}` :
@@ -103,7 +103,7 @@ export default function ProgressList<TValidationTarget>(props: {
                     key={`checkpoint-${i}`}
                 >
                     <AccordionSummary 
-                        className={classes.accordionSummary} 
+                        className={classes["accordion-summary"]} 
                         expandIcon={props.validationTarget ?
                             <ExpandMore /> :
                             null}
@@ -124,11 +124,11 @@ export default function ProgressList<TValidationTarget>(props: {
                                     size={20} 
                                     className={combineClassNames(
                                         classes.checkbox,
-                                        classes.progressBar)} />}
+                                        classes["progress-bar"])} />}
                             label={x.label}
                         />
                     </AccordionSummary>
-                    <AccordionDetails className={classes.accordionDetails}>
+                    <AccordionDetails className={classes["accordion-details"]}>
                         <Typography className={classes.description} color="textSecondary">
                             {x.description}
                         </Typography>
@@ -136,7 +136,7 @@ export default function ProgressList<TValidationTarget>(props: {
                             ('children' in x ?
                                 x.children(validated) :
                                 <Button 
-                                    className={classes.completeButton} 
+                                    className={classes["complete-button"]} 
                                     variant="contained"
                                     onClick={x.onClick}
                                     disabled={validated}

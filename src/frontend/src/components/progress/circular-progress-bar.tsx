@@ -30,7 +30,7 @@ export default function CircularProgressBar(props: {
     >
         <ReactCircularProgressBar
             value={percentage}
-            className={classes.progressBar}
+            className={classes["progress-bar"]}
             styles={{
                 path: {
                     strokeLinecap: 'round',
