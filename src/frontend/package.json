@@ -2,6 +2,7 @@
   "name": "sponsorkit",
   "private": true,
   "description": "",
+  "sideEffects": false,
   "version": "1.0.0",
   "author": "Mathias Lorenzen",
   "dependencies": {
