@@ -20,7 +20,10 @@ type ThemeConfigProps = {
 
 export default function ThemeConfig({ children }: ThemeConfigProps) {
   const theme = createTheme({
-    palette: { ...palette.light, mode: 'light' },
+    palette: { 
+      ...palette.light, 
+      mode: 'light' 
+    },
     shape,
     typography,
     breakpoints,
@@ -31,7 +34,7 @@ export default function ThemeConfig({ children }: ThemeConfigProps) {
   theme.components = componentsOverride(theme);
 
   return (
-    <StyledEngineProvider injectFirst={false}>
+    <StyledEngineProvider injectFirst={true}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
