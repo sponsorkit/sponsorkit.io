@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "edge",
+            "type": "pwa-msedge",
             "request": "launch",
             "name": "Launch Edge against localhost",
-            "url": "http://localhost:8000/bounties/view/?number=10121&owner=microsoft&repo=vscode",
+            "url": "http://localhost:3000/bounties/view/?number=10121&owner=microsoft&repo=vscode",
             "webRoot": "${workspaceFolder}"
         }
     ]

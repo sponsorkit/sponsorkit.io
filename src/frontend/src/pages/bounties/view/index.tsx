@@ -34,6 +34,7 @@ export default function IssueByIdPage() {
     const [issue, setIssue] = useState<OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse | null>();
     const [bounties, setBounties] = useState<SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse[] | null>();
     const configuration = useConfiguration();
+    const router = useRouter();
 
     const loadBountiesFromIssue = async (forIssue: OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse) => {
         setBounties(null);
@@ -48,9 +49,10 @@ export default function IssueByIdPage() {
                 console.debug("issue-input-field-changed", e);
 
                 setIssue(e.issue);
-                window.history.pushState({}, '', getBountyhuntUrlFromIssueLinkDetails(e.details));
-
-                await loadBountiesFromIssue(e.issue);
+                router.push(
+                    getBountyhuntUrlFromIssueLinkDetails(e.details),
+                    undefined,
+                    { shallow: true });
             }} />
         {<Transition transitionKey={`transition-${issue?.number}-${configuration && "config-loaded"}`}>
             {ref => configuration && issue && 
@@ -117,7 +119,7 @@ function IssueInputField(props: {
     const [isLoading, setIsLoading] = useState(false);
 
     const issueDetails = useMemo(
-        () => issueNumber && owner && repo ?
+        () => issueLink ?
             extractIssueLinkDetails(issueLink) :
             null,
         [issueLink]);
@@ -188,7 +190,10 @@ function IssueInputField(props: {
                         issueLink :
                         ""}
                     variant="outlined"
-                    onChange={e => setIssueLink(e.target.value)} />
+                    onChange={e => {
+                        console.info("change", e.target.value);
+                        setIssueLink(e.target.value);
+                    }} />
                 <CircularProgress className={combineClassNames(
                     classes.spinner,
                     isLoading && classes.active)} />

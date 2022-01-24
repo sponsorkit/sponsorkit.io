@@ -11,5 +11,6 @@
     "javascript.preferences.importModuleSpecifier": "non-relative",
     "editor.unfoldOnClickAfterEndOfLine": true,
     "files.eol": "\n",
-    "terminal.integrated.scrollback": 100000
+    "terminal.integrated.scrollback": 100000,
+    "debug.javascript.autoAttachFilter": "smart"
 }
