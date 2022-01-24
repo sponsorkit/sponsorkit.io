@@ -21,18 +21,14 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { AppBarLayout } from "@pages/index";
-import {
-    GeneralConfigurationGetResponse as ConfigurationGetResponse,
-    GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse as OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
-    SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse,
-    SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest
-} from "@sponsorkit/client";
+import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
 import { orderBy, sum } from 'lodash';
 import { useRouter } from "next/router";
 import { forwardRef, useEffect, useMemo, useState } from 'react';
+import uri from "uri-tag";
 import classes from './index.module.scss';
 
 export default function IssueByIdPage() {
@@ -263,7 +259,9 @@ const Issue = forwardRef(function (
                         {repo.owner}/{repo.name}
                     </Typography>
                     <Typography variant="h3" component="h1" className={classes["issue-title"]}>
-                        {props.issue.title} <span className={classes["issue-number"]}>#{props.issue.number}</span>
+                        <a href={uri`https://github.com/${repo.owner}/${repo.name}/issues/${props.issue.number}`} target="_blank">
+                            {props.issue.title} <span className={classes["issue-number"]}>#{props.issue.number}</span>
+                        </a>
                     </Typography>
                     <Markdown
                         className={classes.markdown}

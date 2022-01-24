@@ -40,7 +40,7 @@ export default function AbsoluteBox(props: {
                 }
             }
 
-            var onResized = debounce(onUpdate, 300);
+            var onResized = debounce(onUpdate, 500);
             onUpdate();
 
             observer.observe(absoluteBoxDom);
