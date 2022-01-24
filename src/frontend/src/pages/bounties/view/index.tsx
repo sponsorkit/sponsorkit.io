@@ -21,7 +21,12 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { AppBarLayout } from "@pages/index";
-import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
+import {
+    GeneralConfigurationGetResponse as ConfigurationGetResponse,
+    GeneralOctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse as OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse,
+    SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse,
+    SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest
+} from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
