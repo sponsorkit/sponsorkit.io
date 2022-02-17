@@ -251,6 +251,7 @@ const Issue = forwardRef(function (
             icon: AttachMoneyIcon
         })) ?? [])
     ].filter(x => !!x);
+    
     const eventsOrdered = orderBy(events, x => x?.time?.getTime(), "desc");
 
     const repo = extractReposApiLinkDetails(props.issue.url);
