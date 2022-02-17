@@ -148,7 +148,7 @@ function PaymentMethodModalContent(props: Props) {
         actionChildren={<>
             <Tooltip title="Stripe is one of the most popular and trusted payment providers in the world. Your credit card details are safe with them, and never touches our own servers.">
                 <Box className={classes["stripe-badge"]}>
-                    <Image layout="fill" src={PoweredByStripeBadge} className={classes.svg} />
+                    <Image layout="fixed" height={25} width={100} src={PoweredByStripeBadge} className={classes.svg} />
                 </Box>
             </Tooltip>
             <Box className={classes.spacer} />

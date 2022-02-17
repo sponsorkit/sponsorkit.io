@@ -18,11 +18,11 @@
 
     .text {
         position: absolute;
-        font-size: $font-size;
+        font-size: $font-size !important;
 
         .spinner {
-            width: $font-size;
-            height: $font-size;
+            width: $font-size !important;
+            height: $font-size !important;
 
             display: inline-block;
 

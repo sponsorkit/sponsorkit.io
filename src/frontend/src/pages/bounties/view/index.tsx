@@ -44,6 +44,15 @@ export default function IssueByIdPage() {
         setBounties(response?.bounties || null);
     }
 
+    useEffect(
+        () => {
+            if(!issue)
+                return;
+            
+            loadBountiesFromIssue(issue);
+        },
+        [issue]);
+
     return <AppBarLayout logoVariant="bountyhunt" className={classes.root}>
         <IssueInputField
             onChange={async e => {
