@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NSubstitute;
 using Sponsorkit.Infrastructure.AspNet;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
@@ -29,10 +30,8 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         cancellationTokenSource = new CancellationTokenSource();
 
         host = Host.CreateDefaultBuilder()
-            .ConfigureAppConfiguration(builder => TestConfigurationFactory.ConfigureBuilder(builder))
             .UseEnvironment(options.EnvironmentName ?? Microsoft.Extensions.Hosting.Environments.Development)
             .ConfigureWebHostDefaults(webBuilder => webBuilder
-                .UseStartup<Startup>()
                 .UseKestrel()
                 .UseUrls("https://*:14569;http://*:14568")
                 .UseNGrok(new NgrokOptions()
@@ -46,8 +45,9 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                 TestServiceProviderFactory.ConfigureServicesForTesting(
                     services,
                     TestConfigurationFactory
-                        .ConfigureBuilder(new ConfigurationBuilder())
-                        .Build());
+                        .ConfigureBuilder(new ConfigurationManager())
+                        .Build(),
+                    Substitute.For<IWebHostEnvironment>());
                 options.IocConfiguration?.Invoke(services);
             })
             .Build();

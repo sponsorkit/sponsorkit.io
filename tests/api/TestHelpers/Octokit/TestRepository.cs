@@ -4,9 +4,51 @@ namespace Sponsorkit.Tests.TestHelpers.Octokit;
 
 public class TestRepository : Repository
 {
-    public TestRepository()
+    public TestRepository() : base(
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        new TestUser(),
+        "owner-name",
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default,
+        default)
     {
-        Name = "owner-name";
-        Owner = new TestUser();
     }
 }

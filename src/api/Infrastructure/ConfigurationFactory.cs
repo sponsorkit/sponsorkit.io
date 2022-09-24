@@ -8,18 +8,8 @@ namespace Sponsorkit.Infrastructure;
 
 public static class ConfigurationFactory
 {
-    public static IConfigurationRoot BuildConfiguration(string? secretId, string[] args)
-    {
-        var configurationBuilder = new ConfigurationBuilder();
-
-        Configure(configurationBuilder, args, secretId);
-
-        var configuration = configurationBuilder.Build();
-        return configuration;
-    }
-
     public static void Configure(
-        IConfigurationBuilder configurationBuilder, 
+        ConfigurationManager configurationBuilder, 
         string[] args, 
         string? secretId)
     {

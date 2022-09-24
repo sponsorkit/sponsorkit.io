@@ -1,5 +1,6 @@
 ﻿using System;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,18 +23,14 @@ public class TestServiceProviderFactory
             .AddEnvironmentVariables()
             .Build();
 
-        var environment = Substitute.For<IHostEnvironment>();
+        var environment = Substitute.For<IWebHostEnvironment>();
         environment.EnvironmentName.Returns("Development");
         services.AddSingleton(environment);
 
-        var startup = new Startup(
-            configuration,
-            environment);
-        startup.ConfigureServices(services);
-
         ConfigureServicesForTesting(
             services,
-            configuration);
+            configuration,
+            environment);
 
         configure?.Invoke(services);
 
@@ -42,11 +39,13 @@ public class TestServiceProviderFactory
 
     public static void ConfigureServicesForTesting(
         IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         var registry = new IocRegistry(
             services,
-            configuration);
+            configuration,
+            environment);
         registry.ConfigureMediatr(typeof(TestServiceProviderFactory).Assembly);
 
         services.AddScoped<Mediator>();

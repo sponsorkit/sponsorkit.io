@@ -2,16 +2,25 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmailV2;
+using FluffySpoon.AspNet.NGrok;
 using Flurl.Http.Configuration;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using Octokit.Internal;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
@@ -36,40 +45,36 @@ public sealed class IocRegistry
 {
     private IServiceCollection Services { get; }
     private IConfiguration Configuration { get; }
+    private IWebHostEnvironment Environment { get; }
 
-    public IocRegistry(
-        IServiceCollection services,
-        IConfiguration configuration)
+    public IocRegistry(IServiceCollection services,
+        IConfiguration configuration, 
+        IWebHostEnvironment environment)
     {
         Services = services;
         Configuration = configuration;
+        Environment = environment;
     }
 
     public void Register()
     {
         ConfigureOptions();
-
         ConfigureDebugHelpers();
-
         ConfigureInfrastructure();
-
         ConfigureAutoMapper();
         ConfigureMediatr(typeof(IocRegistry).Assembly);
-
         ConfigureGitHub();
         ConfigureEntityFramework();
-
         ConfigureStripe();
-            
         ConfigureHealthChecks();
-
         ConfigureFlurl();
-
         ConfigureLogging();
-
         ConfigureAws();
-
         ConfigureHostedServices();
+        ConfigureNGrok();
+        ConfigureAspNetCore();
+        ConfigureSwagger();
+        ConfigureAuthentication();
     }
 
     private void ConfigureHostedServices()
@@ -101,6 +106,8 @@ public sealed class IocRegistry
     private void ConfigureAws()
     {
         Services.AddAWSService<IAmazonSimpleEmailServiceV2>();
+
+        Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
             
         Services.AddDefaultAWSOptions(
             new AWSOptions()
@@ -231,5 +238,133 @@ public sealed class IocRegistry
     private void ConfigureAutoMapper()
     {
         Services.AddAutoMapper(typeof(IocRegistry).Assembly);
+    }
+
+    private void ConfigureNGrok()
+    {
+        Services.AddNGrok();
+    }
+
+    private void ConfigureAuthentication()
+    {
+        var jwtOptions = Configuration.GetOptions<JwtOptions>();
+        Services
+            .AddAuthorization()
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.Audience = "sponsorkit.io";
+                options.TokenValidationParameters = JwtValidator.GetValidationParameters(jwtOptions);
+                options.Events = new JwtBearerEvents()
+                {
+                    OnChallenge = async (context) =>
+                    {
+                        context.HandleResponse();
+                            
+                        if (context.AuthenticateFailure != null)
+                        {
+                            context.Response.StatusCode = 401;
+                            await context.HttpContext.Response.WriteAsync("{}");
+                        }
+                    }
+                };
+            });
+    }
+
+    private void ConfigureAspNetCore()
+    {
+        Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor |
+                ForwardedHeaders.XForwardedProto;
+
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
+        Services.AddHttpContextAccessor();
+
+        Services
+            .AddMvcCore()
+            .AddJsonOptions(x =>
+            {
+                x.JsonSerializerOptions.Converters.Add(
+                    new JsonStringEnumConverter(
+                        JsonNamingPolicy.CamelCase));
+            })
+            .AddApplicationPart(typeof(Program).Assembly)
+            .AddControllersAsServices()
+            .AddAuthorization()
+            .AddApiExplorer();
+
+        Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(
+                builder => builder
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .WithOrigins(Environment.EnvironmentName switch
+                    {
+                        "Development" => new []
+                        {
+                            "http://localhost:3000", 
+                            "http://localhost:9000", 
+                            "http://localhost:6006"
+                        },
+                        "Staging" => new [] {
+                            "https://*.vercel.app"
+                        },
+                        "Production" => new []
+                        {
+                            "https://sponsorkit.io"
+                        },
+                        _ => throw new InvalidOperationException("Environment not recognized.")
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials());
+        });
+
+        Services.AddResponseCompression(options => { options.EnableForHttps = true; });
+    }
+
+    private void ConfigureSwagger()
+    {
+        Services.AddSwaggerGen(c =>
+        {
+            c.SchemaFilter<AutoRestOpenApiFilter>();
+            c.DocumentFilter<AutoRestOpenApiFilter>();
+            c.OperationFilter<AutoRestOpenApiFilter>();
+            c.ParameterFilter<AutoRestOpenApiFilter>();
+            c.RequestBodyFilter<AutoRestOpenApiFilter>();
+
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "General",
+                Version = "v1"
+            });
+
+            c.TagActionsBy(x => new[]
+            {
+                "General"
+            });
+
+            c.IgnoreObsoleteActions();
+            c.IgnoreObsoleteProperties();
+
+            c.SupportNonNullableReferenceTypes();
+
+            c.DescribeAllParametersInCamelCase();
+            c.CustomOperationIds(x =>
+            {
+                var httpMethod = x.HttpMethod?.ToString() ?? "GET";
+                var httpMethodPascalCase = httpMethod[0..1].ToUpperInvariant() + httpMethod[1..].ToLowerInvariant();
+                return x.RelativePath + httpMethodPascalCase;
+            });
+            c.CustomSchemaIds(x => x.FullName);
+        });
     }
 }
