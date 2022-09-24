@@ -43,7 +43,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpGet("/github/repositories/{repositoryOwner}/{repositoryName}/pull-requests/from-user")]
+    [HttpGet("github/repositories/{repositoryOwner}/{repositoryName}/pull-requests/from-user")]
     public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
     {
         var userId = User.GetRequiredId();

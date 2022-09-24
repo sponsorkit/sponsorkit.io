@@ -61,7 +61,7 @@ public class Post : EndpointBaseAsync
         this.mediator = mediator;
     }
         
-    [HttpPost("/bounties/payment-intent")]
+    [HttpPost("bounties/payment-intent")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<PostResponse>> HandleAsync([FromBody] PostRequest request, CancellationToken cancellationToken = default)

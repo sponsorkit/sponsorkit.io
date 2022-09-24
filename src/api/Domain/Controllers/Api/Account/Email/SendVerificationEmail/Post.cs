@@ -35,7 +35,7 @@ public class Post : EndpointBaseAsync
         this.tokenFactory = tokenFactory;
     }
         
-    [HttpPost("/account/email/send-verification-email")]
+    [HttpPost("account/email/send-verification-email")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult> HandleAsync([FromBody] Request request, CancellationToken cancellationToken = new CancellationToken())

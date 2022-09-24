@@ -43,7 +43,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpGet("/bounties/{gitHubIssueId}")]
+    [HttpGet("bounties/{gitHubIssueId}")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]

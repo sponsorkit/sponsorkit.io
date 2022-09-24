@@ -33,7 +33,7 @@ public class Get : EndpointBaseAsync
     }
         
     [AllowAnonymous]
-    [HttpGet("/octokit/repos/{repositoryOwner}/{repositoryName}/issues/{issueNumber}")]
+    [HttpGet("octokit/repos/{repositoryOwner}/{repositoryName}/issues/{issueNumber}")]
     public override async Task<ActionResult<Issue>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
     {
         var token = await gitHubClientFactory.GetAccessTokenFromUserIfPresentAsync(

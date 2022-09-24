@@ -46,7 +46,7 @@ public class Get : EndpointBaseAsync
         this.jwtOptionsMonitor = jwtOptionsMonitor;
     }
         
-    [HttpGet("/account/email/verify-email-token/{token}")]
+    [HttpGet("account/email/verify-email-token/{token}")]
     [AllowAnonymous]
     public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new CancellationToken())
     {

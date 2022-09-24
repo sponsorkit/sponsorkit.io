@@ -9,7 +9,7 @@ public class HealthCheckEndpoint : EndpointBaseSync
     .WithoutResult
 {
     [AllowAnonymous]
-    [HttpGet("/health")]
+    [HttpGet("health")]
     public override void Handle()
     {
     }

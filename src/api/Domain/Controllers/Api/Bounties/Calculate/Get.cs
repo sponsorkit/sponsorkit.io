@@ -20,7 +20,7 @@ public class Get : EndpointBaseSync
     .WithRequest<Request>
     .WithActionResult<Response>
 {
-    [HttpGet("/bounties/calculate")]
+    [HttpGet("bounties/calculate")]
     [AllowAnonymous]
     public override ActionResult<Response> Handle([FromQuery] Request request)
     {

@@ -31,7 +31,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
 
-    [HttpGet("/account/stripe-connect/activate")]
+    [HttpGet("account/stripe-connect/activate")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new())

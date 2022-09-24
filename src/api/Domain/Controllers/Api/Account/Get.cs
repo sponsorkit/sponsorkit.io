@@ -55,7 +55,7 @@ public class Get : EndpointBaseAsync
         this.accountService = accountService;
     }
         
-    [HttpGet("/account")]
+    [HttpGet("account")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())

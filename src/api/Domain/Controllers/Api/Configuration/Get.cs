@@ -26,7 +26,7 @@ public class Get : EndpointBaseSync
         this.gitHubOptions = gitHubOptions;
     }
         
-    [HttpGet("/configuration")]
+    [HttpGet("configuration")]
     [AllowAnonymous]
     public override ActionResult<Response> Handle()
     {

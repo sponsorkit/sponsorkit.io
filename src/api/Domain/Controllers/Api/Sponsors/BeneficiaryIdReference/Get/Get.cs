@@ -37,7 +37,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
 
-    [HttpGet("/sponsors/{beneficiaryId}/{reference}")]
+    [HttpGet("sponsors/{beneficiaryId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())

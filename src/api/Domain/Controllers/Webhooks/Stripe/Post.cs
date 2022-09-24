@@ -37,7 +37,7 @@ public class Post : EndpointBaseAsync
         this.dataContext = dataContext;
     }
 
-    [HttpPost("/webhooks/stripe")]
+    [HttpPost("webhooks/stripe")]
     [AllowAnonymous]
     [DisableCors]
     public override async Task<ActionResult> HandleAsync(CancellationToken cancellationToken = default)

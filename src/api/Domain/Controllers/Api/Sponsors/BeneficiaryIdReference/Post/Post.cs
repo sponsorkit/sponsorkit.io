@@ -46,7 +46,7 @@ public class Post : EndpointBaseSync
         this.dataContext = dataContext;
     }
         
-    [HttpPost("/sponsors/{beneficiaryId}/{reference}")]
+    [HttpPost("sponsors/{beneficiaryId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override void Handle(Request request)

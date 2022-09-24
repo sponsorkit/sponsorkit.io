@@ -39,7 +39,7 @@ public class Post : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpPost("/account/token/refresh")]
+    [HttpPost("account/token/refresh")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]

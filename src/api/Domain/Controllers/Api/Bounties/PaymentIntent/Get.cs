@@ -27,7 +27,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpGet("/bounties/payment-intent/{intentId}")]
+    [HttpGet("bounties/payment-intent/{intentId}")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = default)

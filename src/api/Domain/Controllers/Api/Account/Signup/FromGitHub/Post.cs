@@ -64,7 +64,7 @@ public class Post : EndpointBaseAsync
         this.tokenFactory = tokenFactory;
     }
 
-    [HttpPost("/account/signup/from-github")]
+    [HttpPost("account/signup/from-github")]
     [AllowAnonymous]
     public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
     {

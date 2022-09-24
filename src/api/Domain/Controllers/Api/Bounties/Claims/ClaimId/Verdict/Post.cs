@@ -26,7 +26,7 @@ public class Post : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpPost("/bounties/claims/{claimId}/verdict")]
+    [HttpPost("bounties/claims/{claimId}/verdict")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())

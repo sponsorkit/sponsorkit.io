@@ -63,7 +63,7 @@ app.UseWhen(
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHealthChecks("/health-json", new HealthCheckOptions()
+    endpoints.MapHealthChecks("health-json", new HealthCheckOptions()
     {
         ResponseWriter = async (context, report) =>
         {
@@ -90,7 +90,7 @@ app.UseEndpoints(endpoints =>
         }
     });
 
-    endpoints.MapHealthChecks("/health");
+    endpoints.MapHealthChecks("health");
 
     endpoints.MapSwagger();
 

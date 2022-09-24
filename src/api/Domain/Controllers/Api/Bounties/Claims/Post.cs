@@ -46,7 +46,7 @@ public class Post : EndpointBaseAsync
         this.gitHubClient = gitHubClient;
     }
 
-    [HttpPost("/bounties/claims")]
+    [HttpPost("bounties/claims")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())

@@ -36,7 +36,7 @@ public class Get : EndpointBaseAsync
         this.dataContext = dataContext;
     }
         
-    [HttpGet("/bounties")]
+    [HttpGet("bounties")]
     [AllowAnonymous]
     public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
     {
