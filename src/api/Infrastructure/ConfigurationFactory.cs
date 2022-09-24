@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using Amazon;
-using Amazon.Extensions.NETCore.Setup;
 using Microsoft.Extensions.Configuration;
 
 namespace Sponsorkit.Infrastructure;
@@ -14,22 +13,6 @@ public static class ConfigurationFactory
         string? secretId)
     {
         var environment = GetEnvironmentName();
-        configurationBuilder.AddSystemsManager(configureSource =>
-        {
-            configureSource.Path = $"/sponsorkit/{environment}";
-            configureSource.ReloadAfter = TimeSpan.FromHours(24);
-            configureSource.Optional = false;
-            configureSource.AwsOptions = new AWSOptions()
-            {
-                Region = RegionEndpoint.EUNorth1
-            };
-
-            configureSource.OnLoadException += exceptionContext =>
-            {
-                exceptionContext.Ignore = false;
-                throw exceptionContext.Exception;
-            };
-        });
 
         configurationBuilder.AddJsonFile("appsettings.json");
         configurationBuilder.AddEnvironmentVariables();

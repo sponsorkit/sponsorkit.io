@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Amazon.Extensions.Configuration.SystemsManager;
 using Microsoft.Extensions.Configuration;
 using Sponsorkit.Infrastructure;
 
