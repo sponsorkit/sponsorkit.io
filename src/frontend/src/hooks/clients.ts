@@ -46,7 +46,7 @@ function getBaseUri() {
         return "https://api-staging.sponsorkit.io/";
 
     const requestUri = new URL(window.location.href);
-    requestUri.hostname = `api.${currentUri.hostname}`;
+    requestUri.hostname = `https://heme9ig51f.execute-api.eu-north-1.amazonaws.com/default/`;
     requestUri.pathname = "";
     requestUri.search = "";
     requestUri.hash = "";
