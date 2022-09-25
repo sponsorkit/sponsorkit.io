@@ -43,11 +43,11 @@ function getBaseUri() {
         return "http://localhost:5000/";
 
     if(currentUri.hostname.endsWith(".vercel.app"))
-        return "https://api-staging.sponsorkit.io/";
+        return "https://k8ca3w7mxf.execute-api.eu-north-1.amazonaws.com/";
 
     const requestUri = new URL(window.location.href);
-    requestUri.hostname = `heme9ig51f.execute-api.eu-north-1.amazonaws.com`;
-    requestUri.pathname = "/default/";
+    requestUri.hostname = `mjxj2y2vx5.execute-api.eu-north-1.amazonaws.com`;
+    requestUri.pathname = "/";
     requestUri.search = "";
     requestUri.hash = "";
     return requestUri.toString();
