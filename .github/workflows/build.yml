@@ -66,8 +66,7 @@ jobs:
         aws lambda update-alias \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
           --name production \
-          --description ${{ github.sha }} \
-          --function-version ${{ github.sha }}
+          --description ${{ github.sha }}
 
     - name: Run tests
       working-directory: src/api
