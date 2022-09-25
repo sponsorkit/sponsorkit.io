@@ -24,7 +24,7 @@
     "dompurify": "^2.2.9",
     "lodash": "^4.17.21",
     "marked": "^4.0.10",
-    "next": "^12.0.8",
+    "next": "^12.3.1",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
     "react-circular-progressbar": "^2.0.4",
@@ -49,7 +49,7 @@
     "sass": "^1.48.0",
     "sass-loader": "^10.2.0",
     "tslib": "^2.3.1",
-    "typescript": "^4.4.4",
+    "typescript": "^4.8.3",
     "typescript-plugin-css-modules": "3.2.0"
   },
   "scripts": {
@@ -59,7 +59,7 @@
     "lint": "next lint",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "swagger": "npm run swagger:autorest",
-    "swagger:autorest": "npm i -g autorest@latest && npm cache clear --force && autorest --reset && autorest --latest && npm run swagger:autorest:generate && cd ./src/generated/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/generated/openapi/sponsorkit-client-1.0.0.tgz",
+    "swagger:autorest": "npm i -g autorest@latest && npm cache clear --force && autorest --reset && autorest --latest && rimraf ./.next && rimraf ./src/generated/openapi && npm run swagger:autorest:generate && cd ./src/generated/openapi && npm install && npm version 1.0.0 && npm run build && npm pack && cd ../../../ && npm uninstall @sponsorkit/client && npm i ./src/generated/openapi/sponsorkit-client-1.0.0.tgz",
     "swagger:autorest:generate": "npm run swagger:autorest:generate:debug:devcontainer || npm run swagger:autorest:generate:debug:localhost",
     "swagger:autorest:generate:debug:devcontainer": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://host.docker.internal:5000/swagger/v1/swagger.json --output-folder=./src/generated/openapi",
     "swagger:autorest:generate:debug:localhost": "autorest --allow-insecure-connection=true --generate-metadata=true --clear-output-folder --package-name=@sponsorkit/client --license-header=false --v3 --markOpenAPI3ErrorsAsWarning --typescript --input-file=http://localhost:5000/swagger/v1/swagger.json --output-folder=./src/generated/openapi",

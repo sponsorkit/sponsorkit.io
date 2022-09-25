@@ -21,7 +21,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Timeline, TimelineConnector, TimelineContent, TimelineDot, TimelineItem, TimelineOppositeContent, TimelineSeparator } from '@mui/lab';
 import { Autocomplete, Box, Button, Card, CardContent, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, FormControlLabel, FormGroup, TextField, Tooltip, Typography } from "@mui/material";
 import { AppBarLayout } from "@pages/index";
-import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest } from "@sponsorkit/client";
+import { ConfigurationGetResponse, OctokitReposRepositoryOwnerRepositoryNameIssuesIssueNumberGetResponse, SponsorkitDomainControllersApiBountiesGitHubIssueIdBountyResponse, SponsorkitDomainControllersApiBountiesSetupIntentGitHubIssueRequest } from "@sponsorkit/client";
 import { extractIssueLinkDetails, extractReposApiLinkDetails, getBountyhuntUrlFromIssueLinkDetails } from "@utils/github-url-extraction";
 import { newGuid } from "@utils/guid";
 import { combineClassNames } from "@utils/strings";
@@ -410,7 +410,7 @@ function Bounties(props: {
 
 function CreateBounty(props: {
     configuration: ConfigurationGetResponse,
-    issue?: SponsorkitDomainControllersApiBountiesPaymentIntentGitHubIssueRequest | null,
+    issue?: SponsorkitDomainControllersApiBountiesSetupIntentGitHubIssueRequest | null,
     currentAmount: number,
     onBountyCreated: () => Promise<void> | void
 }) {
@@ -470,14 +470,14 @@ function CreateBounty(props: {
             onClose={() => setShouldCreate(false)}
             configuration={props.configuration}
             isDoneAccessor={async intent => {
-                const bountyIntentResponse = await createApi().bountiesPaymentIntentIdGet(intent.id);
+                const bountyIntentResponse = await createApi().bountiesSetupIntentIdGet(intent.id);
                 return bountyIntentResponse.isProcessed;
             }}
             onAcquirePaymentIntent={async () => {
                 if (!props.issue)
                     throw new Error("Issue was not set.");
 
-                const response = await createApi().bountiesPaymentIntentPost({
+                const response = await createApi().bountiesSetupIntentPost({
                     body: {
                         amountInHundreds: (amount || 0) * 100,
                         issue: props.issue
