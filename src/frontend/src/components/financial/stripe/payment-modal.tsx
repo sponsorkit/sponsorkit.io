@@ -112,7 +112,7 @@ function PaymentMethodModalContent(props: Props) {
                         { card: cardNumberElement! }
                 });
             console.debug("confirmation-response", confirmationResponse);
-            if (confirmationResponse?.error)
+            if (confirmationResponse?.error && confirmationResponse.error.setup_intent?.status !== "succeeded")
                 return setError(confirmationResponse.error);
 
             let setupIntent = confirmationResponse?.setupIntent;

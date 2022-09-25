@@ -103,6 +103,7 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         var webhook = await webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
         {
             Url = webhookUrl,
+            ApiVersion = "2022-08-01",
             EnabledEvents = new List<string>()
             {
                 "*"

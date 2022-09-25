@@ -109,7 +109,7 @@ public class Post : EndpointBaseAsync
             },
             new RequestOptions()
             {
-                IdempotencyKey = $"bounty-setup-intent-{request.Issue.OwnerName}-{request.Issue.RepositoryName}-{request.Issue.IssueNumber}-{request.AmountInHundreds}"
+                IdempotencyKey = $"bounty-setup-intent-{userId}-{request.Issue.OwnerName}-{request.Issue.RepositoryName}-{request.Issue.IssueNumber}-{request.AmountInHundreds}"
             },
             cancellationToken: cancellationToken);
 

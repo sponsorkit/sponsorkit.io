@@ -20,7 +20,7 @@
     "@octokit/rest": "^18.5.2",
     "@sponsorkit/client": "file:src/generated/openapi/sponsorkit-client-1.0.0.tgz",
     "@stripe/react-stripe-js": "^1.4.0",
-    "@stripe/stripe-js": "^1.13.2",
+    "@stripe/stripe-js": "^1.38.1",
     "dompurify": "^2.2.9",
     "lodash": "^4.17.21",
     "marked": "^4.0.10",
@@ -33,7 +33,6 @@
     "use-count-up": "^2.3.1"
   },
   "devDependencies": {
-    "rimraf": "latest",
     "@types/dompurify": "^2.2.2",
     "@types/lodash": "^4.14.178",
     "@types/marked": "^4.0.1",
@@ -45,6 +44,7 @@
     "fs-extra": "^10.0.0",
     "next-images": "^1.8.4",
     "postcss": "^8.3.11",
+    "rimraf": "latest",
     "sass": "^1.48.0",
     "sass-loader": "^10.2.0",
     "tslib": "^2.3.1",
