@@ -1,7 +1,9 @@
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
+import { useBroadcast } from "@hooks/broadcast";
 import { Button, CircularProgress, Dialog, DialogActions, Typography } from "@mui/material";
 import { Box } from "@mui/system";
-import { useEffect, useState } from "react";
+import { newGuid } from "@utils/guid";
+import { useEffect, useRef, useState } from "react";
 import classes from "./asynchronous-progress-dialog.module.scss";
 
 export function AsynchronousProgressDialog(props: {
@@ -14,11 +16,14 @@ export function AsynchronousProgressDialog(props: {
     onClose: () => void,
     onDone?: () => Promise<void>|void,
     isDoneAccessor: () => Promise<boolean|null>|boolean|null,
-    onRequestSending: () => Promise<boolean|void>|boolean|void,
+    onRequestSending: (broadcastId: string) => Promise<boolean|void>|boolean|void,
     actionChildren?: React.ReactNode
 }) {
     const [isLoading, setIsLoading] = useState(false);
     const [isWaitingForVerification, setIsWaitingForVerification] = useState(false);
+
+    const broadcastId = useRef(newGuid());
+    useBroadcast(broadcastId.current);
 
     useEffect(
         () => {
@@ -63,7 +68,7 @@ export function AsynchronousProgressDialog(props: {
         setIsLoading(true);
 
         try {
-            const didValidate = await Promise.resolve(props.onRequestSending());
+            const didValidate = await Promise.resolve(props.onRequestSending(broadcastId.current));
             if(typeof didValidate === "boolean" && !didValidate)
                 return;
             

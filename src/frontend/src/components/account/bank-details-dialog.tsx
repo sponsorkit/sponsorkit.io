@@ -9,8 +9,12 @@ export default function BankDetailsDialog(props: {
     onClose: () => void,
     onValidated: () => void
 }) {
-    const onFillInClicked = async () => {
-        const response = await createApi().accountStripeConnectSetupPost();
+    const onFillInClicked = async (broadcastId: string) => {
+        const response = await createApi().accountStripeConnectSetupPost({
+            body: {
+                broadcastId
+            }
+        });
         
         if(!createPopup(response.activationUrl)) {
             alert("It looks like your browser is blocking the Stripe activation popup. Unblock it, and try again.");

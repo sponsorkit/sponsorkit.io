@@ -49,7 +49,7 @@ public class Post : EndpointBaseAsync
             request.Token,
             JwtValidator.GetValidationParameters(
                 jwtOptionsMonitor.CurrentValue,
-                validateLifetime: false));
+                TimeSpan.FromDays(365 * 10)));
         if (claimsPrincipal == null)
             return Unauthorized();
 

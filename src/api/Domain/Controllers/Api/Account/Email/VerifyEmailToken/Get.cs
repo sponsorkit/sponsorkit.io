@@ -23,7 +23,8 @@ using Stripe;
 namespace Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken;
 
 public record Request(
-    string Token);
+    [FromRoute] string Token,
+    [FromQuery] Guid BroadcastId);
     
 public class Get : EndpointBaseAsync
     .WithRequest<Request>
@@ -46,7 +47,7 @@ public class Get : EndpointBaseAsync
         this.jwtOptionsMonitor = jwtOptionsMonitor;
     }
         
-    [HttpGet("account/email/verify-email-token/{token}")]
+    [HttpGet("account/email/verify-email-token/{Token}")]
     [AllowAnonymous]
     public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new CancellationToken())
     {
@@ -54,7 +55,8 @@ public class Get : EndpointBaseAsync
         var principal = tokenHandler.ValidateToken(
             request.Token,
             JwtValidator.GetValidationParameters(
-                jwtOptionsMonitor.CurrentValue),
+                jwtOptionsMonitor.CurrentValue,
+                TimeSpan.FromDays(7)),
             out _);
 
         if (!principal.IsInRole(Post.EmailVerificationRole))
@@ -87,6 +89,6 @@ public class Get : EndpointBaseAsync
         }, IsolationLevel.ReadCommitted);
 
         return RedirectPermanent(
-            LinkHelper.GetWebUrl("/landing/email/verification-success"));
+            LinkHelper.GetLandingPageUrl("/landing/email/verification-success", request.BroadcastId));
     }
 }

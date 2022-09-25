@@ -11,7 +11,7 @@ public static class JwtValidator
 {
     public static TokenValidationParameters GetValidationParameters(
         JwtOptions jwtOptions,
-        bool? validateLifetime = null)
+        TimeSpan expiration)
     {
         return new()
         {
@@ -20,13 +20,11 @@ public static class JwtValidator
             ValidateAudience = true,
             ValidateActor = false,
             ValidateIssuer = false,
-            ValidateLifetime = validateLifetime ?? true,
+            ValidateLifetime = true,
             ValidateTokenReplay = false,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtOptions.PrivateKey)),
-            ClockSkew = validateLifetime == false ? 
-                TimeSpan.FromDays(365 * 10) :
-                TimeSpan.FromMinutes(5)
+            ClockSkew = expiration
         };
     }
 

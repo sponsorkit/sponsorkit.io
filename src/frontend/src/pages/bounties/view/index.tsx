@@ -286,7 +286,7 @@ const Issue = forwardRef(function (
 
                         const IconComponent = e.icon;
                         const isLast = i === events.length - 1;
-                        return <TimelineItem key={`timeline-${e.time.getTime()}`}>
+                        return <TimelineItem key={`timeline-${e.time.getTime()}-${e.title}`}>
                             <TimelineOppositeContent>
                                 <Typography variant="body2" color="textSecondary" className={classes["date-mark"]}>
                                     <span className={classes.date}>{e.time.toLocaleDateString()}</span>

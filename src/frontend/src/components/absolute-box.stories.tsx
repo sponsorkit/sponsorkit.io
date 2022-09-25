@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { Meta, Story } from '@storybook/react';
+import React from 'react';
 import AbsoluteBox from "./absolute-box";
 
 export default {

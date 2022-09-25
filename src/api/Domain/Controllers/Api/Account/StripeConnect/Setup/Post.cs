@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -14,11 +15,14 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup;
 
+public record Request(
+    Guid BroadcastId);
+
 public record Response(
     string ActivationUrl);
     
 public class Post : EndpointBaseAsync
-    .WithoutRequest
+    .WithRequest<Request>
     .WithActionResult<Response>
 {
     private readonly DataContext dataContext;
@@ -39,7 +43,9 @@ public class Post : EndpointBaseAsync
     [HttpPost("account/stripe-connect/setup")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<Response>> HandleAsync(
+        [FromBody] Request request,
+        CancellationToken cancellationToken = new CancellationToken())
     {
         var userId = User.GetRequiredId();
             
@@ -58,7 +64,7 @@ public class Post : EndpointBaseAsync
                 }
 
                 return new Response(
-                    LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"));
+                    LinkHelper.GetStripeConnectActivateUrl(request.BroadcastId));
             },
             IsolationLevel.Serializable);
     }

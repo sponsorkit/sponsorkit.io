@@ -13,11 +13,14 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Activate;
 
+public record Request(
+    [FromQuery] Guid BroadcastId);
+
 public record Response(
     string Url);
     
 public class Get : EndpointBaseAsync
-    .WithoutRequest
+    .WithRequest<Request>
     .WithActionResult<Response>
 {
     private readonly AccountLinkService accountLinkService;
@@ -34,7 +37,7 @@ public class Get : EndpointBaseAsync
     [HttpGet("account/stripe-connect/activate")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new())
+    public override async Task<ActionResult<Response>> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             
@@ -48,8 +51,8 @@ public class Get : EndpointBaseAsync
             new AccountLinkCreateOptions()
             {
                 Account = accountId,
-                RefreshUrl = LinkHelper.GetWebUrl($"/landing/stripe-connect/activate"),
-                ReturnUrl = LinkHelper.GetWebUrl($"/landing/stripe-connect/activated"),
+                RefreshUrl = LinkHelper.GetStripeConnectActivateUrl(request.BroadcastId),
+                ReturnUrl = LinkHelper.GetLandingPageUrl($"/landing/stripe-connect/activated", request.BroadcastId),
                 Type = "account_onboarding"
             }, 
             cancellationToken: cancellationToken);

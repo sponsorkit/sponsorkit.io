@@ -267,7 +267,9 @@ public sealed class IocRegistry
             .AddJwtBearer(options =>
             {
                 options.Audience = "sponsorkit.io";
-                options.TokenValidationParameters = JwtValidator.GetValidationParameters(jwtOptions);
+                options.TokenValidationParameters = JwtValidator.GetValidationParameters(
+                    jwtOptions, 
+                    TimeSpan.FromMinutes(15));
                 options.Events = new JwtBearerEvents()
                 {
                     OnChallenge = async (context) =>

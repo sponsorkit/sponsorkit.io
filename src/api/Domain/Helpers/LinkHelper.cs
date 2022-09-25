@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Flurl;
 
 namespace Sponsorkit.Domain.Helpers;
@@ -15,6 +16,21 @@ public class LinkHelper
     {
         var baseUrl = Debugger.IsAttached ? "http://localhost:3000" : "https://sponsorkit.io";
         return baseUrl + relativePath;
+    }
+        
+    public static string GetApiLandingPageRedirectUrl(string relativePath, Guid broadcastId)
+    {
+        return GetApiUrl($"{relativePath}?broadcastId={broadcastId}");
+    }
+        
+    public static string GetLandingPageUrl(string relativePath, Guid broadcastId)
+    {
+        return GetWebUrl($"{relativePath}?broadcastId={broadcastId}");
+    }
+        
+    public static string GetStripeConnectActivateUrl(Guid broadcastId)
+    {
+        return GetLandingPageUrl($"/landing/stripe-connect/activate", broadcastId);
     }
 
     public static string GetBountyLink(

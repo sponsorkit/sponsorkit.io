@@ -39,7 +39,8 @@ public class SendVerificationEmailPostTest
             
         //Act
         var response = await handler.HandleAsync(
-            new Request("new-email@example.com"));
+            new Request("new-email@example.com", 
+                Guid.NewGuid()));
         Assert.IsInstanceOfType(response, typeof(OkResult));
             
         //Assert
@@ -69,7 +70,8 @@ public class SendVerificationEmailPostTest
             
         //Act
         var response = await handler.HandleAsync(
-            new Request("new-email@example.com"));
+            new Request("new-email@example.com", 
+                Guid.NewGuid()));
         Assert.IsInstanceOfType(response, typeof(OkResult));
             
         //Assert
@@ -107,7 +109,8 @@ public class SendVerificationEmailPostTest
             
         //Act
         var response = await handler.HandleAsync(
-            new Request("new-email@example.com"));
+            new Request("new-email@example.com", 
+                Guid.NewGuid()));
         Assert.IsInstanceOfType(response, typeof(OkResult));
             
         //Assert
@@ -133,7 +136,9 @@ public class SendVerificationEmailPostTest
         //Act
         var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => 
             await handler.HandleAsync(
-                new Request("new-email@example.com")));
+                new Request(
+                    "new-email@example.com", 
+                    Guid.NewGuid())));
             
         //Assert
         Assert.AreEqual(

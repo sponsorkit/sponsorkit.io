@@ -13,10 +13,11 @@ export default function EmailValidationDialog(props: {
 }) {
     const [email, setEmail] = useState(() => props.email);
 
-    const onVerifyClicked = async () => {
+    const onVerifyClicked = async (broadcastId: string) => {
         await createApi().accountEmailSendVerificationEmailPost({
             body: {
-                email
+                email,
+                broadcastId
             }
         });
     };
@@ -26,7 +27,7 @@ export default function EmailValidationDialog(props: {
         onClose={props.onClose}
         buttonText="Verify"
         isDoneAccessor={createAccountValidatior(account => account.isEmailVerified)}
-        requestSentText="E-mail sent! Waiting for verification..."
+        requestSentText="E-mail sent! Waiting for your verification..."
         requestSendingText="Sending e-mail verification..."
         onRequestSending={onVerifyClicked}
         onDone={props.onValidated}

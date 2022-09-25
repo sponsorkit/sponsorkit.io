@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +16,9 @@ using Sponsorkit.Infrastructure.Security.Jwt;
 namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail;
 
 public record Request(
-    string Email);
-    
+    string Email,
+    Guid BroadcastId);
+
 public class Post : EndpointBaseAsync
     .WithRequest<Request>
     .WithoutResult
@@ -55,7 +57,9 @@ public class Post : EndpointBaseAsync
                 EmailVerificationRole)
         });
 
-        var verificationLink = LinkHelper.GetApiUrl($"/account/email/verify-email-token/{token}");
+        var verificationLink = LinkHelper.GetApiLandingPageRedirectUrl(
+            $"/account/email/verify-email-token/{token}", 
+            request.BroadcastId);
             
         await mediator.Send(
             new SendEmailCommand(
