@@ -50,11 +50,6 @@ jobs:
     - name: Deploy to staging
       working-directory: src/api
       run: |
-        aws lambda update-function-code \
-          --region $AWS_REGION \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
-          --zip-file fileb://$DOTNET_LAMBDA_PACKAGE_NAME
-
         dotnet lambda deploy-function \
           --region $AWS_REGION \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
