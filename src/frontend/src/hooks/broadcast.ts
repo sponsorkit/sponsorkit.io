@@ -31,8 +31,8 @@ export function useBroadcast(broadcastId: string) {
             seenSenderIds.add(e.data.senderId);
 
             clearTimeout(timeoutId);
+            broadcast.postMessage(e.data);
             setState(true);
-            broadcast.postMessage(broadcastId);
         };
 
         broadcast.addEventListener("message", listener);

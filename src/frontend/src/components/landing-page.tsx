@@ -36,30 +36,18 @@ export default function LandingPage(props: {
             </CardContent>
             <CardActions className={classes["card-actions"]}>
                 <Button
-                    variant={props.continueUrl ?
-                        "text" :
-                        "contained"}
-                    color={props.continueUrl ?
-                        "secondary" :
-                        "primary"}
-                    onClick={() => {
-                        window.close();
-                    }}
-                >
-                    Close
-                </Button>
-                {props.continueUrl && !beacon && <Button
                     variant="contained"
                     color="primary"
                     onClick={() => {
-                        if(!props.continueUrl)
-                            throw new Error("No continue URL.");
+                        if(beacon)
+                            window.close();
 
-                        window.location.href = props.continueUrl;
+                        if(props.continueUrl)
+                            window.location.href = props.continueUrl;
                     }}
                 >
                     Continue
-                </Button>}
+                </Button>
             </CardActions>
         </Card>
     </AppBarLayout>
