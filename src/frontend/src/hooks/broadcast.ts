@@ -46,7 +46,7 @@ export function useBroadcast(broadcastId: string) {
 
         var timeoutId = setTimeout(() => {
             setState(false);
-        }, 100);
+        }, 1000);
 
         return disconnect;
     }, [broadcastId]);
