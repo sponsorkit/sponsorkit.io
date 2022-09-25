@@ -63,11 +63,10 @@ jobs:
       working-directory: ./src/api
       # if: github.event_name == 'release' && github.event.action == 'created'
       run: |
-        $LATEST_VERSION = $(aws lambda list-versions-by-function \
+        LATEST_VERSION = $(aws lambda list-versions-by-function \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
           --no-paginate \
-          --query "max_by(Versions, &to_number(to_number(Version) || '0'))"
-        )
+          --query "max_by(Versions, &to_number(to_number(Version) || '0'))")
         aws lambda update-alias \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
           --name production \
