@@ -26,7 +26,7 @@ public class TokenFactory : ITokenFactory
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(claims.Distinct()),
+            Subject = new ClaimsIdentity(claims.DistinctBy(x => x.Type)),
             Expires = Debugger.IsAttached ? 
                 DateTime.UtcNow.AddSeconds(30) : 
                 DateTime.UtcNow.AddMinutes(15),
@@ -39,6 +39,7 @@ public class TokenFactory : ITokenFactory
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
+        
         return tokenHandler.WriteToken(token);
     }
 }

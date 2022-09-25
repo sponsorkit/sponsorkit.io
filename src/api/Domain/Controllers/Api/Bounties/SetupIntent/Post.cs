@@ -15,7 +15,7 @@ using Sponsorkit.Domain.Models.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
-namespace Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
+namespace Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 
 public record GitHubIssueRequest(
     string OwnerName,
@@ -61,7 +61,7 @@ public class Post : EndpointBaseAsync
         this.mediator = mediator;
     }
         
-    [HttpPost("bounties/payment-intent")]
+    [HttpPost("bounties/setup-intent")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<PostResponse>> HandleAsync([FromBody] PostRequest request, CancellationToken cancellationToken = default)
@@ -109,7 +109,7 @@ public class Post : EndpointBaseAsync
             },
             new RequestOptions()
             {
-                IdempotencyKey = $"bounty-setup-intent-{userId}-{request.Issue.OwnerName}-{request.Issue.RepositoryName}-{request.Issue.IssueNumber}-{request.AmountInHundreds}"
+                IdempotencyKey = $"bounty-setup-intent-{Request.GetIdempotencyKey()}-{userId}-{request.Issue.OwnerName}-{request.Issue.RepositoryName}-{request.Issue.IssueNumber}-{request.AmountInHundreds}"
             },
             cancellationToken: cancellationToken);
 

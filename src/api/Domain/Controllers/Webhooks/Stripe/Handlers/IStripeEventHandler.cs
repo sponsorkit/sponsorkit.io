@@ -3,12 +3,18 @@ using System.Threading.Tasks;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 
-public interface IWebhookEventHandler
+public interface IStripeEventHandler
 {
-    bool CanHandle(string type, object data);
+    bool CanHandleWebhookType(string type, object data);
+    bool CanHandleData(object data);
 
     Task HandleAsync(
         string eventId,
         object data, 
         CancellationToken cancellationToken);
+}
+
+public interface IStripeEventHandler<TData> : IStripeEventHandler
+    where TData : class
+{
 }

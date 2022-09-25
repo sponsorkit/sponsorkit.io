@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Context;

@@ -4,13 +4,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Models.Context;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;
 
-public class BountyPaymentIntentSucceededEventHandler : WebhookEventHandler<PaymentIntent>
+public class BountyPaymentIntentSucceededEventHandler : StripeEventHandler<PaymentIntent>
 {
     private readonly DataContext dataContext;
 
@@ -20,9 +20,14 @@ public class BountyPaymentIntentSucceededEventHandler : WebhookEventHandler<Paym
         this.dataContext = dataContext;
     }
 
-    protected override bool CanHandle(string type, PaymentIntent data)
+    protected override bool CanHandleWebhookType(string type)
     {
         return type == Events.PaymentIntentSucceeded;
+    }
+
+    protected override bool CanHandleData(PaymentIntent data)
+    {
+        return data.Status == "succeeded";
     }
 
     protected override async Task HandleAsync(string eventId, PaymentIntent data, CancellationToken cancellationToken)

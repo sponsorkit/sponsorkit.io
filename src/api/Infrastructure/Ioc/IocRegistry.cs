@@ -24,6 +24,7 @@ using Microsoft.OpenApi.Models;
 using Octokit.Internal;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
+using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Context;
@@ -187,13 +188,22 @@ public sealed class IocRegistry
         Services.AddSingleton<SetupIntentService>();
         Services.AddSingleton<PaymentIntentService>();
 
-        Services.AddScoped<IWebhookEventHandler, SetupIntentSucceededEventHandler>();
-        Services.AddScoped<IWebhookEventHandler, BountySetupIntentSucceededEventHandler>();
+        RegisterStripeEventHandler<SetupIntentSucceededEventHandler, SetupIntent>();
+        RegisterStripeEventHandler<BountySetupIntentSucceededEventHandler, SetupIntent>();
+        RegisterStripeEventHandler<BountyPaymentIntentSucceededEventHandler, PaymentIntent>();
 
         Services.AddSingleton<IStripeClient, StripeClient>(
             _ => new StripeClient(
                 apiKey: secretKey,
                 clientId: publishableKey));
+
+        void RegisterStripeEventHandler<TEventHandler, TData>()  
+            where TData : class
+            where TEventHandler : class, IStripeEventHandler<TData>
+        {
+            Services.AddScoped<IStripeEventHandler<TData>, TEventHandler>();
+            Services.AddScoped<IStripeEventHandler, TEventHandler>();
+        }
     }
 
     [ExcludeFromCodeCoverage]

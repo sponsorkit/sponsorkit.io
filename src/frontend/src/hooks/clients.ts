@@ -1,6 +1,7 @@
 import { RestError } from "@azure/core-rest-pipeline";
 import { Octokit } from "@octokit/rest";
 import { General } from "@sponsorkit/client";
+import { newGuid } from "@utils/guid";
 import { useEffect, useState } from "react";
 import { getToken, getTokenFromString, persistToken } from "./token";
 
@@ -54,11 +55,26 @@ function getBaseUri() {
 }
 
 export function createApi() {
-    var client = new General(null!, getBaseUri(), {
+    var client = new General(getBaseUri(), {
         requestContentType: "application/json; charset=utf-8",
         baseUri: getBaseUri(),
         allowInsecureConnection: true
     });
+
+    client.pipeline.addPolicy({
+        name: "idempotency",
+        sendRequest: async (request, next) => {
+            const idempotencyKeyName = "Idempotency-Key";
+
+            const idempotencyKey = request.headers.get(idempotencyKeyName);
+            if (!idempotencyKey) {
+                request.headers.set(idempotencyKeyName, newGuid());
+            }
+
+            return await next(request);
+        }
+    });
+
     client.pipeline.addPolicy({
         name: "timeout",
         sendRequest: async (request, next) => {
@@ -68,6 +84,7 @@ export function createApi() {
             return response;
         }
     });
+    
     client.pipeline.addPolicy({
         name: "allowInsecureConnections",
         sendRequest: async (request, next) => {
@@ -109,6 +126,7 @@ export function createApi() {
             return await next(request);
         }
     });
+
     return client;
 }
 

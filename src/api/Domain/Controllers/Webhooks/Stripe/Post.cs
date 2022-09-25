@@ -21,13 +21,13 @@ public class Post : EndpointBaseAsync
     .WithoutResult
 {
     private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
-    private readonly IEnumerable<IWebhookEventHandler> webhookEventHandlers;
+    private readonly IEnumerable<IStripeEventHandler> webhookEventHandlers;
     private readonly ILogger logger;
     private readonly DataContext dataContext;
 
     public Post(
         IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
-        IEnumerable<IWebhookEventHandler> webhookEventHandlers,
+        IEnumerable<IStripeEventHandler> webhookEventHandlers,
         ILogger logger,
         DataContext dataContext)
     {
@@ -57,7 +57,7 @@ public class Post : EndpointBaseAsync
                 stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
 
             var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                x.CanHandle(
+                x.CanHandleWebhookType(
                     stripeEvent.Type,
                     stripeEvent.Data.Object));
             foreach (var eventHandler in elligibleEventHandlers)

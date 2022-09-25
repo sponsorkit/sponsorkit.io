@@ -76,13 +76,13 @@ function PaymentMethodModalContent(props: Props) {
         if (!result)
             throw new Error("No intent.");
 
-        if (result.error) {
+        if (result.error && result.error.setup_intent?.status !== "succeeded") {
             setError(result.error);
             return null;
         }
 
-        const setupIntent = result.setupIntent;
-        if (setupIntent.status === "processing")
+        const setupIntent = result.setupIntent || result.error?.setup_intent;
+        if (setupIntent?.status === "processing")
             return false;
 
         if (setupIntent?.status !== "succeeded") {
@@ -115,7 +115,7 @@ function PaymentMethodModalContent(props: Props) {
             if (confirmationResponse?.error && confirmationResponse.error.setup_intent?.status !== "succeeded")
                 return setError(confirmationResponse.error);
 
-            let setupIntent = confirmationResponse?.setupIntent;
+            let setupIntent = confirmationResponse?.setupIntent || confirmationResponse?.error?.setup_intent;
             if (!setupIntent)
                 throw new Error("No payment intent found.");
         } catch (e) {

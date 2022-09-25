@@ -9,7 +9,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Sponsorkit.Domain.Controllers.Api.Bounties;
-using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
@@ -19,7 +19,7 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 
-public class BountySetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
+public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIntent>
 {
     private readonly DataContext dataContext;
     private readonly IMediator mediator;
@@ -32,20 +32,20 @@ public class BountySetupIntentSucceededEventHandler : WebhookEventHandler<SetupI
         this.mediator = mediator;
     }
 
-    protected override bool CanHandle(string type, SetupIntent data)
+    protected override bool CanHandleWebhookType(string type)
     {
-        if (type != Events.SetupIntentSucceeded)
-            return false;
+        return type == Events.SetupIntentSucceeded;
+    }
 
+    protected override bool CanHandleData(SetupIntent data)
+    {
         if (!data.Metadata.ContainsKey(UniversalMetadataKeys.Type))
             return false;
 
         var metadataType = data.Metadata[UniversalMetadataKeys.Type];
-        if (metadataType != UniversalMetadataTypes.BountySetupIntent)
-            return false;
-
-        return true;
+        return metadataType == UniversalMetadataTypes.BountySetupIntent;
     }
+
 
     protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
     {

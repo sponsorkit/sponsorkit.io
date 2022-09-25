@@ -16,7 +16,7 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 
-public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
+public class SetupIntentSucceededEventHandler : StripeEventHandler<SetupIntent>
 {
     private readonly CustomerService customerService;
 
@@ -26,9 +26,14 @@ public class SetupIntentSucceededEventHandler : WebhookEventHandler<SetupIntent>
         this.customerService = customerService;
     }
 
-    protected override bool CanHandle(string type, SetupIntent data)
+    protected override bool CanHandleWebhookType(string type)
     {
         return type == Events.SetupIntentSucceeded;
+    }
+
+    protected override bool CanHandleData(SetupIntent data)
+    {
+        return data.Status == "succeeded";
     }
 
     protected override async Task HandleAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)

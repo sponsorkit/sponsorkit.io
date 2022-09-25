@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using Octokit;
-using Sponsorkit.Domain.Controllers.Api.Bounties.PaymentIntent;
+using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
@@ -194,7 +194,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         Metadata metadata)
     {
         var handler = environment.ServiceProvider
-            .GetRequiredService<IEnumerable<IWebhookEventHandler>>()
+            .GetRequiredService<IEnumerable<IStripeEventHandler>>()
             .OfType<BountySetupIntentSucceededEventHandler>()
             .Single();
         await handler.HandleAsync(
