@@ -39,7 +39,6 @@ jobs:
       run: dotnet tool install -g Amazon.Lambda.Tools
 
     - name: .NET Lambda build and upload to S3
-      if: github.event_name != 'release' || github.event.action != 'created'
       working-directory: src/api
       run: |
         dotnet lambda package $DOTNET_LAMBDA_PACKAGE_NAME
@@ -51,27 +50,19 @@ jobs:
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME-staging \
           --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_LAMBDA_PACKAGE_NAME
-
-        aws lambda publish-version \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
-          --description ${{ github.sha }}
           
     - name: Promote staging to production
       working-directory: ./src/api
       # if: github.event_name == 'release' && github.event.action == 'created'
       run: |
-        LATEST_VERSION=$(aws lambda list-versions-by-function \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
-          --no-paginate \
-          --query "max_by(Versions, &to_number(to_number(Version) || '0'))" | jq ".Version|tonumber")
-        aws lambda update-alias \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
-          --name production \
-          --description ${{ github.sha }} \
-          --function-version $LATEST_VERSION
+        dotnet lambda deploy-function \
+          --region $AWS_REGION \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME-production \
+          --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_LAMBDA_PACKAGE_NAME
 
     - name: Run tests
       working-directory: src/api
