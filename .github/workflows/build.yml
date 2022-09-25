@@ -61,7 +61,7 @@ jobs:
           --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_LAMBDA_PACKAGE_NAME
 
-        dotnet lambda publish-version \
+        aws lambda publish-version \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
           --revision-id ${{ github.sha }} \
           --description ${{ github.sha }}
