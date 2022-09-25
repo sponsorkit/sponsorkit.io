@@ -17,7 +17,7 @@ public static class ConfigurationFactory
         configurationBuilder.AddSystemsManager(configureSource =>
         {
             configureSource.Path = $"/sponsorkit/{environment}";
-            configureSource.ReloadAfter = TimeSpan.FromDays(365);
+            configureSource.ReloadAfter = TimeSpan.FromDays(7);
             configureSource.Optional = false;
             configureSource.AwsOptions = new AWSOptions()
             {
