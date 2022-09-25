@@ -39,6 +39,7 @@ jobs:
       run: dotnet tool install -g Amazon.Lambda.Tools
 
     - name: .NET Lambda build and upload to S3
+      if: github.event_name != 'release' || github.event.action != 'created'
       working-directory: src/api
       run: |
         dotnet lambda package $DOTNET_LAMBDA_PACKAGE_NAME
@@ -46,6 +47,7 @@ jobs:
 
     - name: Deploy to staging
       working-directory: src/api
+      if: github.event_name != 'release' || github.event.action != 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
@@ -61,7 +63,7 @@ jobs:
       working-directory: ./src/api
       if: github.event_name == 'release' && github.event.action == 'created'
       run: |
-        dotnet lambda update-alias \
+        aws lambda update-alias \
           --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
           --name production \
           --description ${{ github.sha }} \
