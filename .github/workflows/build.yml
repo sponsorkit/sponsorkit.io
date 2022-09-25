@@ -5,9 +5,20 @@ on:
     branches:
       - main
       - develop
+      - feature/*
+  release:
+    types: [created]
 
 jobs:
   build-api:
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
+      DOTNET_LAMBDA_PACKAGE_NAME: ${{ github.sha }}.zip
+      DOTNET_LAMBDA_S3_LOCATION: sponsorkit-lambda-deploy-packages
+      DOTNET_LAMBDA_FUNCTION_NAME: sponsorkit
+      DOTNET_LAMBDA_FUNCTION_HANDLER: Sponsorkit
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -22,24 +33,44 @@ jobs:
     - name: Build Docker images
       run: docker-compose build
 
-#    - name: Run tests
-#      working-directory: src/api
-#      run: dotnet test
-
-    - name: Run staging deploy step in AWS CodePipeline
-      if: github.ref == 'refs/heads/develop'
-      uses: zulhfreelancer/aws-codepipeline-action@492467f78d67ac2301e55e208326a8e9fbd23284
+    - name: Use .NET 6
+      uses: actions/setup-dotnet@v1
       with:
-        aws-region: eu-north-1
-        aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        pipeline-name: sponsorkit-staging
+        dotnet-version: 6.0.x
 
-    - name: Run production deploy step in AWS CodePipeline
-      if: github.ref == 'refs/heads/main'
-      uses: zulhfreelancer/aws-codepipeline-action@492467f78d67ac2301e55e208326a8e9fbd23284
-      with:
-        aws-region: eu-north-1
-        aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        pipeline-name: sponsorkit-prod
+    - name: .NET Lambda build and upload to S3
+      run: |
+        dotnet lambda package $DOTNET_LAMBDA_PACKAGE_NAME
+        aws s3 cp --only-show-errors $DOTNET_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to staging
+      run: |
+        aws lambda update-function-code \
+          --region $AWS_REGION \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
+          --zip-file fileb://$DOTNET_LAMBDA_PACKAGE_NAME
+
+        dotnet lambda deploy-function \
+          --region $AWS_REGION \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
+          --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_LAMBDA_PACKAGE_NAME
+
+        dotnet lambda publish-version \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
+          --revision-id ${{ github.sha }} \
+          --description ${{ github.sha }}
+          
+    - name: Promote staging to production
+      if: github.event_name == 'release' && github.event.action == 'created'
+      run: |
+        dotnet lambda update-alias \
+          --function-name $DOTNET_LAMBDA_FUNCTION_NAME \
+          --name production \
+          --revision-id ${{ github.sha }} \
+          --description ${{ github.sha }} \
+          --function-version ${{ github.sha }}
+
+    - name: Run tests
+      working-directory: src/api
+      run: dotnet test
