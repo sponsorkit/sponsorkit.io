@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using FluffySpoon.AspNet.NGrok.NGrokModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -44,7 +47,7 @@ public class Post : EndpointBaseAsync
     {
         try
         {
-            await using var stream = HttpContext.Request.Body;
+            await using var stream = Request.Body;
             stream.Seek(0, SeekOrigin.Begin);
 
             using var reader = new StreamReader(stream);
@@ -56,16 +59,24 @@ public class Post : EndpointBaseAsync
                 signatureHeader,
                 stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
 
-            var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                x.CanHandleWebhookType(
-                    stripeEvent.Type,
-                    stripeEvent.Data.Object));
-            foreach (var eventHandler in elligibleEventHandlers)
+            try
             {
-                await eventHandler.HandleAsync(
-                    stripeEvent.Id,
-                    stripeEvent.Data.Object,
-                    cancellationToken);
+                var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                    x.CanHandleWebhookType(
+                        stripeEvent.Type,
+                        stripeEvent.Data.Object));
+                foreach (var eventHandler in elligibleEventHandlers)
+                {
+                    await eventHandler.HandleAsync(
+                        stripeEvent.Id,
+                        stripeEvent.Data.Object,
+                        cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                var buffer = Encoding.UTF8.GetBytes(ex.ToString());
+                await Response.Body.WriteAsync(buffer, cancellationToken);
             }
 
             return Ok();

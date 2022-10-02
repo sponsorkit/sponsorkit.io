@@ -48,7 +48,7 @@ public class VerifyEmailTokenGetTest
         });
 
         //Act
-        var response = await handler.HandleAsync(new(token));
+        var response = await handler.HandleAsync(new(token, Guid.NewGuid()));
             
         //Assert
         Assert.IsInstanceOfType(response, typeof(UnauthorizedResult));
@@ -77,7 +77,7 @@ public class VerifyEmailTokenGetTest
 
         //Act
         var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => 
-            await handler.HandleAsync(new(token)));
+            await handler.HandleAsync(new(token, Guid.NewGuid())));
             
         //Assert
         Assert.AreEqual(
@@ -127,7 +127,7 @@ public class VerifyEmailTokenGetTest
 
         //Act
         var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>  
-            await handler.HandleAsync(new(token)));
+            await handler.HandleAsync(new(token, Guid.NewGuid())));
         Assert.IsNotNull(exception);
 
         //Assert
@@ -178,7 +178,7 @@ public class VerifyEmailTokenGetTest
         //Act
         var exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>  
             await handler.HandleAsync(
-                new(token),
+                new(token, Guid.NewGuid()),
                 cancellationTokenSource.Token));
         Assert.IsNotNull(exception);
 
@@ -236,7 +236,7 @@ public class VerifyEmailTokenGetTest
 
         //Act
         var result = await handler.HandleAsync(
-            new(token),
+            new(token, Guid.NewGuid()),
             cancellationTokenSource.Token);
         Assert.IsInstanceOfType(result, typeof(RedirectResult));
 
