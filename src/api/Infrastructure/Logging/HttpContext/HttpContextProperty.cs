@@ -1,17 +1,18 @@
 ﻿using System;
 using System.IO;
 using Hangfire.Server;
+using Microsoft.AspNetCore.Http;
 using Serilog.Events;
 
 namespace Sponsorkit.Infrastructure.Hangfire;
 
-public class PerformContextProperty : LogEventPropertyValue
+public class HttpContextProperty : LogEventPropertyValue
 {
-    public PerformContext? PerformContext { get; }
+    public HttpContext HttpContext { get; }
 
-    public PerformContextProperty(PerformContext? performContext)
+    public HttpContextProperty(HttpContext performContext)
     {
-        PerformContext = performContext;
+        HttpContext = performContext;
     }
 
     public override void Render(TextWriter output, string? format = null, IFormatProvider? formatProvider = null)
