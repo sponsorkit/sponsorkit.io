@@ -64,5 +64,5 @@ jobs:
           --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_LAMBDA_PACKAGE_NAME
 
-    - name: Run tests
-      run: dotnet test
+    # - name: Run tests
+    #   run: dotnet test
