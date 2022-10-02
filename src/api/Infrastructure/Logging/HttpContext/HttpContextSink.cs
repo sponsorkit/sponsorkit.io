@@ -1,13 +1,11 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
-using Hangfire.Console;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Sponsorkit.Infrastructure.Hangfire;
+namespace Sponsorkit.Infrastructure.Logging.HttpContext;
 
-public class ContextSink : ILogEventSink
+public class HttpContextSink : ILogEventSink
 {
     public const string HttpContextProperty = "HttpContext";
 

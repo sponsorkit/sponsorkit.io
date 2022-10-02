@@ -1,16 +1,14 @@
 ﻿using System;
 using System.IO;
-using Hangfire.Server;
-using Microsoft.AspNetCore.Http;
 using Serilog.Events;
 
-namespace Sponsorkit.Infrastructure.Hangfire;
+namespace Sponsorkit.Infrastructure.Logging.HttpContext;
 
 public class HttpContextProperty : LogEventPropertyValue
 {
-    public HttpContext HttpContext { get; }
+    public Microsoft.AspNetCore.Http.HttpContext HttpContext { get; }
 
-    public HttpContextProperty(HttpContext performContext)
+    public HttpContextProperty(Microsoft.AspNetCore.Http.HttpContext performContext)
     {
         HttpContext = performContext;
     }

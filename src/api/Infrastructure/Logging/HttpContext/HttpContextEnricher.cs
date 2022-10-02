@@ -1,14 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
-using Serilog.Core;
+﻿using Serilog.Core;
 using Serilog.Events;
 
-namespace Sponsorkit.Infrastructure.Hangfire;
+namespace Sponsorkit.Infrastructure.Logging.HttpContext;
 
 public class HttpContextEnricher : ILogEventEnricher
 {
-    private readonly HttpContext httpContext;
+    private readonly Microsoft.AspNetCore.Http.HttpContext httpContext;
 
-    public HttpContextEnricher(HttpContext httpContext)
+    public HttpContextEnricher(Microsoft.AspNetCore.Http.HttpContext httpContext)
     {
         this.httpContext = httpContext;
     }

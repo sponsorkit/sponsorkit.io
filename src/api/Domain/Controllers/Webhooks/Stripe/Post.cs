@@ -6,15 +6,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
-using FluffySpoon.AspNet.NGrok.NGrokModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models.Context;
-using Sponsorkit.Infrastructure.Logging;
+using Sponsorkit.Infrastructure.Logging.HttpContext;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
@@ -62,7 +62,7 @@ public class Post : EndpointBaseAsync
 
             try
             {
-                using (ResponseBodySink.EnableResponseBodyLogging())
+                using (LogContext.Push(new HttpContextEnricher(HttpContext)))
                 {
                     var elligibleEventHandlers = webhookEventHandlers.Where(x =>
                         x.CanHandleWebhookType(

@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Domain.Models.Context;
-using Sponsorkit.Tests.TestHelpers.Builders.Models;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments;
 

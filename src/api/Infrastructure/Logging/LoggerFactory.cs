@@ -6,6 +6,7 @@ using Serilog;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Filters;
+using Sponsorkit.Infrastructure.Logging.HttpContext;
 
 namespace Sponsorkit.Infrastructure.Logging;
 
@@ -35,7 +36,8 @@ public static class LoggerFactory
         var loggerConfiguration = CreateBaseLoggingConfiguration()
             .Enrich.FromLogContext()
             .Filter.ByExcluding(Matching.FromSource("Elastic.Apm"))
-            .WriteTo.Console();
+            .WriteTo.Console()
+            .WriteTo.Sink<HttpContextSink>();
 
         return loggerConfiguration;
     }

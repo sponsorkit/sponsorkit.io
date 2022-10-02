@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Octokit.Internal;
@@ -28,7 +27,6 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSuccee
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Domain.Models.Context;
-using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options;

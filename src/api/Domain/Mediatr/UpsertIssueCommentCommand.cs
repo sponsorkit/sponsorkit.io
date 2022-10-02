@@ -1,12 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Text.Json;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Octokit;
 using Serilog;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Infrastructure.GitHub;

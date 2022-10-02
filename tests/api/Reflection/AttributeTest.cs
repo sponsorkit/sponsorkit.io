@@ -2,12 +2,10 @@
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Infrastructure.AspNet;
 
 namespace Sponsorkit.Tests.Reflection;
 
