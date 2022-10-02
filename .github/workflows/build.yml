@@ -54,9 +54,9 @@ jobs:
           --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_LAMBDA_PACKAGE_NAME
           
-    - name: Promote staging to production
+    - name: Deploy to production
       working-directory: ./src/api
-      # if: github.event_name == 'release' && github.event.action == 'created'
+      if: github.event_name == 'release' && github.event.action == 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
@@ -65,5 +65,4 @@ jobs:
           --package $DOTNET_LAMBDA_PACKAGE_NAME
 
     - name: Run tests
-      working-directory: src/api
       run: dotnet test
