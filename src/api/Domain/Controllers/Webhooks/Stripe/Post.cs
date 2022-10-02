@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Infrastructure.Logging;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
@@ -61,16 +62,19 @@ public class Post : EndpointBaseAsync
 
             try
             {
-                var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                    x.CanHandleWebhookType(
-                        stripeEvent.Type,
-                        stripeEvent.Data.Object));
-                foreach (var eventHandler in elligibleEventHandlers)
+                using (ResponseBodySink.EnableResponseBodyLogging())
                 {
-                    await eventHandler.HandleAsync(
-                        stripeEvent.Id,
-                        stripeEvent.Data.Object,
-                        cancellationToken);
+                    var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                        x.CanHandleWebhookType(
+                            stripeEvent.Type,
+                            stripeEvent.Data.Object));
+                    foreach (var eventHandler in elligibleEventHandlers)
+                    {
+                        await eventHandler.HandleAsync(
+                            stripeEvent.Id,
+                            stripeEvent.Data.Object,
+                            cancellationToken);
+                    }
                 }
             }
             catch (Exception ex)
