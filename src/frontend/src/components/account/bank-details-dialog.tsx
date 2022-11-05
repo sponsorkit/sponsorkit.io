@@ -12,7 +12,7 @@ export default function BankDetailsDialog(props: {
     const onFillInClicked = async (broadcastId: string) => {
         const response = await createApi().accountStripeConnectSetupPost({
             body: {
-                broadcastId
+                broadcastId: broadcastId
             }
         });
         

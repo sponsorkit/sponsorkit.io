@@ -3,10 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using Serilog;
-using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Ioc;
 

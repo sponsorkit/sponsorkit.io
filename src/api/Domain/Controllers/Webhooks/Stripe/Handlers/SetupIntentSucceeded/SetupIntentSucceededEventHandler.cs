@@ -1,17 +1,5 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;

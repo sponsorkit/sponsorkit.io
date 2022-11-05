@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -9,8 +11,10 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Infrastructure.Logging.HttpContext;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
@@ -44,7 +48,7 @@ public class Post : EndpointBaseAsync
     {
         try
         {
-            await using var stream = HttpContext.Request.Body;
+            await using var stream = Request.Body;
             stream.Seek(0, SeekOrigin.Begin);
 
             using var reader = new StreamReader(stream);
@@ -56,16 +60,27 @@ public class Post : EndpointBaseAsync
                 signatureHeader,
                 stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
 
-            var elligibleEventHandlers = webhookEventHandlers.Where(x =>
-                x.CanHandleWebhookType(
-                    stripeEvent.Type,
-                    stripeEvent.Data.Object));
-            foreach (var eventHandler in elligibleEventHandlers)
+            try
             {
-                await eventHandler.HandleAsync(
-                    stripeEvent.Id,
-                    stripeEvent.Data.Object,
-                    cancellationToken);
+                using (LogContext.Push(new HttpContextEnricher(HttpContext)))
+                {
+                    var elligibleEventHandlers = webhookEventHandlers.Where(x =>
+                        x.CanHandleWebhookType(
+                            stripeEvent.Type,
+                            stripeEvent.Data.Object));
+                    foreach (var eventHandler in elligibleEventHandlers)
+                    {
+                        await eventHandler.HandleAsync(
+                            stripeEvent.Id,
+                            stripeEvent.Data.Object,
+                            cancellationToken);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var buffer = Encoding.UTF8.GetBytes(ex.ToString());
+                await Response.Body.WriteAsync(buffer, cancellationToken);
             }
 
             return Ok();

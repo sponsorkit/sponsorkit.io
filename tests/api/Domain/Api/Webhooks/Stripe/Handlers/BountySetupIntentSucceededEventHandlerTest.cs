@@ -7,17 +7,13 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models.Builders;
 using Sponsorkit.Tests.TestHelpers.Builders.Models;
-using Sponsorkit.Tests.TestHelpers.Builders.Stripe.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 
 namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers;

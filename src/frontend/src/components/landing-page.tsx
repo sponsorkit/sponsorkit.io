@@ -20,8 +20,10 @@ export default function LandingPage(props: {
 
     const beacon = useBroadcast(broadcastId);
     useEffect(() => {
-        if(beacon)
-            window.close();
+        if(!beacon)
+            return;
+
+        window.close();
     }, [beacon]);
 
     if(beacon === undefined)
@@ -33,22 +35,28 @@ export default function LandingPage(props: {
                 <Typography>
                     {props.title}
                 </Typography>
+                {beacon &&
+                    <Typography sx={{
+                        fontWeight: "bold"
+                    }}>
+                        You can now close this window
+                    </Typography>}
             </CardContent>
-            <CardActions className={classes["card-actions"]}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => {
-                        if(beacon)
-                            window.close();
+            {!beacon && props.continueUrl && 
+                <CardActions className={classes["card-actions"]}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                            if(!props.continueUrl)
+                                throw new Error("No continue URL.");
 
-                        if(props.continueUrl)
                             window.location.href = props.continueUrl;
-                    }}
-                >
-                    Continue
-                </Button>
-            </CardActions>
+                        }}
+                    >
+                        Continue
+                    </Button>
+                </CardActions>}
         </Card>
     </AppBarLayout>
 }

@@ -5,7 +5,6 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Octokit.GraphQL;
 using Sponsorkit.Domain.Models.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties;
