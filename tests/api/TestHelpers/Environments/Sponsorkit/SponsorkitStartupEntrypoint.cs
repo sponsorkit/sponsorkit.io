@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
+using Sponsorkit.Infrastructure.Ioc;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
@@ -39,14 +40,22 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                     Disable = false,
                     ApplicationHttpUrl = "http://localhost:14568"
                 }))
-            .ConfigureServices(services =>
+            .ConfigureServices((services) =>
             {
+                var environment = Substitute.For<IWebHostEnvironment>();
+                var configuration = TestConfigurationFactory
+                    .ConfigureBuilder(new ConfigurationManager())
+                    .Build();
+                var registry = new IocRegistry(
+                    services,
+                    configuration,
+                    environment);
+                registry.Register();
+
                 TestServiceProviderFactory.ConfigureServicesForTesting(
                     services,
-                    TestConfigurationFactory
-                        .ConfigureBuilder(new ConfigurationManager())
-                        .Build(),
-                    Substitute.For<IWebHostEnvironment>());
+                    configuration,
+                    environment);
                 options.IocConfiguration?.Invoke(services);
             })
             .Build();
