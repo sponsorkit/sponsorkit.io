@@ -33,6 +33,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
             .UseEnvironment(options.EnvironmentName ?? Microsoft.Extensions.Hosting.Environments.Development)
             .ConfigureWebHostDefaults(webBuilder => webBuilder
                 .UseKestrel()
+                .Configure(builder => builder.Build())
                 .UseUrls("https://*:14569;http://*:14568")
                 .UseNGrok(new NgrokOptions()
                 {
@@ -40,9 +41,9 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                     Disable = false,
                     ApplicationHttpUrl = "http://localhost:14568"
                 }))
-            .ConfigureServices((services) =>
+            .ConfigureServices((context, services) =>
             {
-                var environment = Substitute.For<IWebHostEnvironment>();
+                var environment = context.HostingEnvironment;
                 var configuration = TestConfigurationFactory
                     .ConfigureBuilder(new ConfigurationManager())
                     .Build();

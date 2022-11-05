@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Octokit.Internal;
@@ -44,11 +45,11 @@ public sealed class IocRegistry
 {
     private IServiceCollection Services { get; }
     private IConfiguration Configuration { get; }
-    private IWebHostEnvironment Environment { get; }
+    private IHostEnvironment Environment { get; }
 
     public IocRegistry(IServiceCollection services,
         IConfiguration configuration, 
-        IWebHostEnvironment environment)
+        IHostEnvironment environment)
     {
         Services = services;
         Configuration = configuration;

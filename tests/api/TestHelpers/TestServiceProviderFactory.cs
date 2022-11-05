@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using Serilog;
 using Sponsorkit.Infrastructure.GitHub;
@@ -38,7 +39,7 @@ public class TestServiceProviderFactory
     public static void ConfigureServicesForTesting(
         IServiceCollection services,
         IConfiguration configuration,
-        IWebHostEnvironment environment)
+        IHostEnvironment environment)
     {
         var registry = new IocRegistry(
             services,
