@@ -36,18 +36,21 @@ public class SendVerificationEmailPostTest
             fakeMediator,
             fakeTokenFactory);
         handler.FakeAuthentication(userId);
+        
+        var broadcastId = Guid.NewGuid();
             
         //Act
         var response = await handler.HandleAsync(
-            new Request("new-email@example.com", 
-                Guid.NewGuid()));
+            new Request(
+                "new-email@example.com", 
+                broadcastId));
         Assert.IsInstanceOfType(response, typeof(OkResult));
             
         //Assert
         await fakeMediator
             .Received(1)
             .Send(Arg.Is<SendEmailCommand>(command => 
-                ((Model)command.Model).VerificationUrl.EndsWith("/some-token")));
+                ((Model)command.Model).VerificationUrl.EndsWith("/some-token?broadcastId=" + broadcastId)));
     }
         
     [TestMethod]

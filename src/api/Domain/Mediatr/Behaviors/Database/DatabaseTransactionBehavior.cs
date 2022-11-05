@@ -18,8 +18,8 @@ public class DatabaseTransactionBehavior<TRequest, TResponse> : IPipelineBehavio
 
     public async Task<TResponse> Handle(
         TRequest request, 
-        CancellationToken cancellationToken, 
-        RequestHandlerDelegate<TResponse> next)
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         if (request is not IDatabaseTransactionRequest databaseTransactionRequest)
             return await next();

@@ -20,7 +20,7 @@ public class GitHubHealthCheck : IHealthCheck
         CancellationToken cancellationToken = default)
     {
         var client = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(null);
-        var limits = await client.Miscellaneous.GetRateLimits();
+        var limits = await client.RateLimit.GetRateLimits();
         if (limits == null)
             return HealthCheckResult.Degraded("No rate limits returned from GitHub.");
 

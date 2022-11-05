@@ -17,13 +17,13 @@
     <ItemGroup>
         <PackageReference Include="Docker.DotNet" Version="3.125.12" />
         <PackageReference Include="FluffySpoon.AspNet.NGrok" Version="1.75.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="6.0.9" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="6.0.9" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.9" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="6.0.10" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="6.0.10" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.10" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
         <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
         <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-        <PackageReference Include="coverlet.collector" Version="3.1.2">
+        <PackageReference Include="coverlet.collector" Version="3.2.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
