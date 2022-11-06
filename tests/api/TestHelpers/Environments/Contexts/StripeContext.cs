@@ -1,0 +1,30 @@
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
+using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
+using Stripe;
+
+namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
+
+public class StripeContext
+{
+    private readonly IServiceProvider serviceProvider;
+
+    public StripeSubscriptionBuilder SubscriptionBuilder => 
+        new(serviceProvider.GetRequiredService<SubscriptionService>());
+    
+    public StripePlanBuilder PlanBuilder => 
+        new(serviceProvider.GetRequiredService<PlanService>());
+
+    public TestStripeCustomerBuilder CustomerBuilder => 
+        new(serviceProvider.GetRequiredService<CustomerService>());
+
+    public StripePaymentMethodBuilder PaymentMethodBuilder => 
+        new(serviceProvider.GetRequiredService<PaymentMethodService>());
+
+    public StripeContext(
+        IServiceProvider serviceProvider)
+    {
+        this.serviceProvider = serviceProvider;
+    }
+}

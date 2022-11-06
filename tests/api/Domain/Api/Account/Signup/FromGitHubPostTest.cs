@@ -11,6 +11,7 @@ using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers.Builders.Database;
+using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
@@ -40,7 +41,7 @@ public class FromGitHubPostTest
 
         fakeGitHubClient.User
             .Current()
-            .Returns(new OctokitUser());
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
 
         var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
         fakeGitHubClientFactory
@@ -105,12 +106,13 @@ public class FromGitHubPostTest
             }
         });
 
-        await environment.Database.CreateUserAsync(new TestUserBuilder()
+        await environment.Database.UserBuilder
             .WithGitHub(
                 gitHubUserId,
                 "dummy",
                 await environment.EncryptionHelper.EncryptAsync(
-                    "some-old-github-token")));
+                    "some-old-github-token"))
+            .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<Post>();
             
@@ -176,12 +178,13 @@ public class FromGitHubPostTest
             }
         });
 
-        await environment.Database.CreateUserAsync(new TestUserBuilder()
+        await environment.Database.UserBuilder
             .WithGitHub(
                 gitHubUserId,
                 "dummy",
                 await environment.EncryptionHelper.EncryptAsync(
-                    "some-old-github-token")));
+                    "some-old-github-token"))
+            .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<Post>();
             

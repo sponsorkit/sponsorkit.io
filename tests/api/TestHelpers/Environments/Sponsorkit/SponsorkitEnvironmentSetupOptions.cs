@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
-class SponsorkitEnvironmentSetupOptions
+public class SponsorkitEnvironmentSetupOptions
 {
     public string EnvironmentName { get; set; }
     public Action<IServiceCollection> IocConfiguration { get; set; }

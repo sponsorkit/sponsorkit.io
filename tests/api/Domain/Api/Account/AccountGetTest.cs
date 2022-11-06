@@ -18,10 +18,7 @@ public class AccountGetTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var stripeCustomer = await environment.Stripe.CustomerBuilder.BuildAsync();
-        
-        var user = await environment.Database.CreateUserAsync(new TestUserBuilder()
-            .WithStripeCustomerId(stripeCustomer.Id));
+        var user = await environment.Database.UserBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);

@@ -22,8 +22,9 @@ public class SponsorsBeneficiaryGetTest
 
         var beneficiaryId = Guid.NewGuid();
 
-        await environment.Database.CreateUserAsync(new TestUserBuilder()
-            .WithId(beneficiaryId));
+        await environment.Database.UserBuilder
+            .WithId(beneficiaryId)
+            .BuildAsync();
             
         //Act
         var response = await endpoint.HandleAsync(

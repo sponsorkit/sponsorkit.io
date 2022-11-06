@@ -106,9 +106,10 @@ public class VerifyEmailTokenGetTest
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
 
-        var user = await environment.Database.CreateUserAsync(new TestUserBuilder()
+        var user = await environment.Database.UserBuilder
             .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com")));
+                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(
@@ -153,9 +154,10 @@ public class VerifyEmailTokenGetTest
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
 
-        var user = await environment.Database.CreateUserAsync(new TestUserBuilder()
+        var user = await environment.Database.UserBuilder
             .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com")));
+                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(
@@ -213,9 +215,10 @@ public class VerifyEmailTokenGetTest
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
 
-        var user = await environment.Database.CreateUserAsync(new TestUserBuilder()
+        var user = await environment.Database.UserBuilder
             .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com")));
+                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(

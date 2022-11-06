@@ -66,7 +66,7 @@ public class StripeCustomerBuilder : AsyncModelBuilder<Customer>
         var paymentMethod = paymentMethodBuilder != null ? 
             await paymentMethodBuilder
                 .WithCustomer(customer)
-                .BuildAsync(cancellationToken) :
+                .BuildAsync(CancellationToken.None) :
             null;
         if (paymentMethod != null)
         {
@@ -80,7 +80,7 @@ public class StripeCustomerBuilder : AsyncModelBuilder<Customer>
                     }
                 },
                 default,
-                cancellationToken);
+                CancellationToken.None);
         }
 
         return customer;

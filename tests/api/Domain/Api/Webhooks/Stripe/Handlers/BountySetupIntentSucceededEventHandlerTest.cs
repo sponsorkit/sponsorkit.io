@@ -101,18 +101,19 @@ public class BountySetupIntentSucceededEventHandlerTest
             }
         });
 
-        var issue = await environment.Database.CreateIssueAsync(new TestIssueBuilder()
+        var issue = await environment.Database.IssueBuilder
             .WithGitHubInformation(
                 id: 1338,
                 number: 1339,
-                titleSnapshot: ""));
+                titleSnapshot: "")
+            .BuildAsync();
         fakeMediator
             .Send(
                 Arg.Any<EnsureGitHubIssueInDatabaseCommand>(),
                 default)
             .Returns(issue);
             
-        var user = await environment.Database.CreateUserAsync(new TestUserBuilder());
+        var user = await environment.Database.UserBuilder.BuildAsync();
 
         //Act
         await CallHandleAsync(

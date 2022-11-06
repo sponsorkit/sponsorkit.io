@@ -1,6 +1,6 @@
 ﻿using Sponsorkit.Domain.Models.Database.Builders;
 
-namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
+namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 
 public class TestRepositoryBuilder : RepositoryBuilder
 {

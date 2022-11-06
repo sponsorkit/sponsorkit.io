@@ -1,6 +1,6 @@
 ﻿using Sponsorkit.Domain.Models.Database.Builders;
 
-namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
+namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 
 public class TestIssueBuilder : IssueBuilder
 {
@@ -10,6 +10,10 @@ public class TestIssueBuilder : IssueBuilder
             1337,
             1338,
             "dummy-title");
-        WithRepository(new TestRepositoryBuilder().BuildAsync().Result);
+        WithRepository(new TestRepositoryBuilder()
+            .BuildAsync()
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult());
     }   
 }

@@ -2,11 +2,11 @@
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
-class SponsorkitIntegrationTestEnvironment : IntegrationTestEnvironment<SponsorkitEnvironmentSetupOptions>
+public class SponsorkitIntegrationTestEnvironment : IntegrationTestEnvironment<SponsorkitEnvironmentSetupOptions>
 {
     protected SponsorkitIntegrationTestEnvironment(SponsorkitEnvironmentSetupOptions options = null) : base(options)
     {
-            
+        
     }
 
     public static async Task<SponsorkitIntegrationTestEnvironment> CreateAsync(SponsorkitEnvironmentSetupOptions options = null)
