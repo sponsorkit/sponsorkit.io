@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Sponsorkit.Infrastructure.Security.Encryption;
 
-public class AesEncryptionHelper : IAesEncryptionHelper
+public class AesEncryptionHelper : IEncryptionHelper
 {
     private readonly IOptionsMonitor<EncryptionOptions> encryptionOptionsMonitor;
 

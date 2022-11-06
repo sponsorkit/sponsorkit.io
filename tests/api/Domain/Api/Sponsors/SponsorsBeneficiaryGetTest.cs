@@ -32,7 +32,7 @@ public class SponsorsBeneficiaryGetTest
             default);
             
         //Assert
-        var responseObject = response.ToObject();
+        var responseObject = response.ToResponseObject();
 
         Assert.AreEqual("some-user-id", responseObject.Id);
         Assert.AreEqual("some-github-id", responseObject.GitHubId);

@@ -194,6 +194,7 @@ public sealed class IocRegistry
         Services.AddSingleton<ChargeService>();
         Services.AddSingleton<PaymentIntentService>();
 
+        Services.AddTransient<StripeAccountBuilder>();
         Services.AddTransient<StripeCustomerBuilder>();
         Services.AddTransient<StripeSetupIntentBuilder>();
         Services.AddTransient<StripePlanBuilder>();
@@ -242,7 +243,7 @@ public sealed class IocRegistry
 
     private void ConfigureInfrastructure()
     {
-        Services.AddSingleton<IAesEncryptionHelper, AesEncryptionHelper>();
+        Services.AddSingleton<IEncryptionHelper, AesEncryptionHelper>();
         Services.AddSingleton<ITokenFactory, TokenFactory>();
 
         Services.AddLogging(builder => builder

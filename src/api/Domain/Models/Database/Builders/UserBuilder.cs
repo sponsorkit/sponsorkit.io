@@ -8,7 +8,7 @@ namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class UserBuilder : AsyncModelBuilder<User>
 {
-    private readonly IAesEncryptionHelper encryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
 
     private Guid id;
 
@@ -24,7 +24,7 @@ public class UserBuilder : AsyncModelBuilder<User>
     private string? gitHubAccessToken;
 
     public UserBuilder(
-        IAesEncryptionHelper encryptionHelper)
+        IEncryptionHelper encryptionHelper)
     {
         this.encryptionHelper = encryptionHelper;
 

@@ -18,6 +18,9 @@ public class StripeContext
 
     public CustomerService CustomerService => serviceProvider.GetRequiredService<CustomerService>();
     public TestStripeCustomerBuilder CustomerBuilder => new(CustomerService);
+    
+    public TestStripeAccountBuilder AccountBuilder => 
+        new(serviceProvider.GetRequiredService<AccountService>());
 
     public StripePaymentMethodBuilder PaymentMethodBuilder => 
         new(serviceProvider.GetRequiredService<PaymentMethodService>());

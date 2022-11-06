@@ -39,7 +39,7 @@ public class Post : EndpointBaseAsync
     private readonly IGitHubClientFactory gitHubClientFactory;
     private readonly IGitHubClient gitHubClient;
     private readonly ITokenFactory tokenFactory;
-    private readonly IAesEncryptionHelper encryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
 
     private readonly IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor;
 
@@ -52,7 +52,7 @@ public class Post : EndpointBaseAsync
         IGitHubClient gitHubClient,
         IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor,
         ITokenFactory tokenFactory,
-        IAesEncryptionHelper encryptionHelper,
+        IEncryptionHelper encryptionHelper,
         DataContext dataContext,
         StripeCustomerBuilder stripeCustomerBuilder,
         UserBuilder userBuilder)

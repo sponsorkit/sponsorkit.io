@@ -6,9 +6,58 @@ using System.Threading.Tasks;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Stripe.Metadata;
+using Sponsorkit.Infrastructure.Security.Encryption;
 using Stripe;
 
 namespace Sponsorkit.Domain.Models.Stripe;
+
+public class StripeAccountBuilder : AsyncModelBuilder<Account>
+{
+    private readonly AccountService accountService;
+    
+    private string? email;
+    private string? customerId;
+
+    public StripeAccountBuilder(
+        AccountService accountService)
+    {
+        this.accountService = accountService;
+    }
+
+    public StripeAccountBuilder WithEmail(string email)
+    {
+        this.email = email;
+        return this;
+    }
+
+    public StripeAccountBuilder WithCustomerId(string customerId)
+    {
+        this.customerId = customerId;
+        return this;
+    }
+    
+    public override async Task<Account> BuildAsync(CancellationToken cancellationToken = default)
+    {
+        if (customerId == null)
+            throw new InvalidOperationException("Customer not set.");
+
+        if (email == null)
+            throw new InvalidOperationException("Email not set.");
+        
+        var account = await accountService.CreateAsync(
+            new AccountCreateOptions()
+            {
+                Email = email,
+                Type = "express"
+            },
+            new RequestOptions()
+            {
+                IdempotencyKey = $"stripe-account-{customerId}"
+            },
+            cancellationToken);
+        return account;
+    }
+}
 
 public class StripeSetupIntentBuilder : AsyncModelBuilder<SetupIntent>
 {

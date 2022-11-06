@@ -12,8 +12,11 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 public class TestUserBuilder : UserBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
+
+    private StripeCustomerBuilder stripeCustomerBuilder;
     
     private bool skipCustomerCreation;
+    private DateTimeOffset? emailVerifiedAt;
 
     public TestUserBuilder(IIntegrationTestEnvironment environment) : base(environment.EncryptionHelper)
     {
@@ -22,6 +25,13 @@ public class TestUserBuilder : UserBuilder
         WithId(Guid.NewGuid());
         WithStripeCustomerId(string.Empty);
         WithEmail("integration-test@example.com");
+        WithStripeCustomer(environment.Stripe.CustomerBuilder);
+    }
+
+    public TestUserBuilder WithStripeCustomer(StripeCustomerBuilder stripeCustomerBuilder)
+    {
+        this.stripeCustomerBuilder = stripeCustomerBuilder;
+        return this;
     }
 
     public TestUserBuilder WithoutStripeCustomer()
@@ -30,13 +40,20 @@ public class TestUserBuilder : UserBuilder
         return this;
     }
 
+    public TestUserBuilder WithVerifiedEmail()
+    {
+        emailVerifiedAt = DateTimeOffset.UtcNow;
+        return this;
+    }
+
     public override async Task<User> BuildAsync(CancellationToken cancellationToken = default)
     {
         var user = await base.BuildAsync(cancellationToken);
+        user.EmailVerifiedAt = emailVerifiedAt;
 
         if (!skipCustomerCreation)
         {
-            var stripeCustomer = await environment.Stripe.CustomerBuilder
+            var stripeCustomer = await stripeCustomerBuilder
                 .WithUser(user)
                 .BuildAsync(cancellationToken);
             user.StripeCustomerId = stripeCustomer.Id;

@@ -101,7 +101,7 @@ public class VerifyEmailTokenGetTest
         });
 
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
+        var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IEncryptionHelper>();
 
         var user = await environment.Database.UserBuilder
             .WithoutStripeCustomer()

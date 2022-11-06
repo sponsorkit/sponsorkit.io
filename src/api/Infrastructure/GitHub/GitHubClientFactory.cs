@@ -21,7 +21,7 @@ namespace Sponsorkit.Infrastructure.GitHub;
 public class GitHubClientFactory : IGitHubClientFactory
 {
     private readonly IOptionsMonitor<GitHubOptions> githubOptionsMonitor;
-    private readonly IAesEncryptionHelper aesEncryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
     private readonly HttpClientAdapter httpClientAdapter;
     private readonly HttpClient httpClient;
     private readonly DataContext dataContext;
@@ -30,13 +30,13 @@ public class GitHubClientFactory : IGitHubClientFactory
 
     public GitHubClientFactory(
         IOptionsMonitor<GitHubOptions> githubOptionsMonitor,
-        IAesEncryptionHelper aesEncryptionHelper,
+        IEncryptionHelper encryptionHelper,
         HttpClientAdapter httpClientAdapter,
         HttpClient httpClient,
         DataContext dataContext)
     {
         this.githubOptionsMonitor = githubOptionsMonitor;
-        this.aesEncryptionHelper = aesEncryptionHelper;
+        this.encryptionHelper = encryptionHelper;
         this.httpClientAdapter = httpClientAdapter;
         this.httpClient = httpClient;
         this.dataContext = dataContext;
@@ -86,7 +86,7 @@ public class GitHubClientFactory : IGitHubClientFactory
         if (encryptedAccessToken == null)
             return null;
 
-        return await aesEncryptionHelper.DecryptAsync(encryptedAccessToken);
+        return await encryptionHelper.DecryptAsync(encryptedAccessToken);
     }
 
     public async Task<string?> GetAccessTokenFromUserIfPresentAsync(User user)

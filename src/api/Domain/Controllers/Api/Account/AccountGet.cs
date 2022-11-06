@@ -35,7 +35,7 @@ public class AccountGet : EndpointBaseAsync
     .WithoutRequest
     .WithActionResult<Response>
 {
-    private readonly IAesEncryptionHelper encryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
         
     private readonly DataContext dataContext;
     private readonly CustomerService customerService;
@@ -43,7 +43,7 @@ public class AccountGet : EndpointBaseAsync
     private readonly AccountService accountService;
 
     public AccountGet(
-        IAesEncryptionHelper encryptionHelper,
+        IEncryptionHelper encryptionHelper,
         DataContext dataContext,
         CustomerService customerService,
         PaymentMethodService paymentMethodService,
@@ -81,7 +81,7 @@ public class AccountGet : EndpointBaseAsync
             email,
             user.GitHub?.Username,
             user.EmailVerifiedAt != null,
-            await GetBeneficiaryResponseAsync(user),
+            await GetBeneficiaryResponseAsync(user, cancellationToken),
             GetSponsorResponse(paymentMethod)));
     }
 
@@ -109,12 +109,16 @@ public class AccountGet : EndpointBaseAsync
             creditCard);
     }
 
-    private async Task<BeneficiaryResponse?> GetBeneficiaryResponseAsync(User user)
+    private async Task<BeneficiaryResponse?> GetBeneficiaryResponseAsync(User user, CancellationToken cancellationToken)
     {
         if (user.StripeConnectId == null)
             return null;
-
-        var account = await accountService.GetAsync(user.StripeConnectId);
+        
+        var account = await accountService.GetAsync(
+            user.StripeConnectId, 
+            default, 
+            default, 
+            cancellationToken);
         if (account == null)
             throw new Exception("Expected account to be present.");
             

@@ -32,18 +32,18 @@ public class Post : EndpointBaseAsync
 {
     private readonly DataContext dataContext;
     private readonly IMediator mediator;
-    private readonly IAesEncryptionHelper aesEncryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
     private readonly IGitHubClient gitHubClient;
 
     public Post(
         DataContext dataContext,
         IMediator mediator,
-        IAesEncryptionHelper aesEncryptionHelper,
+        IEncryptionHelper encryptionHelper,
         IGitHubClient gitHubClient)
     {
         this.dataContext = dataContext;
         this.mediator = mediator;
-        this.aesEncryptionHelper = aesEncryptionHelper;
+        this.encryptionHelper = encryptionHelper;
         this.gitHubClient = gitHubClient;
     }
 
@@ -127,7 +127,7 @@ public class Post : EndpointBaseAsync
     {
         foreach (var claimRequest in addedClaimRequests)
         {
-            var emailAddress = await aesEncryptionHelper.DecryptAsync(claimRequest.Bounty.Creator.EncryptedEmail);
+            var emailAddress = await encryptionHelper.DecryptAsync(claimRequest.Bounty.Creator.EncryptedEmail);
 
             var userGitHubInformation = claimRequest.Creator.GitHub;
             if (userGitHubInformation == null)

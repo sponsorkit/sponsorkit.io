@@ -19,7 +19,7 @@ public interface IIntegrationTestEnvironment
     public IServiceProvider ServiceProvider { get; }
 
     public IMediator Mediator { get; }
-    public IAesEncryptionHelper EncryptionHelper  { get; }
+    public IEncryptionHelper EncryptionHelper  { get; }
     public DatabaseContext Database { get; }
     public GitHubContext GitHub { get; }
     public IConfiguration Configuration { get; }
@@ -35,7 +35,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
     public IServiceProvider ServiceProvider { get; }
 
     public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
-    public IAesEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
+    public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
     public GitHubContext GitHub => new ();
     public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();

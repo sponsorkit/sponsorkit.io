@@ -10,6 +10,7 @@ using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Stripe;
@@ -27,18 +28,17 @@ public class Post : EndpointBaseAsync
     .WithActionResult<Response>
 {
     private readonly DataContext dataContext;
-    private readonly AccountService accountService;
-        
-    private readonly IAesEncryptionHelper aesEncryptionHelper;
+    private readonly StripeAccountBuilder stripeAccountBuilder;
+    private readonly IEncryptionHelper encryptionHelper;
 
     public Post(
         DataContext dataContext,
-        AccountService accountService,
-        IAesEncryptionHelper aesEncryptionHelper)
+        StripeAccountBuilder stripeAccountBuilder,
+        IEncryptionHelper encryptionHelper)
     {
         this.dataContext = dataContext;
-        this.accountService = accountService;
-        this.aesEncryptionHelper = aesEncryptionHelper;
+        this.stripeAccountBuilder = stripeAccountBuilder;
+        this.encryptionHelper = encryptionHelper;
     }
         
     [HttpPost("account/stripe-connect/setup")]
@@ -59,8 +59,14 @@ public class Post : EndpointBaseAsync
 
                 if (user.StripeConnectId == null)
                 {
-                    var account = await CreateStripeAccountForUserAsync(user);
+                    var userEmail = await encryptionHelper.DecryptAsync(user.EncryptedEmail);
+                    
+                    var account = await stripeAccountBuilder
+                        .WithCustomerId(user.StripeCustomerId)
+                        .WithEmail(userEmail)
+                        .BuildAsync(CancellationToken.None);
                     user.StripeConnectId = account.Id;
+                    
                     await dataContext.SaveChangesAsync(default);
                 }
 
@@ -68,21 +74,5 @@ public class Post : EndpointBaseAsync
                     LinkHelper.GetStripeConnectActivateUrl(request.BroadcastId));
             },
             IsolationLevel.Serializable);
-    }
-
-    private async Task<Stripe.Account> CreateStripeAccountForUserAsync(User user)
-    {
-        var email = await aesEncryptionHelper.DecryptAsync(user.EncryptedEmail);
-        return await accountService.CreateAsync(
-            new AccountCreateOptions()
-            {
-                Email = email,
-                Type = "express"
-            },
-            new RequestOptions()
-            {
-                IdempotencyKey = $"stripe-account-{user.Id.ToString()}"
-            },
-            cancellationToken: default);
     }
 }

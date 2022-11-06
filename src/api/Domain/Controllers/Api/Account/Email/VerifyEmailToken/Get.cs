@@ -30,18 +30,18 @@ public class Get : EndpointBaseAsync
 {
     private readonly DataContext dataContext;
     private readonly CustomerService customerService;
-    private readonly IAesEncryptionHelper aesEncryptionHelper;
+    private readonly IEncryptionHelper encryptionHelper;
     private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
 
     public Get(
         DataContext dataContext,
         CustomerService customerService,
-        IAesEncryptionHelper aesEncryptionHelper,
+        IEncryptionHelper encryptionHelper,
         IOptionsMonitor<JwtOptions> jwtOptionsMonitor)
     {
         this.dataContext = dataContext;
         this.customerService = customerService;
-        this.aesEncryptionHelper = aesEncryptionHelper;
+        this.encryptionHelper = encryptionHelper;
         this.jwtOptionsMonitor = jwtOptionsMonitor;
     }
         
@@ -74,7 +74,7 @@ public class Get : EndpointBaseAsync
                 x => x.Id == userId,
                 cancellationToken);
             user.EmailVerifiedAt = DateTimeOffset.UtcNow;
-            user.EncryptedEmail = await aesEncryptionHelper.EncryptAsync(newEmail);
+            user.EncryptedEmail = await encryptionHelper.EncryptAsync(newEmail);
             await dataContext.SaveChangesAsync(cancellationToken);
 
             await customerService.UpdateAsync(

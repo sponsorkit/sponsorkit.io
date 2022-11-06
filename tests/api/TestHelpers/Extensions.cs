@@ -11,7 +11,7 @@ namespace Sponsorkit.Tests.TestHelpers;
 [DebuggerStepThrough]
 public static class Extensions
 {
-    public static TResponse ToObject<TResponse>(this ActionResult<TResponse> httpResponseMessage) where TResponse : class
+    public static TResponse ToResponseObject<TResponse>(this ActionResult<TResponse> httpResponseMessage) where TResponse : class
     {
         var objectResult = httpResponseMessage.Result as ObjectResult;
         var value = objectResult?.Value as TResponse;
