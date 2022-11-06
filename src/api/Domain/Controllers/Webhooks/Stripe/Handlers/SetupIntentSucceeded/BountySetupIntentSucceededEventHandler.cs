@@ -13,8 +13,9 @@ using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.Domain.Models.Database.Context;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
@@ -161,7 +162,7 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
         long amountInHundreds, 
         CancellationToken cancellationToken)
     {
-        var payment = new PaymentBuilder()
+        var payment = await new PaymentBuilder()
             .WithBounty(bounty)
             .WithAmount(
                 amountInHundreds,
@@ -169,7 +170,7 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
                     amountInHundreds))
             .WithStripeId(paymentIntent.Id)
             .WithStripeEventId(eventId)
-            .Build();
+            .BuildAsync(cancellationToken);
             
         await dataContext.Payments.AddAsync(
             payment,
@@ -215,10 +216,10 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
         Issue issue, 
         CancellationToken cancellationToken)
     {
-        var newBounty = new BountyBuilder()
+        var newBounty = await new BountyBuilder()
             .WithCreator(user)
             .WithIssue(issue)
-            .Build();
+            .BuildAsync(cancellationToken);
         await dataContext.Bounties.AddAsync(
             newBounty,
             cancellationToken);

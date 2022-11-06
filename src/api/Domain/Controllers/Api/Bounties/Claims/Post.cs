@@ -14,8 +14,9 @@ using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
 using Sponsorkit.Domain.Mediatr.Email.Templates.BountyClaimRequest;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
 
@@ -86,19 +87,19 @@ public class Post : EndpointBaseAsync
             if (existingClaimRequest != null)
                 return BadRequest("An existing claim request exists for this bounty.");
 
-            var databasePullRequest = new PullRequestBuilder()
+            var databasePullRequest = await new PullRequestBuilder()
                 .WithRepository(issue.Repository)
                 .WithGitHubInformation(
                     pullRequest.Id,
                     pullRequest.Number)
-                .Build();
+                .BuildAsync(cancellationToken);
             foreach (var bounty in issue.Bounties)
             {
-                var claimRequest = new BountyClaimRequestBuilder()
+                var claimRequest = await new BountyClaimRequestBuilder()
                     .WithBounty(bounty)
                     .WithCreator(user)
                     .WithPullRequest(databasePullRequest)
-                    .Build();
+                    .BuildAsync(cancellationToken);
                 user.BountyClaimRequests.Add(claimRequest);
                 bounty.ClaimRequests.Add(claimRequest);
 

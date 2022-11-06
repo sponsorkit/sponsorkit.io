@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 
 namespace Sponsorkit.Domain.Mediatr.Behaviors.Database;
 

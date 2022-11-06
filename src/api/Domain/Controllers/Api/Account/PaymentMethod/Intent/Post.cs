@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -8,7 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.Domain.Models.Stripe.Metadata;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
 
@@ -23,16 +26,17 @@ public class Post : EndpointBaseAsync
     .WithActionResult<PostResponse>
 {
     private readonly DataContext dataContext;
-    private readonly SetupIntentService setupIntentService;
+    private readonly StripeSetupIntentBuilder setupIntentBuilder;
+    
     private readonly IMediator mediator;
 
     public Post(
         DataContext dataContext,
-        SetupIntentService setupIntentService,
+        StripeSetupIntentBuilder setupIntentBuilder,
         IMediator mediator)
     {
         this.dataContext = dataContext;
-        this.setupIntentService = setupIntentService;
+        this.setupIntentBuilder = setupIntentBuilder;
         this.mediator = mediator;
     }
         
@@ -50,19 +54,12 @@ public class Post : EndpointBaseAsync
             new GetPaymentMethodForCustomerQuery(user.StripeCustomerId),
             cancellationToken);
 
-        var intent = await setupIntentService.CreateAsync(
-            new SetupIntentCreateOptions()
-            {
-                Confirm = false,
-                Customer = user.StripeCustomerId,
-                PaymentMethod = paymentMethod?.Id,
-                Usage = "off_session",
-                Metadata = new Dictionary<string, string>()
-                {
-                    { UniversalMetadataKeys.Type, UniversalMetadataTypes.PaymentMethodUpdateSetupIntent }
-                }
-            },
-            cancellationToken: cancellationToken);
+        var intent = await setupIntentBuilder
+            .WithUser(user)
+            .WithPaymentMethod(paymentMethod)
+            .WithIdempotencyKey(Guid.NewGuid().ToString())
+            .WithMetadata(new StripeAccountPaymentIntentMetadataBuilder())
+            .BuildAsync(cancellationToken);
 
         return new PostResponse(
             intent.ClientSecret,

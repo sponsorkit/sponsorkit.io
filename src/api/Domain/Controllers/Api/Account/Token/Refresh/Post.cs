@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options;
 using Sponsorkit.Infrastructure.Security.Jwt;

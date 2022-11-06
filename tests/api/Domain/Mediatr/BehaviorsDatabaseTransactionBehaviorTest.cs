@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Builders.Models;
+using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Mediatr;
@@ -28,12 +28,12 @@ public class DatabaseTransactionBehaviorTest
         {
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
                 await environment.Database.Context.SaveChangesAsync();
 
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                    await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
                     await environment.Database.Context.SaveChangesAsync();
                 }));
 
@@ -61,12 +61,12 @@ public class DatabaseTransactionBehaviorTest
         //Act
         await environment.Mediator.Send(new TestCommand(async () =>
         {
-            await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+            await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
             await environment.Database.Context.SaveChangesAsync();
 
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
                 await environment.Database.Context.SaveChangesAsync();
             }));
         }));
@@ -91,12 +91,12 @@ public class DatabaseTransactionBehaviorTest
         {
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
                 await environment.Database.Context.SaveChangesAsync();
 
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.Database.Context.Users.AddAsync(new TestUserBuilder());
+                    await environment.Database.Context.Users.AddAsync(await new TestUserBuilder().BuildAsync());
                     await environment.Database.Context.SaveChangesAsync();
 
                     throw new TestException();

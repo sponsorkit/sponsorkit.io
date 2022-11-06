@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;

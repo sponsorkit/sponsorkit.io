@@ -7,13 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
 using Octokit.Internal;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using IConnection = Octokit.GraphQL.IConnection;
 using Connection = Octokit.GraphQL.Connection;
-using User = Sponsorkit.Domain.Models.User;
+using User = Sponsorkit.Domain.Models.Database.User;
 using OctokitConnection = Octokit.Connection;
 
 namespace Sponsorkit.Infrastructure.GitHub;

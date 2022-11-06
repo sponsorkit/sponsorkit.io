@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.Logging.HttpContext;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;

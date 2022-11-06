@@ -7,7 +7,7 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers;
 public class SetupIntentSucceededEventHandlerTest
 {
     [TestMethod]
-    public async Task HandleAsync_CUstomerExistsInStripe_UpdatesDefaultPaymentMethod()
+    public async Task HandleAsync_CustomerExistsInStripe_UpdatesDefaultPaymentMethod()
     {
         //Arrange
             

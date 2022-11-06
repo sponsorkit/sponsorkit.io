@@ -27,7 +27,8 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options;
@@ -173,8 +174,9 @@ public sealed class IocRegistry
         var secretKey = stripeConfiguration?.SecretKey;
         var publishableKey = stripeConfiguration?.PublishableKey;
 
-        Services.AddSingleton<CustomerService>();
+        Services.AddSingleton<SetupIntentService>();
         Services.AddSingleton<AccountService>();
+        Services.AddSingleton<CustomerService>();
         Services.AddSingleton<PaymentMethodService>();
         Services.AddSingleton<SubscriptionService>();
         Services.AddSingleton<WebhookEndpointService>();
@@ -184,8 +186,13 @@ public sealed class IocRegistry
         Services.AddSingleton<CustomerBalanceTransactionService>();
         Services.AddSingleton<PlanService>();
         Services.AddSingleton<ChargeService>();
-        Services.AddSingleton<SetupIntentService>();
         Services.AddSingleton<PaymentIntentService>();
+
+        Services.AddTransient<StripeCustomerBuilder>();
+        Services.AddTransient<StripeSetupIntentBuilder>();
+        Services.AddTransient<StripePlanBuilder>();
+        Services.AddTransient<StripeSubscriptionBuilder>();
+        Services.AddTransient<StripePaymentMethodBuilder>();
 
         RegisterStripeEventHandler<SetupIntentSucceededEventHandler, SetupIntent>();
         RegisterStripeEventHandler<BountySetupIntentSucceededEventHandler, SetupIntent>();

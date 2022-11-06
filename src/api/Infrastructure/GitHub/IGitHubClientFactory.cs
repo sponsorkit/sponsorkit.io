@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Octokit;
 using IConnection = Octokit.GraphQL.IConnection;
+using User = Sponsorkit.Domain.Models.Database.User;
 
 namespace Sponsorkit.Infrastructure.GitHub;
 
@@ -16,5 +17,5 @@ public interface IGitHubClientFactory
         CancellationToken cancellationToken);
 
     Task<string?> GetAccessTokenFromUserIfPresentAsync(
-        Sponsorkit.Domain.Models.User user);
+        User user);
 }

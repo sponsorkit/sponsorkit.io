@@ -6,10 +6,10 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
-using Issue = Sponsorkit.Domain.Models.Issue;
-using Repository = Sponsorkit.Domain.Models.Repository;
+using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.Domain.Models.Database.Context;
+using Issue = Sponsorkit.Domain.Models.Database.Issue;
+using Repository = Sponsorkit.Domain.Models.Database.Repository;
 
 namespace Sponsorkit.Domain.Mediatr;
 
@@ -72,13 +72,13 @@ public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureG
             return issue;
         }
 
-        var newIssue = new IssueBuilder()
+        var newIssue = await new IssueBuilder()
             .WithGitHubInformation(
                 gitHubIssue.Id,
                 gitHubIssue.Number,
                 gitHubIssue.Title)
             .WithRepository(repository)
-            .Build();
+            .BuildAsync(cancellationToken);
         await dataContext.Issues.AddAsync(
             newIssue,
             cancellationToken);
@@ -96,11 +96,11 @@ public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureG
         if (repository != null)
             return repository;
 
-        var newRepository = new RepositoryBuilder()
+        var newRepository = await new RepositoryBuilder()
             .WithGitHubInformation(
                 gitHubRepository.Id,
                 gitHubRepository.Owner.Login, gitHubRepository.Name)
-            .Build();
+            .BuildAsync(cancellationToken);
         await dataContext.Repositories.AddAsync(
             newRepository,
             cancellationToken);

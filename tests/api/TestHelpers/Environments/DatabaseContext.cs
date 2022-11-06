@@ -3,8 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.Domain.Models.Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments;
 
@@ -51,10 +53,10 @@ public class DatabaseContext
     }
 
     private async Task<T> AddAsync<T>(
-        IModelBuilder<T> builder,
+        IAsyncModelBuilder<T> builder,
         Func<DataContext, DbSet<T>> setAccessor) where T : class
     {
-        var entity = builder.Build();
+        var entity = await builder.BuildAsync();
 
         var set = setAccessor(Context);
         await set.AddAsync(entity);

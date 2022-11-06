@@ -12,15 +12,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
 using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Builders;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Stripe;
 using GitHubUser = Octokit.User;
-using User = Sponsorkit.Domain.Models.User;
+using User = Sponsorkit.Domain.Models.Database.User;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub;
 
@@ -41,9 +43,8 @@ public class Post : EndpointBaseAsync
 
     private readonly IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor;
 
-    private readonly CustomerService customerService;
-
     private readonly DataContext dataContext;
+    private readonly StripeCustomerBuilder stripeCustomerBuilder;
 
     public Post(
         IGitHubClientFactory gitHubClientFactory,
@@ -52,13 +53,13 @@ public class Post : EndpointBaseAsync
         IAesEncryptionHelper aesEncryptionHelper,
         ITokenFactory tokenFactory,
         DataContext dataContext,
-        CustomerService customerService)
+        StripeCustomerBuilder stripeCustomerBuilder)
     {
         this.gitHubClientFactory = gitHubClientFactory;
         this.gitHubClient = gitHubClient;
         this.gitHubOptionsMonitor = gitHubOptionsMonitor;
         this.dataContext = dataContext;
-        this.customerService = customerService;
+        this.stripeCustomerBuilder = stripeCustomerBuilder;
         this.aesEncryptionHelper = aesEncryptionHelper;
         this.tokenFactory = tokenFactory;
     }
@@ -91,19 +92,22 @@ public class Post : EndpointBaseAsync
                     return existingUser;
                 }
 
-                var user = new UserBuilder()
+                var user = await new UserBuilder()
                     .WithEmail(await aesEncryptionHelper.EncryptAsync(email))
                     .WithStripeCustomerId(string.Empty)
                     .WithGitHub(
                         currentGitHubUser.Id,
                         currentGitHubUser.Login,
                         await aesEncryptionHelper.EncryptAsync(gitHubAccessToken))
-                    .Build();
+                    .BuildAsync(cancellationToken);
 
                 await dataContext.Users.AddAsync(user, cancellationToken);
                 await dataContext.SaveChangesAsync(cancellationToken);
 
-                var customer = await CreateStripeCustomerForUserAsync(user.Id, email);
+                var customer = await stripeCustomerBuilder
+                    .WithEmail(email)
+                    .WithUser(user)
+                    .BuildAsync(CancellationToken.None);
                 user.StripeCustomerId = customer.Id;
                 await dataContext.SaveChangesAsync(CancellationToken.None);
 
@@ -145,26 +149,6 @@ public class Post : EndpointBaseAsync
                 ClaimTypes.Role, 
                 "User")
         });
-    }
-
-    private async Task<Customer> CreateStripeCustomerForUserAsync(
-        Guid userId,
-        string email)
-    {
-        return await customerService.CreateAsync(
-            new CustomerCreateOptions()
-            {
-                Email = email,
-                Metadata = new Dictionary<string, string>()
-                {
-                    { "UserId", userId.ToString() }
-                }
-            },
-            new RequestOptions()
-            {
-                IdempotencyKey = $"stripe-customer-{userId.ToString()}"
-            },
-            cancellationToken: CancellationToken.None);
     }
 
     private async Task<GitHubUser> GetCurrentGitHubUserFromTokenAsync(string token)

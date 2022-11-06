@@ -2,6 +2,7 @@
 using AutoMapper;
 using Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Domain.Models.Database;
 
 namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get;
 

@@ -4,7 +4,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Sponsorkit.Domain.Models.Context;
+using Sponsorkit.Domain.Models.Database.Context;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Post;
