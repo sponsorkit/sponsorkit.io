@@ -80,6 +80,8 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
             await WaitForTunnelsToOpenAsync(ngrokService);
 
         await hostStartTask;
+        
+        await DatabaseMigrator.MigrateDatabaseForHostAsync(application);
     }
 
     private static async Task WaitForTunnelsToOpenAsync(INGrokHostedService ngrokService)
