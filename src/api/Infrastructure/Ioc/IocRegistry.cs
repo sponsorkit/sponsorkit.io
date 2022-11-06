@@ -27,6 +27,7 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
+using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
@@ -215,6 +216,8 @@ public sealed class IocRegistry
     [ExcludeFromCodeCoverage]
     private void ConfigureEntityFramework()
     {
+        Services.AddTransient<UserBuilder>();
+        
         Services.AddDbContextPool<DataContext>(
             optionsBuilder =>
             {
