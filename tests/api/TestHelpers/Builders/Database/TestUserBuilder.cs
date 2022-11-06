@@ -30,11 +30,9 @@ public class TestUserBuilder : UserBuilder
             .BuildAsync(cancellationToken);
         user.StripeCustomerId = stripeCustomer.Id;
 
-        await environment.Database.WithoutCachingAsync(async context =>
-        {
-            await context.Users.AddAsync(user, cancellationToken);
-            await context.SaveChangesAsync(cancellationToken);
-        });
+        var context = environment.Database.Context;
+        await context.Users.AddAsync(user, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return user;
     }

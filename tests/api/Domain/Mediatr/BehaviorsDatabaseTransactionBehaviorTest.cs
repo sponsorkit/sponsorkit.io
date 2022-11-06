@@ -28,13 +28,11 @@ public class DatabaseTransactionBehaviorTest
         {
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-                await environment.Database.Context.SaveChangesAsync();
+                await environment.Database.UserBuilder.BuildAsync();
 
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-                    await environment.Database.Context.SaveChangesAsync();
+                    await environment.Database.UserBuilder.BuildAsync();
                 }));
 
                 throw new TestException();
@@ -61,13 +59,11 @@ public class DatabaseTransactionBehaviorTest
         //Act
         await environment.Mediator.Send(new TestCommand(async () =>
         {
-            await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-            await environment.Database.Context.SaveChangesAsync();
+            await environment.Database.UserBuilder.BuildAsync();
 
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-                await environment.Database.Context.SaveChangesAsync();
+                await environment.Database.UserBuilder.BuildAsync();
             }));
         }));
 
@@ -91,13 +87,11 @@ public class DatabaseTransactionBehaviorTest
         {
             await environment.Mediator.Send(new TestCommand(async () =>
             {
-                await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-                await environment.Database.Context.SaveChangesAsync();
+                await environment.Database.UserBuilder.BuildAsync();
 
                 await environment.Mediator.Send(new TestCommand(async () =>
                 {
-                    await environment.Database.Context.Users.AddAsync(await environment.Database.UserBuilder.BuildAsync());
-                    await environment.Database.Context.SaveChangesAsync();
+                    await environment.Database.UserBuilder.BuildAsync();
 
                     throw new TestException();
                 }));
