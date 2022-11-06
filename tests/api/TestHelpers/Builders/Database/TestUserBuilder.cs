@@ -19,6 +19,7 @@ public class TestUserBuilder : UserBuilder
     {
         this.environment = environment;
 
+        WithId(Guid.NewGuid());
         WithStripeCustomerId(string.Empty);
         WithEmail("integration-test@example.com");
     }

@@ -70,8 +70,8 @@ public class AccountGet : EndpointBaseAsync
         var stripeCustomer = await customerService.GetAsync(
             user.StripeCustomerId, 
             cancellationToken: cancellationToken);
-        if (stripeCustomer == null)
-            throw new InvalidOperationException("User did not have a Stripe customer ID.");
+        if (stripeCustomer.Deleted == true)
+            return NoContent();
 
         var paymentMethod = await GetPaymentMethodAsync(stripeCustomer, cancellationToken);
 
