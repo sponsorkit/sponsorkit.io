@@ -131,7 +131,7 @@ public class BountySetupIntentSucceededEventHandlerTest
             .Send(
                 Arg.Is<UpsertIssueCommentCommand>(command => 
                     command.OwnerName == "some-owner-name" &&
-                    command.RepositoryName == "some-repository-name" &&
+                    command.RepositoryName == "some-name" &&
                     command.IssueNumber == 1339),
                 default);
     }
