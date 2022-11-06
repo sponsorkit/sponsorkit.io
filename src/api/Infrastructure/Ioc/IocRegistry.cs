@@ -172,8 +172,13 @@ public sealed class IocRegistry
     {
         var stripeConfiguration = Configuration.GetOptions<StripeOptions>();
 
-        var secretKey = stripeConfiguration?.SecretKey;
-        var publishableKey = stripeConfiguration?.PublishableKey;
+        var secretKey = stripeConfiguration.SecretKey;
+        if (secretKey == null)
+            throw new InvalidOperationException("Stripe secret key is not set.");
+
+        var publishableKey = stripeConfiguration.PublishableKey;
+        if (publishableKey == null)
+            throw new InvalidOperationException("Stripe publishable key is not set.");
 
         Services.AddSingleton<SetupIntentService>();
         Services.AddSingleton<AccountService>();

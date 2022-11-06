@@ -36,10 +36,10 @@ public class VerifyEmailTokenGetTest
         var token = tokenFactory.Create(new[]
         {
             new Claim(
-                JwtRegisteredClaimNames.Sub, 
+                JwtRegisteredClaimNames.Sub,
                 userId.ToString()),
             new Claim(
-                "newEmail", 
+                "newEmail",
                 "dummy@example.com"),
             new Claim(
                 ClaimTypes.Role,
@@ -48,11 +48,11 @@ public class VerifyEmailTokenGetTest
 
         //Act
         var response = await handler.HandleAsync(new(token, Guid.NewGuid()));
-            
+
         //Assert
         Assert.IsInstanceOfType(response, typeof(UnauthorizedResult));
     }
-        
+
     [TestMethod]
     public async Task HandleAsync_TokenHasNoEmail_ThrowsException()
     {
@@ -67,7 +67,7 @@ public class VerifyEmailTokenGetTest
         var token = tokenFactory.Create(new[]
         {
             new Claim(
-                JwtRegisteredClaimNames.Sub, 
+                JwtRegisteredClaimNames.Sub,
                 userId.ToString()),
             new Claim(
                 ClaimTypes.Role,
@@ -75,15 +75,15 @@ public class VerifyEmailTokenGetTest
         });
 
         //Act
-        var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => 
+        var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
             await handler.HandleAsync(new(token, Guid.NewGuid())));
-            
+
         //Assert
         Assert.AreEqual(
             "No email claim found.",
             exception.Message);
     }
-        
+
     [TestMethod]
     public async Task HandleAsync_StripeCustomerUpdateFailed_RollsBackDatabaseEmailChanges()
     {
@@ -94,38 +94,36 @@ public class VerifyEmailTokenGetTest
                 Arg.Any<string>(),
                 Arg.Any<CustomerUpdateOptions>())
             .Throws<TestException>();
-            
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeStripeCustomerService);
-            }
+            IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
-            
+
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
 
         var user = await environment.Database.UserBuilder
+            .WithoutStripeCustomer()
             .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(
-                JwtRegisteredClaimNames.Sub, 
+                JwtRegisteredClaimNames.Sub,
                 user.Id.ToString()),
             new Claim(
-                "newEmail", 
+                "newEmail",
                 "new-email@example.com"),
             new Claim(
                 ClaimTypes.Role,
                 "EmailVerification")
         });
-            
+
         var handler = environment.ServiceProvider.GetRequiredService<Get>();
 
         //Act
-        var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>  
+        var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
             await handler.HandleAsync(new(token, Guid.NewGuid())));
         Assert.IsNotNull(exception);
 
@@ -133,10 +131,10 @@ public class VerifyEmailTokenGetTest
         var updatedUser = await environment.Database.WithoutCachingAsync(async dataContext =>
             await dataContext.Users.SingleAsync());
         Assert.AreEqual(
-            "old-email@example.com", 
+            "old-email@example.com",
             await aesEncryptionHelper.DecryptAsync(updatedUser.EncryptedEmail));
     }
-        
+
     [TestMethod]
     public async Task HandleAsync_CancellationSignaledBeforeDatabaseUpdate_CancelsDatabaseOperationBeforeStripeCustomerUpdate()
     {
@@ -144,37 +142,35 @@ public class VerifyEmailTokenGetTest
         var fakeStripeCustomerService = Substitute.ForPartsOf<CustomerService>();
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeStripeCustomerService);
-            }
+            IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
-            
+
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        
+
         var user = await environment.Database.UserBuilder
+            .WithoutStripeCustomer()
             .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(
-                JwtRegisteredClaimNames.Sub, 
+                JwtRegisteredClaimNames.Sub,
                 user.Id.ToString()),
             new Claim(
-                "newEmail", 
+                "newEmail",
                 "new-email@example.com"),
             new Claim(
                 ClaimTypes.Role,
                 "EmailVerification")
         });
-            
+
         var handler = environment.ServiceProvider.GetRequiredService<Get>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
 
         //Act
-        var exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>  
+        var exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
             await handler.HandleAsync(
                 new(token, Guid.NewGuid()),
                 cancellationTokenSource.Token));
@@ -189,7 +185,7 @@ public class VerifyEmailTokenGetTest
                 default,
                 default);
     }
-        
+
     [TestMethod]
     public async Task HandleAsync_CancellationSignaledBeforeStripeCustomerUpdate_DoesNotCancelStripeCustomerUpdate()
     {
@@ -200,33 +196,31 @@ public class VerifyEmailTokenGetTest
                 Arg.Any<string>(),
                 Arg.Any<CustomerUpdateOptions>())
             .Returns(new Customer());
-            
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeStripeCustomerService);
-            }
+            IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
-            
+
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        
+
         var user = await environment.Database.UserBuilder
+            .WithoutStripeCustomer()
             .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
             new Claim(
-                JwtRegisteredClaimNames.Sub, 
+                JwtRegisteredClaimNames.Sub,
                 user.Id.ToString()),
             new Claim(
-                "newEmail", 
+                "newEmail",
                 "new-email@example.com"),
             new Claim(
                 ClaimTypes.Role,
                 "EmailVerification")
         });
-            
+
         var handler = environment.ServiceProvider.GetRequiredService<Get>();
 
         var cancellationTokenSource = new CancellationTokenSource();

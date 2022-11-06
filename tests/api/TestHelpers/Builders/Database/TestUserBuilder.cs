@@ -12,6 +12,8 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 public class TestUserBuilder : UserBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
+    
+    private bool skipCustomerCreation;
 
     public TestUserBuilder(IIntegrationTestEnvironment environment) : base(environment.EncryptionHelper)
     {
@@ -21,14 +23,23 @@ public class TestUserBuilder : UserBuilder
         WithEmail("integration-test@example.com");
     }
 
+    public TestUserBuilder WithoutStripeCustomer()
+    {
+        skipCustomerCreation = true;
+        return this;
+    }
+
     public override async Task<User> BuildAsync(CancellationToken cancellationToken = default)
     {
         var user = await base.BuildAsync(cancellationToken);
 
-        var stripeCustomer = await environment.Stripe.CustomerBuilder
-            .WithUser(user)
-            .BuildAsync(cancellationToken);
-        user.StripeCustomerId = stripeCustomer.Id;
+        if (!skipCustomerCreation)
+        {
+            var stripeCustomer = await environment.Stripe.CustomerBuilder
+                .WithUser(user)
+                .BuildAsync(cancellationToken);
+            user.StripeCustomerId = stripeCustomer.Id;
+        }
 
         var context = environment.Database.Context;
         await context.Users.AddAsync(user, cancellationToken);

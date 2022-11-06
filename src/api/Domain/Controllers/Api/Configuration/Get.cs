@@ -1,4 +1,5 @@
-﻿using Ardalis.ApiEndpoints;
+﻿using System;
+using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -30,6 +31,9 @@ public class Get : EndpointBaseSync
     [AllowAnonymous]
     public override ActionResult<Response> Handle()
     {
+        if (stripeOptions.CurrentValue.PublishableKey == null)
+            throw new InvalidOperationException("Stripe publishable key is missing.");
+        
         return new Response(
             stripeOptions.CurrentValue.PublishableKey,
             gitHubOptions.CurrentValue.OAuth.ClientId);
