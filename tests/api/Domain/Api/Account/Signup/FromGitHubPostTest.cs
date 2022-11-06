@@ -110,8 +110,7 @@ public class FromGitHubPostTest
             .WithGitHub(
                 gitHubUserId,
                 "dummy",
-                await environment.EncryptionHelper.EncryptAsync(
-                    "some-old-github-token"))
+                "some-old-github-token")
             .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<Post>();
@@ -182,8 +181,7 @@ public class FromGitHubPostTest
             .WithGitHub(
                 gitHubUserId,
                 "dummy",
-                await environment.EncryptionHelper.EncryptAsync(
-                    "some-old-github-token"))
+                "some-old-github-token")
             .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<Post>();

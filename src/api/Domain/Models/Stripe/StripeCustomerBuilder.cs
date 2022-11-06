@@ -52,6 +52,7 @@ public class StripeCustomerBuilder : AsyncModelBuilder<Customer>
             new CustomerCreateOptions()
             {
                 Email = email,
+                InvoiceSettings = new CustomerInvoiceSettingsOptions(),
                 Metadata = new Dictionary<string, string>()
                 {
                     { "UserId", user.Id.ToString() }

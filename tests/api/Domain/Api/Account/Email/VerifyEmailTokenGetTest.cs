@@ -107,8 +107,7 @@ public class VerifyEmailTokenGetTest
         var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
 
         var user = await environment.Database.UserBuilder
-            .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
@@ -152,11 +151,9 @@ public class VerifyEmailTokenGetTest
         });
             
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
-
+        
         var user = await environment.Database.UserBuilder
-            .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {
@@ -213,11 +210,9 @@ public class VerifyEmailTokenGetTest
         });
             
         var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IAesEncryptionHelper>();
-
+        
         var user = await environment.Database.UserBuilder
-            .WithEmail(
-                await aesEncryptionHelper.EncryptAsync("old-email@example.com"))
+            .WithEmail("old-email@example.com")
             .BuildAsync();
         var token = tokenFactory.Create(new[]
         {

@@ -89,7 +89,7 @@ public class AccountGet : EndpointBaseAsync
         Customer stripeCustomer, 
         CancellationToken cancellationToken)
     {
-        var paymentMethodId = stripeCustomer.InvoiceSettings.DefaultPaymentMethodId;
+        var paymentMethodId = stripeCustomer.InvoiceSettings?.DefaultPaymentMethodId;
         var paymentMethod = paymentMethodId != null
             ? await paymentMethodService.GetAsync(
                 paymentMethodId,

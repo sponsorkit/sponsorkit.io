@@ -13,12 +13,12 @@ public class TestUserBuilder : UserBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
 
-    public TestUserBuilder(IIntegrationTestEnvironment environment)
+    public TestUserBuilder(IIntegrationTestEnvironment environment) : base(environment.EncryptionHelper)
     {
         this.environment = environment;
 
-        WithEmail(Array.Empty<byte>());
         WithStripeCustomerId(string.Empty);
+        WithEmail("integration-test@example.com");
     }
 
     public override async Task<User> BuildAsync(CancellationToken cancellationToken = default)

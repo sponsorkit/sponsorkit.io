@@ -2,24 +2,32 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class UserBuilder : AsyncModelBuilder<User>
 {
+    private readonly IAesEncryptionHelper encryptionHelper;
+
     private Guid id;
-        
-    private byte[]? encryptedEmail;
-        
+
+    private string? email;
+
     private string? stripeCustomerId;
     private string? stripeConnectId;
 
-    private UserGitHubInformation? gitHub;
-        
     private readonly DateTimeOffset createdAt;
-        
-    public UserBuilder()
+
+    private long? gitHubId;
+    private string? gitHubUsername;
+    private string? gitHubAccessToken;
+
+    public UserBuilder(
+        IAesEncryptionHelper encryptionHelper)
     {
+        this.encryptionHelper = encryptionHelper;
+
         createdAt = DateTimeOffset.UtcNow;
     }
 
@@ -29,9 +37,9 @@ public class UserBuilder : AsyncModelBuilder<User>
         return this;
     }
 
-    public UserBuilder WithEmail(byte[] encryptedEmail)
+    public UserBuilder WithEmail(string email)
     {
-        this.encryptedEmail = encryptedEmail;
+        this.email = email;
         return this;
     }
 
@@ -48,37 +56,43 @@ public class UserBuilder : AsyncModelBuilder<User>
     }
 
     public UserBuilder WithGitHub(
-        long gitHubId,
+        long id,
         string username,
-        byte[] encryptedAccessToken)
+        string accessToken)
     {
-        gitHub = new UserGitHubInformation()
-        {
-            Id = gitHubId,
-            EncryptedAccessToken = encryptedAccessToken,
-            Username = username
-        };
+        gitHubId = id;
+        gitHubUsername = username;
+        gitHubAccessToken = accessToken;
         return this;
     }
 
-    public override Task<User> BuildAsync(CancellationToken cancellationToken = default)
+    public override async Task<User> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (encryptedEmail == null)
+        if (email == null)
             throw new InvalidOperationException("E-mail must be specified.");
 
         if (stripeCustomerId == null)
             throw new InvalidOperationException("Stripe customer ID must be specified.");
 
+        var gitHub = gitHubId != null && gitHubUsername != null && gitHubAccessToken != null
+            ? new UserGitHubInformation()
+            {
+                Id = gitHubId.Value,
+                Username = gitHubUsername,
+                EncryptedAccessToken = await encryptionHelper.EncryptAsync(gitHubAccessToken)
+            }
+            : null;
+
         var user = new User()
         {
             Id = id,
-            EncryptedEmail = encryptedEmail,
+            EncryptedEmail = await encryptionHelper.EncryptAsync(email),
             StripeCustomerId = stripeCustomerId,
             StripeConnectId = stripeConnectId,
             CreatedAt = createdAt,
             GitHub = gitHub
         };
 
-        return Task.FromResult(user);
+        return user;
     }
 }

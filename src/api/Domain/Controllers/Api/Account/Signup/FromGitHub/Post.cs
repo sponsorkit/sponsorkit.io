@@ -38,30 +38,33 @@ public class Post : EndpointBaseAsync
 {
     private readonly IGitHubClientFactory gitHubClientFactory;
     private readonly IGitHubClient gitHubClient;
-    private readonly IAesEncryptionHelper aesEncryptionHelper;
     private readonly ITokenFactory tokenFactory;
+    private readonly IAesEncryptionHelper encryptionHelper;
 
     private readonly IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor;
 
     private readonly DataContext dataContext;
     private readonly StripeCustomerBuilder stripeCustomerBuilder;
+    private readonly UserBuilder userBuilder;
 
     public Post(
         IGitHubClientFactory gitHubClientFactory,
         IGitHubClient gitHubClient,
         IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor,
-        IAesEncryptionHelper aesEncryptionHelper,
         ITokenFactory tokenFactory,
+        IAesEncryptionHelper encryptionHelper,
         DataContext dataContext,
-        StripeCustomerBuilder stripeCustomerBuilder)
+        StripeCustomerBuilder stripeCustomerBuilder,
+        UserBuilder userBuilder)
     {
         this.gitHubClientFactory = gitHubClientFactory;
         this.gitHubClient = gitHubClient;
         this.gitHubOptionsMonitor = gitHubOptionsMonitor;
         this.dataContext = dataContext;
         this.stripeCustomerBuilder = stripeCustomerBuilder;
-        this.aesEncryptionHelper = aesEncryptionHelper;
+        this.userBuilder = userBuilder;
         this.tokenFactory = tokenFactory;
+        this.encryptionHelper = encryptionHelper;
     }
 
     [HttpPost("account/signup/from-github")]
@@ -92,13 +95,13 @@ public class Post : EndpointBaseAsync
                     return existingUser;
                 }
 
-                var user = await new UserBuilder()
-                    .WithEmail(await aesEncryptionHelper.EncryptAsync(email))
+                var user = await userBuilder
+                    .WithEmail(email)
                     .WithStripeCustomerId(string.Empty)
                     .WithGitHub(
                         currentGitHubUser.Id,
                         currentGitHubUser.Login,
-                        await aesEncryptionHelper.EncryptAsync(gitHubAccessToken))
+                        gitHubAccessToken)
                     .BuildAsync(cancellationToken);
 
                 await dataContext.Users.AddAsync(user, cancellationToken);
@@ -131,7 +134,7 @@ public class Post : EndpointBaseAsync
             Username = currentGitHubUser.Login
         };
 
-        existingUser.GitHub.EncryptedAccessToken = await aesEncryptionHelper.EncryptAsync(gitHubAccessToken);
+        existingUser.GitHub.EncryptedAccessToken = await encryptionHelper.EncryptAsync(gitHubAccessToken);
         await dataContext.SaveChangesAsync(cancellationToken);
     }
 

@@ -70,6 +70,9 @@ public class AesEncryptionHelper : IAesEncryptionHelper
 
     public async Task<string> DecryptAsync(byte[] cipherText)
     {
+        if (cipherText.Length == 0)
+            throw new InvalidOperationException("Cipher-text was not set.");
+        
         var key = encryptionOptionsMonitor.CurrentValue.Pepper;
         if (key == null)
             throw new InvalidOperationException("Could not find a pepper in the configuration of the application.");
