@@ -25,7 +25,7 @@ var builder = Startup.CreateWebApplicationBuilder(new WebApplicationOptions()
 builder.WebHost.UseNGrok(new NgrokOptions()
 {
     Disable = !Debugger.IsAttached,
-    ShowNGrokWindow = false,
+    ShowNGrokWindow = true,
     ApplicationHttpUrl = "http://localhost:5000"
 });
 

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,22 +21,18 @@ public class PaymentMethodIntentPostTest
         var user = await environment.Database.UserBuilder
             .WithStripeCustomer(environment.Stripe.CustomerBuilder
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder
-                    .WithCvc()))
+                    .WithCvc("123")
+                    .WithExpiry(10, DateTime.Now.Year + 1)
+                    .WithCardNumber(4242_4242_4242_4242.ToString())))
             .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<PaymentMethodIntentPost>();
         handler.FakeAuthentication(user.Id);
 
-        var stripeCustomerService = environment.Stripe.CustomerService;
-        await stripeCustomerService.DeleteAsync(user.StripeCustomerId);
-
-        var customer = await stripeCustomerService.GetAsync(user.StripeCustomerId);
-        Assert.IsTrue(customer.Deleted);
-
         //Act
         var result = await handler.HandleAsync();
-
+    
         //Assert
-        Assert.IsInstanceOfType(result.Result, typeof(NoContentResult));
+        Assert.IsNotNull(result.ToResponseObject().ExistingPaymentMethodId);
     }
 }

@@ -41,7 +41,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
             .UseUrls("https://*:14569;http://*:14568")
             .UseNGrok(new NgrokOptions()
             {
-                ShowNGrokWindow = false,
+                ShowNGrokWindow = true,
                 Disable = false,
                 ApplicationHttpUrl = "http://localhost:14568"
             })

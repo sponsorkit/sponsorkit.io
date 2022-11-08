@@ -14,7 +14,7 @@ public static class Extensions
     public static TResponse ToResponseObject<TResponse>(this ActionResult<TResponse> httpResponseMessage) where TResponse : class
     {
         var objectResult = httpResponseMessage.Result as ObjectResult;
-        var value = objectResult?.Value as TResponse;
+        var value = objectResult?.Value as TResponse ?? httpResponseMessage.Value;
         if (objectResult == null || (value == null && objectResult?.Value != null))
         {
             throw new InvalidOperationException(
