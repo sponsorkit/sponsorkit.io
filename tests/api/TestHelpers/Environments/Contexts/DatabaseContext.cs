@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Tests.TestHelpers.Builders.Database;
-using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 

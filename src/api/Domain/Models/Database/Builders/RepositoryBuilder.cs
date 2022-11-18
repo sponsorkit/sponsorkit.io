@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Sponsorkit.Domain.Models.Stripe;
 
 namespace Sponsorkit.Domain.Models.Database.Builders;
 

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
 using Ardalis.Result;
@@ -14,7 +12,6 @@ using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Domain.Models.Stripe.Metadata;
 using Sponsorkit.Infrastructure.AspNet;
-using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 

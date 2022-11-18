@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using FluffySpoon.AspNet.NGrok;
+using FluffySpoon.Ngrok;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using NSubstitute;
-using Serilog;
 using Sponsorkit.Infrastructure;
-using Sponsorkit.Infrastructure.Ioc;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
@@ -39,12 +34,6 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         });
         builder.WebHost
             .UseUrls("https://*:14569;http://*:14568")
-            .UseNGrok(new NgrokOptions()
-            {
-                ShowNGrokWindow = true,
-                Disable = false,
-                ApplicationHttpUrl = "http://localhost:14568"
-            })
             .ConfigureServices((context, services) =>
             {
                 var environment = context.HostingEnvironment;
@@ -75,19 +64,13 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         var hostStartTask = application.StartAsync(cancellationTokenSource.Token);
         await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
 
-        var ngrokService = RootProvider.GetService<INGrokHostedService>();
+        var ngrokService = RootProvider.GetService<INgrokService>();
         if (ngrokService != null)
-            await WaitForTunnelsToOpenAsync(ngrokService);
+            await ngrokService.WaitUntilReadyAsync(cancellationTokenSource.Token);
 
         await hostStartTask;
         
         await DatabaseMigrator.MigrateDatabaseForHostAsync(application);
-    }
-
-    private static async Task WaitForTunnelsToOpenAsync(INGrokHostedService ngrokService)
-    {
-        var tunnels = await ngrokService.GetTunnelsAsync();
-        Console.WriteLine("Tunnels {0} are now open.", tunnels.Select(x => x.PublicUrl));
     }
 
     private static async Task WaitForUrlToBeAvailable(Task hostStartTask, string url)

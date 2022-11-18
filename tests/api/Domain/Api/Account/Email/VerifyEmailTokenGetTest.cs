@@ -13,7 +13,6 @@ using Sponsorkit.Domain.Controllers.Api.Account.Email.VerifyEmailToken;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Stripe;
 

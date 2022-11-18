@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,7 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Database.Context;
@@ -20,7 +18,6 @@ using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options.GitHub;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.Security.Jwt;
-using Stripe;
 using GitHubUser = Octokit.User;
 using User = Sponsorkit.Domain.Models.Database.User;
 

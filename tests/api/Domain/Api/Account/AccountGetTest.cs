@@ -1,16 +1,11 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using Amazon.SimpleEmailV2.Model;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using Sponsorkit.Domain.Controllers.Api.Account;
-using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Stripe;
 

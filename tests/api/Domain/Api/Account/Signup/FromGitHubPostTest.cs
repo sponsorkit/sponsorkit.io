@@ -10,7 +10,6 @@ using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Security.Jwt;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;

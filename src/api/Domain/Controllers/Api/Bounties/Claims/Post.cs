@@ -13,7 +13,6 @@ using Octokit;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr.Email;
 using Sponsorkit.Domain.Mediatr.Email.Templates.BountyClaimRequest;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Database.Context;

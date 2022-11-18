@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
@@ -7,13 +6,11 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Domain.Models.Stripe.Metadata;
 using Sponsorkit.Infrastructure.AspNet;
-using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.PaymentMethod.Intent;
 

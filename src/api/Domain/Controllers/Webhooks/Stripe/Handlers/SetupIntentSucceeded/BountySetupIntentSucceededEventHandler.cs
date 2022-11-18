@@ -12,7 +12,6 @@ using Sponsorkit.Domain.Controllers.Api.Bounties;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Database.Context;

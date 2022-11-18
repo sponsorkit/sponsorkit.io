@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Domain.Models.Database.Builders;

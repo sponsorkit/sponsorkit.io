@@ -9,7 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using FluffySpoon.AspNet.NGrok;
+using FluffySpoon.Ngrok;
+using FluffySpoon.Ngrok.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,72 +22,21 @@ using Stripe;
 
 namespace Sponsorkit.Infrastructure.AspNet.HostedServices;
 
-[ExcludeFromCodeCoverage]
-public class DockerDependencyService : IDockerDependencyService, IHostedService
+public class StripeWebhookNgrokLifetimeHook : INgrokLifetimeHook
 {
-    private readonly IServiceProvider serviceProvider;
+    private readonly WebhookEndpointService? webhookEndpointService;
+    private readonly IOptionsMonitor<StripeOptions>? stripeOptions;
 
-    private const string SqlPassword = "hNxX9Qz2";
-
-    private DataContext? dataContext;
-    private CustomerService? customerService;
-    private PlanService? planService;
-    private WebhookEndpointService? webhookEndpointService;
-    private INGrokHostedService? ngrokHostedService;
-    private IOptionsMonitor<StripeOptions>? stripeOptions;
-
-    private DockerClient? docker;
-
-    public DockerDependencyService(
-        IServiceProvider serviceProvider)
+    public StripeWebhookNgrokLifetimeHook(
+        WebhookEndpointService webhookEndpointService, 
+        IOptionsMonitor<StripeOptions> stripeOptions)
     {
-        this.serviceProvider = serviceProvider;
-
-        InitializeDocker();
+        this.webhookEndpointService = webhookEndpointService;
+        this.stripeOptions = stripeOptions;
     }
 
-    private void InitializeDocker()
+    public async Task OnCreatedAsync(TunnelResponse tunnel, CancellationToken cancellationToken)
     {
-        if (EnvironmentHelper.IsRunningInContainer)
-            return;
-
-        using var dockerConfiguration = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine"));
-        docker = dockerConfiguration.CreateClient();
-    }
-
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-
-        dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-        customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
-        planService = scope.ServiceProvider.GetRequiredService<PlanService>();
-        webhookEndpointService = scope.ServiceProvider.GetRequiredService<WebhookEndpointService>();
-        stripeOptions = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<StripeOptions>>();
-
-        ngrokHostedService = scope.ServiceProvider.GetService<INGrokHostedService>();
-
-        if (ngrokHostedService != null)
-            ngrokHostedService.Ready += SetupStripeWebhooksAsync;
-
-        await InitializeDockerAsync();
-        await WaitForHealthyDockerDependenciesAsync();
-        await PrepareDatabaseAsync();
-        await CleanupStripeDataAsync();
-    }
-
-    private async Task CleanupStripeDataAsync()
-    {
-        await Task.WhenAll(
-            CleanupStripeCustomersAsync(),
-            CleanupStripePlansAsync());
-    }
-
-    private async void SetupStripeWebhooksAsync(IEnumerable<FluffySpoon.AspNet.NGrok.NGrokModels.Tunnel> tunnels)
-    {
-        if (ngrokHostedService == null)
-            throw new InvalidOperationException("NGrok service has not been initialized yet.");
-
         if (webhookEndpointService == null)
             throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
@@ -95,27 +45,26 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
 
         await CleanupStripeWebhooksAsync();
 
-        var sslTunnel = tunnels.Single(x => x.PublicUrl.StartsWith("https://", StringComparison.InvariantCulture));
-
-        var webhookUrl = $"{sslTunnel.PublicUrl}/webhooks/stripe";
+        var webhookUrl = $"{tunnel.PublicUrl}/webhooks/stripe";
         Console.WriteLine($"Created Stripe webhook towards {webhookUrl}");
 
-        var webhook = await webhookEndpointService.CreateAsync(new WebhookEndpointCreateOptions()
-        {
-            Url = webhookUrl,
-            ApiVersion = "2022-08-01",
-            EnabledEvents = new List<string>()
+        var webhook = await webhookEndpointService.CreateAsync(
+            new WebhookEndpointCreateOptions()
             {
-                "*"
-            }
-        });
+                Url = webhookUrl,
+                ApiVersion = "2022-08-01",
+                EnabledEvents = new List<string>()
+                {
+                    "*"
+                }
+            }, 
+            cancellationToken: cancellationToken);
 
         stripeOptions.CurrentValue.WebhookSecretKey = webhook.Secret;
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public async Task OnDestroyedAsync(TunnelResponse tunnel, CancellationToken cancellationToken)
     {
-        docker?.Dispose();
         await CleanupStripeWebhooksAsync();
     }
 
@@ -148,6 +97,64 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
             //ignore cleanup errors
             Console.WriteLine("An error occured on cleanup: " + ex);
         }
+    }
+}
+
+[ExcludeFromCodeCoverage]
+public class DockerDependencyService : IDockerDependencyService, IHostedService
+{
+    private readonly IServiceProvider serviceProvider;
+
+    private const string SqlPassword = "hNxX9Qz2";
+
+    private DataContext? dataContext;
+    private CustomerService? customerService;
+    private PlanService? planService;
+
+    private DockerClient? docker;
+
+    public DockerDependencyService(
+        IServiceProvider serviceProvider)
+    {
+        this.serviceProvider = serviceProvider;
+
+        InitializeDocker();
+    }
+
+    private void InitializeDocker()
+    {
+        if (EnvironmentHelper.IsRunningInContainer)
+            return;
+
+        using var dockerConfiguration = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine"));
+        docker = dockerConfiguration.CreateClient();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using var scope = serviceProvider.CreateScope();
+
+        dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+        customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
+        planService = scope.ServiceProvider.GetRequiredService<PlanService>();
+
+        await InitializeDockerAsync();
+        await WaitForHealthyDockerDependenciesAsync();
+        await PrepareDatabaseAsync();
+        await CleanupStripeDataAsync();
+    }
+
+    private async Task CleanupStripeDataAsync()
+    {
+        await Task.WhenAll(
+            CleanupStripeCustomersAsync(),
+            CleanupStripePlansAsync());
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        docker?.Dispose();
+        return Task.CompletedTask;
     }
 
     private async Task CleanupStripePlansAsync()

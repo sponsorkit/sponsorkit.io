@@ -27,7 +27,8 @@
     <PackageReference Include="AWSSDK.SimpleEmailV2" Version="3.7.101.2" />
     <PackageReference Include="Destructurama.Attributed" Version="3.0.0" />
     <PackageReference Include="Docker.DotNet" Version="3.125.12" />
-    <PackageReference Include="FluffySpoon.AspNet.NGrok" Version="1.75.0" />
+    <PackageReference Include="FluffySpoon.Ngrok" Version="1.116.0" />
+    <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.116.0" />
     <PackageReference Include="Flurl" Version="3.0.6" />
     <PackageReference Include="Flurl.Http" Version="3.2.4" />
     <PackageReference Include="MediatR" Version="11.0.0" />

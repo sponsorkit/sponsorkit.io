@@ -12,8 +12,6 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
-using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Stripe;
 

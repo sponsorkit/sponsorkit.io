@@ -7,13 +7,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Models;
-using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Infrastructure.AspNet;
 using Sponsorkit.Infrastructure.Security.Encryption;
-using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup;
 

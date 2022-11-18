@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Stripe.Metadata;
-using Sponsorkit.Infrastructure.Security.Encryption;
 using Stripe;
 
 namespace Sponsorkit.Domain.Models.Stripe;

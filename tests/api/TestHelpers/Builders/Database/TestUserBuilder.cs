@@ -5,7 +5,6 @@ using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments;
-using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 

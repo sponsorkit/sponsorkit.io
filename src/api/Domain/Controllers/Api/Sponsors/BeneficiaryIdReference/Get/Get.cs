@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models;
 using Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor;
-using Sponsorkit.Domain.Models;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Context;
 

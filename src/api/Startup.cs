@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Mime;
 using System.Text.Json;
-using FluffySpoon.AspNet.NGrok;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
@@ -42,7 +40,6 @@ public static class Startup
         Log.Logger = LoggerFactory.BuildWebApplicationLogger(webApplication.Configuration);
 
         webApplication.UseForwardedHeaders();
-        webApplication.UseNGrokAutomaticUrlDetection();
         webApplication.UseResponseCompression();
         webApplication.UseRouting();
         webApplication.UseCors();

@@ -7,12 +7,12 @@ using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmailV2;
-using FluffySpoon.AspNet.NGrok;
+using FluffySpoon.AspNet.Ngrok;
+using FluffySpoon.Ngrok;
 using Flurl.Http.Configuration;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -267,7 +267,8 @@ public sealed class IocRegistry
 
     private void ConfigureNGrok()
     {
-        Services.AddNGrok();
+        Services.AddNgrokHostedService();
+        Services.AddSingleton<INgrokLifetimeHook, StripeWebhookNgrokLifetimeHook>();
     }
 
     private void ConfigureAuthentication()

@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Mediatr.Behaviors.Database;
 using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Mediatr;
