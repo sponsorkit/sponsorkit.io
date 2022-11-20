@@ -14,7 +14,7 @@ public class TestRepository : Repository
         default,
         default,
         default,
-        new TestUser(),
+        new TestGitHubUser(),
         "owner-name",
         default,
         default,

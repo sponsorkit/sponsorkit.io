@@ -15,6 +15,9 @@ public static class Extensions
     {
         var objectResult = httpResponseMessage.Result as ObjectResult;
         var value = objectResult?.Value as TResponse ?? httpResponseMessage.Value;
+        if (value != null)
+            return value;
+        
         if (objectResult == null || (value == null && objectResult?.Value != null))
         {
             throw new InvalidOperationException(

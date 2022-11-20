@@ -34,10 +34,10 @@ public class LinkHelper
     }
 
     public static string GetBountyLink(
-        string OwnerName,
-        string RepositoryName,
-        int Number)
+        string ownerName,
+        string repositoryName,
+        int number)
     {
-        return GetWebUrl($"/bounties/view?owner={Url.Encode(OwnerName)}&repo={Url.Encode(RepositoryName)}&number={Number}");
+        return GetWebUrl($"/bounties/view?owner={Url.Encode(ownerName)}&repo={Url.Encode(repositoryName)}&number={number}");
     }
 }

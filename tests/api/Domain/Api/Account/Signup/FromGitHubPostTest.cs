@@ -86,7 +86,7 @@ public class FromGitHubPostTest
         var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestUser()
+            .Returns(new TestGitHubUser()
             {
                 Id = gitHubUserId
             });
@@ -151,7 +151,7 @@ public class FromGitHubPostTest
         var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestUser()
+            .Returns(new TestGitHubUser()
             {
                 Id = gitHubUserId
             });
@@ -217,13 +217,9 @@ public class FromGitHubPostTest
                 default,
                 default));
 
-        var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestUser()
-            {
-                Id = gitHubUserId
-            });
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
 
         var fakeTokenFactory = Substitute.For<ITokenFactory>();
         fakeTokenFactory
@@ -275,13 +271,9 @@ public class FromGitHubPostTest
                 default,
                 default));
 
-        var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestUser()
-            {
-                Id = gitHubUserId
-            });
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
 
         var fakeTokenFactory = Substitute.For<ITokenFactory>();
         fakeTokenFactory
@@ -341,7 +333,7 @@ public class FromGitHubPostTest
         var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestUser()
+            .Returns(new TestGitHubUser()
             {
                 Id = gitHubUserId
             });

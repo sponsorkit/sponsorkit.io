@@ -7,6 +7,14 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
 public class TestGitHubUserBuilder : AsyncModelBuilder<User>
 {
+    private int id;
+
+    public TestGitHubUserBuilder WithId(int id)
+    {
+        this.id = id;
+        return this;
+    }
+    
     public override Task<User> BuildAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new User(
@@ -24,7 +32,7 @@ public class TestGitHubUserBuilder : AsyncModelBuilder<User>
             default,
             default,
             default,
-            default,
+            id,
             default,
             default,
             default,
