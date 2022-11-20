@@ -56,7 +56,7 @@ public class FromGitHubPostTest
             }
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -112,7 +112,7 @@ public class FromGitHubPostTest
                 "some-old-github-token")
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -183,7 +183,7 @@ public class FromGitHubPostTest
                 "some-old-github-token")
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -241,7 +241,7 @@ public class FromGitHubPostTest
             }
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -297,7 +297,7 @@ public class FromGitHubPostTest
 
         var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -330,13 +330,9 @@ public class FromGitHubPostTest
                 default,
                 default));
 
-        var gitHubUserId = 1337;
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestGitHubUser()
-            {
-                Id = gitHubUserId
-            });
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
 
         var fakeTokenFactory = Substitute.For<ITokenFactory>();
         fakeTokenFactory
@@ -358,7 +354,7 @@ public class FromGitHubPostTest
             }
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Post>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
@@ -380,21 +376,129 @@ public class FromGitHubPostTest
     public async Task HandleAsync_CancellationSignaledBeforeStripeCustomerCreation_DoesNotCancelStripeCustomerCreation()
     {
         //Arrange
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        fakeGitHubClient.Oauth
+            .CreateAccessToken(
+                Arg.Is<OauthTokenRequest>(request => 
+                    request.Code == "some-github-authentication-code"))
+            .Returns(new OauthToken(
+                default,
+                "some-new-github-token",
+                default,
+                default,
+                default,
+                default));
+
+        fakeGitHubClient.User
+            .Current()
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
+
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        fakeGitHubClientFactory
+            .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
+            .Returns(fakeGitHubClient);
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
+
+        var cancellationTokenSource = new CancellationTokenSource();
+        environment.Database.Context.SavedChanges += (_, _) =>
+        {
+            cancellationTokenSource.Cancel();
+        };
             
         //Act
+        await handler.HandleAsync(
+            new("some-github-authentication-code"),
+            cancellationTokenSource.Token);
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
+        
+        var userCount = await environment.Database.WithoutCachingAsync(async dataContext =>
+            await dataContext.Users.CountAsync(default));
+        Assert.AreEqual(1, userCount);
     }
         
     [TestMethod]
     public async Task HandleAsync_CancellationSignaledBeforeStripeCustomerCreation_DoesNotCancelDatabasePersistence()
     {
         //Arrange
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        fakeGitHubClient.Oauth
+            .CreateAccessToken(
+                Arg.Is<OauthTokenRequest>(request => 
+                    request.Code == "some-github-authentication-code"))
+            .Returns(new OauthToken(
+                default,
+                "some-new-github-token",
+                default,
+                default,
+                default,
+                default));
+
+        fakeGitHubClient.User
+            .Current()
+            .Returns(new TestGitHubUserBuilder().BuildAsync());
+
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        fakeGitHubClientFactory
+            .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
+            .Returns(fakeGitHubClient);
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+
+        var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
+
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
+
+        var cancellationTokenSource = new CancellationTokenSource();
+        environment.Database.Context.SavedChanges += (_, _) =>
+        {
+            cancellationTokenSource.Cancel();
+        };
             
         //Act
+        var result = await handler.HandleAsync(
+            new("some-github-authentication-code"),
+            cancellationTokenSource.Token);
+        Assert.IsNotNull(result.Value);
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
+        
+        var user = await environment.Database.WithoutCachingAsync(async dataContext =>
+            await dataContext.Users.SingleAsync(default));
+        Assert.IsNotNull(user.StripeCustomerId);
+
+        var customer = await stripeCustomerService.GetAsync(user.StripeCustomerId, cancellationToken: default);
+        Assert.IsNotNull(customer);
     }
 }
