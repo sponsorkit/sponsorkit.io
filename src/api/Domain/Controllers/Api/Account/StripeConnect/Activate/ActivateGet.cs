@@ -3,10 +3,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Helpers;
+using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.AspNet;
 using Stripe;
@@ -23,15 +25,15 @@ public class ActivateGet : EndpointBaseAsync
     .WithRequest<Request>
     .WithActionResult<Response>
 {
-    private readonly AccountLinkService accountLinkService;
     private readonly DataContext dataContext;
+    private readonly IMediator mediator;
 
     public ActivateGet(
-        AccountLinkService accountLinkService,
-        DataContext dataContext)
+        DataContext dataContext,
+        IMediator mediator)
     {
-        this.accountLinkService = accountLinkService;
         this.dataContext = dataContext;
+        this.mediator = mediator;
     }
 
     [HttpGet("account/stripe-connect/activate")]
@@ -46,16 +48,14 @@ public class ActivateGet : EndpointBaseAsync
             .Where(x => x.Id == userId)
             .Select(x => x.StripeConnectId)
             .SingleOrDefaultAsync(cancellationToken);
+        if (accountId == null)
+            return BadRequest("The user does not have a stripe account.");
             
-        var linkResponse = await accountLinkService.CreateAsync(
-            new AccountLinkCreateOptions()
-            {
-                Account = accountId,
-                RefreshUrl = LinkHelper.GetStripeConnectActivateUrl(request.BroadcastId),
-                ReturnUrl = LinkHelper.GetLandingPageUrl($"/landing/stripe-connect/activated", request.BroadcastId),
-                Type = "account_onboarding"
-            }, 
-            cancellationToken: cancellationToken);
+        var linkResponse = await mediator.Send(
+            new CreateStripeConnectActivationLinkCommand(
+                accountId,
+                request.BroadcastId),
+            cancellationToken);
         return new Response(
             linkResponse.Url);
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
@@ -19,8 +20,9 @@ public class StripeContext
     public CustomerService CustomerService => serviceProvider.GetRequiredService<CustomerService>();
     public TestStripeCustomerBuilder CustomerBuilder => new(CustomerService);
     
-    public TestStripeAccountBuilder AccountBuilder => 
-        new(serviceProvider.GetRequiredService<AccountService>());
+    public TestStripeAccountBuilder AccountBuilder => new(
+        serviceProvider.GetRequiredService<AccountService>(),
+        serviceProvider.GetRequiredService<IMediator>());
 
     public StripePaymentMethodBuilder PaymentMethodBuilder => 
         new(serviceProvider.GetRequiredService<PaymentMethodService>());

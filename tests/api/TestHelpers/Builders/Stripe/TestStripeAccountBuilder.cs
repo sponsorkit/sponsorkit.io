@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using CliWrap;
+using MediatR;
+using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Domain.Models.Stripe;
 using Stripe;
 
@@ -9,12 +12,18 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 public class TestStripeAccountBuilder : StripeAccountBuilder
 {
     private readonly AccountService accountService;
-    
+    private readonly IMediator mediator;
+
     private bool isVerificationCompleted;
 
-    public TestStripeAccountBuilder(AccountService accountService) : base(accountService)
+    public TestStripeAccountBuilder(
+        AccountService accountService,
+        IMediator mediator) : base(accountService)
     {
         this.accountService = accountService;
+        this.mediator = mediator;
+
+        WithEmail("some-email@example.com");
     }
 
     public TestStripeAccountBuilder WithDetailsSubmitted()
@@ -39,17 +48,23 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
         Account account, 
         CancellationToken cancellationToken)
     {
-        await accountService.UpdateAsync(
-            account.Id,
-            new AccountUpdateOptions()
-            {
-                TosAcceptance = new AccountTosAcceptanceOptions()
-                {
-                    Ip = "127.0.0.1",
-                    Date = DateTime.Now
-                }
-            },
-            default,
+        var accountLink = await mediator.Send(
+            new CreateStripeConnectActivationLinkCommand(
+                account.Id,
+                Guid.NewGuid()),
             cancellationToken);
+        
+        await Cli.Wrap("npx")
+            .WithArguments(x => x
+                .Add("--yes")
+                .Add("stripe-onboarder")
+                .Add("onboard")
+                .Add(accountLink.Url)
+                .Add(new [] {"--headless", "false"})
+                .Add(new [] {"--address.zip", "8000"})
+                .Add(new [] {"--phone", "00000000"}))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
+            .ExecuteAsync();
     }
 }
