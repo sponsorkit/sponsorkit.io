@@ -56,6 +56,7 @@ public class TestUserBuilder : UserBuilder
                 .WithUser(user)
                 .BuildAsync(cancellationToken);
             user.StripeCustomerId = stripeCustomer.Id;
+            user.StripeConnectId = stripeCustomerBuilder.CreatedAccount?.Id;
         }
 
         var context = environment.Database.Context;

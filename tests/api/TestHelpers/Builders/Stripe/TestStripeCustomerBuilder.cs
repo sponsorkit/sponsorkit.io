@@ -27,7 +27,7 @@ public class TestStripeCustomerBuilder : StripeCustomerBuilder
         
         if (stripeAccountBuilder != null)
         {
-            await stripeAccountBuilder
+            CreatedAccount = await stripeAccountBuilder
                 .WithCustomerId(customer.Id)
                 .WithEmail(customer.Email)
                 .BuildAsync(cancellationToken);

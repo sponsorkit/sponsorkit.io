@@ -57,14 +57,17 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
         await Cli.Wrap("npx")
             .WithArguments(x => x
                 .Add("--yes")
-                .Add("stripe-onboarder")
+                .Add("@sponsorkit/stripe-onboarder")
                 .Add("onboard")
                 .Add(accountLink.Url)
                 .Add(new [] {"--headless", "false"})
+                .Add(new [] {"--country", "DK"})
                 .Add(new [] {"--address.zip", "8000"})
-                .Add(new [] {"--phone", "00000000"}))
+                .Add(new [] {"--phone", "00000000"})
+            )
             .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
             .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
+            .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
     }
 }

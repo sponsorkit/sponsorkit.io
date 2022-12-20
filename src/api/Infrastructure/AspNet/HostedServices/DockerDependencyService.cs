@@ -137,7 +137,7 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
         customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
         planService = scope.ServiceProvider.GetRequiredService<PlanService>();
-
+        
         await InitializeDockerAsync();
         await WaitForHealthyDockerDependenciesAsync();
         await PrepareDatabaseAsync();

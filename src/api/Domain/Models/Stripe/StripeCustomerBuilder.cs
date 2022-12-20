@@ -15,6 +15,8 @@ public class StripeCustomerBuilder : AsyncModelBuilder<Customer>
     private string? email;
     
     private StripePaymentMethodBuilder? paymentMethodBuilder;
+    
+    public Account? CreatedAccount { get; protected set; }
 
     public StripeCustomerBuilder(
         CustomerService customerService)
