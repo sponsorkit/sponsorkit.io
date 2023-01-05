@@ -41,11 +41,26 @@ public class SetupPostTest
     public async Task HandleAsync_NoExistingStripeConnectAccountFound_PersistsCreatedStripeConnectAccountToUserInDatabase()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var user = await environment.Database.UserBuilder
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder)
+            .BuildAsync();
+
+        Assert.IsNull(user.StripeConnectId);
+
+        var handler = environment.ServiceProvider.GetRequiredService<SetupPost>();
+        handler.FakeAuthentication(user);
+
         //Act
+        await handler.HandleAsync(new Request(Guid.NewGuid()));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsNotNull(user.StripeConnectId);
+
+        var userFromDatabase = await environment.Database.WithoutCachingAsync(async context => 
+            await context.Users.FindAsync(user.Id));
+        Assert.IsNotNull(userFromDatabase);
     }
         
     [TestMethod]
