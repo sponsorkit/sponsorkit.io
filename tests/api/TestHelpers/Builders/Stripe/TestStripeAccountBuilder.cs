@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using CliWrap;
@@ -60,7 +61,9 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
                 .Add("@sponsorkit/stripe-onboarder")
                 .Add("onboard")
                 .Add(accountLink.Url)
-                .Add(new [] {"--debug", "true"})
+                .Add(Debugger.IsAttached ? 
+                    new [] {"--debug", "true"} :
+                    Array.Empty<string>())
                 .Add(new [] {"--headless", "false"})
                 .Add(new [] {"--business_type", "individual"})
             )

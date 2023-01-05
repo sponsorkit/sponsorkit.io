@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Sponsorkit.Domain.Models.Database;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Sponsorkit.Tests.TestHelpers;
@@ -36,5 +37,10 @@ public static class Extensions
     {
         controller.EnsureControllerContext();
         controller.HttpContext.User = TestClaimsPrincipalFactory.CreateWithUserId(userId);
+    }
+
+    public static void FakeAuthentication(this ControllerBase controller, User user)
+    {
+        controller.FakeAuthentication(user.Id);
     }
 }
