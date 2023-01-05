@@ -60,14 +60,13 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
                 .Add("@sponsorkit/stripe-onboarder")
                 .Add("onboard")
                 .Add(accountLink.Url)
+                .Add(new [] {"--debug", "true"})
                 .Add(new [] {"--headless", "false"})
-                .Add(new [] {"--country", "DK"})
-                .Add(new [] {"--address.zip", "8000"})
-                .Add(new [] {"--phone", "00000000"})
+                .Add(new [] {"--business_type", "individual"})
             )
             .WithStandardErrorPipe(PipeTarget.ToDelegate(Console.Error.WriteLine))
             .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
-            .WithValidation(CommandResultValidation.None)
+            .WithValidation(CommandResultValidation.ZeroExitCode)
             .ExecuteAsync();
     }
 }

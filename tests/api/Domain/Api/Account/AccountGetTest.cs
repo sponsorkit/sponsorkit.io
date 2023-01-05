@@ -148,29 +148,14 @@ public class AccountGetTest
     [TestMethod]
     public async Task HandleAsync_ExistingStripeConnectAccountReferenceWithDetailsSubmittedPresentOnUser_ReturnsIsCompleted()
     {
-        //Arrange
-        var fakeAccountService = Substitute.ForPartsOf<AccountService>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new SponsorkitEnvironmentSetupOptions()
-        {
-            IocConfiguration = services => services
-                .AddSingleton(fakeAccountService)
-        });
+        //Arrangec
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var user = await environment.Database.UserBuilder
-            .WithStripeConnectId("some-customer-id")
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder
+                .WithAccount(environment.Stripe.AccountBuilder
+                    .WithDetailsSubmitted()))
             .BuildAsync();
-
-        fakeAccountService
-            .GetAsync(
-                "some-customer-id",
-                Arg.Any<AccountGetOptions>(),
-                Arg.Any<RequestOptions>(),
-                Arg.Any<CancellationToken>())
-            .Returns(new Stripe.Account()
-            {
-                DetailsSubmitted = true
-            });
 
         var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
@@ -187,28 +172,12 @@ public class AccountGetTest
     public async Task HandleAsync_ExistingStripeConnectAccountReferenceWithNoDetailsSubmittedPresentOnUser_ReturnsIsNotCompleted()
     {
         //Arrange
-        var fakeAccountService = Substitute.ForPartsOf<AccountService>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new SponsorkitEnvironmentSetupOptions()
-        {
-            IocConfiguration = services => services
-                .AddSingleton(fakeAccountService)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var user = await environment.Database.UserBuilder
-            .WithStripeConnectId("some-customer-id")
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder
+                .WithAccount(environment.Stripe.AccountBuilder))
             .BuildAsync();
-
-        fakeAccountService
-            .GetAsync(
-                "some-customer-id",
-                Arg.Any<AccountGetOptions>(),
-                Arg.Any<RequestOptions>(),
-                Arg.Any<CancellationToken>())
-            .Returns(new Stripe.Account()
-            {
-                DetailsSubmitted = false
-            });
 
         var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);

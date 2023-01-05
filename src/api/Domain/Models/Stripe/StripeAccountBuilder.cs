@@ -46,19 +46,7 @@ public class StripeAccountBuilder : AsyncModelBuilder<Account>
             new AccountCreateOptions()
             {
                 Email = email,
-                Type = "express",
-                BusinessType = "individual",
-                Capabilities = new AccountCapabilitiesOptions()
-                {
-                    Transfers = new AccountCapabilitiesTransfersOptions()
-                    {
-                        Requested = true
-                    },
-                    CardPayments = new AccountCapabilitiesCardPaymentsOptions()
-                    {
-                        Requested = true
-                    }
-                }
+                Type = "express"
             },
             new RequestOptions()
             {
