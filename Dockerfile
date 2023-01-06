@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-dotnet
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-dotnet
 WORKDIR /
 COPY ["src/api/Sponsorkit.csproj", "src/api/"]
 RUN dotnet tool restore
