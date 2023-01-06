@@ -20,7 +20,7 @@ public record PostResponse(
 public record PostRequest(
     string Token);
     
-public class Post : EndpointBaseAsync
+public class RefreshPost : EndpointBaseAsync
     .WithRequest<PostRequest>
     .WithActionResult<PostResponse>
 {
@@ -28,7 +28,7 @@ public class Post : EndpointBaseAsync
     private readonly IOptionsMonitor<JwtOptions> jwtOptionsMonitor;
     private readonly DataContext dataContext;
 
-    public Post(
+    public RefreshPost(
         ITokenFactory tokenFactory,
         IOptionsMonitor<JwtOptions> jwtOptionsMonitor,
         DataContext dataContext)
