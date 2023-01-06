@@ -17,7 +17,7 @@ public class SponsorsBeneficiaryGetTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var endpoint = environment.ServiceProvider.GetRequiredService<Get>();
+        var endpoint = environment.ServiceProvider.GetRequiredService<BeneficiaryGet>();
 
         var beneficiaryId = Guid.NewGuid();
 
@@ -33,7 +33,7 @@ public class SponsorsBeneficiaryGetTest
         //Assert
         var responseObject = response.ToResponseObject();
 
-        Assert.AreEqual("some-user-id", responseObject.Id);
-        Assert.AreEqual("some-github-id", responseObject.GitHubId);
+        Assert.AreEqual("some-user-id", responseObject.Id.ToString());
+        Assert.AreEqual("1337", responseObject.GitHubId.ToString());
     }
 }

@@ -48,6 +48,7 @@ public class TestRepository : Repository
         default,
         default,
         default,
+        default,
         default)
     {
     }

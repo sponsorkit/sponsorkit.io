@@ -6,6 +6,6 @@ public static class FeeCalculator
 {
     public static long GetSponsorkitFeeInHundreds(long amountInHundreds)
     {
-        return (long)Math.Round(amountInHundreds / 100M * 10M);
+        return (long)Math.Floor(amountInHundreds / 100M * 10M);
     }
 }
