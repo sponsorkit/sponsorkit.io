@@ -2,22 +2,28 @@
 using System.Threading.Tasks;
 using Octokit;
 using Sponsorkit.Domain.Models;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
-public class TestGitHubUserBuilder : AsyncModelBuilder<User>
+public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
 {
-    private int id;
+    private User user;
 
-    public TestGitHubUserBuilder WithId(int id)
+    public TestGitHubPullRequestBuilder()
     {
-        this.id = id;
+        this.user = new TestGitHubUser();
+    }
+
+    public TestGitHubPullRequestBuilder WithUser(User user)
+    {
+        this.user = user;
         return this;
     }
 
-    public override Task<User> BuildAsync(CancellationToken cancellationToken = default)
+    public override Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(new User(
+        return Task.FromResult(new PullRequest(
             default,
             default,
             default,
@@ -26,13 +32,22 @@ public class TestGitHubUserBuilder : AsyncModelBuilder<User>
             default,
             default,
             default,
-            "integration-test@example.com",
             default,
             default,
             default,
             default,
             default,
-            id,
+            default,
+            default,
+            default,
+            default,
+            default,
+            user,
+            default,
+            default,
+            default,
+            default,
+            default,
             default,
             default,
             default,

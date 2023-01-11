@@ -14,7 +14,8 @@ public class DatabaseContext
     public DataContext Context => entrypoint.ScopeProvider.GetRequiredService<DataContext>();
 
     public TestUserBuilder UserBuilder => new (environment);
-    public TestIssueBuilder IssueBuilder => new ();
+    public TestIssueBuilder IssueBuilder => new (environment);
+    public TestRepositoryBuilder RepositoryBuilder => new ();
 
     public DatabaseContext(
         IIntegrationTestEntrypoint entrypoint,
