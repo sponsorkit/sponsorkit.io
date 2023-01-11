@@ -61,7 +61,7 @@ public class ClaimsPostTest
     }
         
     [TestMethod]
-    public async Task HandleAsync_ClaimerDoesNotOwnGivenPullRequest_ReturnsUnauthorized()
+    public async Task HandleAsync_ClaimerDoesNotHaveGitHubAccount_ReturnsUnauthorized()
     {
         //Arrange
         var fakeGitHubClient = Substitute.For<IGitHubClient>();
@@ -94,7 +94,46 @@ public class ClaimsPostTest
             pullRequest.Number));
             
         //Assert
-        Assert.IsTrue(result is NotFoundObjectResult { Value: "The given pull request is not owned by the claimer." });
+        Assert.IsTrue(result is UnauthorizedObjectResult { Value: "User must be linked to GitHub." });
+    }
+        
+    [TestMethod]
+    public async Task HandleAsync_ClaimerDoesNotOwnGivenPullRequest_ReturnsUnauthorized()
+    {
+        //Arrange
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
+        });
+
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithGitHub(1337, "test", "test")
+            .BuildAsync();
+
+        var gitHubIssue = await environment.Database.IssueBuilder
+            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+            .BuildAsync();
+
+        var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        
+        fakeGitHubClient.PullRequest
+            .Get(
+                gitHubIssue.Repository.GitHub.Id,
+                pullRequest.Number)
+            .Returns(pullRequest);
+
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
+        handler.FakeAuthentication(authenticatedUser);
+
+        //Act
+        var result = await handler.HandleAsync(new PostRequest(
+            gitHubIssue.GitHub.Id, 
+            pullRequest.Number));
+            
+        //Assert
+        Assert.IsTrue(result is UnauthorizedObjectResult { Value: "The given pull request is not owned by the claimer." });
     }
         
     [TestMethod]
