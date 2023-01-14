@@ -1,5 +1,11 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict;
+using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims.ClaimId.Verdict;
 
@@ -10,11 +16,30 @@ public class VerdictGetTest
     public async Task HandleAsync_ClaimRequestBountyDoesNotBelongToAuthenticatedUser_ReturnsNotFound()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+        
+        var otherUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var authenticatedUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(authenticatedUser)
+            .BuildAsync();
+
+        var otherUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(otherUser)
+            .BuildAsync();
+
+        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        handler.FakeAuthentication(authenticatedUser);
+
         //Act
+        var response = await handler.HandleAsync(new PostRequest(
+            otherUserClaim.Id,
+            ClaimVerdict.Undecided));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsInstanceOfType<NotFoundResult>(response);
     }
         
     [TestMethod]

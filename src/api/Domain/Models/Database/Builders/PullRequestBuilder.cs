@@ -6,14 +6,14 @@ namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class PullRequestBuilder : AsyncModelBuilder<PullRequest>
 {
-    private PullRequestGitHubInformation? gitHub;
-    private Repository? repository;
+    protected PullRequestGitHubInformation? GitHub;
+    protected Repository? Repository;
 
     public PullRequestBuilder WithGitHubInformation(
         long id,
         int number)
     {
-        this.gitHub = new PullRequestGitHubInformation()
+        this.GitHub = new PullRequestGitHubInformation()
         {
             Id = id,
             Number = number
@@ -23,22 +23,22 @@ public class PullRequestBuilder : AsyncModelBuilder<PullRequest>
 
     public PullRequestBuilder WithRepository(Repository repository)
     {
-        this.repository = repository;
+        this.Repository = repository;
         return this;
     }
 
     public override Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (this.gitHub == null)
+        if (this.GitHub == null)
             throw new InvalidOperationException("GitHub information not set.");
 
-        if (this.repository == null)
+        if (this.Repository == null)
             throw new InvalidOperationException("Repository not set.");
 
         return Task.FromResult(new PullRequest()
         {
-            GitHub = gitHub,
-            Repository = repository
+            GitHub = GitHub,
+            Repository = Repository
         });
     }
 }

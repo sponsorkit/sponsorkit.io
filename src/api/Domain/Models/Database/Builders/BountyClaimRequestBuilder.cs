@@ -6,9 +6,9 @@ namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class BountyClaimRequestBuilder : AsyncModelBuilder<BountyClaimRequest>
 {
-    private Bounty? bounty;
-    private User? creator;
-    private PullRequest? pullRequest;
+    protected Bounty? Bounty;
+    protected User? Creator;
+    protected PullRequest? PullRequest;
         
     private readonly DateTimeOffset createdAt;
 
@@ -19,39 +19,39 @@ public class BountyClaimRequestBuilder : AsyncModelBuilder<BountyClaimRequest>
 
     public BountyClaimRequestBuilder WithBounty(Bounty bounty)
     {
-        this.bounty = bounty;
+        this.Bounty = bounty;
         return this;
     }
 
     public BountyClaimRequestBuilder WithCreator(User creator)
     {
-        this.creator = creator;
+        this.Creator = creator;
         return this;
     }
 
     public BountyClaimRequestBuilder WithPullRequest(PullRequest pullRequest)
     {
-        this.pullRequest = pullRequest;
+        this.PullRequest = pullRequest;
         return this;
     }
 
     public override Task<BountyClaimRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (bounty == null)
+        if (Bounty == null)
             throw new InvalidOperationException("The bounty must be set.");
             
-        if (creator == null)
+        if (Creator == null)
             throw new InvalidOperationException("The creator must be set.");
             
-        if (pullRequest == null)
+        if (PullRequest == null)
             throw new InvalidOperationException("The pull request must be set.");
             
         return Task.FromResult(new BountyClaimRequest()
         {
-            Bounty = bounty,
-            Creator = creator,
+            Bounty = Bounty,
+            Creator = Creator,
             CreatedAt = createdAt,
-            PullRequest = pullRequest
+            PullRequest = PullRequest
         });
     }
 }

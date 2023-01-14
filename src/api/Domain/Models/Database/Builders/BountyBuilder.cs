@@ -6,8 +6,8 @@ namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class BountyBuilder : AsyncModelBuilder<Bounty>
 {
-    private User? creator;
-    private Issue? issue;
+    protected User? Creator;
+    protected Issue? Issue;
 
     private readonly DateTimeOffset createdAt;
 
@@ -18,28 +18,28 @@ public class BountyBuilder : AsyncModelBuilder<Bounty>
 
     public BountyBuilder WithCreator(User creator)
     {
-        this.creator = creator;
+        this.Creator = creator;
         return this;
     }
 
     public BountyBuilder WithIssue(Issue issue)
     {
-        this.issue = issue;
+        this.Issue = issue;
         return this;
     }
 
     public override Task<Bounty> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (creator == null)
+        if (Creator == null)
             throw new InvalidOperationException("No creator set.");
 
-        if (issue == null)
+        if (Issue == null)
             throw new InvalidOperationException("No issue set.");
 
         return Task.FromResult(new Bounty()
         {
-            Creator = creator,
-            Issue = issue,
+            Creator = Creator,
+            Issue = Issue,
             CreatedAt = createdAt
         });
     }

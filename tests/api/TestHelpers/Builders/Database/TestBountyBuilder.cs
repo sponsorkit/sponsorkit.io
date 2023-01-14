@@ -6,25 +6,24 @@ using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 
-public class TestRepositoryBuilder : RepositoryBuilder
+public class TestBountyBuilder : BountyBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
 
-    public TestRepositoryBuilder(IIntegrationTestEnvironment environment)
+    public TestBountyBuilder(IIntegrationTestEnvironment environment)
     {
         this.environment = environment;
-        
-        WithGitHubInformation(
-            1337,
-            "some-owner-name", 
-            "some-name");
     }
 
-    public override async Task<Repository> BuildAsync(CancellationToken cancellationToken = default)
+    public override async Task<Bounty> BuildAsync(CancellationToken cancellationToken = default)
     {
+        Issue ??= await environment.Database.IssueBuilder.BuildAsync(cancellationToken);
+        
+        Creator ??= await environment.Database.UserBuilder.BuildAsync(cancellationToken);
+        
         var model = await base.BuildAsync(cancellationToken);
         
-        await environment.Database.Context.Repositories.AddAsync(model, cancellationToken);
+        await environment.Database.Context.Bounties.AddAsync(model, cancellationToken);
         await environment.Database.Context.SaveChangesAsync(cancellationToken);
 
         return model;
