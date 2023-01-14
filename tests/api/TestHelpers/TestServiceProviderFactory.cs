@@ -1,4 +1,5 @@
 ﻿using System;
+using Amazon.SimpleEmailV2;
 using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -51,5 +52,6 @@ public class TestServiceProviderFactory
 
         services.AddSingleton(Substitute.For<ILogger>());
         services.AddSingleton(Substitute.For<IGitHubClientFactory>());
+        services.AddSingleton(Substitute.For<IAmazonSimpleEmailServiceV2>());
     }
 }

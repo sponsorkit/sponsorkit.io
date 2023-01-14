@@ -106,9 +106,9 @@ public class ClaimsPost : EndpointBaseAsync
                 bounty.ClaimRequests.Add(claimRequest);
 
                 addedClaimRequests.Add(claimRequest);
-            }
 
-            await dataContext.SaveChangesAsync(cancellationToken);
+                await dataContext.SaveChangesAsync(cancellationToken);
+            }
 
             return null;
         }, IsolationLevel.Serializable);

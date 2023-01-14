@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Sponsorkit.Domain.Models.Database;
+using Sponsorkit.Domain.Models.Database.Context;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Sponsorkit.Tests.TestHelpers;
@@ -42,5 +44,18 @@ public static class Extensions
     public static void FakeAuthentication(this ControllerBase controller, User user)
     {
         controller.FakeAuthentication(user.Id);
+    }
+
+    public static void OnEntityAdded<TEntity>(
+        this DataContext dataContext,
+        Action action)
+    {
+        dataContext.ChangeTracker.Tracking += (_, args) =>
+        {
+            if (args.Entry.Entity is TEntity && args.State == EntityState.Added)
+            {
+                action();
+            }
+        };
     }
 }

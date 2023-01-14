@@ -40,6 +40,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
     public GitHubContext GitHub => new ();
     public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
     public StripeContext Stripe => new(ServiceProvider);
+    public EmailContext Email => new(ServiceProvider);
 
     protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 

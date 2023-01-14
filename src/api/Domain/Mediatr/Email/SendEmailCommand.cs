@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SimpleEmailV2;
 using Amazon.SimpleEmailV2.Model;
 using MediatR;
+using Microsoft.CodeAnalysis;
 using RazorLight;
 
 namespace Sponsorkit.Domain.Mediatr.Email;
@@ -87,6 +89,7 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
     {
         var template = await File.ReadAllTextAsync(
             Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
                 "Domain",
                 "Mediatr",
                 "Email",
@@ -95,8 +98,12 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
                 "Template.cshtml"),
             cancellationToken);
 
+        var executingAssembly = Assembly.GetExecutingAssembly();
+        var metadataReference = MetadataReference.CreateFromFile(executingAssembly.Location);
+
         var engine = new RazorLightEngineBuilder()
-            .UseFileSystemProject(Environment.CurrentDirectory)
+            .UseFileSystemProject(AppDomain.CurrentDomain.BaseDirectory)
+            .AddMetadataReferences(metadataReference)
             .UseMemoryCachingProvider()
             .Build();
 

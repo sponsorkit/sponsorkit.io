@@ -1,4 +1,5 @@
 ﻿using System;
+using Amazon.SimpleEmailV2;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Domain.Models.Stripe;
@@ -6,6 +7,18 @@ using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 using Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
+
+public class EmailContext
+{
+    private readonly IServiceProvider serviceProvider;
+
+    public EmailContext(IServiceProvider serviceProvider)
+    {
+        this.serviceProvider = serviceProvider;
+    }
+    
+    public IAmazonSimpleEmailServiceV2 FakeEmailService => serviceProvider.GetRequiredService<IAmazonSimpleEmailServiceV2>();
+}
 
 public class StripeContext
 {
