@@ -7,6 +7,7 @@ using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Claims;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims;
 
@@ -151,16 +152,27 @@ public class ClaimsPostTest
             .WithGitHub(1337, "test", "test")
             .BuildAsync();
 
-        var gitHubIssue = await environment.Database.IssueBuilder
-            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+        var repository = await environment.Database.RepositoryBuilder.BuildAsync();
+        
+        var issue = await environment.Database.IssueBuilder
+            .WithRepository(repository)
             .BuildAsync();
-
-        var gitHubPullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        
+        var gitHubPullRequest = await environment.GitHub.PullRequest
+            .WithUser(new TestGitHubUser()
+            {
+                Id = (int)authenticatedUser.GitHub.Id
+            })
+            .BuildAsync();
         var pullRequest = await environment.Database.PullRequestBuilder
             .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
+            .WithRepository(repository)
             .BuildAsync();
 
-        var bounty = await environment.Database.BountyBuilder.BuildAsync();
+        var bounty = await environment.Database.BountyBuilder
+            .WithIssue(issue)
+            .WithCreator(authenticatedUser)
+            .BuildAsync();
 
         var authenticatedUserClaimRequest = await environment.Database.BountyClaimRequestBuilder
             .WithCreator(authenticatedUser)
@@ -170,7 +182,7 @@ public class ClaimsPostTest
 
         fakeGitHubClient.PullRequest
             .Get(
-                gitHubIssue.Repository.GitHub.Id,
+                issue.Repository.GitHub.Id,
                 gitHubPullRequest.Number)
             .Returns(gitHubPullRequest);
 
@@ -179,7 +191,7 @@ public class ClaimsPostTest
 
         //Act
         var result = await handler.HandleAsync(new PostRequest(
-            gitHubIssue.GitHub.Id, 
+            issue.GitHub.Id, 
             gitHubPullRequest.Number));
             
         //Assert
