@@ -140,11 +140,50 @@ public class ClaimsPostTest
     public async Task HandleAsync_ClaimAlreadyExistsForIssue_ReturnsBadRequest()
     {
         //Arrange
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
+        });
+
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithGitHub(1337, "test", "test")
+            .BuildAsync();
+
+        var gitHubIssue = await environment.Database.IssueBuilder
+            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+            .BuildAsync();
+
+        var gitHubPullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        var pullRequest = await environment.Database.PullRequestBuilder
+            .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
+            .BuildAsync();
+
+        var bounty = await environment.Database.BountyBuilder.BuildAsync();
+
+        var authenticatedUserClaimRequest = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(authenticatedUser)
+            .WithPullRequest(pullRequest)
+            .WithBounty(bounty)
+            .BuildAsync();
+
+        fakeGitHubClient.PullRequest
+            .Get(
+                gitHubIssue.Repository.GitHub.Id,
+                gitHubPullRequest.Number)
+            .Returns(gitHubPullRequest);
+
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
+        handler.FakeAuthentication(authenticatedUser);
+
         //Act
+        var result = await handler.HandleAsync(new PostRequest(
+            gitHubIssue.GitHub.Id, 
+            gitHubPullRequest.Number));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsTrue(result is BadRequestObjectResult { Value: "An existing claim request exists for this bounty." });
     }
         
     [TestMethod]

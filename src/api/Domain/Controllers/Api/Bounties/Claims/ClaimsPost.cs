@@ -118,7 +118,7 @@ public class ClaimsPost : EndpointBaseAsync
 
         await SendClaimRequestsToUserEmailsAsync(
             addedClaimRequests, 
-            cancellationToken);
+            CancellationToken.None);
 
         return Ok();
     }

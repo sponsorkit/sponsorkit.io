@@ -7,8 +7,9 @@ namespace Sponsorkit.Domain.Models.Database.Builders;
 
 public class IssueBuilder : AsyncModelBuilder<Issue>
 {
+    protected Repository? Repository;
+    
     private Bounty[] bounties;
-    private Repository? repository;
     private IssueGitHubInformation? gitHub;
 
     public IssueBuilder()
@@ -24,7 +25,7 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
 
     public IssueBuilder WithRepository(Repository repository)
     {
-        this.repository = repository;
+        this.Repository = repository;
         return this;
     }
 
@@ -47,13 +48,13 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
         if (gitHub == null)
             throw new InvalidOperationException("GitHub information was not set.");
 
-        if (repository == null)
+        if (Repository == null)
             throw new InvalidOperationException("Repository was not set.");
             
         return Task.FromResult(new Issue()
         {
             Bounties = bounties.ToList(),
-            Repository = repository,
+            Repository = Repository,
             GitHub = gitHub
         });
     }

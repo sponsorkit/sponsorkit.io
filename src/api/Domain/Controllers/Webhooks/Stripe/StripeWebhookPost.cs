@@ -13,7 +13,6 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
-using Sponsorkit.Domain.Models.Database.Context;
 using Sponsorkit.Infrastructure.Logging.HttpContext;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
@@ -27,18 +26,15 @@ public class Post : EndpointBaseAsync
     private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
     private readonly IEnumerable<IStripeEventHandler> webhookEventHandlers;
     private readonly ILogger logger;
-    private readonly DataContext dataContext;
 
     public Post(
         IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
         IEnumerable<IStripeEventHandler> webhookEventHandlers,
-        ILogger logger,
-        DataContext dataContext)
+        ILogger logger)
     {
         this.stripeOptionsMonitor = stripeOptionsMonitor;
         this.webhookEventHandlers = webhookEventHandlers;
         this.logger = logger;
-        this.dataContext = dataContext;
     }
 
     [HttpPost("webhooks/stripe")]
@@ -52,7 +48,7 @@ public class Post : EndpointBaseAsync
             stream.Seek(0, SeekOrigin.Begin);
 
             using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync();
+            var json = await reader.ReadToEndAsync(cancellationToken);
 
             var signatureHeader = Request.Headers["Stripe-Signature"];
             var stripeEvent = EventUtility.ConstructEvent(

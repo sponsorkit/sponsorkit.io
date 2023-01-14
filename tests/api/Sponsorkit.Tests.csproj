@@ -19,9 +19,9 @@
         <PackageReference Include="Docker.DotNet" Version="3.125.12" />
         <PackageReference Include="FluffySpoon.Ngrok" Version="1.118.0" />
         <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.118.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="7.0.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="7.0.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.2" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
         <PackageReference Include="MSTest.TestAdapter" Version="3.0.2" />
         <PackageReference Include="MSTest.TestFramework" Version="3.0.2" />

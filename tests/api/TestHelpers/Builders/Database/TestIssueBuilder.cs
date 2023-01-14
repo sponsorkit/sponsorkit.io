@@ -18,15 +18,16 @@ public class TestIssueBuilder : IssueBuilder
             1337,
             1338,
             "dummy-title");
-        WithRepository(new TestRepositoryBuilder()
-            .BuildAsync()
-            .ConfigureAwait(false)
-            .GetAwaiter()
-            .GetResult());
     }
 
     public override async Task<Issue> BuildAsync(CancellationToken cancellationToken = default)
     {
+        if (Repository == null)
+        {
+            WithRepository(await environment.Database.RepositoryBuilder
+                .BuildAsync(cancellationToken));
+        }
+        
         var issue = await base.BuildAsync(cancellationToken);
        
         await environment.Database.Context.Issues.AddAsync(issue, cancellationToken);

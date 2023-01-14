@@ -15,7 +15,10 @@ public class DatabaseContext
 
     public TestUserBuilder UserBuilder => new (environment);
     public TestIssueBuilder IssueBuilder => new (environment);
-    public TestRepositoryBuilder RepositoryBuilder => new ();
+    public TestRepositoryBuilder RepositoryBuilder => new (environment);
+    public TestPullRequestBuilder PullRequestBuilder => new (environment);
+    public TestBountyBuilder BountyBuilder => new (environment);
+    public TestBountyClaimRequestBuilder BountyClaimRequestBuilder => new(environment);
 
     public DatabaseContext(
         IIntegrationTestEntrypoint entrypoint,
