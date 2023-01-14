@@ -16,30 +16,11 @@ public class VerdictGetTest
     public async Task HandleAsync_ClaimRequestBountyDoesNotBelongToAuthenticatedUser_ReturnsNotFound()
     {
         //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
-        
-        var otherUser = await environment.Database.UserBuilder.BuildAsync();
-
-        var authenticatedUserClaim = await environment.Database.BountyClaimRequestBuilder
-            .WithCreator(authenticatedUser)
-            .BuildAsync();
-
-        var otherUserClaim = await environment.Database.BountyClaimRequestBuilder
-            .WithCreator(otherUser)
-            .BuildAsync();
-
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
-        handler.FakeAuthentication(authenticatedUser);
-
+            
         //Act
-        var response = await handler.HandleAsync(new PostRequest(
-            otherUserClaim.Id,
-            ClaimVerdict.Undecided));
             
         //Assert
-        Assert.IsInstanceOfType<NotFoundResult>(response);
+        Assert.Fail("Not implemented.");
     }
         
     [TestMethod]
