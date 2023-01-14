@@ -61,7 +61,7 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
                 .Add("@sponsorkit/stripe-onboarder")
                 .Add("onboard")
                 .Add(accountLink.Url)
-                .Add(Debugger.IsAttached ? 
+                .Add(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == null ? 
                     new [] {"--debug", "true"} :
                     Array.Empty<string>())
                 .Add(new [] {"--headless", "false"})
