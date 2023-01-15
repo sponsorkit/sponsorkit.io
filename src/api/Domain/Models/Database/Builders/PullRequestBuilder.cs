@@ -35,10 +35,13 @@ public class PullRequestBuilder : AsyncModelBuilder<PullRequest>
         if (this.Repository == null)
             throw new InvalidOperationException("Repository not set.");
 
-        return Task.FromResult(new PullRequest()
+        var pullRequest = new PullRequest()
         {
             GitHub = GitHub,
             Repository = Repository
-        });
+        };
+        Repository.PullRequests.Add(pullRequest);
+        
+        return Task.FromResult(pullRequest);
     }
 }

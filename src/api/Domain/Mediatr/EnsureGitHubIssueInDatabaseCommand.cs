@@ -99,7 +99,8 @@ public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureG
         var newRepository = await new RepositoryBuilder()
             .WithGitHubInformation(
                 gitHubRepository.Id,
-                gitHubRepository.Owner.Login, gitHubRepository.Name)
+                gitHubRepository.Owner.Login, 
+                gitHubRepository.Name)
             .BuildAsync(cancellationToken);
         await dataContext.Repositories.AddAsync(
             newRepository,

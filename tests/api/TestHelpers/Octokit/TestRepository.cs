@@ -1,4 +1,5 @@
-﻿using Octokit;
+﻿using System;
+using Octokit;
 
 namespace Sponsorkit.Tests.TestHelpers.Octokit;
 
@@ -47,7 +48,7 @@ public class TestRepository : Repository
         default,
         default,
         default,
-        default,
+        Array.Empty<string>(),
         default,
         default)
     {

@@ -7,6 +7,7 @@ using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Bounties;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.Domain.Api.Bounties.SetupIntent;
 
@@ -39,7 +40,11 @@ public class SetupIntentPostTest
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Issue
             .Get("owner-name", "repo-name", 1337)
-            .Returns(new Issue());
+            .Returns(new TestIssue());
+        
+        fakeGitHubClient.Repository
+            .Get("owner-name", "repo-name")
+            .Returns(new TestRepository());
 
         var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
@@ -56,10 +61,25 @@ public class SetupIntentPostTest
     public async Task HandleAsync_PaymentMethodPresent_ReturnsCreatedSetupIntent()
     {
         //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
+        fakeGitHubClient.Issue
+            .Get("owner-name", "repo-name", 1337)
+            .Returns(new TestIssue());
+        
+        fakeGitHubClient.Repository
+            .Get("owner-name", "repo-name")
+            .Returns(new TestRepository());
+
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
+        var result = await handler.HandleAsync(new(
+            new GitHubIssueRequest("owner-name", "repo-name", 1337),
+            Constants.MinimumBountyAmountInHundreds - 0_01));
 
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsTrue(result.Result is BadRequestObjectResult { Value: "Minimum amount is 10 USD." });
     }
 }
