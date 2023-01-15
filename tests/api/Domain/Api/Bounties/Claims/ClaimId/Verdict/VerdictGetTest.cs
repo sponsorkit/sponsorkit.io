@@ -15,17 +15,6 @@ namespace Sponsorkit.Tests.Domain.Api.Bounties.Claims.ClaimId.Verdict;
 public class VerdictGetTest
 {
     [TestMethod]
-    public async Task HandleAsync_ClaimRequestBountyDoesNotBelongToAuthenticatedUser_ReturnsNotFound()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
     public async Task HandleAsync_MultipleClaimsPresent_PicksClaimById()
     {
         //Arrange
@@ -71,7 +60,7 @@ public class VerdictGetTest
         var result = await handler.HandleAsync(new GetRequest(Guid.NewGuid()));
             
         //Assert
-        Assert.IsInstanceOfType<NotFoundResult>(result);
+        Assert.IsInstanceOfType<NotFoundResult>(result.Result);
     }
         
     [TestMethod]
@@ -89,7 +78,7 @@ public class VerdictGetTest
             .BuildAsync();
         
         var otherUserClaim = await environment.Database.BountyClaimRequestBuilder
-            .WithCreator(authenticatedUser)
+            .WithCreator(otherUser)
             .WithBounty(otherUserBounty)
             .BuildAsync();
 
@@ -100,7 +89,7 @@ public class VerdictGetTest
         var result = await handler.HandleAsync(new GetRequest(otherUserClaim.Id));
             
         //Assert
-        Assert.IsInstanceOfType<NotFoundResult>(result);
+        Assert.IsInstanceOfType<NotFoundResult>(result.Result);
     }
         
     [TestMethod]
