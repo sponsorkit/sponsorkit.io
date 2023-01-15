@@ -11,10 +11,18 @@ public class BountyClaimRequestBuilder : AsyncModelBuilder<BountyClaimRequest>
     protected PullRequest? PullRequest;
         
     private readonly DateTimeOffset createdAt;
+    
+    private ClaimVerdict verdict;
 
     public BountyClaimRequestBuilder()
     {
         createdAt = DateTimeOffset.UtcNow;
+    }
+
+    public BountyClaimRequestBuilder WithVerdict(ClaimVerdict verdict)
+    {
+        this.verdict = verdict;
+        return this;
     }
 
     public BountyClaimRequestBuilder WithBounty(Bounty bounty)
@@ -51,7 +59,8 @@ public class BountyClaimRequestBuilder : AsyncModelBuilder<BountyClaimRequest>
             Bounty = Bounty,
             Creator = Creator,
             CreatedAt = createdAt,
-            PullRequest = PullRequest
+            PullRequest = PullRequest,
+            Verdict = verdict
         });
     }
 }

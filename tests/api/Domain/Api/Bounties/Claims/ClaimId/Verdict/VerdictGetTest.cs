@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict;
@@ -27,32 +29,101 @@ public class VerdictGetTest
     public async Task HandleAsync_MultipleClaimsPresent_PicksClaimById()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+        
+        var otherUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var otherUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(otherUser)
+            .WithVerdict(ClaimVerdict.Unsolved)
+            .BuildAsync();
+
+        var authenticatedUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(authenticatedUser)
+            .WithVerdict(ClaimVerdict.Solved)
+            .BuildAsync();
+
+        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        handler.FakeAuthentication(authenticatedUser);
+
         //Act
+        var result = await handler.HandleAsync(new GetRequest(authenticatedUserClaim.Id));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        var response = result.ToResponseObject();
+        Assert.AreEqual(ClaimVerdict.Solved, response.CurrentClaimVerdict);
     }
         
     [TestMethod]
     public async Task HandleAsync_NoMatchingClaimsPresent_ReturnsNotFound()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        handler.FakeAuthentication(authenticatedUser);
+
         //Act
+        var result = await handler.HandleAsync(new GetRequest(Guid.NewGuid()));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsInstanceOfType<NotFoundResult>(result);
+    }
+        
+    [TestMethod]
+    public async Task HandleAsync_GivenBountyIsFromOtherUser_ReturnsNotFound()
+    {
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var otherUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var otherUserBounty = await environment.Database.BountyBuilder
+            .WithCreator(otherUser)
+            .BuildAsync();
+        
+        var otherUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(authenticatedUser)
+            .WithBounty(otherUserBounty)
+            .BuildAsync();
+
+        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        handler.FakeAuthentication(authenticatedUser);
+
+        //Act
+        var result = await handler.HandleAsync(new GetRequest(otherUserClaim.Id));
+            
+        //Assert
+        Assert.IsInstanceOfType<NotFoundResult>(result);
     }
         
     [TestMethod]
     public async Task HandleAsync_MatchingClaimPresent_ReturnsResponse()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+
+        var authenticatedUserClaim = await environment.Database.BountyClaimRequestBuilder
+            .WithCreator(authenticatedUser)
+            .WithVerdict(ClaimVerdict.Solved)
+            .BuildAsync();
+
+        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        handler.FakeAuthentication(authenticatedUser);
+
         //Act
+        var result = await handler.HandleAsync(new GetRequest(authenticatedUserClaim.Id));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        var response = result.ToResponseObject();
+        Assert.AreEqual(ClaimVerdict.Solved, response.CurrentClaimVerdict);
     }
 }
