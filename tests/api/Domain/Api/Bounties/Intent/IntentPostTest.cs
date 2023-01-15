@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Sponsorkit.Tests.Domain.Api.Bounties.Intent;
+namespace Sponsorkit.Tests.Domain.Api.Bounties.SetupIntent;
 
 [TestClass]
 public class IntentPostTest

@@ -15,6 +15,7 @@ public class TestPaymentBuilder : PaymentBuilder
     {
         this.environment = environment;
 
+        WithAmount(10_00, 1_00);
         WithStripeId("stripe-id" + Guid.NewGuid());
         WithStripeEventId("stripe-event-id-" + Guid.NewGuid());
     }
