@@ -51,7 +51,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             
         builder
             .HasMany(x => x.BountyClaimRequests)
-            .WithOne(x => x.Creator!)
+            .WithOne(x => x.Creator)
             .HasForeignKey(x => x.CreatorId)
             .OnDelete(DeleteBehavior.Restrict);
     }

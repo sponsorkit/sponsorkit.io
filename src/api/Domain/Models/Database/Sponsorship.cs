@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Sponsorkit.Domain.Models.Database;
 
+[SuppressMessage("ReSharper", "NullableWarningSuppressionIsUsed")]
 public class Sponsorship
 {
     [Key]
     public Guid Id { get; set; }
 
-    public DateTimeOffset CreatedAt { get; set; } = new();
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// The repository that this sponsorship is regarding.
@@ -50,7 +52,7 @@ public class SponsorshipConfiguration : IEntityTypeConfiguration<Sponsorship>
 
         builder
             .HasOne(x => x.Repository)
-            .WithMany(x => x!.Sponsorships)
+            .WithMany(x => x.Sponsorships)
             .HasForeignKey(x => x.SponsorId)
             .OnDelete(DeleteBehavior.Restrict);
     }

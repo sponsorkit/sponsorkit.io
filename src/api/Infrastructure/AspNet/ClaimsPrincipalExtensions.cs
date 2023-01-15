@@ -33,7 +33,7 @@ public static class ClaimsPrincipalExtensions
         string name)
     {
         return claimsPrincipal?.Claims
-            ?.SingleOrDefault(x => x.Type == name)
+            .SingleOrDefault(x => x.Type == name)
             ?.Value;
     }
 }

@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Claims;
 using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Tests.TestHelpers;
@@ -38,12 +37,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_PullRequestNotFound_ReturnsNotFound()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var pullRequestNumber = 13371337;
 
@@ -51,6 +45,7 @@ public class ClaimsPostTest
             .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
             .BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 gitHubIssue.Repository.GitHub.Id,
@@ -70,12 +65,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_ClaimerDoesNotHaveGitHubAccount_ReturnsUnauthorized()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
@@ -85,6 +75,7 @@ public class ClaimsPostTest
 
         var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 gitHubIssue.Repository.GitHub.Id,
@@ -107,12 +98,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_ClaimerDoesNotOwnGivenPullRequest_ReturnsUnauthorized()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
             .WithGitHub(1337, "test", "test")
@@ -124,6 +110,7 @@ public class ClaimsPostTest
 
         var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 gitHubIssue.Repository.GitHub.Id,
@@ -146,12 +133,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_ClaimAlreadyExistsForIssue_ReturnsBadRequest()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
             .WithGitHub(1337, "test", "test")
@@ -185,6 +167,7 @@ public class ClaimsPostTest
             .WithBounty(bounty)
             .BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 issue.Repository.GitHub.Id,
@@ -207,12 +190,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_ErrorDuringSecondClaimRequestCreation_RollsBackFirstClaimRequestCreation()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
             .WithGitHub(1337, "test1", "test1")
@@ -231,7 +209,7 @@ public class ClaimsPostTest
         var gitHubPullRequest = await environment.GitHub.PullRequest
             .WithUser(new TestGitHubUser()
             {
-                Id = (int)authenticatedUser.GitHub.Id
+                Id = (int)authenticatedUser.GitHub!.Id
             })
             .BuildAsync();
         var pullRequest = await environment.Database.PullRequestBuilder
@@ -249,6 +227,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 issue.Repository.GitHub.Id,
@@ -283,12 +262,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_MultipleBountiesForIssue_CreatesClaimRequestsForAllBounties()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
             .WithGitHub(1337, "test1", "test1")
@@ -325,6 +299,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 issue.Repository.GitHub.Id,
@@ -348,12 +323,7 @@ public class ClaimsPostTest
     public async Task HandleAsync_MultipleClaimRequestsCreated_EmailsAreSentOutToBountyCreators()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
-
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubClient)
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
             .WithGitHub(1337, "test1", "test1")
@@ -390,6 +360,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
             .Get(
                 issue.Repository.GitHub.Id,

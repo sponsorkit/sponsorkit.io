@@ -72,7 +72,7 @@ public class SetupIntentPost : EndpointBaseAsync
                 request.Issue.IssueNumber),
             cancellationToken);
         if (issue.Status == ResultStatus.NotFound)
-            return NotFound();
+            return NotFound("Issue or repository was not found.");
 
         if (request.AmountInHundreds < Constants.MinimumBountyAmountInHundreds)
             return BadRequest("Minimum amount is 10 USD.");

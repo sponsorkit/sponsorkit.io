@@ -1,10 +1,12 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Sponsorkit.Domain.Models.Database;
 
+[SuppressMessage("ReSharper", "NullableWarningSuppressionIsUsed")]
 public class Payment
 {
     [Key]

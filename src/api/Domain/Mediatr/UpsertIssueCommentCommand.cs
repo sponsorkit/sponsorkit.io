@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Serilog;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Options.GitHub;
@@ -22,18 +21,15 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
     private readonly IGitHubClientFactory gitHubClientFactory;
     private readonly IOptionsMonitor<GitHubOptions> gitHubOptions;
     private readonly IHostEnvironment hostEnvironment;
-    private readonly ILogger logger;
 
     public UpsertIssueCommentCommandHandler(
         IGitHubClientFactory gitHubClientFactory,
         IOptionsMonitor<GitHubOptions> gitHubOptions,
-        IHostEnvironment hostEnvironment,
-        ILogger logger)
+        IHostEnvironment hostEnvironment)
     {
         this.gitHubClientFactory = gitHubClientFactory;
         this.gitHubOptions = gitHubOptions;
         this.hostEnvironment = hostEnvironment;
-        this.logger = logger;
     }
 
     public async Task<Unit> Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)

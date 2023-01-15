@@ -37,7 +37,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
     public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
     public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
-    public GitHubContext GitHub => new ();
+    public GitHubContext GitHub => new (ServiceProvider);
     public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
     public StripeContext Stripe => new(ServiceProvider);
     public EmailContext Email => new(ServiceProvider);

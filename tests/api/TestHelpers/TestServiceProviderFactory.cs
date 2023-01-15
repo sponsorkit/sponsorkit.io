@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
+using Octokit;
 using Serilog;
 using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Ioc;
@@ -53,5 +54,6 @@ public class TestServiceProviderFactory
         services.AddSingleton(Substitute.For<ILogger>());
         services.AddSingleton(Substitute.For<IGitHubClientFactory>());
         services.AddSingleton(Substitute.For<IAmazonSimpleEmailServiceV2>());
+        services.AddSingleton(Substitute.For<IGitHubClient>());
     }
 }

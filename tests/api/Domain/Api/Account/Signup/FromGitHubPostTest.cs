@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using Octokit;
 using Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub;
-using Sponsorkit.Infrastructure.GitHub;
 using Sponsorkit.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
@@ -25,7 +24,9 @@ public class FromGitHubPostTest
     public async Task HandleAsync_ValidCodeGiven_ExchangesCodeForAccessToken()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -42,19 +43,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-            }
-        });
 
         var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
@@ -70,7 +62,9 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserAlreadyExistsInDatabase_UpdatesDatabaseUserWithNewAccessToken()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -91,19 +85,10 @@ public class FromGitHubPostTest
                 Id = gitHubUserId
             });
 
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-            }
-        });
 
         await environment.Database.UserBuilder
             .WithGitHub(
@@ -135,7 +120,9 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserAlreadyExistsInDatabase_GeneratesJwtTokenForUser()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -161,20 +148,10 @@ public class FromGitHubPostTest
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
 
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         await environment.Database.UserBuilder
             .WithGitHub(
@@ -204,7 +181,20 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserDoesNotExistInDatabase_CreatesNewDatabaseUser()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -221,25 +211,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
-
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
@@ -258,7 +233,20 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserDoesNotExistInDatabase_AssignsNewStripeCustomerToCeatedUser()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -275,25 +263,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
-
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
 
@@ -317,7 +290,20 @@ public class FromGitHubPostTest
     public async Task HandleAsync_CancellationSignaledBeforeDatabaseUserCreation_CancelsDatabaseUpdateBeforeStripeCustomerCreation()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -334,25 +320,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
-
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
@@ -376,7 +347,20 @@ public class FromGitHubPostTest
     public async Task HandleAsync_CancellationSignaledBeforeStripeCustomerCreation_DoesNotCancelStripeCustomerCreation()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -393,25 +377,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
-
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
@@ -438,7 +407,20 @@ public class FromGitHubPostTest
     public async Task HandleAsync_CancellationSignaledBeforeStripeCustomerCreation_DoesNotCancelDatabasePersistence()
     {
         //Arrange
-        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeTokenFactory);
+            }
+        });
+        
+        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -455,25 +437,10 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
-
-        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
-            
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeGitHubClient);
-                services.AddSingleton(fakeGitHubClientFactory);
-                services.AddSingleton(fakeTokenFactory);
-            }
-        });
 
         var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
 

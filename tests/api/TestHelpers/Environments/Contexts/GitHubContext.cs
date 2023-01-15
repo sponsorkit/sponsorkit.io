@@ -1,8 +1,23 @@
-﻿using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
+using Octokit;
+using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 public class GitHubContext
 {
-    public TestGitHubPullRequestBuilder PullRequest { get; } = new TestGitHubPullRequestBuilder();
+    private readonly IServiceProvider serviceProvider;
+
+    public GitHubContext(IServiceProvider serviceProvider)
+    {
+        this.serviceProvider = serviceProvider;
+    }
+    
+    public IGitHubClient FakeClient => serviceProvider.GetRequiredService<IGitHubClient>();
+    
+    public IGitHubClientFactory FakeClientFactory => serviceProvider.GetRequiredService<IGitHubClientFactory>();
+
+    public TestGitHubPullRequestBuilder PullRequest => new ();
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using CliWrap;
@@ -12,7 +11,6 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 
 public class TestStripeAccountBuilder : StripeAccountBuilder
 {
-    private readonly AccountService accountService;
     private readonly IMediator mediator;
 
     private bool isVerificationCompleted;
@@ -21,7 +19,6 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
         AccountService accountService,
         IMediator mediator) : base(accountService)
     {
-        this.accountService = accountService;
         this.mediator = mediator;
 
         WithEmail("some-email@example.com");

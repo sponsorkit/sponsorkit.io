@@ -124,7 +124,7 @@ public sealed class IocRegistry
 
     private void ConfigureLogging()
     {
-        Services.AddTransient(p => Log.Logger);
+        Services.AddTransient(_ => Log.Logger);
     }
 
     private void ConfigureFlurl()
@@ -212,10 +212,10 @@ public sealed class IocRegistry
 
         void RegisterStripeEventHandler<TEventHandler, TData>()  
             where TData : class
-            where TEventHandler : class, IStripeEventHandler<TData>
+            where TEventHandler : StripeEventHandler<TData>, IStripeEventHandler
         {
-            Services.AddScoped<IStripeEventHandler<TData>, TEventHandler>();
             Services.AddScoped<IStripeEventHandler, TEventHandler>();
+            Services.AddScoped<StripeEventHandler<TData>, TEventHandler>();
         }
     }
 
@@ -375,7 +375,7 @@ public sealed class IocRegistry
                 Version = "v1"
             });
 
-            c.TagActionsBy(x => new[]
+            c.TagActionsBy(_ => new[]
             {
                 "General"
             });

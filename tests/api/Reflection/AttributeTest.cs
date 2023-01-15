@@ -49,7 +49,7 @@ public class AttributeTest
             Assert.Fail(errorMessageBuilder.ToString());
     }
 
-    private bool HasRouteAttribute(MethodInfo method)
+    private static bool HasRouteAttribute(MethodInfo method)
     {
         var routeAttributes = new []
         {

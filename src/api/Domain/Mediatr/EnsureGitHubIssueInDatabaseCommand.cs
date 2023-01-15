@@ -40,14 +40,14 @@ public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureG
             request.OwnerName,
             request.RepositoryName);
         if (gitHubRepository == null)
-            return Result<Issue>.NotFound();
+            return Result<Issue>.NotFound("Repository not found.");
 
         var gitHubIssue = await gitHubClient.Issue.Get(
             request.OwnerName,
             request.RepositoryName,
             request.IssueNumber);
         if (gitHubIssue == null)
-            return Result<Issue>.NotFound();
+            return Result<Issue>.NotFound("Issue not found.");
 
         var repository = await EnsureRepositoryInDatabaseAsync(gitHubRepository, cancellationToken);
         var issue = await EnsureIssueInDatabaseAsync(gitHubIssue, repository, cancellationToken);

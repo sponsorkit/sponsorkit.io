@@ -13,8 +13,3 @@ public interface IStripeEventHandler
         object data, 
         CancellationToken cancellationToken);
 }
-
-public interface IStripeEventHandler<TData> : IStripeEventHandler
-    where TData : class
-{
-}

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Controllers.Api.Bounties.Claims;
 using Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
@@ -70,7 +69,7 @@ public class BountiesGitHubIssueIdGetTest
         var payment2 = await environment.Database.PaymentBuilder
             .WithAmount(15_00, 1_00)
             .WithBounty(bounty2)
-            .BuildAsync();;
+            .BuildAsync();
 
             
         var handler = environment.ServiceProvider.GetRequiredService<BountiesGitHubIssueIdGet>();

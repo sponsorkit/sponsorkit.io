@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +7,6 @@ using NSubstitute;
 using Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Tests.TestHelpers;
-using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Api.Account.StripeConnect;

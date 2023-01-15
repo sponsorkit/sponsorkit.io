@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -80,6 +81,7 @@ public class PayoutHostedService : TimedHostedService
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedParameter.Local")]
     private static async Task RedistributeFundsToTopOpenSourceIssuesAsync(
         BountyClaimRequest claimRequest,
         DataContext dataContext,

@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Controllers.Api.Bounties;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Calculate;
 using Sponsorkit.Tests.TestHelpers;
 
