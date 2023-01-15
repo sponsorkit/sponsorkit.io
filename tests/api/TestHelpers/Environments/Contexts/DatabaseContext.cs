@@ -15,6 +15,7 @@ public class DatabaseContext
 
     public TestUserBuilder UserBuilder => new (environment);
     public TestIssueBuilder IssueBuilder => new (environment);
+    public TestPaymentBuilder PaymentBuilder => new (environment);
     public TestRepositoryBuilder RepositoryBuilder => new (environment);
     public TestPullRequestBuilder PullRequestBuilder => new (environment);
     public TestBountyBuilder BountyBuilder => new (environment);

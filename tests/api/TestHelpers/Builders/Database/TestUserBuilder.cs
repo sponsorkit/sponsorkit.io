@@ -25,6 +25,7 @@ public class TestUserBuilder : UserBuilder
         WithStripeCustomerId(string.Empty);
         WithEmail("integration-test@example.com");
         WithStripeCustomer(environment.Stripe.CustomerBuilder);
+        WithGitHub(1337, "username", "access-token");
     }
 
     public TestUserBuilder WithStripeCustomer(StripeCustomerBuilder stripeCustomerBuilder)
