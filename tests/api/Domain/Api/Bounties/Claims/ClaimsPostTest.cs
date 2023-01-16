@@ -67,13 +67,20 @@ public class ClaimsPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithoutGitHub()
+            .BuildAsync();
 
         var gitHubIssue = await environment.Database.IssueBuilder
             .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        var pullRequest = await environment.GitHub.PullRequest
+            .WithUser(new TestGitHubUser()
+            {
+                Id = (int)authenticatedUser.GitHub.Id
+            })
+            .BuildAsync();
 
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest

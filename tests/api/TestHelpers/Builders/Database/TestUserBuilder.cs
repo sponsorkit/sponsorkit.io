@@ -13,7 +13,7 @@ public class TestUserBuilder : UserBuilder
     private readonly IIntegrationTestEnvironment environment;
 
     private StripeCustomerBuilder stripeCustomerBuilder;
-    
+
     private bool skipCustomerCreation;
     private DateTimeOffset? emailVerifiedAt;
 
@@ -31,6 +31,15 @@ public class TestUserBuilder : UserBuilder
     public TestUserBuilder WithStripeCustomer(StripeCustomerBuilder stripeCustomerBuilder)
     {
         this.stripeCustomerBuilder = stripeCustomerBuilder;
+        return this;
+    }
+
+    public TestUserBuilder WithoutGitHub()
+    {
+        GitHubId = null;
+        GitHubUsername = null;
+        GitHubAccessToken = null;
+
         return this;
     }
 

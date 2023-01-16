@@ -23,6 +23,7 @@ public class SponsorsBeneficiaryGetTest
 
         await environment.Database.UserBuilder
             .WithId(beneficiaryId)
+            .WithGitHub(1337, "username", "accessToken")
             .BuildAsync();
             
         //Act
@@ -33,7 +34,7 @@ public class SponsorsBeneficiaryGetTest
         //Assert
         var responseObject = response.ToResponseObject();
 
-        Assert.AreEqual("some-user-id", responseObject.Id.ToString());
+        Assert.AreEqual(beneficiaryId, responseObject.Id);
         Assert.AreEqual("1337", responseObject.GitHubId.ToString());
     }
 }

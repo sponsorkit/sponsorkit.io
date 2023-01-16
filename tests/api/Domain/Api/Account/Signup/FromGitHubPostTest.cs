@@ -120,7 +120,15 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserAlreadyExistsInDatabase_GeneratesJwtTokenForUser()
     {
         //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        var fakeTokenFactory = Substitute.For<ITokenFactory>();
+        fakeTokenFactory
+            .Create(Arg.Any<Claim[]>())
+            .Returns("some-jwt-token");
+        
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services => services.AddSingleton(fakeTokenFactory)
+        });
         
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
@@ -142,11 +150,6 @@ public class FromGitHubPostTest
             {
                 Id = gitHubUserId
             });
-
-        var fakeTokenFactory = Substitute.For<ITokenFactory>();
-        fakeTokenFactory
-            .Create(Arg.Any<Claim[]>())
-            .Returns("some-jwt-token");
 
         var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory

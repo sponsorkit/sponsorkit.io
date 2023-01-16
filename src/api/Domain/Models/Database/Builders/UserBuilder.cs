@@ -18,9 +18,9 @@ public class UserBuilder : AsyncModelBuilder<User>
 
     private readonly DateTimeOffset createdAt;
 
-    private long? gitHubId;
-    private string? gitHubUsername;
-    private string? gitHubAccessToken;
+    protected long? GitHubId;
+    protected string? GitHubUsername;
+    protected string? GitHubAccessToken;
 
     public UserBuilder(
         IEncryptionHelper encryptionHelper)
@@ -59,9 +59,9 @@ public class UserBuilder : AsyncModelBuilder<User>
         string username,
         string accessToken)
     {
-        gitHubId = id;
-        gitHubUsername = username;
-        gitHubAccessToken = accessToken;
+        GitHubId = id;
+        GitHubUsername = username;
+        GitHubAccessToken = accessToken;
         return this;
     }
 
@@ -73,12 +73,12 @@ public class UserBuilder : AsyncModelBuilder<User>
         if (stripeCustomerId == null)
             throw new InvalidOperationException("Stripe customer ID must be specified.");
 
-        var gitHub = gitHubId != null && gitHubUsername != null && gitHubAccessToken != null
+        var gitHub = GitHubId != null && GitHubUsername != null && GitHubAccessToken != null
             ? new UserGitHubInformation()
             {
-                Id = gitHubId.Value,
-                Username = gitHubUsername,
-                EncryptedAccessToken = await encryptionHelper.EncryptAsync(gitHubAccessToken)
+                Id = GitHubId.Value,
+                Username = GitHubUsername,
+                EncryptedAccessToken = await encryptionHelper.EncryptAsync(GitHubAccessToken)
             }
             : null;
 
