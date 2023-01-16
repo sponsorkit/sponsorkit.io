@@ -75,12 +75,7 @@ public class ClaimsPostTest
             .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequest
-            .WithUser(new TestGitHubUser()
-            {
-                Id = (int)authenticatedUser.GitHub.Id
-            })
-            .BuildAsync();
+        var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
 
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest

@@ -11,6 +11,7 @@ namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 
 public class TestStripeAccountBuilder : StripeAccountBuilder
 {
+    private readonly AccountService accountService;
     private readonly IMediator mediator;
 
     private bool isVerificationCompleted;
@@ -19,6 +20,7 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
         AccountService accountService,
         IMediator mediator) : base(accountService)
     {
+        this.accountService = accountService;
         this.mediator = mediator;
 
         WithEmail("some-email@example.com");
@@ -36,13 +38,13 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
 
         if (isVerificationCompleted)
         {
-            await VerifyAccount(account, cancellationToken);
+            account = await VerifyAccount(account, cancellationToken);
         }
 
         return account;
     }
 
-    private async Task VerifyAccount(
+    private async Task<Account> VerifyAccount(
         Account account, 
         CancellationToken cancellationToken)
     {
@@ -68,5 +70,9 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
             .WithStandardOutputPipe(PipeTarget.ToDelegate(Console.WriteLine))
             .WithValidation(CommandResultValidation.ZeroExitCode)
             .ExecuteAsync();
+
+        return await accountService.GetAsync(
+            account.Id, 
+            cancellationToken: cancellationToken);
     }
 }

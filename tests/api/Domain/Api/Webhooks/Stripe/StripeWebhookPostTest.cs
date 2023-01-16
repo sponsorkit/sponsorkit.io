@@ -4,19 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe;
 
 [TestClass]
-public class PostTest
+public class StripeWebhookPostTest
 {
-    [TestMethod]
-    public async Task HandleAsync_IpAddressNotApproved_ReturnsBadRequest()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
     [TestMethod]
     public async Task HandleAsync_StripeSignatureNotPresent_ThrowsException()
     {
