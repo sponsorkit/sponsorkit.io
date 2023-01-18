@@ -63,12 +63,6 @@ public class EmailTemplateTest
     }
         
     [TestMethod]
-    public async Task EveryEmailTemplateHasProperProjectSettings()
-    {
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
     public async Task EveryTemplateDirectoryExists()
     {
         var allTemplateDirectories = GetAllTemplateDirectories();

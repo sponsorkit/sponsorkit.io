@@ -136,46 +136,86 @@ public class BountySetupIntentSucceededEventHandlerTest
         
     [TestMethod]
     public async Task CanHandle_ProperMetadataAndType_CanHandle()
-    {
+    {        
         //Arrange
-            
+        var fakeMediator = Substitute.For<IMediator>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeMediator);
+            }
+        });
+
+        var eventHandler = GetEventHandler(environment);
+
         //Act
+        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        {
+            Metadata = new Dictionary<string, string>()
+            {
+                { UniversalMetadataKeys.Type, UniversalMetadataTypes.BountySetupIntent }
+            }
+        });
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsTrue(canHandle);
     }
         
     [TestMethod]
     public async Task CanHandle_UnrecognizedTypeGiven_CanNotHandle()
     {
         //Arrange
-            
+        var fakeMediator = Substitute.For<IMediator>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeMediator);
+            }
+        });
+
+        var eventHandler = GetEventHandler(environment);
+
         //Act
+        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        {
+            Metadata = new Dictionary<string, string>()
+            {
+                { UniversalMetadataKeys.Type, "some-unknown-type" }
+            }
+        });
             
         //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task CanHandle_UnrecognizedMetadataTypeGiven_CanNotHandle()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsFalse(canHandle);
     }
         
     [TestMethod]
     public async Task CanHandle_MetadataDoesNotContainTypeKey_CanNotHandle()
     {
         //Arrange
-            
+        var fakeMediator = Substitute.For<IMediator>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeMediator);
+            }
+        });
+
+        var eventHandler = GetEventHandler(environment);
+
         //Act
+        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        {
+            Metadata = new Dictionary<string, string>()
+            {
+                { "incorrect-type-key", "some-unknown-type" }
+            }
+        });
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.IsFalse(canHandle);
     }
 
     private record Metadata(
@@ -189,10 +229,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         SponsorkitIntegrationTestEnvironment environment,
         Metadata metadata)
     {
-        var handler = environment.ServiceProvider
-            .GetRequiredService<IEnumerable<IStripeEventHandler>>()
-            .OfType<BountySetupIntentSucceededEventHandler>()
-            .Single();
+        var handler = GetEventHandler(environment);
         await handler.HandleAsync(
             "some-event-id",
             new SetupIntent()
@@ -221,5 +258,13 @@ public class BountySetupIntentSucceededEventHandlerTest
                 }
             },
             default);
+    }
+
+    private static BountySetupIntentSucceededEventHandler GetEventHandler(SponsorkitIntegrationTestEnvironment environment)
+    {
+        return environment.ServiceProvider
+            .GetRequiredService<IEnumerable<IStripeEventHandler>>()
+            .OfType<BountySetupIntentSucceededEventHandler>()
+            .Single();
     }
 }

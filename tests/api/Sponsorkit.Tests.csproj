@@ -46,6 +46,7 @@
 
     <ItemGroup>
       <Folder Include="Domain\Api\Bounties\Intent" />
+      <Folder Include="Infrastructure\Ioc" />
     </ItemGroup>
 
 </Project>
