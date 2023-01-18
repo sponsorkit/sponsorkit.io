@@ -24,6 +24,7 @@ public class BountySetupIntentSucceededEventHandlerTest
     public async Task HandleAsync_NoUserFoundFromMetadata_ThrowsException()
     {
         //Arrange
+        
             
         //Act
             
@@ -85,10 +86,29 @@ public class BountySetupIntentSucceededEventHandlerTest
         //Assert
         Assert.Fail("Not implemented.");
     }
-        
+
     [TestMethod]
-    public async Task HandleAsync_Success_UpsertsGitHubComment()
+    public async Task FullFlow_BountyDoesNotExist_CreatesBounty()
     {
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
+        
+        
+        Assert.Fail("I should be based on a full flow with webhooks.");
+    }
+
+    [TestMethod]
+    public async Task FullFlow_BountyExistsAlready_AttachesPaymentToBounty()
+    {
+        Assert.Fail("I should be based on a full flow with webhooks.");
+    }
+
+    [TestMethod]
+    public async Task FullFlow_Success_UpsertsGitHubComment()
+    {
+        Assert.Fail("I should be based on a full flow with webhooks.");
+        
         //Arrange
         var fakeMediator = Substitute.For<IMediator>();
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()

@@ -54,6 +54,21 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
 
     private async Task HandleBountySetupIntentAsync(string eventId, SetupIntent data, CancellationToken cancellationToken)
     {
+        if (!data.Metadata.ContainsKey(MetadataKeys.AmountInHundreds))
+            throw new InvalidOperationException("Could not find amount in metadata.");
+
+        if (!data.Metadata.ContainsKey(MetadataKeys.GitHubIssueNumber))
+            throw new InvalidOperationException("Could not find GitHub issue number in metadata.");
+
+        if (!data.Metadata.ContainsKey(MetadataKeys.GitHubIssueOwnerName))
+            throw new InvalidOperationException("Could not find GitHub owner name in metadata.");
+
+        if (!data.Metadata.ContainsKey(MetadataKeys.GitHubIssueRepositoryName))
+            throw new InvalidOperationException("Could not find GitHub repository name in metadata.");
+
+        if (!data.Metadata.ContainsKey(MetadataKeys.UserId))
+            throw new InvalidOperationException("Could not find user ID in metadata.");
+
         var amountInHundreds = long.Parse(data.Metadata[MetadataKeys.AmountInHundreds], CultureInfo.InvariantCulture);
         var gitHubIssueNumber = int.Parse(data.Metadata[MetadataKeys.GitHubIssueNumber], CultureInfo.InvariantCulture);
         var gitHubOwnerName = data.Metadata[MetadataKeys.GitHubIssueOwnerName];
