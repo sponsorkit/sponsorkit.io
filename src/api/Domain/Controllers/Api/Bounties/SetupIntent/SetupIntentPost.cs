@@ -23,9 +23,13 @@ public record GitHubIssueRequest(
 public record PostRequest(
     GitHubIssueRequest Issue,
     long AmountInHundreds);
+
+public record PaymentIntentResponse(
+    string ClientSecret,
+    string Id);
     
 public record PostResponse(
-    string PaymentIntentClientSecret,
+    PaymentIntentResponse PaymentIntent,
     string? ExistingPaymentMethodId);
 
 public static class MetadataKeys
@@ -105,7 +109,7 @@ public class SetupIntentPost : EndpointBaseAsync
             .BuildAsync(cancellationToken);
             
         return new PostResponse(
-            intent.ClientSecret,
+            new (intent.ClientSecret, intent.Id),
             paymentMethod?.Id);
     }
 }

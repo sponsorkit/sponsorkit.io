@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
+using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.Logging.HttpContext;
 using Sponsorkit.Infrastructure.Options;
 using Stripe;
@@ -75,6 +76,11 @@ public class Post : EndpointBaseAsync
             }
             catch (Exception ex)
             {
+                logger.Error(ex, "A Stripe webhook error occured.");
+                
+                if (EnvironmentHelper.IsRunningInTest)
+                    throw;
+
                 var buffer = Encoding.UTF8.GetBytes(ex.ToString());
                 await Response.Body.WriteAsync(buffer, cancellationToken);
             }
@@ -84,6 +90,10 @@ public class Post : EndpointBaseAsync
         catch (StripeException e)
         {
             logger.Error(e, "A Stripe webhook error occured.");
+            
+            if (EnvironmentHelper.IsRunningInTest)
+                throw;
+            
             return BadRequest("A Stripe webhook error occured.");
         }
         catch (EventAlreadyHandledException ex)

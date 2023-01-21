@@ -29,6 +29,8 @@ public class StripeContext
     
     public StripePlanBuilder PlanBuilder => 
         new(serviceProvider.GetRequiredService<PlanService>());
+    
+    public SetupIntentService SetupIntentService => serviceProvider.GetRequiredService<SetupIntentService>();
 
     public CustomerService CustomerService => serviceProvider.GetRequiredService<CustomerService>();
     public TestStripeCustomerBuilder CustomerBuilder => new(CustomerService);
@@ -39,7 +41,7 @@ public class StripeContext
         AccountService,
         serviceProvider.GetRequiredService<IMediator>());
 
-    public StripePaymentMethodBuilder PaymentMethodBuilder => 
+    public TestStripePaymentMethodBuilder PaymentMethodBuilder => 
         new(serviceProvider.GetRequiredService<PaymentMethodService>());
 
     public StripeContext(

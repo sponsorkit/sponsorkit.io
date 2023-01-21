@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sponsorkit.Domain.Models.Database.Context;
 
+#nullable disable
+
 namespace Sponsorkit.Migrations
 {
     [DbContext(typeof(DataContext))]
@@ -15,11 +17,12 @@ namespace Sponsorkit.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.11")
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                .HasAnnotation("ProductVersion", "7.0.2")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Bounty", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +52,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Bounties");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.BountyClaimRequest", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.BountyClaimRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -88,7 +91,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("BountyClaimRequests");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Issue", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -104,7 +107,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Issues");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Payment", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Payment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -154,7 +157,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Payments");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.PullRequest", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.PullRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -170,7 +173,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("PullRequests");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Repository", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -186,7 +189,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Repositories");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Sponsorship", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -220,7 +223,7 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Sponsorships");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -248,19 +251,19 @@ namespace Sponsorkit.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Bounty", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.User", "AwardedTo")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "AwardedTo")
                         .WithMany()
                         .HasForeignKey("AwardedToId");
 
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Creator")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "Creator")
                         .WithMany("CreatedBounties")
                         .HasForeignKey("CreatorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Sponsorkit.Domain.Models.Issue", "Issue")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Issue", "Issue")
                         .WithMany("Bounties")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -273,21 +276,21 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Issue");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.BountyClaimRequest", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.BountyClaimRequest", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.Bounty", "Bounty")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Bounty", "Bounty")
                         .WithMany("ClaimRequests")
                         .HasForeignKey("BountyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Creator")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "Creator")
                         .WithMany("BountyClaimRequests")
                         .HasForeignKey("CreatorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Sponsorkit.Domain.Models.PullRequest", "PullRequest")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.PullRequest", "PullRequest")
                         .WithMany()
                         .HasForeignKey("PullRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -300,15 +303,15 @@ namespace Sponsorkit.Migrations
                     b.Navigation("PullRequest");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Issue", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.Repository", "Repository")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Repository", "Repository")
                         .WithMany("Issues")
                         .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("Sponsorkit.Domain.Models.IssueGitHubInformation", "GitHub", b1 =>
+                    b.OwnsOne("Sponsorkit.Domain.Models.Database.IssueGitHubInformation", "GitHub", b1 =>
                         {
                             b1.Property<Guid>("IssueId")
                                 .HasColumnType("uuid");
@@ -337,14 +340,14 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Repository");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Payment", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Payment", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.Bounty", "Bounty")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Bounty", "Bounty")
                         .WithMany("Payments")
                         .HasForeignKey("BountyId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Sponsorkit.Domain.Models.Sponsorship", "Sponsorship")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Sponsorship", "Sponsorship")
                         .WithMany("Payments")
                         .HasForeignKey("SponsorshipId");
 
@@ -353,15 +356,15 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Sponsorship");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.PullRequest", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.PullRequest", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.Repository", "Repository")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Repository", "Repository")
                         .WithMany("PullRequests")
                         .HasForeignKey("RepositoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsOne("Sponsorkit.Domain.Models.PullRequestGitHubInformation", "GitHub", b1 =>
+                    b.OwnsOne("Sponsorkit.Domain.Models.Database.PullRequestGitHubInformation", "GitHub", b1 =>
                         {
                             b1.Property<Guid>("PullRequestId")
                                 .HasColumnType("uuid");
@@ -386,13 +389,13 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Repository");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Repository", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Owner")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("OwnerId");
 
-                    b.OwnsOne("Sponsorkit.Domain.Models.RepositoryGitHubInformation", "GitHub", b1 =>
+                    b.OwnsOne("Sponsorkit.Domain.Models.Database.RepositoryGitHubInformation", "GitHub", b1 =>
                         {
                             b1.Property<Guid>("RepositoryId")
                                 .HasColumnType("uuid");
@@ -422,21 +425,21 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Sponsorship", b =>
                 {
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Beneficiary")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "Beneficiary")
                         .WithMany("AwardedSponsorships")
                         .HasForeignKey("BeneficiaryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Sponsorkit.Domain.Models.Repository", "Repository")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.Repository", "Repository")
                         .WithMany("Sponsorships")
                         .HasForeignKey("SponsorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Sponsorkit.Domain.Models.User", "Sponsor")
+                    b.HasOne("Sponsorkit.Domain.Models.Database.User", "Sponsor")
                         .WithMany("CreatedSponsorships")
                         .HasForeignKey("SponsorId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -449,9 +452,9 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Sponsor");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.User", b =>
                 {
-                    b.OwnsOne("Sponsorkit.Domain.Models.UserGitHubInformation", "GitHub", b1 =>
+                    b.OwnsOne("Sponsorkit.Domain.Models.Database.UserGitHubInformation", "GitHub", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uuid");
@@ -478,19 +481,19 @@ namespace Sponsorkit.Migrations
                     b.Navigation("GitHub");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Bounty", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Bounty", b =>
                 {
                     b.Navigation("ClaimRequests");
 
                     b.Navigation("Payments");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Issue", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Issue", b =>
                 {
                     b.Navigation("Bounties");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Repository", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Repository", b =>
                 {
                     b.Navigation("Issues");
 
@@ -499,12 +502,12 @@ namespace Sponsorkit.Migrations
                     b.Navigation("Sponsorships");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.Sponsorship", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.Sponsorship", b =>
                 {
                     b.Navigation("Payments");
                 });
 
-            modelBuilder.Entity("Sponsorkit.Domain.Models.User", b =>
+            modelBuilder.Entity("Sponsorkit.Domain.Models.Database.User", b =>
                 {
                     b.Navigation("AwardedSponsorships");
 

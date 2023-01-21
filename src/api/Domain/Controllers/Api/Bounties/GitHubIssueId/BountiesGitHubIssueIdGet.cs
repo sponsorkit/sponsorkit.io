@@ -23,7 +23,7 @@ public record BountyClaimRequestResponse(
 
 public record BountyResponse(
     long AmountInHundreds,
-    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset CreatedAt,
     BountyUserResponse CreatorUser,
     BountyUserResponse? AwardedUser,
     BountyClaimRequestResponse[] ClaimRequests);

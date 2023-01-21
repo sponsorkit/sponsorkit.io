@@ -12,7 +12,9 @@ using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Domain.Mediatr;
+using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 
 namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers;
@@ -92,8 +94,38 @@ public class BountySetupIntentSucceededEventHandlerTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        environment.GitHub.FakeClient.Repository
+            .Get(
+                "repository-owner",
+                "repository-name")
+            .Returns(new TestRepository());
+
+        environment.GitHub.FakeClient.Issue
+            .Get(
+                "repository-owner",
+                "repository-name",
+                1337)
+            .Returns(new TestIssue());
+
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder
+                .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
+            .BuildAsync();
+
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
+        setupIntentPost.FakeAuthentication(authenticatedUser);
         
-        
+        //Act
+        var result = await setupIntentPost.HandleAsync(new PostRequest(
+            new GitHubIssueRequest(
+                "repository-owner",
+                "repository-name",
+                1337),
+            10_00));
+        var response = result.ToResponseObject();
+        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
+        Assert.AreEqual("succeeded", refreshedIntent.Status);
         
         Assert.Fail("I should be based on a full flow with webhooks.");
     }

@@ -20,11 +20,11 @@
     <PackageReference Include="Ardalis.ApiEndpoints.CodeAnalyzers" Version="4.0.0" />
     <PackageReference Include="Ardalis.Result" Version="4.1.0" />
     <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="7.0.0" />
-    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.2" />
-    <PackageReference Include="AWSSDK.KeyManagementService" Version="3.7.101.29" />
-    <PackageReference Include="AWSSDK.SimpleEmailV2" Version="3.7.101.47" />
+    <PackageReference Include="AWSSDK.KeyManagementService" Version="3.7.101.33" />
+    <PackageReference Include="AWSSDK.SimpleEmailV2" Version="3.7.101.51" />
     <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Destructurama.Attributed" Version="3.0.0" />
     <PackageReference Include="Docker.DotNet" Version="3.125.12" />
@@ -49,14 +49,14 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="7.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
-    <PackageReference Include="Octokit" Version="4.0.4" />
+    <PackageReference Include="Octokit" Version="5.0.0" />
     <PackageReference Include="Octokit.GraphQL" Version="0.1.7-beta" />
-    <PackageReference Include="RazorLight" Version="2.3.0" />
+    <PackageReference Include="RazorLight" Version="2.3.1" />
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="Stripe.net" Version="41.4.0" />
+    <PackageReference Include="Stripe.net" Version="41.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
   <ItemGroup>
