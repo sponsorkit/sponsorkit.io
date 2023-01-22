@@ -12,7 +12,6 @@ using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
@@ -199,51 +198,49 @@ public class BountySetupIntentSucceededEventHandlerTest
     [TestMethod]
     public async Task FullFlow_Success_UpsertsGitHubComment()
     {
-        Assert.Fail("I should be based on a full flow with webhooks.");
-        
         //Arrange
-        var fakeMediator = Substitute.For<IMediator>();
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
-        {
-            IocConfiguration = services =>
-            {
-                services.AddSingleton(fakeMediator);
-            }
-        });
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var issue = await environment.Database.IssueBuilder
-            .WithGitHubInformation(
-                id: 1338,
-                number: 1339,
-                titleSnapshot: "")
+        environment.GitHub.FakeClient.Repository
+            .Get(
+                "repository-owner",
+                "repository-name")
+            .Returns(new TestRepository());
+
+        environment.GitHub.FakeClient.Issue
+            .Get(
+                "repository-owner",
+                "repository-name",
+                1337)
+            .Returns(new TestIssue());
+
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder
+                .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
             .BuildAsync();
-        fakeMediator
-            .Send(
-                Arg.Any<EnsureGitHubIssueInDatabaseCommand>(),
-                default)
-            .Returns(issue);
-            
-        var user = await environment.Database.UserBuilder.BuildAsync();
 
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
+        setupIntentPost.FakeAuthentication(authenticatedUser);
+        
+        var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
+            await context.Bounties.SingleOrDefaultAsync());
+        Assert.IsNull(preconditionBounty);
+        
         //Act
-        await CallHandleAsync(
-            environment,
-            new Metadata(
-                10_00,
-                issue.GitHub.Number,
-                issue.Repository.GitHub.OwnerName,
-                issue.Repository.GitHub.Name,
-                user.Id));
-            
+        var result = await setupIntentPost.HandleAsync(new PostRequest(
+            new GitHubIssueRequest(
+                "repository-owner",
+                "repository-name",
+                1337),
+            10_00));
+        var response = result.ToResponseObject();
+        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
+        Assert.AreEqual("succeeded", refreshedIntent.Status);
+
+        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        
         //Assert
-        await fakeMediator
-            .Received(1)
-            .Send(
-                Arg.Is<UpsertIssueCommentCommand>(command => 
-                    command.OwnerName == "some-owner-name" &&
-                    command.RepositoryName == "some-name" &&
-                    command.IssueNumber == 1339),
-                default);
+        Assert.Fail("Not done");
     }
         
     [TestMethod]
