@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Amazon.SimpleEmailV2;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,5 +49,11 @@ public class StripeContext
         IServiceProvider serviceProvider)
     {
         this.serviceProvider = serviceProvider;
+    }
+
+    public async Task WaitForWebhookAsync(string eventType)
+    {
+        //for now, we just wait 5 seconds. this could be greatly improved in the future.
+        await Task.Delay(5000);
     }
 }

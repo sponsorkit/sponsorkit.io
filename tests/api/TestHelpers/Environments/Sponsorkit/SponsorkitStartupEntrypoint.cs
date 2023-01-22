@@ -115,10 +115,10 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
     public async ValueTask DisposeAsync()
     {
+        await application.StopAsync();
+        
         cancellationTokenSource.Cancel();
 
-        scope.Dispose();
-        await application.StopAsync();
         await application.DisposeAsync();
 
         if (backgroundEndpointExceptions.Count > 0)

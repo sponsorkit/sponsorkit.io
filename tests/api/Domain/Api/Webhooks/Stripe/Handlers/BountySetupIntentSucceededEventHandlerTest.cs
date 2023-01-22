@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
@@ -116,6 +117,10 @@ public class BountySetupIntentSucceededEventHandlerTest
         var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(authenticatedUser);
         
+        var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
+            await context.Bounties.SingleOrDefaultAsync());
+        Assert.IsNull(preconditionBounty);
+        
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
             new GitHubIssueRequest(
@@ -127,13 +132,68 @@ public class BountySetupIntentSucceededEventHandlerTest
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
-        Assert.Fail("I should be based on a full flow with webhooks.");
+        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        
+        //Assert
+        var bounty = await environment.Database.WithoutCachingAsync(async context =>
+            await context.Bounties.SingleOrDefaultAsync());
+        Assert.IsNotNull(bounty);
     }
 
     [TestMethod]
     public async Task FullFlow_BountyExistsAlready_AttachesPaymentToBounty()
     {
-        Assert.Fail("I should be based on a full flow with webhooks.");
+        //Arrange
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        environment.GitHub.FakeClient.Repository
+            .Get(
+                "repository-owner",
+                "repository-name")
+            .Returns(new TestRepository());
+
+        environment.GitHub.FakeClient.Issue
+            .Get(
+                "repository-owner",
+                "repository-name",
+                1337)
+            .Returns(new TestIssue());
+
+        var authenticatedUser = await environment.Database.UserBuilder
+            .WithStripeCustomer(environment.Stripe.CustomerBuilder
+                .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
+            .BuildAsync();
+
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
+        setupIntentPost.FakeAuthentication(authenticatedUser);
+        
+        var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
+            await context.Bounties.SingleOrDefaultAsync());
+        Assert.IsNull(preconditionBounty);
+        
+        //Act
+        var result = await setupIntentPost.HandleAsync(new PostRequest(
+            new GitHubIssueRequest(
+                "repository-owner",
+                "repository-name",
+                1337),
+            10_00));
+        var response = result.ToResponseObject();
+        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
+        Assert.AreEqual("succeeded", refreshedIntent.Status);
+
+        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        
+        //Assert
+        var bounty = await environment.Database.WithoutCachingAsync(async context =>
+            await context.Bounties
+                .Include(x => x.Payments)
+                .SingleAsync());
+        
+        var payment = bounty.Payments.SingleOrDefault();
+        Assert.IsNotNull(payment);
+
+        Assert.AreEqual(10_00, payment.AmountInHundreds);
     }
 
     [TestMethod]
