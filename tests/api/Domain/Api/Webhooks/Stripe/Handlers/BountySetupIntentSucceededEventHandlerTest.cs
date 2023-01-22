@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MediatR;
@@ -12,6 +10,7 @@ using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Domain.Helpers;
+using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
@@ -22,73 +21,6 @@ namespace Sponsorkit.Tests.Domain.Api.Webhooks.Stripe.Handlers;
 [TestClass]
 public class BountySetupIntentSucceededEventHandlerTest
 {
-    [TestMethod]
-    public async Task HandleAsync_NoUserFoundFromMetadata_ThrowsException()
-    {
-        //Arrange
-        
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task HandleAsync_NoUserFoundFromMetadata_RollsBackCreatedIssue()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task HandleAsync_NoExistingBountyFound_CreatesNewBounty()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task HandleAsync_ExistingBountyFound_UpdatesBountyAmount()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task HandleAsync_PreviouslyHandled_RollsBackToMakeSureBountyAmountIsUnchanged()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-        
-    [TestMethod]
-    public async Task HandleAsync_PreviouslyHandled_ThrowsError()
-    {
-        //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
-
     [TestMethod]
     public async Task FullFlow_BountyDoesNotExist_CreatesBounty()
     {
@@ -240,7 +172,9 @@ public class BountySetupIntentSucceededEventHandlerTest
         await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
         
         //Assert
-        Assert.Fail("Not done");
+        await environment.PartiallyFakeMediator
+            .Received(1)
+            .Send(Arg.Any<UpsertIssueCommentCommand>());
     }
         
     [TestMethod]
@@ -325,48 +259,6 @@ public class BountySetupIntentSucceededEventHandlerTest
             
         //Assert
         Assert.IsFalse(canHandle);
-    }
-
-    private record Metadata(
-        long AmountInHundreds,
-        int GitHubIssueNumber,
-        string GitHubOwnerName,
-        string GitHubRepositoryName,
-        Guid UserId);
-
-    private static async Task CallHandleAsync(
-        SponsorkitIntegrationTestEnvironment environment,
-        Metadata metadata)
-    {
-        var handler = GetEventHandler(environment);
-        await handler.HandleAsync(
-            "some-event-id",
-            new SetupIntent()
-            {
-                Id = "some-id",
-                Metadata = new Dictionary<string, string>()
-                {
-                    {
-                        UniversalMetadataKeys.Type, UniversalMetadataTypes.BountySetupIntent
-                    },
-                    {
-                        MetadataKeys.AmountInHundreds, metadata.AmountInHundreds.ToString(CultureInfo.InvariantCulture)
-                    },
-                    {
-                        MetadataKeys.GitHubIssueNumber, metadata.GitHubIssueNumber.ToString(CultureInfo.InvariantCulture)
-                    },
-                    {
-                        MetadataKeys.GitHubIssueOwnerName, metadata.GitHubOwnerName
-                    },
-                    {
-                        MetadataKeys.GitHubIssueRepositoryName, metadata.GitHubRepositoryName
-                    },
-                    {
-                        MetadataKeys.UserId, metadata.UserId.ToString()
-                    }
-                }
-            },
-            default);
     }
 
     private static BountySetupIntentSucceededEventHandler GetEventHandler(SponsorkitIntegrationTestEnvironment environment)

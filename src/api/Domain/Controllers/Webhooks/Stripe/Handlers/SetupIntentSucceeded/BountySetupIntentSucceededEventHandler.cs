@@ -158,7 +158,7 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
             
         messageTextBuilder.AppendLine(GitHubCommentHelper.RenderSpoiler(
             "What is this?",
-            "bountyhunt.io is an open source service that allows people to put bounties on issues, and allows bountyhunters to claim those bounties.\n\nIn a way, we're helping people get paid for the open source work they do, and for people to live off of open source development.\n\nAdditionally, we help bring attention to the issues that matter most in the open source community.\n\nThis comment will only appear once ever, and will be modified if new bounties arrive, to reduce spam."));
+            "bountyhunt.io is an open source service that allows people to put bounties on issues, and allows bountyhunters to claim those bounties.\n\nIn a way, we're helping people get paid for the open source work they do, and for people to live off of open source development.\n\nAdditionally, we help bring attention to the issues that matter most in the open source community.\n\nThis comment will only appear once ever, and will be edited if new bounties arrive, to reduce spam."));
             
         await mediator.Send(
             new UpsertIssueCommentCommand(
