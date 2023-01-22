@@ -2,15 +2,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using MediatR;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Tests.TestHelpers.Environments.Contexts;
-using Migration = Microsoft.EntityFrameworkCore.Migrations.Migration;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments;
 
@@ -18,7 +15,7 @@ public interface IIntegrationTestEnvironment
 {
     public IServiceProvider ServiceProvider { get; }
 
-    public IMediator Mediator { get; }
+    public IMediator PartiallyFakeMediator { get; }
     public IEncryptionHelper EncryptionHelper  { get; }
     public DatabaseContext Database { get; }
     public GitHubContext GitHub { get; }
@@ -34,7 +31,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     public IServiceProvider ServiceProvider { get; }
 
-    public IMediator Mediator => ServiceProvider.GetRequiredService<Mediator>();
+    public IMediator PartiallyFakeMediator => ServiceProvider.GetRequiredService<Mediator>();
     public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
     public GitHubContext GitHub => new (ServiceProvider);
@@ -64,19 +61,6 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     public async ValueTask DisposeAsync()
     {
-        await DowngradeDatabaseAsync();
         await entrypoint.DisposeAsync();
-    }
-
-    private async Task DowngradeDatabaseAsync()
-    {
-        await Database.WithoutCachingAsync(async context =>
-        {
-            await context
-                .GetService<IMigrator>()
-                .MigrateAsync(Migration.InitialDatabase);
-
-            await context.SaveChangesAsync();
-        });
     }
 }

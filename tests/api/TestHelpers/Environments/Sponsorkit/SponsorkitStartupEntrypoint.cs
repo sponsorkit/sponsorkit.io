@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
@@ -22,9 +23,12 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
     private readonly CancellationTokenSource cancellationTokenSource;
 
+    private readonly IList<Exception> backgroundEndpointExceptions;
+
     public SponsorkitStartupEntrypoint(SponsorkitEnvironmentSetupOptions options)
     {
         cancellationTokenSource = new CancellationTokenSource();
+        backgroundEndpointExceptions = new List<Exception>();
 
         var builder = Startup.CreateWebApplicationBuilder(new WebApplicationOptions()
         {
@@ -44,11 +48,13 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                 TestServiceProviderFactory.ConfigureServicesForTesting(
                     services,
                     configuration,
-                    environment);
+                    environment,
+                    this);
                 options.IocConfiguration?.Invoke(services);
             });
         
         var app = builder.Build();
+        
         Startup.ConfigureWebApplication(app);
         
         application = app;
@@ -71,6 +77,11 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         await hostStartTask;
         
         await DatabaseMigrator.MigrateDatabaseForHostAsync(application);
+    }
+
+    public async Task OnBackgroundEndpointErrorAsync(Exception exception)
+    {
+        backgroundEndpointExceptions.Add(exception);
     }
 
     private static async Task WaitForUrlToBeAvailable(Task hostStartTask, string url)
@@ -107,6 +118,10 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         cancellationTokenSource.Cancel();
 
         scope.Dispose();
+        await application.StopAsync();
         await application.DisposeAsync();
+
+        if (backgroundEndpointExceptions.Count > 0)
+            throw new AggregateException(backgroundEndpointExceptions);
     }
 }

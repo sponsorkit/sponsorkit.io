@@ -415,7 +415,13 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
             },
             Image = "postgres:latest",
             Name = hostname,
-            Hostname = hostname
+            Hostname = hostname,
+            Cmd = new List<string>()
+            {
+                "postgres",
+                "-c",
+                "log_statement=all"
+            }
         };
     }
 

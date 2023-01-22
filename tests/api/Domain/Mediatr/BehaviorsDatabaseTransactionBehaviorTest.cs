@@ -25,11 +25,11 @@ public class DatabaseTransactionBehaviorTest
         //Act
         var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
         {
-            await environment.Mediator.Send(new TestCommand(async () =>
+            await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
             {
                 await environment.Database.UserBuilder.BuildAsync();
 
-                await environment.Mediator.Send(new TestCommand(async () =>
+                await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
                 {
                     await environment.Database.UserBuilder.BuildAsync();
                 }));
@@ -56,11 +56,11 @@ public class DatabaseTransactionBehaviorTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         //Act
-        await environment.Mediator.Send(new TestCommand(async () =>
+        await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
         {
             await environment.Database.UserBuilder.BuildAsync();
 
-            await environment.Mediator.Send(new TestCommand(async () =>
+            await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
             {
                 await environment.Database.UserBuilder.BuildAsync();
             }));
@@ -84,11 +84,11 @@ public class DatabaseTransactionBehaviorTest
         //Act
         var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
         {
-            await environment.Mediator.Send(new TestCommand(async () =>
+            await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
             {
                 await environment.Database.UserBuilder.BuildAsync();
 
-                await environment.Mediator.Send(new TestCommand(async () =>
+                await environment.PartiallyFakeMediator.Send(new TestCommand(async () =>
                 {
                     await environment.Database.UserBuilder.BuildAsync();
 

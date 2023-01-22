@@ -126,7 +126,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var response = result.ToResponseObject();
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
-        
+
         Assert.Fail("I should be based on a full flow with webhooks.");
     }
 
