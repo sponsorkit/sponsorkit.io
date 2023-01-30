@@ -31,7 +31,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     public IServiceProvider ServiceProvider { get; }
 
-    public IMediator PartiallyFakeMediator => ServiceProvider.GetRequiredService<Mediator>();
+    public IMediator PartiallyFakeMediator => ServiceProvider.GetRequiredService<VirtualMediator>();
     public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
     public GitHubContext GitHub => new (ServiceProvider);

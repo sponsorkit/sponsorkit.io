@@ -31,6 +31,9 @@ public class TestServiceProviderFactory
         services.AddScoped(p => 
             Substitute.ForPartsOf<Mediator>(
                 p.GetRequiredService<ServiceFactory>()));
+        services.AddScoped(p => 
+            Substitute.ForPartsOf<VirtualMediator>(
+                p.GetRequiredService<Mediator>()));
 
         services.AddSingleton(entrypoint);
 
