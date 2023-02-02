@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.Security.Encryption;
@@ -23,9 +24,14 @@ public interface IIntegrationTestEnvironment
     public StripeContext Stripe { get; }
 }
 
+public interface IEnvironmentSetupOptions
+{
+    public Action<IServiceCollection> IocConfiguration { get; set; }
+}
+
 [ExcludeFromCodeCoverage]
 public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, IIntegrationTestEnvironment
-    where TOptions : class, new()
+    where TOptions : IEnvironmentSetupOptions, new()
 {
     private readonly IIntegrationTestEntrypoint entrypoint;
 
@@ -36,17 +42,29 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
     public DatabaseContext Database => new (entrypoint, this);
     public GitHubContext GitHub => new (ServiceProvider);
     public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
-    public StripeContext Stripe => new(ServiceProvider);
+    public StripeContext Stripe => ServiceProvider.GetRequiredService<StripeContext>();
     public EmailContext Email => new(ServiceProvider);
 
     protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 
-    protected IntegrationTestEnvironment(TOptions options = null)
+    protected IntegrationTestEnvironment(TOptions options = default)
     {
         options ??= new TOptions();
 
         EnvironmentHelper.SetRunningInTestFlag();
 
+        var oldIocConfiguration = options.IocConfiguration;
+        options.IocConfiguration = services =>
+        {
+            services.AddSingleton<IIntegrationTestEnvironment>(this);
+
+            services.AddSingleton(provider => new StripeContext(
+                provider,
+                provider.GetRequiredService<ILogger>()));
+            
+            oldIocConfiguration?.Invoke(services);
+        };
+        
         entrypoint = GetEntrypoint(options);
         ServiceProvider = entrypoint.ScopeProvider;
     }

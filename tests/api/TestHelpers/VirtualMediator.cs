@@ -1,46 +1,50 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Sponsorkit.Tests.TestHelpers;
 
 public class VirtualMediator : IMediator
 {
-    private readonly IMediator mediator;
+    private readonly IServiceProvider serviceProvider;
 
-    public VirtualMediator(IMediator mediator)
+    private IMediator Mediator => serviceProvider.GetRequiredService<Mediator>();
+
+    public VirtualMediator(IServiceProvider serviceProvider)
     {
-        this.mediator = mediator;
+        this.serviceProvider = serviceProvider;
     }
     
     public virtual Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new CancellationToken())
     {
-        return mediator.Send(request, cancellationToken);
+        return Mediator.Send(request, cancellationToken);
     }
 
     public virtual Task<object> Send(object request, CancellationToken cancellationToken = new CancellationToken())
     {
-        return mediator.Send(request, cancellationToken);
+        return Mediator.Send(request, cancellationToken);
     }
 
     public virtual IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = new CancellationToken())
     {
-        return mediator.CreateStream(request, cancellationToken);
+        return Mediator.CreateStream(request, cancellationToken);
     }
 
     public virtual IAsyncEnumerable<object> CreateStream(object request, CancellationToken cancellationToken = new CancellationToken())
     {
-        return mediator.CreateStream(request, cancellationToken);
+        return Mediator.CreateStream(request, cancellationToken);
     }
 
     public virtual Task Publish(object notification, CancellationToken cancellationToken = new CancellationToken())
     {
-        return mediator.Publish(notification, cancellationToken);
+        return Mediator.Publish(notification, cancellationToken);
     }
 
     public virtual Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = new CancellationToken()) where TNotification : INotification
     {
-        return mediator.Publish(notification, cancellationToken);
+        return Mediator.Publish(notification, cancellationToken);
     }
 }

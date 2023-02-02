@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Amazon.SimpleEmailV2;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 using Stripe;
@@ -27,6 +28,7 @@ public class EmailContext
 public class StripeContext
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly ILogger logger;
 
     private readonly HashSet<Event> stripeEvents;
 
@@ -51,9 +53,11 @@ public class StripeContext
         new(serviceProvider.GetRequiredService<PaymentMethodService>());
 
     public StripeContext(
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        ILogger logger)
     {
         this.serviceProvider = serviceProvider;
+        this.logger = logger;
 
         this.stripeEvents = new HashSet<Event>();
     }
@@ -61,13 +65,21 @@ public class StripeContext
     public async Task WaitForWebhookAsync(Func<Event, bool> predicate)
     {
         var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        
-        while (!cancellationTokenSource.IsCancellationRequested)
-        {
-            if (stripeEvents.Any(predicate))
-                return;
 
-            await Task.Delay(100, cancellationTokenSource.Token);
+        try
+        {
+            while (!cancellationTokenSource.IsCancellationRequested)
+            {
+                if (stripeEvents.Any(predicate))
+                    return;
+
+                await Task.Delay(100, cancellationTokenSource.Token);
+            }
+        }
+        catch (TaskCanceledException ex)
+        {
+            logger.Warning(ex, "Waiting for webhook timed out.");
+            //ignored.
         }
     }
 

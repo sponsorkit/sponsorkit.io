@@ -28,7 +28,6 @@ public class TestServiceProviderFactory
         ConfigureMediatr(services, registry);
 
         services.AddSingleton(entrypoint);
-        services.AddSingleton(environment);
 
         services.AddSingleton(Substitute.For<ILogger>());
         services.AddSingleton(Substitute.For<IGitHubClientFactory>());
@@ -42,11 +41,11 @@ public class TestServiceProviderFactory
 
         services.RemoveAll(typeof(IMediator));
 
-        services.AddScoped(p =>
-            Substitute.ForPartsOf<VirtualMediator>(
-                p.GetRequiredService<Mediator>()));
+        VirtualMediator virtualMediator = null;
+        services.AddTransient(p =>
+            virtualMediator ??= Substitute.ForPartsOf<VirtualMediator>(p));
 
-        services.AddScoped<IMediator>(p => p
+        services.AddTransient<IMediator>(p => p
             .GetRequiredService<VirtualMediator>());
 
         services.AddScoped<Mediator>();
