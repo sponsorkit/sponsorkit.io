@@ -63,7 +63,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
-        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
         
         //Assert
         var bounty = await environment.Database.WithoutCachingAsync(async context =>
@@ -113,7 +113,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
-        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
         
         //Assert
         var bounty = await environment.Database.WithoutCachingAsync(async context =>
@@ -169,7 +169,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
-        await environment.Stripe.WaitForWebhookAsync(Events.SetupIntentSucceeded);
+        await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
         
         //Assert
         await environment.PartiallyFakeMediator

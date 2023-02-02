@@ -25,21 +25,30 @@ public class TestServiceProviderFactory
             services,
             configuration,
             environment);
-        registry.ConfigureMediatr(typeof(TestServiceProviderFactory).Assembly);
-        
-        services.RemoveAll(typeof(Mediator));
-        services.AddScoped(p => 
-            Substitute.ForPartsOf<Mediator>(
-                p.GetRequiredService<ServiceFactory>()));
-        services.AddScoped(p => 
-            Substitute.ForPartsOf<VirtualMediator>(
-                p.GetRequiredService<Mediator>()));
+        ConfigureMediatr(services, registry);
 
         services.AddSingleton(entrypoint);
+        services.AddSingleton(environment);
 
         services.AddSingleton(Substitute.For<ILogger>());
         services.AddSingleton(Substitute.For<IGitHubClientFactory>());
         services.AddSingleton(Substitute.For<IAmazonSimpleEmailServiceV2>());
         services.AddSingleton(Substitute.For<IGitHubClient>());
+    }
+
+    private static void ConfigureMediatr(IServiceCollection services, IocRegistry registry)
+    {
+        registry.ConfigureMediatr(typeof(TestServiceProviderFactory).Assembly);
+
+        services.RemoveAll(typeof(IMediator));
+
+        services.AddScoped(p =>
+            Substitute.ForPartsOf<VirtualMediator>(
+                p.GetRequiredService<Mediator>()));
+
+        services.AddScoped<IMediator>(p => p
+            .GetRequiredService<VirtualMediator>());
+
+        services.AddScoped<Mediator>();
     }
 }

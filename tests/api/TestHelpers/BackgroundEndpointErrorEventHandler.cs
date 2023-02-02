@@ -23,3 +23,21 @@ public class BackgroundEndpointErrorEventHandler : INotificationHandler<Backgrou
         await entrypoint.OnBackgroundEndpointErrorAsync(notification.Exception);
     }
 }
+
+public class StripeWebhookEventHandler : INotificationHandler<StripeWebhookEvent>
+{
+    private readonly IIntegrationTestEnvironment environment;
+
+    public StripeWebhookEventHandler(
+        IIntegrationTestEnvironment environment)
+    {
+        this.environment = environment;
+    }
+    
+    public async Task Handle(
+        StripeWebhookEvent notification, 
+        CancellationToken cancellationToken)
+    {
+        await environment.Stripe.OnStripeWebhookEventAsync(notification.StripeEvent);
+    }
+}

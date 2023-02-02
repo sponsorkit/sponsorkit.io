@@ -7,9 +7,9 @@ namespace Sponsorkit.Tests.TestHelpers;
 
 public class VirtualMediator : IMediator
 {
-    private readonly Mediator mediator;
+    private readonly IMediator mediator;
 
-    public VirtualMediator(Mediator mediator)
+    public VirtualMediator(IMediator mediator)
     {
         this.mediator = mediator;
     }

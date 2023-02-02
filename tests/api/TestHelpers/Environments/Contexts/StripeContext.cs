@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SimpleEmailV2;
 using MediatR;
@@ -25,6 +28,8 @@ public class StripeContext
 {
     private readonly IServiceProvider serviceProvider;
 
+    private readonly HashSet<Event> stripeEvents;
+
     public StripeSubscriptionBuilder SubscriptionBuilder => 
         new(serviceProvider.GetRequiredService<SubscriptionService>());
     
@@ -49,11 +54,25 @@ public class StripeContext
         IServiceProvider serviceProvider)
     {
         this.serviceProvider = serviceProvider;
+
+        this.stripeEvents = new HashSet<Event>();
     }
 
-    public async Task WaitForWebhookAsync(string eventType)
+    public async Task WaitForWebhookAsync(Func<Event, bool> predicate)
     {
-        //for now, we just wait 5 seconds. this could be greatly improved in the future.
-        await Task.Delay(5000);
+        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        
+        while (!cancellationTokenSource.IsCancellationRequested)
+        {
+            if (stripeEvents.Any(predicate))
+                return;
+
+            await Task.Delay(100, cancellationTokenSource.Token);
+        }
+    }
+
+    public async Task OnStripeWebhookEventAsync(Event stripeEvent)
+    {
+        stripeEvents.Add(stripeEvent);
     }
 }

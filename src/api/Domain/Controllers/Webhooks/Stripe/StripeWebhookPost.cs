@@ -76,6 +76,10 @@ public class Post : EndpointBaseAsync
                             stripeEvent.Data.Object,
                             cancellationToken);
                     }
+                    
+                    await mediator.Publish(
+                        new StripeWebhookEvent(stripeEvent),
+                        cancellationToken);
                 }
             }
             catch (Exception ex)
