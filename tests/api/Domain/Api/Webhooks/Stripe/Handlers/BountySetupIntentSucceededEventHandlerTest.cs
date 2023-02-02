@@ -172,9 +172,9 @@ public class BountySetupIntentSucceededEventHandlerTest
         await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
         
         //Assert
-        await environment.PartiallyFakeMediator
+        environment.MediatorInterceptor
             .Received(1)
-            .Send(Arg.Any<UpsertIssueCommentCommand>());
+            .Intercept(Arg.Any<UpsertIssueCommentCommand>());
     }
         
     [TestMethod]

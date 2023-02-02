@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
+using NSubstitute;
 using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Infrastructure.Security.Encryption;
+using Sponsorkit.Tests.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments;
@@ -16,7 +17,9 @@ public interface IIntegrationTestEnvironment
 {
     public IServiceProvider ServiceProvider { get; }
 
-    public IMediator PartiallyFakeMediator { get; }
+    public IMediator Mediator { get; }
+    IFakeMediatorInterceptor MediatorInterceptor { get; }
+    
     public IEncryptionHelper EncryptionHelper  { get; }
     public DatabaseContext Database { get; }
     public GitHubContext GitHub { get; }
@@ -37,7 +40,9 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     public IServiceProvider ServiceProvider { get; }
 
-    public IMediator PartiallyFakeMediator => ServiceProvider.GetRequiredService<VirtualMediator>();
+    public IMediator Mediator => ServiceProvider.GetRequiredService<IMediator>();
+    public IFakeMediatorInterceptor MediatorInterceptor => ServiceProvider.GetRequiredService<IFakeMediatorInterceptor>(); 
+
     public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
     public GitHubContext GitHub => new (ServiceProvider);
@@ -58,15 +63,24 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
         {
             services.AddSingleton<IIntegrationTestEnvironment>(this);
 
-            services.AddSingleton(provider => new StripeContext(
-                provider,
-                provider.GetRequiredService<ILogger>()));
+            services.AddSingleton<StripeContext>();
+        
+            RegisterMediatrInterception(services);
             
             oldIocConfiguration?.Invoke(services);
         };
         
         entrypoint = GetEntrypoint(options);
         ServiceProvider = entrypoint.ScopeProvider;
+    }
+
+    private static void RegisterMediatrInterception(IServiceCollection services)
+    {
+        services.AddScoped(
+            typeof(IPipelineBehavior<,>),
+            typeof(InterceptorBehavior<,>));
+
+        services.AddSingleton(Substitute.For<IFakeMediatorInterceptor>());
     }
 
     protected virtual async Task InitializeAsync()
