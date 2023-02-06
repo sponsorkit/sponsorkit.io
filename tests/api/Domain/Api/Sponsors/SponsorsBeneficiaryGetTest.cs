@@ -17,7 +17,7 @@ public class SponsorsBeneficiaryGetTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var endpoint = environment.ScopeProvider.GetRequiredService<BeneficiaryGet>();
+        var endpoint = environment.ServiceProvider.GetRequiredService<BeneficiaryGet>();
 
         var beneficiaryId = Guid.NewGuid();
 

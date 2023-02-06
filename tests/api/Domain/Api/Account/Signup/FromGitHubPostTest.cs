@@ -48,7 +48,7 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-github-token")
             .Returns(fakeGitHubClient);
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -97,7 +97,7 @@ public class FromGitHubPostTest
                 "some-old-github-token")
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -163,7 +163,7 @@ public class FromGitHubPostTest
                 "some-old-github-token")
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -219,7 +219,7 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -271,9 +271,9 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
 
-        var stripeCustomerService = environment.ScopeProvider.GetRequiredService<CustomerService>();
+        var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
             
         //Act
         var result = await handler.HandleAsync(new(
@@ -328,7 +328,7 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
@@ -385,7 +385,7 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         environment.Database.Context.SavedChanges += (_, _) =>
@@ -445,9 +445,9 @@ public class FromGitHubPostTest
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
 
-        var stripeCustomerService = environment.ScopeProvider.GetRequiredService<CustomerService>();
+        var stripeCustomerService = environment.ServiceProvider.GetRequiredService<CustomerService>();
 
-        var handler = environment.ScopeProvider.GetRequiredService<FromGitHubPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<FromGitHubPost>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         environment.Database.Context.SavedChanges += (_, _) =>

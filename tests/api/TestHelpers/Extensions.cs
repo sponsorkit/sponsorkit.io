@@ -30,7 +30,7 @@ public static class Extensions
         return value;
     }
         
-    private static void EnsureControllerContext(this ControllerBase controller)
+    public static void EnsureControllerContext(this ControllerBase controller)
     {
         controller.ControllerContext.HttpContext = new DefaultHttpContext();
     }

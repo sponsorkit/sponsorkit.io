@@ -15,7 +15,7 @@ namespace Sponsorkit.Tests.TestHelpers.Environments;
 
 public interface IIntegrationTestEnvironment
 {
-    public IServiceProvider ScopeProvider { get; }
+    public IServiceProvider ServiceProvider { get; }
 
     public IMediator Mediator { get; }
     IFakeMediatorInterceptor MediatorInterceptor { get; }
@@ -38,17 +38,17 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 {
     private readonly IIntegrationTestEntrypoint entrypoint;
 
-    public IServiceProvider ScopeProvider { get; }
+    public IServiceProvider ServiceProvider { get; }
 
-    public IMediator Mediator => ScopeProvider.GetRequiredService<IMediator>();
-    public IFakeMediatorInterceptor MediatorInterceptor => ScopeProvider.GetRequiredService<IFakeMediatorInterceptor>(); 
+    public IMediator Mediator => ServiceProvider.GetRequiredService<IMediator>();
+    public IFakeMediatorInterceptor MediatorInterceptor => ServiceProvider.GetRequiredService<IFakeMediatorInterceptor>(); 
 
-    public IEncryptionHelper EncryptionHelper => ScopeProvider.GetRequiredService<IEncryptionHelper>();
+    public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
-    public GitHubContext GitHub => new (ScopeProvider);
-    public IConfiguration Configuration => ScopeProvider.GetRequiredService<IConfiguration>();
-    public StripeContext Stripe => ScopeProvider.GetRequiredService<StripeContext>();
-    public EmailContext Email => new(ScopeProvider);
+    public GitHubContext GitHub => new (ServiceProvider);
+    public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
+    public StripeContext Stripe => ServiceProvider.GetRequiredService<StripeContext>();
+    public EmailContext Email => new(ServiceProvider);
 
     protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 
@@ -71,7 +71,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
         };
         
         entrypoint = GetEntrypoint(options);
-        ScopeProvider = entrypoint.ScopeProvider;
+        ServiceProvider = entrypoint.ScopeProvider;
     }
 
     private static void RegisterMediatrInterception(IServiceCollection services)
@@ -85,7 +85,7 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     protected virtual async Task InitializeAsync()
     {
-        var dockerDependencyService = new DockerDependencyService(ScopeProvider);
+        var dockerDependencyService = new DockerDependencyService(ServiceProvider);
         await dockerDependencyService.StartAsync(default);
             
         await entrypoint.WaitUntilReadyAsync();

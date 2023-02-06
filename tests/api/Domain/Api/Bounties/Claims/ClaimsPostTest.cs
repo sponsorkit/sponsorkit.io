@@ -24,7 +24,7 @@ public class ClaimsPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
 
         //Act
         var result = await handler.HandleAsync(new PostRequest(1337, 1337));
@@ -52,7 +52,7 @@ public class ClaimsPostTest
                 pullRequestNumber)
             .Returns((PullRequest)null);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
 
         //Act
         var result = await handler.HandleAsync(new PostRequest(gitHubIssue.GitHub.Id, pullRequestNumber));
@@ -84,7 +84,7 @@ public class ClaimsPostTest
                 pullRequest.Number)
             .Returns(pullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -119,7 +119,7 @@ public class ClaimsPostTest
                 pullRequest.Number)
             .Returns(pullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -176,7 +176,7 @@ public class ClaimsPostTest
                 gitHubPullRequest.Number)
             .Returns(gitHubPullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -236,7 +236,7 @@ public class ClaimsPostTest
                 gitHubPullRequest.Number)
             .Returns(gitHubPullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         var amountOfBountyClaimsRequestsAdded = 0;
@@ -308,7 +308,7 @@ public class ClaimsPostTest
                 gitHubPullRequest.Number)
             .Returns(gitHubPullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -369,7 +369,7 @@ public class ClaimsPostTest
                 gitHubPullRequest.Number)
             .Returns(gitHubPullRequest);
 
-        var handler = environment.ScopeProvider.GetRequiredService<ClaimsPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act

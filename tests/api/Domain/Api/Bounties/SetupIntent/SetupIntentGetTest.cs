@@ -18,7 +18,7 @@ public class SetupIntentGetTest
 
         var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentGet>();
         handler.FakeAuthentication(authenticatedUser);
             
         //Act
@@ -49,7 +49,7 @@ public class SetupIntentGetTest
             .WithBounty(bounty)
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentGet>();
         handler.FakeAuthentication(authenticatedUser);
             
         //Act
@@ -78,7 +78,7 @@ public class SetupIntentGetTest
             .WithBounty(bounty)
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentGet>();
         handler.FakeAuthentication(authenticatedUser);
             
         //Act

@@ -25,7 +25,7 @@ public class PaymentMethodIntentPostTest
                     .WithCardNumber(4242_4242_4242_4242.ToString())))
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<PaymentMethodIntentPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<PaymentMethodIntentPost>();
         handler.FakeAuthentication(user.Id);
 
         //Act

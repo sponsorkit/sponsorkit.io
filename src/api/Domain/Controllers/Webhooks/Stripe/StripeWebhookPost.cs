@@ -21,7 +21,7 @@ using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe;
 
-public class Post : EndpointBaseAsync
+public class StripeWebhookPost : EndpointBaseAsync
     .WithoutRequest
     .WithoutResult
 {
@@ -30,7 +30,7 @@ public class Post : EndpointBaseAsync
     private readonly ILogger logger;
     private readonly IMediator mediator;
 
-    public Post(
+    public StripeWebhookPost(
         IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
         IEnumerable<IStripeEventHandler> webhookEventHandlers,
         ILogger logger,

@@ -22,7 +22,7 @@ public class ActivateGetTest
                 .WithAccount(environment.Stripe.AccountBuilder))
             .BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<ActivateGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<ActivateGet>();
         handler.FakeAuthentication(user.Id);
 
         var broadcastId = Guid.NewGuid();

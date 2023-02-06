@@ -19,7 +19,7 @@ public class SetupIntentPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
@@ -45,7 +45,7 @@ public class SetupIntentPostTest
             .Get("owner-name", "repo-name")
             .Returns(new TestRepository());
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
@@ -71,7 +71,7 @@ public class SetupIntentPostTest
             .Get("owner-name", "repo-name")
             .Returns(new TestRepository());
 
-        var handler = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(

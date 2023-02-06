@@ -17,7 +17,7 @@ public class BountiesGitHubIssueIdGetTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
             
         //Act
         var response = await handler.HandleAsync(
@@ -35,7 +35,7 @@ public class BountiesGitHubIssueIdGetTest
 
         var issue = await environment.Database.IssueBuilder.BuildAsync();
 
-        var handler = environment.ScopeProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
             
         //Act
         var response = await handler.HandleAsync(
@@ -72,7 +72,7 @@ public class BountiesGitHubIssueIdGetTest
             .BuildAsync();
 
             
-        var handler = environment.ScopeProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
+        var handler = environment.ServiceProvider.GetRequiredService<BountiesGitHubIssueIdGet>();
             
         //Act
         var response = await handler.HandleAsync(

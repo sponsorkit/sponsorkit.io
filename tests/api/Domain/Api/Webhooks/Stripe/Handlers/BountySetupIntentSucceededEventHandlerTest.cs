@@ -45,7 +45,7 @@ public class BountySetupIntentSucceededEventHandlerTest
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
             .BuildAsync();
 
-        var setupIntentPost = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(authenticatedUser);
         
         var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
@@ -95,7 +95,7 @@ public class BountySetupIntentSucceededEventHandlerTest
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
             .BuildAsync();
 
-        var setupIntentPost = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(authenticatedUser);
         
         var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
@@ -151,7 +151,7 @@ public class BountySetupIntentSucceededEventHandlerTest
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
             .BuildAsync();
 
-        var setupIntentPost = environment.ScopeProvider.GetRequiredService<SetupIntentPost>();
+        var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(authenticatedUser);
         
         var preconditionBounty = await environment.Database.WithoutCachingAsync(async context =>
@@ -263,7 +263,7 @@ public class BountySetupIntentSucceededEventHandlerTest
 
     private static BountySetupIntentSucceededEventHandler GetEventHandler(SponsorkitIntegrationTestEnvironment environment)
     {
-        return environment.ScopeProvider
+        return environment.ServiceProvider
             .GetRequiredService<IEnumerable<IStripeEventHandler>>()
             .OfType<BountySetupIntentSucceededEventHandler>()
             .Single();

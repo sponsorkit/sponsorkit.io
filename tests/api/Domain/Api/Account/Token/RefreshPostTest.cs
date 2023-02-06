@@ -20,7 +20,7 @@ public class RefreshPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
-        var handler = environment.ScopeProvider.GetRequiredService<RefreshPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<RefreshPost>();
             
         //Act
         var result = await handler.HandleAsync(new PostRequest("invalid"));
@@ -35,14 +35,14 @@ public class RefreshPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var token = tokenFactory.Create(new [] {
             new Claim(
                 ClaimTypes.NameIdentifier,
                 Guid.NewGuid().ToString())
             });
         
-        var handler = environment.ScopeProvider.GetRequiredService<RefreshPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<RefreshPost>();
             
         //Act
         var result = await handler.HandleAsync(new PostRequest(token));
@@ -59,14 +59,14 @@ public class RefreshPostTest
 
         var user = await environment.Database.UserBuilder.BuildAsync();
 
-        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
         var token = tokenFactory.Create(new [] {
             new Claim(
                 ClaimTypes.NameIdentifier,
                 user.Id.ToString())
         });
         
-        var handler = environment.ScopeProvider.GetRequiredService<RefreshPost>();
+        var handler = environment.ServiceProvider.GetRequiredService<RefreshPost>();
         handler.FakeAuthentication(user);
             
         //Act
