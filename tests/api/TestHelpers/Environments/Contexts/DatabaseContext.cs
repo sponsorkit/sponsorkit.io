@@ -40,7 +40,7 @@ public class DatabaseContext
 
     public async Task<T> WithoutCachingAsync<T>(Func<DataContext, Task<T>> action)
     {
-        using var freshScope = entrypoint.RootProvider.CreateScope();
+        using var freshScope = entrypoint.ScopeProvider.CreateScope();
         await using var dataContext = freshScope.ServiceProvider.GetRequiredService<DataContext>();
 
         var result = await action(dataContext);

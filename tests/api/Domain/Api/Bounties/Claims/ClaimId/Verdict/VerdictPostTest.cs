@@ -32,7 +32,7 @@ public class VerdictPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -62,7 +62,7 @@ public class VerdictPostTest
             .WithCreator(authenticatedUser)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -82,7 +82,7 @@ public class VerdictPostTest
 
         var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -112,7 +112,7 @@ public class VerdictPostTest
             .WithCreator(authenticatedUser)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictPost>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act

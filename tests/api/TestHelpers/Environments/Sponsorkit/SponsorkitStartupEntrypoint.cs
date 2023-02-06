@@ -17,8 +17,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 {
     private readonly WebApplication application;
     private readonly IServiceScope scope;
-
-    public IServiceProvider RootProvider { get; }
+    
     public IServiceProvider ScopeProvider => scope.ServiceProvider;
 
     private readonly CancellationTokenSource cancellationTokenSource;
@@ -59,7 +58,6 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         
         application = app;
 
-        RootProvider = app.Services;
         scope = app.Services.CreateScope();
     }
 
@@ -70,7 +68,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         var hostStartTask = application.StartAsync(cancellationTokenSource.Token);
         await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
 
-        var ngrokService = RootProvider.GetService<INgrokService>();
+        var ngrokService = ScopeProvider.GetService<INgrokService>();
         if (ngrokService != null)
             await ngrokService.WaitUntilReadyAsync(cancellationTokenSource.Token);
 

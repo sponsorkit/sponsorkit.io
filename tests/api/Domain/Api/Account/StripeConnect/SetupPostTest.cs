@@ -26,7 +26,7 @@ public class SetupPostTest
 
         Assert.IsNull(user.StripeConnectId);
 
-        var handler = environment.ServiceProvider.GetRequiredService<SetupPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<SetupPost>();
         handler.FakeAuthentication(user);
 
         //Act
@@ -51,7 +51,7 @@ public class SetupPostTest
 
         Assert.IsNull(user.StripeConnectId);
 
-        var handler = environment.ServiceProvider.GetRequiredService<SetupPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<SetupPost>();
         handler.FakeAuthentication(user);
 
         //Act
@@ -91,7 +91,7 @@ public class SetupPostTest
 
         Assert.IsNull(user.StripeConnectId);
 
-        var handler = environment.ServiceProvider.GetRequiredService<SetupPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<SetupPost>();
         handler.FakeAuthentication(user);
 
         //Act
@@ -134,7 +134,7 @@ public class SetupPostTest
 
         Assert.IsNull(user.StripeConnectId);
 
-        var handler = environment.ServiceProvider.GetRequiredService<SetupPost>();
+        var handler = environment.ScopeProvider.GetRequiredService<SetupPost>();
         handler.FakeAuthentication(user);
 
         //Act

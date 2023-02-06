@@ -26,9 +26,9 @@ public class VerifyEmailTokenGetTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-        var handler = environment.ServiceProvider.GetRequiredService<Get>();
+        var handler = environment.ScopeProvider.GetRequiredService<Get>();
 
-        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
 
         var userId = Guid.NewGuid();
 
@@ -57,9 +57,9 @@ public class VerifyEmailTokenGetTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-        var handler = environment.ServiceProvider.GetRequiredService<Get>();
+        var handler = environment.ScopeProvider.GetRequiredService<Get>();
 
-        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
 
         var userId = Guid.NewGuid();
 
@@ -99,8 +99,8 @@ public class VerifyEmailTokenGetTest
             IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
 
-        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
-        var aesEncryptionHelper = environment.ServiceProvider.GetRequiredService<IEncryptionHelper>();
+        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
+        var aesEncryptionHelper = environment.ScopeProvider.GetRequiredService<IEncryptionHelper>();
 
         var user = await environment.Database.UserBuilder
             .WithoutStripeCustomer()
@@ -119,7 +119,7 @@ public class VerifyEmailTokenGetTest
                 "EmailVerification")
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Get>();
+        var handler = environment.ScopeProvider.GetRequiredService<Get>();
 
         //Act
         var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
@@ -144,7 +144,7 @@ public class VerifyEmailTokenGetTest
             IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
 
-        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
 
         var user = await environment.Database.UserBuilder
             .WithoutStripeCustomer()
@@ -163,7 +163,7 @@ public class VerifyEmailTokenGetTest
                 "EmailVerification")
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Get>();
+        var handler = environment.ScopeProvider.GetRequiredService<Get>();
 
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
@@ -201,7 +201,7 @@ public class VerifyEmailTokenGetTest
             IocConfiguration = services => { services.AddSingleton(fakeStripeCustomerService); }
         });
 
-        var tokenFactory = environment.ServiceProvider.GetRequiredService<ITokenFactory>();
+        var tokenFactory = environment.ScopeProvider.GetRequiredService<ITokenFactory>();
 
         var user = await environment.Database.UserBuilder
             .WithoutStripeCustomer()
@@ -220,7 +220,7 @@ public class VerifyEmailTokenGetTest
                 "EmailVerification")
         });
 
-        var handler = environment.ServiceProvider.GetRequiredService<Get>();
+        var handler = environment.ScopeProvider.GetRequiredService<Get>();
 
         var cancellationTokenSource = new CancellationTokenSource();
 

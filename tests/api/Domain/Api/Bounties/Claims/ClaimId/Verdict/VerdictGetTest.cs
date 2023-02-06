@@ -33,7 +33,7 @@ public class VerdictGetTest
             .WithVerdict(ClaimVerdict.Solved)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictGet>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -52,7 +52,7 @@ public class VerdictGetTest
 
         var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictGet>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -81,7 +81,7 @@ public class VerdictGetTest
             .WithBounty(otherUserBounty)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictGet>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
@@ -104,7 +104,7 @@ public class VerdictGetTest
             .WithVerdict(ClaimVerdict.Solved)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<VerdictGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<VerdictGet>();
         handler.FakeAuthentication(authenticatedUser);
 
         //Act

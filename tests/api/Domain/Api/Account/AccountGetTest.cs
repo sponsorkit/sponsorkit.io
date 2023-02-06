@@ -19,7 +19,7 @@ public class AccountGetTest
 
         var user = await environment.Database.UserBuilder.BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         var stripeCustomerService = environment.Stripe.CustomerService;
@@ -45,7 +45,7 @@ public class AccountGetTest
             .WithEmail("some-email@example.com")
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -69,7 +69,7 @@ public class AccountGetTest
                 "some-access-token")
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -90,7 +90,7 @@ public class AccountGetTest
             .WithVerifiedEmail()
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -110,7 +110,7 @@ public class AccountGetTest
         var user = await environment.Database.UserBuilder
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -131,7 +131,7 @@ public class AccountGetTest
             .WithStripeCustomer(environment.Stripe.CustomerBuilder)
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -145,7 +145,7 @@ public class AccountGetTest
     [TestMethod]
     public async Task HandleAsync_ExistingStripeConnectAccountReferenceWithDetailsSubmittedPresentOnUser_ReturnsIsCompleted()
     {
-        //Arrangec
+        //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var user = await environment.Database.UserBuilder
@@ -154,7 +154,7 @@ public class AccountGetTest
                     .WithDetailsSubmitted()))
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
@@ -176,7 +176,7 @@ public class AccountGetTest
                 .WithAccount(environment.Stripe.AccountBuilder))
             .BuildAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<AccountGet>();
+        var handler = environment.ScopeProvider.GetRequiredService<AccountGet>();
         handler.FakeAuthentication(user.Id);
 
         //Act
