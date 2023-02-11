@@ -23,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Octokit.Internal;
 using Serilog;
+using Sponsorkit.Domain.Controllers.Webhooks.Stripe;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.PaymentIntentSucceeded;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
@@ -209,6 +210,8 @@ public sealed class IocRegistry
             _ => new StripeClient(
                 apiKey: secretKey,
                 clientId: publishableKey));
+
+        Services.AddTransient<IEventFactory, EventFactory>();
 
         void RegisterStripeEventHandler<TEventHandler, TData>()  
             where TData : class

@@ -10,13 +10,11 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Context;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Mediatr;
 using Sponsorkit.Infrastructure.Logging.HttpContext;
-using Sponsorkit.Infrastructure.Options;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe;
@@ -25,21 +23,21 @@ public class StripeWebhookPost : EndpointBaseAsync
     .WithoutRequest
     .WithoutResult
 {
-    private readonly IOptionsMonitor<StripeOptions> stripeOptionsMonitor;
     private readonly IEnumerable<IStripeEventHandler> webhookEventHandlers;
     private readonly ILogger logger;
     private readonly IMediator mediator;
+    private readonly IEventFactory eventFactory;
 
     public StripeWebhookPost(
-        IOptionsMonitor<StripeOptions> stripeOptionsMonitor,
         IEnumerable<IStripeEventHandler> webhookEventHandlers,
         ILogger logger,
-        IMediator mediator)
+        IMediator mediator,
+        IEventFactory eventFactory)
     {
-        this.stripeOptionsMonitor = stripeOptionsMonitor;
         this.webhookEventHandlers = webhookEventHandlers;
         this.logger = logger;
         this.mediator = mediator;
+        this.eventFactory = eventFactory;
     }
 
     [HttpPost("webhooks/stripe")]
@@ -54,12 +52,11 @@ public class StripeWebhookPost : EndpointBaseAsync
 
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync(cancellationToken);
-
+            
             var signatureHeader = Request.Headers["Stripe-Signature"];
-            var stripeEvent = EventUtility.ConstructEvent(
+            var stripeEvent = eventFactory.CreateEvent(
                 json,
-                signatureHeader,
-                stripeOptionsMonitor.CurrentValue.WebhookSecretKey);
+                signatureHeader);
 
             try
             {

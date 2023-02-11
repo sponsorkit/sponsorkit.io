@@ -22,6 +22,7 @@ public class StripeWebhookPostTest
 
         var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
         handler.EnsureControllerContext();
+        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
             
         //Act
         var result = await handler.HandleAsync();
