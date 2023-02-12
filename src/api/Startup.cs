@@ -7,9 +7,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
-using Sponsorkit.Infrastructure;
 using Sponsorkit.Infrastructure.AspNet.Health;
-using Sponsorkit.Infrastructure.Ioc;
 using Sponsorkit.Infrastructure.Logging;
 
 namespace Sponsorkit;
@@ -20,18 +18,8 @@ public static class Startup
         WebApplicationOptions webApplicationOptions)
     {
         var webApplicationBuilder = WebApplication.CreateBuilder(webApplicationOptions);
-        ConfigurationFactory.Configure(
-            webApplicationBuilder.Configuration, 
-            webApplicationOptions.Args ?? Array.Empty<string>(), 
-            "sponsorkit-secrets");
-
         webApplicationBuilder.Host.UseSerilog();
-
-        var registry = new IocRegistry(
-            webApplicationBuilder.Services,
-            webApplicationBuilder.Configuration,
-            webApplicationBuilder.Environment);
-        registry.Register();
+        
         return webApplicationBuilder;
     }
 

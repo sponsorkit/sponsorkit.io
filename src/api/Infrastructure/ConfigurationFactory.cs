@@ -9,7 +9,7 @@ namespace Sponsorkit.Infrastructure;
 public static class ConfigurationFactory
 {
     public static void Configure(
-        ConfigurationManager configurationBuilder, 
+        IConfigurationBuilder configurationBuilder, 
         string[] args, 
         string? secretId)
     {

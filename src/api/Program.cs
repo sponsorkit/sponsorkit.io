@@ -5,13 +5,26 @@ using Microsoft.AspNetCore.Builder;
 using Serilog;
 using Sponsorkit;
 using Sponsorkit.Infrastructure;
+using Sponsorkit.Infrastructure.Ioc;
 
 [assembly: InternalsVisibleTo("Sponsorkit.Tests")]
 
-var builder = Startup.CreateWebApplicationBuilder(new WebApplicationOptions()
-{
-    Args = args
-});
+var builder = Startup.CreateWebApplicationBuilder(
+    new WebApplicationOptions()
+    {
+        Args = args
+    });
+
+ConfigurationFactory.Configure(
+    builder.Configuration, 
+    args,
+    "sponsorkit-secrets");
+
+var registry = new IocRegistry(
+    builder.Services,
+    builder.Configuration,
+    builder.Environment);
+registry.Register();
 
 var app = builder.Build();
 Startup.ConfigureWebApplication(app);
