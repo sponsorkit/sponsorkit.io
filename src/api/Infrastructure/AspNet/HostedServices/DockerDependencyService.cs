@@ -138,10 +138,16 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
         planService = scope.ServiceProvider.GetRequiredService<PlanService>();
         
+        await Task.WhenAll(
+            StartDatabase(),
+            CleanupStripeDataAsync());
+    }
+
+    private async Task StartDatabase()
+    {
         await InitializeDockerAsync();
         await WaitForHealthyDockerDependenciesAsync();
         await PrepareDatabaseAsync();
-        await CleanupStripeDataAsync();
     }
 
     private async Task CleanupStripeDataAsync()
@@ -165,24 +171,32 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         if (planService == null)
             throw new InvalidOperationException("Webhook endpoint service not initialized.");
 
-        var plansToDelete = await planService
-            .ListAutoPagingAsync()
-            .ToListAsync();
-        foreach (var plan in plansToDelete)
+        var planDeletionTasks = new List<Task>();
+        await foreach (var plan in planService.ListAutoPagingAsync())
         {
             if (plan.Livemode)
                 throw new InvalidOperationException("Found livemode plan.");
 
-            Console.WriteLine($"Deleting customer {plan.Id}");
-            try
-            {
-                await planService.DeleteAsync(plan.Id);
-            }
-            catch (StripeException ex)
-            {
-                if (ex.HttpStatusCode != HttpStatusCode.NotFound)
-                    throw;
-            }
+            planDeletionTasks.Add(DeleteStripePlanAsync(plan));
+        }
+
+        await Task.WhenAll(planDeletionTasks);
+    }
+
+    private async Task DeleteStripePlanAsync(Plan plan)
+    {
+        if (planService == null)
+            throw new InvalidOperationException("Webhook endpoint service not initialized.");
+        
+        Console.WriteLine($"Deleting plan {plan.Id}");
+        try
+        {
+            await planService.DeleteAsync(plan.Id);
+        }
+        catch (StripeException ex)
+        {
+            if (ex.HttpStatusCode != HttpStatusCode.NotFound)
+                throw;
         }
     }
 
@@ -197,27 +211,33 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         if (customerService.Client.ApiKey == null)
             return;
 
-        var customersToDelete = await customerService
-            .ListAutoPagingAsync()
-            .ToListAsync();
-        foreach (var customer in customersToDelete)
+        var customerDeletionTasks = new List<Task>();
+        
+        await foreach (var customer in customerService.ListAutoPagingAsync())
         {
-            if (DateTime.Now - customer.Created < TimeSpan.FromHours(1))
-                continue;
-
             if (customer.Livemode)
                 throw new InvalidOperationException("Found livemode customer.");
 
-            Console.WriteLine($"Deleting customer {customer.Id}");
-            try
-            {
-                await customerService.DeleteAsync(customer.Id);
-            }
-            catch (StripeException ex)
-            {
-                if (ex.HttpStatusCode != HttpStatusCode.NotFound)
-                    throw;
-            }
+            customerDeletionTasks.Add(DeleteStripeCustomerAsync(customer));
+        }
+
+        await Task.WhenAll(customerDeletionTasks);
+    }
+
+    private async Task DeleteStripeCustomerAsync(Customer customer)
+    {
+        if (customerService == null)
+            throw new InvalidOperationException("Webhook endpoint service not initialized.");
+        
+        Console.WriteLine($"Deleting customer {customer.Id}");
+        try
+        {
+            await customerService.DeleteAsync(customer.Id);
+        }
+        catch (StripeException ex)
+        {
+            if (ex.HttpStatusCode != HttpStatusCode.NotFound)
+                throw;
         }
     }
 
@@ -252,7 +272,7 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         {
             isHealthy = await GetIsSqlServerHealthyAsync();
             if (!isHealthy)
-                await Task.Delay(1000);
+                await Task.Delay(100);
         }
 
         if (!isHealthy)
