@@ -23,7 +23,10 @@ ConfigurationFactory.Configure(
 var registry = new IocRegistry(
     builder.Services,
     builder.Configuration,
-    builder.Environment);
+    builder.Environment,
+    new [] {
+        typeof(IocRegistry).Assembly
+    });
 registry.Register();
 
 var app = builder.Build();

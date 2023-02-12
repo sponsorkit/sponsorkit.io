@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Sponsorkit.Infrastructure;
-using Sponsorkit.Infrastructure.Ioc;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
@@ -25,16 +24,10 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
     private readonly IList<Exception> backgroundEndpointExceptions;
 
-    private static IConfigurationRoot cachedConfiguration;
-
     public SponsorkitStartupEntrypoint(SponsorkitEnvironmentSetupOptions options)
     {
         cancellationTokenSource = new CancellationTokenSource();
         backgroundEndpointExceptions = new List<Exception>();
-        
-        cachedConfiguration ??= TestConfigurationFactory
-            .ConfigureBuilder(new ConfigurationManager())
-            .Build();
 
         var builder = Startup.CreateWebApplicationBuilder(
             new WebApplicationOptions()
@@ -43,26 +36,23 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                     options.EnvironmentName ?? 
                     Microsoft.Extensions.Hosting.Environments.Development
             });
-
-        builder.Configuration.AddConfiguration(cachedConfiguration);
         
-        var registry = new IocRegistry(
+        var configuration = TestConfigurationFactory
+            .ConfigureBuilder(new ConfigurationManager())
+            .Build();
+
+        builder.Configuration.AddConfiguration(configuration);
+
+        TestServiceProviderFactory.ConfigureServicesForTesting(
             builder.Services,
-            builder.Configuration,
-            builder.Environment);
-        registry.Register();
+            configuration,
+            builder.Environment,
+            this);
         
         builder.WebHost
             .UseUrls("https://*:14569;http://*:14568")
-            .ConfigureServices((context, services) =>
+            .ConfigureServices((_, services) =>
             {
-                var environment = context.HostingEnvironment;
-
-                TestServiceProviderFactory.ConfigureServicesForTesting(
-                    services,
-                    cachedConfiguration,
-                    environment,
-                    this);
                 options.IocConfiguration?.Invoke(services);
             });
         

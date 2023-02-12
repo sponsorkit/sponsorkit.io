@@ -22,7 +22,12 @@ public class TestServiceProviderFactory
         var registry = new IocRegistry(
             services,
             configuration,
-            environment);
+            environment,
+            new [] {
+                typeof(IocRegistry).Assembly,
+                typeof(TestServiceProviderFactory).Assembly
+            });
+        registry.Register();
         
         services.AddSingleton(entrypoint);
 

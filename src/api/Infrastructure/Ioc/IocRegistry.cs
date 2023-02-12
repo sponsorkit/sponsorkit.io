@@ -46,14 +46,19 @@ namespace Sponsorkit.Infrastructure.Ioc;
 
 public sealed class IocRegistry
 {
+    private readonly Assembly[] assemblies;
+    
     private IServiceCollection Services { get; }
     private IConfiguration Configuration { get; }
     private IHostEnvironment Environment { get; }
 
     public IocRegistry(IServiceCollection services,
         IConfiguration configuration, 
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        Assembly[] assemblies)
     {
+        this.assemblies = assemblies;
+        
         Services = services;
         Configuration = configuration;
         Environment = environment;
@@ -65,7 +70,7 @@ public sealed class IocRegistry
         ConfigureDebugHelpers();
         ConfigureInfrastructure();
         ConfigureAutoMapper();
-        ConfigureMediatr(typeof(IocRegistry).Assembly);
+        ConfigureMediatr();
         ConfigureGitHub();
         ConfigureEntityFramework();
         ConfigureStripe();
@@ -256,7 +261,7 @@ public sealed class IocRegistry
         Services.AddSingleton(Configuration);
     }
 
-    public void ConfigureMediatr(params Assembly[] assemblies)
+    public void ConfigureMediatr()
     {
         Services.AddMediatR(x => x.AsTransient(), assemblies);
             
