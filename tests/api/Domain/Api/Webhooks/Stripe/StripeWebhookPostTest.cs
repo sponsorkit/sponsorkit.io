@@ -211,7 +211,7 @@ public class StripeWebhookPostTest
             
         //Act
         var result = await handler.HandleAsync();
-            
+
         //Assert
         Assert.IsTrue(result is OkObjectResult { Value: "Already handled." });
     }

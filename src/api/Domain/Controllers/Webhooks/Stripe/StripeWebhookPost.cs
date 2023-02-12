@@ -79,6 +79,11 @@ public class StripeWebhookPost : EndpointBaseAsync
                         cancellationToken);
                 }
             }
+            catch (EventAlreadyHandledException ex)
+            {
+                logger.Information(ex, "Already handled event.");
+                return Ok("Already handled.");
+            }
             catch (Exception ex)
             {
                 logger.Error(ex, "A Stripe webhook error occured.");
@@ -102,11 +107,6 @@ public class StripeWebhookPost : EndpointBaseAsync
                 cancellationToken);
             
             return BadRequest("A Stripe webhook error occured.");
-        }
-        catch (EventAlreadyHandledException ex)
-        {
-            logger.Information(ex, "Already handled event.");
-            return Ok("Already handled.");
         }
     }
 }

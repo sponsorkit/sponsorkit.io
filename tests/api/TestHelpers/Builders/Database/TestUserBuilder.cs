@@ -5,6 +5,7 @@ using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Domain.Models.Database.Builders;
 using Sponsorkit.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments;
+using Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 
@@ -13,6 +14,7 @@ public class TestUserBuilder : UserBuilder
     private readonly IIntegrationTestEnvironment environment;
 
     private StripeCustomerBuilder stripeCustomerBuilder;
+    private Customer stripeCustomer;
 
     private bool skipCustomerCreation;
     private DateTimeOffset? emailVerifiedAt;
@@ -31,6 +33,12 @@ public class TestUserBuilder : UserBuilder
     public TestUserBuilder WithStripeCustomer(StripeCustomerBuilder stripeCustomerBuilder)
     {
         this.stripeCustomerBuilder = stripeCustomerBuilder;
+        return this;
+    }
+
+    public TestUserBuilder WithStripeCustomer(Customer customer)
+    {
+        this.stripeCustomer = customer;
         return this;
     }
 
@@ -62,7 +70,7 @@ public class TestUserBuilder : UserBuilder
 
         if (!skipCustomerCreation)
         {
-            var stripeCustomer = await stripeCustomerBuilder
+            stripeCustomer ??= await stripeCustomerBuilder
                 .WithUser(user)
                 .BuildAsync(cancellationToken);
             user.StripeCustomerId = stripeCustomer.Id;
