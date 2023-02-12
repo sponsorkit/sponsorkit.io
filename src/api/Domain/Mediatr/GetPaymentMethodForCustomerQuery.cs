@@ -27,6 +27,13 @@ public class GetPaymentMethodForCustomerQueryHandler : IRequestHandler<GetPaymen
     {
         var customer = await customerService.GetAsync(
             request.CustomerId,
+            new CustomerGetOptions()
+            {
+                Expand = new ()
+                {
+                    "invoice_settings.default_payment_method"
+                }
+            },
             cancellationToken: cancellationToken);
         if (customer == null)
             throw new InvalidOperationException("The customer could not be found.");

@@ -8,7 +8,6 @@ using NSubstitute;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers.SetupIntentSucceeded;
-using Sponsorkit.Domain.Helpers;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
@@ -37,12 +36,17 @@ public class SetupIntentSucceededEventHandlerTest
                 "repository-name",
                 1337)
             .Returns(new TestIssue());
-
-        var stripeCustomer = await environment.Stripe.CustomerBuilder.BuildAsync();
         
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithStripeCustomer(stripeCustomer)
+            .WithoutStripeCustomer()
             .BuildAsync();
+
+        var stripeCustomer = await environment.Stripe.CustomerBuilder
+            .WithUser(authenticatedUser)
+            .BuildAsync();
+
+        authenticatedUser.StripeCustomerId = stripeCustomer.Id;
+        await environment.Database.Context.SaveChangesAsync();
 
         var paymentMethod = await environment.Stripe.PaymentMethodBuilder
             .WithCustomer(stripeCustomer)
@@ -51,8 +55,10 @@ public class SetupIntentSucceededEventHandlerTest
         var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(authenticatedUser);
         
-        var preStripeCustomer = await environment.Stripe.CustomerService.GetAsync(authenticatedUser.StripeCustomerId);
-        Assert.IsNull(preStripeCustomer.DefaultSourceId);
+        var preStripeCustomer = await environment.Stripe.CustomerService.GetAsync(
+            authenticatedUser.StripeCustomerId,
+            GetCustomerGetOptions());
+        Assert.IsNull(preStripeCustomer.InvoiceSettings.DefaultPaymentMethod);
         
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
@@ -65,12 +71,16 @@ public class SetupIntentSucceededEventHandlerTest
         
         var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
         Assert.AreEqual("succeeded", refreshedIntent.Status);
+
+        await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
         
         //Assert
-        var refreshedStripeCustomer = await environment.Stripe.CustomerService.GetAsync(authenticatedUser.StripeCustomerId);
-        Assert.IsNotNull(refreshedStripeCustomer.DefaultSourceId);
+        var refreshedStripeCustomer = await environment.Stripe.CustomerService.GetAsync(
+            authenticatedUser.StripeCustomerId,
+            GetCustomerGetOptions());
+        Assert.IsNotNull(refreshedStripeCustomer.InvoiceSettings.DefaultPaymentMethod);
     }
-        
+
     [TestMethod]
     public async Task CanHandle_UnrecognizedTypeGiven_CanNotHandle()
     {
@@ -87,20 +97,14 @@ public class SetupIntentSucceededEventHandlerTest
         var eventHandler = GetEventHandler(environment);
 
         //Act
-        var canHandle = eventHandler.CanHandleData(new SetupIntent()
-        {
-            Metadata = new Dictionary<string, string>()
-            {
-                { UniversalMetadataKeys.Type, "some-unknown-type" }
-            }
-        });
+        var canHandle = eventHandler.CanHandleWebhookType("some-unknown-type", new SetupIntent());
             
         //Assert
         Assert.IsFalse(canHandle);
     }
         
     [TestMethod]
-    public async Task CanHandle_TypeIsRight_CanHandle()
+    public async Task CanHandle_TypeIsRightAndStatusIsSucceeded_CanHandle()
     {
         //Arrange
         var fakeMediator = Substitute.For<IMediator>();
@@ -115,16 +119,38 @@ public class SetupIntentSucceededEventHandlerTest
         var eventHandler = GetEventHandler(environment);
 
         //Act
-        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        var canHandle = eventHandler.CanHandleWebhookType(Events.SetupIntentSucceeded, new SetupIntent()
         {
-            Metadata = new Dictionary<string, string>()
-            {
-                { UniversalMetadataKeys.Type, Events.SetupIntentSucceeded }
-            }
+            Status = "succeeded"
         });
             
         //Assert
         Assert.IsTrue(canHandle);
+    }
+        
+    [TestMethod]
+    public async Task CanHandle_TypeIsRightAndStatusIsNotSucceeded_CanHandle()
+    {
+        //Arrange
+        var fakeMediator = Substitute.For<IMediator>();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeMediator);
+            }
+        });
+
+        var eventHandler = GetEventHandler(environment);
+
+        //Act
+        var canHandle = eventHandler.CanHandleWebhookType(Events.SetupIntentSucceeded, new SetupIntent()
+        {
+            Status = "failed"
+        });
+            
+        //Assert
+        Assert.IsFalse(canHandle);
     }
 
     private static SetupIntentSucceededEventHandler GetEventHandler(SponsorkitIntegrationTestEnvironment environment)
@@ -133,5 +159,16 @@ public class SetupIntentSucceededEventHandlerTest
             .GetRequiredService<IEnumerable<IStripeEventHandler>>()
             .OfType<SetupIntentSucceededEventHandler>()
             .Single();
+    }
+
+    private static CustomerGetOptions GetCustomerGetOptions()
+    {
+        return new CustomerGetOptions()
+        {
+            Expand = new ()
+            {
+                "invoice_settings.default_payment_method"
+            }
+        };
     }
 }

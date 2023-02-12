@@ -6,7 +6,6 @@ namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
 public interface IStripeEventHandler
 {
     bool CanHandleWebhookType(string type, object data);
-    bool CanHandleData(object data);
 
     Task HandleAsync(
         string eventId,

@@ -193,7 +193,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var eventHandler = GetEventHandler(environment);
 
         //Act
-        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        var canHandle = eventHandler.CanHandleWebhookType(Events.SetupIntentSucceeded, new SetupIntent()
         {
             Metadata = new Dictionary<string, string>()
             {
@@ -221,7 +221,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var eventHandler = GetEventHandler(environment);
 
         //Act
-        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        var canHandle = eventHandler.CanHandleWebhookType(Events.SetupIntentSucceeded, new SetupIntent()
         {
             Metadata = new Dictionary<string, string>()
             {
@@ -249,7 +249,7 @@ public class BountySetupIntentSucceededEventHandlerTest
         var eventHandler = GetEventHandler(environment);
 
         //Act
-        var canHandle = eventHandler.CanHandleData(new SetupIntent()
+        var canHandle = eventHandler.CanHandleWebhookType(Events.SetupIntentSucceeded, new SetupIntent()
         {
             Metadata = new Dictionary<string, string>()
             {

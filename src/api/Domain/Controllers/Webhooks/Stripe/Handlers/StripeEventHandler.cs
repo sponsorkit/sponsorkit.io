@@ -20,13 +20,6 @@ public abstract class StripeEventHandler<TData> : IStripeEventHandler
             CanHandleData(castedData);
     }
 
-    public bool CanHandleData(object data)
-    {
-        return
-            data is TData castedData &&
-            CanHandleData(castedData);
-    }
-
     public async Task HandleAsync(string eventId, object data, CancellationToken cancellationToken)
     {
         if (data is not TData castedData)
