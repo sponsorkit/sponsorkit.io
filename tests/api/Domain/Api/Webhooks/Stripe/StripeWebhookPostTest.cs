@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,16 +22,24 @@ public class StripeWebhookPostTest
     [TestMethod]
     public async Task HandleAsync_StripeSignatureNotPresent_ReturnsBadRequest()
     {
-        //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        ActionResult result = null;
+        try
+        {
+            //Arrange
+            await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
-        handler.EnsureControllerContext();
-        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
-            
-        //Act
-        var result = await handler.HandleAsync();
-            
+            var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
+            handler.EnsureControllerContext();
+            handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+
+            //Act
+            result = await handler.HandleAsync();
+        }
+        catch (AggregateException)
+        {
+            //ignored - thrown by Dispose of entrypoint if a background error occured, which was the case here.
+        }
+
         //Assert
         Assert.IsInstanceOfType<BadRequestObjectResult>(result);
     }

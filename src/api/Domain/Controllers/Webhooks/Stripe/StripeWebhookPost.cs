@@ -52,7 +52,7 @@ public class StripeWebhookPost : EndpointBaseAsync
 
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync(cancellationToken);
-            
+
             var signatureHeader = Request.Headers["Stripe-Signature"];
             var stripeEvent = eventFactory.CreateEvent(
                 json,
@@ -73,7 +73,7 @@ public class StripeWebhookPost : EndpointBaseAsync
                             stripeEvent.Data.Object,
                             cancellationToken);
                     }
-                    
+
                     await mediator.Publish(
                         new StripeWebhookEvent(stripeEvent),
                         cancellationToken);
@@ -101,11 +101,11 @@ public class StripeWebhookPost : EndpointBaseAsync
         catch (StripeException e)
         {
             logger.Error(e, "A Stripe webhook error occured.");
-            
+
             await mediator.Publish(
                 new BackgroundEndpointErrorEvent(e),
                 cancellationToken);
-            
+
             return BadRequest("A Stripe webhook error occured.");
         }
     }
