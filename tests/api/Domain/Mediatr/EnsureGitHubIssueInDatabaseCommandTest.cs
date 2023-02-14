@@ -89,11 +89,38 @@ public class EnsureGitHubIssueInDatabaseCommandTest
     public async Task Handle_ExistingDatabaseRepositoryFound_UsesExistingRepository()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var gitHubIssue = new TestIssue();
+        environment.GitHub.FakeClient.Issue
+            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(gitHubIssue);
+        
+        var gitHubRepository = new TestRepository();
+        environment.GitHub.FakeClient.Repository
+            .Get(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(gitHubRepository);
+        
+        var databaseRepository = await environment.Database.RepositoryBuilder
+            .WithGitHubInformation(
+                gitHubRepository.Id,
+                gitHubRepository.Name,
+                gitHubRepository.Owner.Login)
+            .BuildAsync();
+        
         //Act
-            
+        var result = await environment.Mediator.Send(
+            new EnsureGitHubIssueInDatabaseCommand(
+                gitHubRepository.Owner.Login,
+                gitHubRepository.Name,
+                gitHubIssue.Number));
+
         //Assert
-        Assert.Fail("Not implemented.");
+        var refreshedDatabaseRepository = await environment.Database.WithoutCachingAsync(async dataContext =>
+            await dataContext.Repositories.SingleOrDefaultAsync());
+        Assert.IsNotNull(refreshedDatabaseRepository?.Id);
+
+        Assert.AreEqual(refreshedDatabaseRepository.Id, databaseRepository.Id);
     }
         
     [TestMethod]
@@ -133,21 +160,37 @@ public class EnsureGitHubIssueInDatabaseCommandTest
     public async Task Handle_ExistingDatabaseIssueFound_ReturnsExistingIssue()
     {
         //Arrange
-            
-        //Act
-            
-        //Assert
-        Assert.Fail("Not implemented.");
-    }
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var gitHubIssue = new TestIssue();
+        environment.GitHub.FakeClient.Issue
+            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+            .Returns(gitHubIssue);
         
-    [TestMethod]
-    public async Task Handle_IssueHappensDuringIssueCreation_RepositoryChangesAreRolledBack()
-    {
-        //Arrange
-            
+        var databaseIssue = await environment.Database.IssueBuilder
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
+            .BuildAsync();
+        
+        var gitHubRepository = new TestRepository();
+        environment.GitHub.FakeClient.Repository
+            .Get(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(gitHubRepository);
+        
         //Act
-            
+        var result = await environment.Mediator.Send(
+            new EnsureGitHubIssueInDatabaseCommand(
+                gitHubRepository.Owner.Login,
+                gitHubRepository.Name,
+                gitHubIssue.Number));
+
         //Assert
-        Assert.Fail("Not implemented.");
+        var refreshedDatabaseIssue = await environment.Database.WithoutCachingAsync(async dataContext =>
+            await dataContext.Issues.SingleOrDefaultAsync());
+        Assert.IsNotNull(refreshedDatabaseIssue?.Id);
+
+        Assert.AreEqual(refreshedDatabaseIssue.Id, databaseIssue.Id);
     }
 }
