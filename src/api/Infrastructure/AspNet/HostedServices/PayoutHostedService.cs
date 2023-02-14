@@ -95,9 +95,12 @@ public class PayoutHostedService : TimedHostedService
             Type = IssueTypeQualifier.Issue,
             Parameters =
             {
-                {"sort", "bar"}
+                {"sort", "reactions-+1-desc "},
+                {"is", "open"},
+                {"is", "issue"},
+                {"archived", "false"},
+                {"sort", "reactions-+1-desc"}
             }
-            //is:open is:issue archived:false sort:reactions-+1-desc 
         });
             
         throw new NotImplementedException();

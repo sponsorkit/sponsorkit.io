@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Mediatr;
 
@@ -10,7 +11,8 @@ public class GetPaymentMethodForCustomerQueryTest
     public async Task Handle_CustomerNotFound_ThrowsException()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        
         //Act
             
         //Assert
