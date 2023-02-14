@@ -1,5 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Amazon.SimpleEmailV2;
+using Amazon.SimpleEmailV2.Model;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NSubstitute;
 using Sponsorkit.Domain.Mediatr.Email;
 using Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
@@ -13,7 +18,14 @@ public class EmailSendEmailCommandTest
     public async Task Handle_SpecificTemplateGiven_PassesRenderedRazorEmailTemplateSuccessfullyToEmailService()
     {
         //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        var fakeEmailService = Substitute.For<IAmazonSimpleEmailServiceV2>();
+        
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new () {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeEmailService);
+            }
+        });
             
         //Act
         await environment.Mediator.Send(
@@ -25,6 +37,12 @@ public class EmailSendEmailCommandTest
                 new Model("some-verification-url")));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        await fakeEmailService
+            .Received(1)
+            .SendEmailAsync(
+                Arg.Is<SendEmailRequest>(request =>
+                    request.Content.Simple.Subject.Data == "Subject" &&
+                    request.Content.Simple.Body.Html.Data.Contains("some-verification-url")),
+                Arg.Any<CancellationToken>());
     }
 }
