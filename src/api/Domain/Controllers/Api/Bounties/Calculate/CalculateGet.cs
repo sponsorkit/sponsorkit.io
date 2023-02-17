@@ -1,7 +1,8 @@
 ﻿using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sponsorkit.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.Calculate;
 

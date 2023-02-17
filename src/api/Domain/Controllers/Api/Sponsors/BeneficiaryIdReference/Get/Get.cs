@@ -7,10 +7,10 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models;
 using Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get.Models.Sponsor;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Sponsors.BeneficiaryIdReference.Get;
 

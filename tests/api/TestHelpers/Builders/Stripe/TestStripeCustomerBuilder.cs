@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe;

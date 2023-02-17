@@ -16,8 +16,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Infrastructure.Options;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure.Options;
 using Stripe;
 
 namespace Sponsorkit.Infrastructure.AspNet.HostedServices;

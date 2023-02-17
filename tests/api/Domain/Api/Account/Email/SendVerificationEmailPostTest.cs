@@ -8,10 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
 using Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail;
-using Sponsorkit.Domain.Mediatr.Email;
-using Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
-using Sponsorkit.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers;
 
 namespace Sponsorkit.Tests.Domain.Api.Account.Email;

@@ -7,7 +7,7 @@ using Amazon.SimpleEmailV2;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 using Stripe;
 

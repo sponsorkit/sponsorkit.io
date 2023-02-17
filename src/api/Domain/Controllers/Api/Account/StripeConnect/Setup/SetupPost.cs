@@ -6,11 +6,11 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Domain.Models.Stripe;
-using Sponsorkit.Infrastructure.AspNet;
-using Sponsorkit.Infrastructure.Security.Encryption;
+using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup;
 

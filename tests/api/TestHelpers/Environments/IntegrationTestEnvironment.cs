@@ -5,9 +5,9 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using Sponsorkit.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
-using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Tests.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 

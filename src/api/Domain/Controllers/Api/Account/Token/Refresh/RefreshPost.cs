@@ -7,10 +7,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Infrastructure.AspNet;
-using Sponsorkit.Infrastructure.Options;
-using Sponsorkit.Infrastructure.Security.Jwt;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.Options;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.Token.Refresh;
 

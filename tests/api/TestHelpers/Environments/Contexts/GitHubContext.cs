@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Octokit;
-using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;

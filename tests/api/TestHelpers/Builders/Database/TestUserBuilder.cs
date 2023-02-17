@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Builders;
-using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments;
 using Stripe;
 

@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Octokit.GraphQL;
 using Octokit.GraphQL.Model;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Infrastructure.AspNet;
-using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using PullRequest = Octokit.GraphQL.Model.PullRequest;
 
 namespace Sponsorkit.Domain.Controllers.Api.GitHub.Repositories.RepositoryOwner.RepositoryName.PullRequests.FromUser;

@@ -3,8 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using CliWrap;
 using MediatR;
-using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Stripe;

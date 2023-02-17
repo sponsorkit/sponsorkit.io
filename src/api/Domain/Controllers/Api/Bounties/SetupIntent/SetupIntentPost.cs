@@ -6,12 +6,13 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Domain.Models.Stripe;
-using Sponsorkit.Domain.Models.Stripe.Metadata;
-using Sponsorkit.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe.Metadata;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 
@@ -31,19 +32,6 @@ public record PaymentIntentResponse(
 public record PostResponse(
     PaymentIntentResponse PaymentIntent,
     string? ExistingPaymentMethodId);
-
-public static class MetadataKeys
-{
-    public const string GitHubIssueOwnerName = "GitHubIssueOwnerName";
-    public const string GitHubIssueRepositoryName = "GitHubIssueRepositoryName";
-    public const string GitHubIssueNumber = "GitHubIssueNumber";
-    public const string AmountInHundreds = "AmountInHundreds";
-    public const string UserId = "UserId";
-    public const string FeeInHundreds = "FeeInHundreds";
-    public const string BountyId = "BountyId";
-    public const string PaymentId = "PaymentId";
-    public const string ClaimRequestId = "ClaimRequestId";
-}
 
 public class SetupIntentPost : EndpointBaseAsync
     .WithRequest<PostRequest>

@@ -34,6 +34,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj" />
       <ProjectReference Include="..\..\src\api\Sponsorkit.csproj" />
     </ItemGroup>
 

@@ -10,16 +10,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Octokit;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Builders;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Domain.Models.Stripe;
-using Sponsorkit.Infrastructure.GitHub;
-using Sponsorkit.Infrastructure.Options.GitHub;
-using Sponsorkit.Infrastructure.Security.Encryption;
-using Sponsorkit.Infrastructure.Security.Jwt;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.Options.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
 using GitHubUser = Octokit.User;
-using User = Sponsorkit.Domain.Models.Database.User;
+using User = Sponsorkit.BusinessLogic.Domain.Models.Database.User;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.Signup.FromGitHub;
 

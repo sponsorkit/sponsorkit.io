@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
-using Sponsorkit.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure;
 
 namespace Sponsorkit.Tests.TestHelpers;
 

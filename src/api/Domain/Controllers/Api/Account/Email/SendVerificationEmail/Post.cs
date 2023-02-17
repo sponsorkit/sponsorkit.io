@@ -7,11 +7,11 @@ using Ardalis.ApiEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr.Email;
-using Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
-using Sponsorkit.Infrastructure.AspNet;
-using Sponsorkit.Infrastructure.Security.Jwt;
+using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
 
 namespace Sponsorkit.Domain.Controllers.Api.Account.Email.SendVerificationEmail;
 

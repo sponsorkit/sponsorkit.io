@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using Sponsorkit.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers.Mediatr;

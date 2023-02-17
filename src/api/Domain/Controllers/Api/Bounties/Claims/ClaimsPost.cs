@@ -10,14 +10,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
-using Sponsorkit.Domain.Helpers;
-using Sponsorkit.Domain.Mediatr.Email;
-using Sponsorkit.Domain.Mediatr.Email.Templates.BountyClaimRequest;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Builders;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Infrastructure.AspNet;
-using Sponsorkit.Infrastructure.Security.Encryption;
+using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email.Templates.BountyClaimRequest;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.Claims;
 

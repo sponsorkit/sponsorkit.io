@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Octokit;
-using Sponsorkit.Domain.Models;
+using Sponsorkit.BusinessLogic.Domain.Models;
 using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;

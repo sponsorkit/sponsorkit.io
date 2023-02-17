@@ -20,7 +20,7 @@ public class AttributeTest
         var errorMessageBuilder = new StringBuilder();
         errorMessageBuilder.AppendLine("The following authorized endpoints have no 401 swagger status:");
             
-        var controllers = typeof(Program).Assembly
+        var controllers = typeof(Startup).Assembly
             .GetTypes()
             .Where(ExtendsControllerType);
             

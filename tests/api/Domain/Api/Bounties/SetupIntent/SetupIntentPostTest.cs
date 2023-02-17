@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Sponsorkit.Domain.Controllers.Api.Bounties;
+using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;

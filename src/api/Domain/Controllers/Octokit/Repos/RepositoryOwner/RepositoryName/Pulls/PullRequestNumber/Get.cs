@@ -4,7 +4,7 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Octokit;
-using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 
 namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.RepositoryName.Pulls.PullRequestNumber;
 

@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 
 namespace Sponsorkit.Infrastructure.AspNet.Health;
 

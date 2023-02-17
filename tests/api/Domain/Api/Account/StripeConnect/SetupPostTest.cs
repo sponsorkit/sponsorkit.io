@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
+using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 using Sponsorkit.Domain.Controllers.Api.Account.StripeConnect.Setup;
-using Sponsorkit.Infrastructure.Security.Encryption;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 

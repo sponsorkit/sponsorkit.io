@@ -3,8 +3,8 @@ using Ardalis.ApiEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Sponsorkit.Infrastructure.Options;
-using Sponsorkit.Infrastructure.Options.GitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.Options;
+using Sponsorkit.BusinessLogic.Infrastructure.Options.GitHub;
 
 namespace Sponsorkit.Domain.Controllers.Api.Configuration;
 

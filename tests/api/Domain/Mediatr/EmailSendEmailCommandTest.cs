@@ -5,8 +5,8 @@ using Amazon.SimpleEmailV2.Model;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Sponsorkit.Domain.Mediatr.Email;
-using Sponsorkit.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Email.Templates.VerifyEmailAddress;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Domain.Mediatr;

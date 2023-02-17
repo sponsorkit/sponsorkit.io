@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 
 namespace Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId;
 

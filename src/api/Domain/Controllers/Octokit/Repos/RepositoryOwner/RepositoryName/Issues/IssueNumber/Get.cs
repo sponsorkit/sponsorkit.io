@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
-using Sponsorkit.Domain.Models.Database.Context;
-using Sponsorkit.Infrastructure.GitHub;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 
 namespace Sponsorkit.Domain.Controllers.Octokit.Repos.RepositoryOwner.RepositoryName.Issues.IssueNumber;
 

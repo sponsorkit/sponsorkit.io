@@ -4,8 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Sponsorkit.Tests.TestHelpers;

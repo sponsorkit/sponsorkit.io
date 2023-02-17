@@ -2,10 +2,9 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Hosting.Internal;
 using Serilog;
-using Sponsorkit;
-using Sponsorkit.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
 using Sponsorkit.Infrastructure.AspNet.HostedServices;
-using Sponsorkit.Infrastructure.Ioc;
 
 [assembly: InternalsVisibleTo("Sponsorkit.Tests")]
 
@@ -23,12 +22,12 @@ ConfigurationFactory.Configure(
     args,
     "sponsorkit-secrets");
 
-var registry = new IocRegistry(
+var registry = new BusinessLogicIocRegistry(
     services,
     configurationBuilder.Build(),
     environment,
     new [] {
-        typeof(IocRegistry).Assembly
+        typeof(BusinessLogicIocRegistry).Assembly
     });
 registry.Register();
 

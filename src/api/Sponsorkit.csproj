@@ -71,6 +71,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Domain\Mediatr\Behaviors" />
+    <ProjectReference Include="..\..\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
   </ItemGroup>
 </Project>

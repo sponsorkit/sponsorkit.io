@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
+using Sponsorkit.BusinessLogic.Infrastructure.Logging;
 using Sponsorkit.Infrastructure.AspNet.Health;
-using Sponsorkit.Infrastructure.Logging;
 
 namespace Sponsorkit;
 
@@ -25,7 +25,7 @@ public static class Startup
 
     public static void ConfigureWebApplication(WebApplication webApplication)
     {
-        Log.Logger = LoggerFactory.BuildWebApplicationLogger(webApplication.Configuration);
+        Log.Logger = LoggerFactory.BuildWebApplicationLogger();
 
         webApplication.UseForwardedHeaders();
         webApplication.UseResponseCompression();

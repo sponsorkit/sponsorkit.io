@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict;
-using Sponsorkit.Domain.Models.Database;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 

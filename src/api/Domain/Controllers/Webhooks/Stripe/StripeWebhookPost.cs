@@ -12,9 +12,10 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Context;
-using Sponsorkit.Domain.Controllers.Webhooks.Stripe.Handlers;
-using Sponsorkit.Domain.Mediatr;
-using Sponsorkit.Infrastructure.Logging.HttpContext;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Stripe;
+using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers;
+using Sponsorkit.BusinessLogic.Infrastructure.Logging.HttpContext;
 using Stripe;
 
 namespace Sponsorkit.Domain.Controllers.Webhooks.Stripe;

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Sponsorkit.Domain.Models.Database;
-using Sponsorkit.Domain.Models.Database.Builders;
+using Sponsorkit.BusinessLogic.Domain.Models.Database;
+using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
