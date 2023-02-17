@@ -7,6 +7,7 @@ using Octokit;
 using Serilog;
 using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
+using Sponsorkit.Infrastructure.Ioc;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers;
@@ -19,11 +20,12 @@ public class TestServiceProviderFactory
         IHostEnvironment environment,
         IIntegrationTestEntrypoint entrypoint)
     {
-        var registry = new BusinessLogicIocRegistry(
+        var registry = new ApiIocRegistry(
             services,
             configuration,
             environment,
             new [] {
+                typeof(ApiIocRegistry).Assembly,
                 typeof(BusinessLogicIocRegistry).Assembly,
                 typeof(TestServiceProviderFactory).Assembly
             });
