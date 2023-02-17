@@ -5,9 +5,9 @@ using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using Octokit;
 using Serilog;
+using Sponsorkit.Api.Infrastructure.Ioc;
 using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
-using Sponsorkit.Infrastructure.Ioc;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers;

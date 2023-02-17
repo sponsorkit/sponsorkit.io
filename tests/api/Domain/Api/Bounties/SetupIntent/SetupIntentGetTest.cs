@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Controllers.Api.Bounties.SetupIntent;
+using Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 

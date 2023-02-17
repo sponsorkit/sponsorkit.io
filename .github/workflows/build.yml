@@ -18,7 +18,7 @@ jobs:
       DOTNET_LAMBDA_PACKAGE_NAME: ${{ github.sha }}.zip
       DOTNET_LAMBDA_S3_LOCATION: sponsorkit-lambda-deploy-packages
       DOTNET_LAMBDA_FUNCTION_NAME: sponsorkit
-      DOTNET_LAMBDA_FUNCTION_HANDLER: Sponsorkit
+      DOTNET_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Api
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -39,13 +39,13 @@ jobs:
       run: dotnet tool install -g Amazon.Lambda.Tools
 
     - name: .NET Lambda build and upload to S3
-      working-directory: src/api
+      working-directory: src/backend/Sponsorkit.Api
       run: |
         dotnet lambda package $DOTNET_LAMBDA_PACKAGE_NAME
         aws s3 cp --only-show-errors $DOTNET_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_LAMBDA_PACKAGE_NAME
 
     - name: Deploy to staging
-      working-directory: src/api
+      working-directory: src/backend/Sponsorkit.Api
       if: github.event_name != 'release' || github.event.action != 'created'
       run: |
         dotnet lambda deploy-function \
@@ -55,7 +55,7 @@ jobs:
           --package $DOTNET_LAMBDA_PACKAGE_NAME
           
     - name: Deploy to production
-      working-directory: ./src/api
+      working-directory: src/backend/Sponsorkit.Api
       if: github.event_name == 'release' && github.event.action == 'created'
       run: |
         dotnet lambda deploy-function \

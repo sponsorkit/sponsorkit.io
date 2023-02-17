@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.Api.Domain.Controllers.Api.Account.Token.Refresh;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
-using Sponsorkit.Domain.Controllers.Api.Account.Token.Refresh;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 

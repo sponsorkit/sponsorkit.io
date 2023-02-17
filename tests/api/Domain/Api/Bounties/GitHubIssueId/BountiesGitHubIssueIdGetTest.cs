@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.Domain.Controllers.Api.Bounties.GitHubIssueId;
+using Sponsorkit.Api.Domain.Controllers.Api.Bounties.GitHubIssueId;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
