@@ -54,5 +54,14 @@
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0" />
         <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="Domain\Mediatr\Email\Templates\BountyClaimRequest\Template.cshtml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Domain\Mediatr\Email\Templates\VerifyEmailAddress\Template.cshtml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 
 </Project>

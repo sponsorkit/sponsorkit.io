@@ -41,7 +41,8 @@ public class EmailTemplateTest
         return Path.Combine(
             solutionRoot, 
             "src", 
-            "api", 
+            "backend",
+            "Sponsorkit.BusinessLogic",
             "Domain", 
             "Mediatr", 
             "Email", 

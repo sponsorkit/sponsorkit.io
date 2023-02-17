@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Builder;
 using Serilog;
-using Sponsorkit;
 using Sponsorkit.Api;
 using Sponsorkit.Api.Infrastructure.Ioc;
 using Sponsorkit.BusinessLogic.Infrastructure;

@@ -80,7 +80,7 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
         return Unit.Value;
     }
 
-    private static async Task<string> RenderRazorEmailTemplateAsync(SendEmailCommand request, CancellationToken cancellationToken)
+    private async Task<string> RenderRazorEmailTemplateAsync(SendEmailCommand request, CancellationToken cancellationToken)
     {
         var template = await File.ReadAllTextAsync(
             Path.Combine(
@@ -93,7 +93,10 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
                 "Template.cshtml"),
             cancellationToken);
 
-        var executingAssembly = Assembly.GetExecutingAssembly();
+        var executingAssembly = Assembly.GetAssembly(GetType());
+        if (executingAssembly == null)
+            throw new InvalidOperationException("Could not load assembly.");
+        
         var metadataReference = MetadataReference.CreateFromFile(executingAssembly.Location);
 
         var engine = new RazorLightEngineBuilder()
