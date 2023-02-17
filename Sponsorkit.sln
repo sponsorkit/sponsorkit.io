@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit", "src\api\Sponsorkit.csproj", "{2E5CF34D-D30D-470F-99BF-8B3D138F26EC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Api", "src\backend\Sponsorkit.Api\Sponsorkit.Api.csproj", "{2E5CF34D-D30D-470F-99BF-8B3D138F26EC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Tests", "tests\api\Sponsorkit.Tests.csproj", "{BD32DF87-A96A-4723-8471-237832D57DB5}"
 EndProject
@@ -14,9 +14,9 @@ ProjectSection(SolutionItems) = preProject
 	.github\workflows\build.yml = .github\workflows\build.yml
 EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Jobs", "Sponsorkit.Jobs\Sponsorkit.Jobs.csproj", "{E0E7D9E9-8BFD-44B5-9565-23680DAF3F23}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Jobs", "src\backend\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj", "{E0E7D9E9-8BFD-44B5-9565-23680DAF3F23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.BusinessLogic", "Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj", "{72615852-A78F-4AA6-AA05-5389DDF3979E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.BusinessLogic", "src\backend\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj", "{72615852-A78F-4AA6-AA05-5389DDF3979E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

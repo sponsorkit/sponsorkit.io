@@ -34,12 +34,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj" />
-      <ProjectReference Include="..\..\src\api\Sponsorkit.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="..\..\src\api\appsettings.json">
+        <None Include="..\..\src\backend\Sponsorkit.Api\appsettings.json">
+            <Link>appsettings.json</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\src\backend\Sponsorkit.Api\appsettings.Development.json">
             <Link>appsettings.json</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
@@ -47,6 +46,12 @@
 
     <ItemGroup>
       <Folder Include="Domain\Api\Bounties\Intent" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\backend\Sponsorkit.Api\Sponsorkit.Api.csproj" />
+      <ProjectReference Include="..\..\src\backend\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
+      <ProjectReference Include="..\..\src\backend\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj" />
     </ItemGroup>
 
 </Project>

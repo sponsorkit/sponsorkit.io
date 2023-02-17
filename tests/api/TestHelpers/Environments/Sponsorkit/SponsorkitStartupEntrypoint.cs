@@ -36,7 +36,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
                     options.EnvironmentName ?? 
                     Microsoft.Extensions.Hosting.Environments.Development
             });
-        
+
         var configuration = TestConfigurationFactory
             .ConfigureBuilder(new ConfigurationManager())
             .Build();
@@ -50,7 +50,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
             this);
         
         builder.WebHost
-            .UseUrls("https://*:14569;http://*:14568")
+            .UseUrls("http://*:14568")
             .ConfigureServices((_, services) =>
             {
                 options.IocConfiguration?.Invoke(services);
@@ -117,6 +117,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
     public async ValueTask DisposeAsync()
     {
+        scope.Dispose();
         await application.StopAsync();
         
         cancellationTokenSource.Cancel();

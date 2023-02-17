@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Sponsorkit.BusinessLogic.Infrastructure;
+using Sponsorkit.BusinessLogic.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
-using Sponsorkit.Infrastructure.AspNet.HostedServices;
 using Sponsorkit.Tests.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
@@ -85,9 +85,6 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     protected virtual async Task InitializeAsync()
     {
-        var dockerDependencyService = new DockerDependencyService(ServiceProvider);
-        await dockerDependencyService.StartAsync(default);
-            
         await entrypoint.WaitUntilReadyAsync();
     }
 
