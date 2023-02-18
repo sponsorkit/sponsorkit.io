@@ -11,4 +11,10 @@
       <ProjectReference Include="..\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="AWSSDK.CloudWatch" Version="3.7.103.20" />
+      <PackageReference Include="AWSSDK.CloudWatchEvents" Version="3.7.100.76" />
+      <PackageReference Include="AWSSDK.EventBridge" Version="3.7.101.14" />
+    </ItemGroup>
+
 </Project>

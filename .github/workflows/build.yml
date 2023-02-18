@@ -15,10 +15,13 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: eu-north-1
-      DOTNET_LAMBDA_PACKAGE_NAME: ${{ github.sha }}.zip
       DOTNET_LAMBDA_S3_LOCATION: sponsorkit-lambda-deploy-packages
-      DOTNET_LAMBDA_FUNCTION_NAME: sponsorkit
-      DOTNET_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Api
+      DOTNET_API_LAMBDA_PACKAGE_NAME: ${{ github.sha }}.zip
+      DOTNET_API_LAMBDA_FUNCTION_NAME: sponsorkit
+      DOTNET_API_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Api
+      DOTNET_JOB_LAMBDA_PACKAGE_NAME: ${{ github.sha }}-job.zip
+      DOTNET_JOB_LAMBDA_FUNCTION_NAME: sponsorkit-job
+      DOTNET_JOB_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Jobs
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -38,31 +41,57 @@ jobs:
     - name: Install AWS .NET CLI
       run: dotnet tool install -g Amazon.Lambda.Tools
 
-    - name: .NET Lambda build and upload to S3
+    - name: .NET Lambda build and upload to S3 (API)
       working-directory: src/backend/Sponsorkit.Api
       run: |
-        dotnet lambda package $DOTNET_LAMBDA_PACKAGE_NAME
-        aws s3 cp --only-show-errors $DOTNET_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_LAMBDA_PACKAGE_NAME
+        dotnet lambda package $DOTNET_API_LAMBDA_PACKAGE_NAME
+        aws s3 cp --only-show-errors $DOTNET_API_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_API_LAMBDA_PACKAGE_NAME
 
-    - name: Deploy to staging
+    - name: .NET Lambda build and upload to S3 (Jobs)
+      working-directory: src/backend/Sponsorkit.Jobs
+      run: |
+        dotnet lambda package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+        aws s3 cp --only-show-errors $DOTNET_JOB_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_JOB_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to staging (API)
       working-directory: src/backend/Sponsorkit.Api
       if: github.event_name != 'release' || github.event.action != 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME-staging \
-          --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_LAMBDA_PACKAGE_NAME
+          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-staging \
+          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to staging (Jobs)
+      working-directory: src/backend/Sponsorkit.Jobs
+      if: github.event_name != 'release' || github.event.action != 'created'
+      run: |
+        dotnet lambda deploy-function \
+          --region $AWS_REGION \
+          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-staging \
+          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
           
-    - name: Deploy to production
+    - name: Deploy to production (API)
       working-directory: src/backend/Sponsorkit.Api
       if: github.event_name == 'release' && github.event.action == 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
-          --function-name $DOTNET_LAMBDA_FUNCTION_NAME-production \
-          --function-handler $DOTNET_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_LAMBDA_PACKAGE_NAME
+          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-production \
+          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to production (Jobs)
+      working-directory: src/backend/Sponsorkit.Jobs
+      if: github.event_name == 'release' && github.event.action == 'created'
+      run: | 
+        dotnet lambda deploy-function \
+          --region $AWS_REGION \
+          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-production \
+          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
+          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
 
     # - name: Run tests
     #   run: dotnet test
