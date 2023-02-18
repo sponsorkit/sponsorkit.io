@@ -39,7 +39,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="..\..\src\backend\Sponsorkit.Api\appsettings.Development.json">
-            <Link>appsettings.json</Link>
+            <Link>appsettings.Development.json</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
@@ -47,7 +47,6 @@
     <ItemGroup>
       <Folder Include="Api" />
       <Folder Include="BusinessLogic\Domain" />
-      <Folder Include="Jobs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -54,6 +54,17 @@
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0" />
         <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\Sponsorkit.Api\appsettings.json">
+            <Link>appsettings.json</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\Sponsorkit.Api\appsettings.Development.json">
+            <Link>appsettings.Development.json</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
     
     <ItemGroup>
       <None Update="Domain\Mediatr\Email\Templates\BountyClaimRequest\Template.cshtml">
