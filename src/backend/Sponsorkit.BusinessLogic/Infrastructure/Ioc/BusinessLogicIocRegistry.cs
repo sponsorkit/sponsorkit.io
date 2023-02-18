@@ -172,6 +172,7 @@ public sealed class BusinessLogicIocRegistry
         Services.AddSingleton<AccountLinkService>();
         Services.AddSingleton<CustomerBalanceTransactionService>();
         Services.AddSingleton<PlanService>();
+        Services.AddSingleton<BalanceService>();
         Services.AddSingleton<ChargeService>();
         Services.AddSingleton<PaymentIntentService>();
 

@@ -11,12 +11,12 @@ using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
 
 namespace Sponsorkit.Api.Domain.Controllers.Api.Bounties.Claims.ClaimId.Verdict;
 
-public record PostRequest(
+public record VerdictPostRequest(
     [FromRoute] Guid ClaimId,
     ClaimVerdict Verdict);
     
 public class VerdictPost : EndpointBaseAsync
-    .WithRequest<PostRequest>
+    .WithRequest<VerdictPostRequest>
     .WithoutResult
 {
     private readonly DataContext dataContext;
@@ -29,7 +29,7 @@ public class VerdictPost : EndpointBaseAsync
     [HttpPost("bounties/claims/{claimId}/verdict")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new())
+    public override async Task<ActionResult> HandleAsync(VerdictPostRequest request, CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             

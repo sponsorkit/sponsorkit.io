@@ -36,7 +36,7 @@ public class VerdictPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var response = await handler.HandleAsync(new PostRequest(
+        var response = await handler.HandleAsync(new VerdictPostRequest(
             otherUserClaim.Id,
             ClaimVerdict.Undecided));
             
@@ -66,7 +66,7 @@ public class VerdictPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var response = await handler.HandleAsync(new PostRequest(
+        var response = await handler.HandleAsync(new VerdictPostRequest(
             authenticatedUserClaim.Id,
             ClaimVerdict.Scam));
             
@@ -86,7 +86,7 @@ public class VerdictPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var response = await handler.HandleAsync(new PostRequest(
+        var response = await handler.HandleAsync(new VerdictPostRequest(
             Guid.NewGuid(),
             ClaimVerdict.Undecided));
             
@@ -116,7 +116,7 @@ public class VerdictPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var response = await handler.HandleAsync(new PostRequest(
+        var response = await handler.HandleAsync(new VerdictPostRequest(
             authenticatedUserClaim.Id,
             ClaimVerdict.Scam));
             

@@ -21,12 +21,12 @@ using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Api.Domain.Controllers.Api.Bounties.Claims;
 
-public record PostRequest(
+public record ClaimsRequest(
     long GitHubIssueId,
     long GitHubPullRequestNumber);
     
 public class ClaimsPost : EndpointBaseAsync
-    .WithRequest<PostRequest>
+    .WithRequest<ClaimsRequest>
     .WithoutResult
 {
     private readonly DataContext dataContext;
@@ -49,7 +49,7 @@ public class ClaimsPost : EndpointBaseAsync
     [HttpPost("bounties/claims")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new())
+    public override async Task<ActionResult> HandleAsync(ClaimsRequest request, CancellationToken cancellationToken = new())
     {
         var issue = await dataContext.Issues
             .Include(x => x.Bounties).ThenInclude(x => x.Creator)

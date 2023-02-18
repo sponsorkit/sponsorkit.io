@@ -38,6 +38,10 @@ public class StripeContext
     public StripePlanBuilder PlanBuilder => 
         new(serviceProvider.GetRequiredService<PlanService>());
     
+    public BalanceService BalanceService => serviceProvider.GetRequiredService<BalanceService>();
+    
+    public PaymentIntentService PaymentIntentService => serviceProvider.GetRequiredService<PaymentIntentService>();
+    
     public SetupIntentService SetupIntentService => serviceProvider.GetRequiredService<SetupIntentService>();
 
     public CustomerService CustomerService => serviceProvider.GetRequiredService<CustomerService>();

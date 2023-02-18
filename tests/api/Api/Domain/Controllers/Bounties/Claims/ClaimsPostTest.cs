@@ -27,7 +27,7 @@ public class ClaimsPostTest
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
 
         //Act
-        var result = await handler.HandleAsync(new PostRequest(1337, 1337));
+        var result = await handler.HandleAsync(new ClaimsRequest(1337, 1337));
 
         //Assert
         Assert.IsTrue(result is NotFoundObjectResult { Value: "Issue not found." });
@@ -55,7 +55,7 @@ public class ClaimsPostTest
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
 
         //Act
-        var result = await handler.HandleAsync(new PostRequest(gitHubIssue.GitHub.Id, pullRequestNumber));
+        var result = await handler.HandleAsync(new ClaimsRequest(gitHubIssue.GitHub.Id, pullRequestNumber));
 
         //Assert
         Assert.IsTrue(result is NotFoundObjectResult { Value: "Invalid pull request specified." });
@@ -75,7 +75,7 @@ public class ClaimsPostTest
             .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
 
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
@@ -88,7 +88,7 @@ public class ClaimsPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var result = await handler.HandleAsync(new PostRequest(
+        var result = await handler.HandleAsync(new ClaimsRequest(
             gitHubIssue.GitHub.Id,
             pullRequest.Number));
 
@@ -110,7 +110,7 @@ public class ClaimsPostTest
             .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequest.BuildAsync();
+        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
 
         var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.PullRequest
@@ -123,7 +123,7 @@ public class ClaimsPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var result = await handler.HandleAsync(new PostRequest(
+        var result = await handler.HandleAsync(new ClaimsRequest(
             gitHubIssue.GitHub.Id,
             pullRequest.Number));
 
@@ -147,7 +147,7 @@ public class ClaimsPostTest
             .WithRepository(repository)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequest
+        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder
             .WithUser(new TestGitHubUser()
             {
                 Id = (int)authenticatedUser.GitHub.Id
@@ -180,7 +180,7 @@ public class ClaimsPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        var result = await handler.HandleAsync(new PostRequest(
+        var result = await handler.HandleAsync(new ClaimsRequest(
             issue.GitHub.Id,
             gitHubPullRequest.Number));
 
@@ -208,7 +208,7 @@ public class ClaimsPostTest
             .WithRepository(repository)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequest
+        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder
             .WithUser(new TestGitHubUser()
             {
                 Id = (int)authenticatedUser.GitHub!.Id
@@ -248,7 +248,7 @@ public class ClaimsPostTest
 
         //Act
         var exception = await Assert.ThrowsExceptionAsync<TestException>(async () =>
-            await handler.HandleAsync(new PostRequest(
+            await handler.HandleAsync(new ClaimsRequest(
                 issue.GitHub.Id,
                 gitHubPullRequest.Number)));
 
@@ -280,7 +280,7 @@ public class ClaimsPostTest
             .WithRepository(repository)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequest
+        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder
             .WithUser(new TestGitHubUser()
             {
                 Id = (int)authenticatedUser.GitHub.Id
@@ -312,7 +312,7 @@ public class ClaimsPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        await handler.HandleAsync(new PostRequest(
+        await handler.HandleAsync(new ClaimsRequest(
             issue.GitHub.Id,
             gitHubPullRequest.Number));
 
@@ -341,7 +341,7 @@ public class ClaimsPostTest
             .WithRepository(repository)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequest
+        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder
             .WithUser(new TestGitHubUser()
             {
                 Id = (int)authenticatedUser.GitHub.Id
@@ -373,7 +373,7 @@ public class ClaimsPostTest
         handler.FakeAuthentication(authenticatedUser);
 
         //Act
-        await handler.HandleAsync(new PostRequest(
+        await handler.HandleAsync(new ClaimsRequest(
             issue.GitHub.Id,
             gitHubPullRequest.Number));
 

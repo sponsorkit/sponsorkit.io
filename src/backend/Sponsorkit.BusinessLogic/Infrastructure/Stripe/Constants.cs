@@ -3,5 +3,5 @@
 public class Constants
 {
     public const int MinimumBountyAmountInHundreds = 10_00;
-    public const int ClaimVerdictExpiryInDays = 7;
+    public const int VerdictPeriodDurationInDays = 7;
 }
