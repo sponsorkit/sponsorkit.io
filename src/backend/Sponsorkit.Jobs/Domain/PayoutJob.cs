@@ -44,13 +44,12 @@ public class PayoutJob : IJob
             .ToArrayAsync(cancellationToken);
         foreach (var claimRequestsForIssue in bountyClaimRequestsByIssueId)
         {
-            var claimVerdictsByCount = claimRequestsForIssue.ClaimRequests
+            var verdictByMostVotes = claimRequestsForIssue.ClaimRequests
                 .Where(x => x.Verdict != ClaimVerdict.Undecided)
                 .GroupBy(x => x.Verdict)
                 .OrderByDescending(x => x.Count())
                 .Select(x => x.Key)
-                .ToArray();
-            var verdictByMostVotes = claimVerdictsByCount.FirstOrDefault(ClaimVerdict.Solved);
+                .FirstOrDefault(ClaimVerdict.Solved);
                 
             foreach (var claimRequest in claimRequestsForIssue.ClaimRequests)
             {

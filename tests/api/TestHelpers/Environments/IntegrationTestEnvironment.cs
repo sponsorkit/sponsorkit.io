@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Sponsorkit.BusinessLogic.Infrastructure;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
-using Sponsorkit.Tests.Domain.Mediatr;
+using Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments;

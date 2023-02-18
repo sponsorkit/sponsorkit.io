@@ -45,7 +45,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Domain\Api\Bounties\Intent" />
+      <Folder Include="Api" />
+      <Folder Include="BusinessLogic\Domain" />
+      <Folder Include="Jobs" />
     </ItemGroup>
 
     <ItemGroup>
