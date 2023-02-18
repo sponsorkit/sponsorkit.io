@@ -123,7 +123,7 @@ public sealed class ApiIocRegistry
                     new JsonStringEnumConverter(
                         JsonNamingPolicy.CamelCase));
             })
-            .AddApplicationPart(typeof(Startup).Assembly)
+            .AddApplicationPart(typeof(ApiStartup).Assembly)
             .AddControllersAsServices()
             .AddAuthorization()
             .AddApiExplorer();

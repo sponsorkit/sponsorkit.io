@@ -30,7 +30,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         cancellationTokenSource = new CancellationTokenSource();
         backgroundEndpointExceptions = new List<Exception>();
 
-        var builder = Startup.CreateWebApplicationBuilder(
+        var builder = ApiStartup.CreateWebApplicationBuilder(
             new WebApplicationOptions()
             {
                 EnvironmentName = 
@@ -59,7 +59,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         
         var app = builder.Build();
         
-        Startup.ConfigureWebApplication(app);
+        ApiStartup.ConfigureWebApplication(app);
         
         application = app;
 

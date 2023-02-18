@@ -12,7 +12,7 @@ using Sponsorkit.BusinessLogic.Infrastructure.Logging;
 
 namespace Sponsorkit.Api;
 
-public static class Startup
+public static class ApiStartup
 {
     public static WebApplicationBuilder CreateWebApplicationBuilder(
         WebApplicationOptions webApplicationOptions)

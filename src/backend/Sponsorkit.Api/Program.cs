@@ -10,7 +10,7 @@ using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
 
 [assembly: InternalsVisibleTo("Sponsorkit.Tests")]
 
-var builder = Startup.CreateWebApplicationBuilder(
+var builder = ApiStartup.CreateWebApplicationBuilder(
     new WebApplicationOptions()
     {
         Args = args
@@ -32,7 +32,7 @@ var registry = new ApiIocRegistry(
 registry.Register();
 
 var app = builder.Build();
-Startup.ConfigureWebApplication(app);
+ApiStartup.ConfigureWebApplication(app);
 
 try
 {
