@@ -103,8 +103,6 @@ public sealed class BusinessLogicIocRegistry
     private void ConfigureAws()
     {
         Services.AddAWSService<IAmazonSimpleEmailServiceV2>();
-
-        Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
             
         Services.AddDefaultAWSOptions(
             new AWSOptions()

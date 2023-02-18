@@ -52,7 +52,7 @@ public class StripeWebhookPost : EndpointBaseAsync
             stream.Seek(0, SeekOrigin.Begin);
 
             using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync(cancellationToken);
+            var json = await reader.ReadToEndAsync();
 
             var signatureHeader = Request.Headers["Stripe-Signature"];
             var stripeEvent = eventFactory.CreateEvent(

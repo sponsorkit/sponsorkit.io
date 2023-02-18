@@ -50,9 +50,9 @@ public static class Extensions
         this DataContext dataContext,
         Action action)
     {
-        dataContext.ChangeTracker.Tracking += (_, args) =>
+        dataContext.ChangeTracker.Tracked += (_, args) =>
         {
-            if (args.Entry.Entity is TEntity && args.State == EntityState.Added)
+            if (args.Entry.Entity is TEntity && args.Entry.State == EntityState.Added)
             {
                 action();
             }

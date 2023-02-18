@@ -101,6 +101,8 @@ public sealed class ApiIocRegistry
     
     private void ConfigureAspNetCore()
     {
+        Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+        
         Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders =
