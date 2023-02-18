@@ -47,7 +47,7 @@ public class Get : EndpointBaseAsync
         
     [HttpGet("account/email/verify-email-token/{Token}")]
     [AllowAnonymous]
-    public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult> HandleAsync([FromRoute] Request request, CancellationToken cancellationToken = new())
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var principal = tokenHandler.ValidateToken(

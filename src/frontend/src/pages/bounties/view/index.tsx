@@ -7,7 +7,6 @@ import { PaymentMethodModal } from "@components/financial/stripe/payment-modal";
 import LoginDialog from "@components/login/login-dialog";
 import { Markdown } from "@components/markdown";
 import ProgressList from "@components/progress/progress-list";
-import BountyRelocationTooltip from "@components/tooltips/bounty-relocation-tooltip-contents";
 import FeesTooltip from "@components/tooltips/fees-tooltip-contents";
 import TooltipLink from "@components/tooltips/tooltip-link";
 import getDialogTransitionProps from "@components/transitions/dialog-transition";
@@ -418,11 +417,10 @@ function CreateBounty(props: {
     const [shouldCreate, setShouldCreate] = useState(false);
     
     const [consentChargedAferIssueClose, setConsentChargedAferIssueClose] = useState(false);
-    const [consentNoRefunds, setConsentNoRefunds] = useState(false);
 
     const hasConsent = useMemo(
-        () => consentChargedAferIssueClose && consentNoRefunds,
-        [consentChargedAferIssueClose, consentNoRefunds]);
+        () => consentChargedAferIssueClose,
+        [consentChargedAferIssueClose]);
 
     const feeAmount = useApi(
         async (client, abortSignal) => {
@@ -495,19 +493,10 @@ function CreateBounty(props: {
                 <FormGroup className={classes.consent}>
                     <FormControlLabel 
                         className={classes.label}
-                        label={<>I agree to be charged <Currency amount={(amount || 0) + (feeAmount || 0)} /> (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>) whenever my bounty is awarded.</>}
+                        label={<>I agree to be charged <Currency amount={(amount || 0) + (feeAmount || 0)} /> (including <TooltipLink text="fees"><FeesTooltip /></TooltipLink>) whenever my bounty is claimed.</>}
                         control={<Checkbox
                             checked={consentChargedAferIssueClose}
                             onChange={() => setConsentChargedAferIssueClose(!consentChargedAferIssueClose)}
-                            className={classes["consent-checkbox"]} />} />
-                    <FormControlLabel 
-                        className={classes.label}
-                        label={<>
-                            I agree that my bounty will be relocated to another issue if it isn't awarded. <TooltipLink text="Why?"><BountyRelocationTooltip /></TooltipLink>
-                        </>}
-                        control={<Checkbox
-                            checked={consentNoRefunds}
-                            onChange={() => setConsentNoRefunds(!consentNoRefunds)}
                             className={classes["consent-checkbox"]} />} />
                 </FormGroup>
             </>}

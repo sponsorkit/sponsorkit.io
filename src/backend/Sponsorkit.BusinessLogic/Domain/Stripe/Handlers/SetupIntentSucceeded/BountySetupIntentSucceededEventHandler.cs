@@ -11,6 +11,7 @@ using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 using Stripe;
+using static Sponsorkit.BusinessLogic.Domain.Helpers.GitHubCommentHelper;
 
 namespace Sponsorkit.BusinessLogic.Domain.Stripe.Handlers.SetupIntentSucceeded;
 
@@ -73,7 +74,7 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
         if (amountInHundreds < Constants.MinimumBountyAmountInHundreds)
             throw new InvalidOperationException("Bounty amount is below minimum.");
             
-        var databaseIssue = await dataContext.ExecuteInTransactionAsync(async () =>
+        await dataContext.ExecuteInTransactionAsync(async () =>
         {
             var user = await dataContext.Users
                 .AsQueryable()
@@ -102,14 +103,14 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
 
             await dataContext.SaveChangesAsync(cancellationToken);
 
+            await UpsertIssueBountyCommentAsync(
+                gitHubOwnerName, 
+                gitHubRepositoryName, 
+                issue, 
+                cancellationToken);
+
             return issue.Value;
         }, IsolationLevel.Serializable);
-
-        await UpsertIssueBountyCommentAsync(
-            gitHubOwnerName, 
-            gitHubRepositoryName, 
-            databaseIssue, 
-            cancellationToken);
     }
 
     private async Task UpsertIssueBountyCommentAsync(
@@ -118,6 +119,7 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
         Issue issue, 
         CancellationToken cancellationToken)
     {
+        const int amountOfTopContributorsToTake = 10;
         var totalBountyAmountInHundredsByContributors = await dataContext.Bounties
             .AsQueryable()
             .Where(x => x.IssueId == issue.Id)
@@ -133,25 +135,25 @@ public class BountySetupIntentSucceededEventHandler : StripeEventHandler<SetupIn
                     .Sum(p => p.AmountInHundreds))
             })
             .OrderByDescending(x => x.AmountInHundreds)
-            .Take(10)
+            .Take(amountOfTopContributorsToTake)
             .ToArrayAsync(cancellationToken);
             
         var totalAmountInHundreds = totalBountyAmountInHundredsByContributors.Sum(x => x.AmountInHundreds);
             
         var messageTextBuilder = new StringBuilder();
-        messageTextBuilder.AppendLine($"A {GitHubCommentHelper.RenderBold($"${totalAmountInHundreds / 100}")} bounty has been put on {GitHubCommentHelper.RenderLink("this issue over at bountyhunt.io", LinkHelper.GetBountyLink(gitHubOwnerName, gitHubRepositoryName, issue.GitHub.Number))}.");
+        messageTextBuilder.AppendLine($"A {RenderBold($"${totalAmountInHundreds / 100}")} bounty has been put on {RenderLink("this issue over at bountyhunt.io", LinkHelper.GetBountyLink(gitHubOwnerName, gitHubRepositoryName, issue.GitHub.Number))}.");
             
         messageTextBuilder.AppendLine();
         messageTextBuilder.AppendLine();
             
-        messageTextBuilder.AppendLine(GitHubCommentHelper.RenderBold("Top contributors:"));
+        messageTextBuilder.AppendLine(RenderBold($"Top {amountOfTopContributorsToTake} contributors:"));
             
         foreach (var pair in totalBountyAmountInHundredsByContributors)
         {
-            messageTextBuilder.AppendLine($"- {GitHubCommentHelper.RenderBold($"${pair.AmountInHundreds / 100}")} by @{pair.GitHubLogin}");
+            messageTextBuilder.AppendLine($"- {RenderBold($"${pair.AmountInHundreds / 100}")} by @{pair.GitHubLogin}");
         }
             
-        messageTextBuilder.AppendLine(GitHubCommentHelper.RenderSpoiler(
+        messageTextBuilder.AppendLine(RenderSpoiler(
             "What is this?",
             "bountyhunt.io is an open source service that allows people to put bounties on issues, and allows bountyhunters to claim those bounties.\n\nIn a way, we're helping people get paid for the open source work they do, and for people to live off of open source development.\n\nAdditionally, we help bring attention to the issues that matter most in the open source community.\n\nThis comment will only appear once ever, and will be edited if new bounties arrive, to reduce spam."));
             

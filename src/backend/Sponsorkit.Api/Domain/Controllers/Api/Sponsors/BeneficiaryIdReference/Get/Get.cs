@@ -40,7 +40,7 @@ public class Get : EndpointBaseAsync
     [HttpGet("sponsors/{beneficiaryId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<Response>> HandleAsync(Request request, CancellationToken cancellationToken = new())
     {
         var currentSponsor = await GetBeneficiarySponsorshipSummary(
             request.BeneficiaryId,

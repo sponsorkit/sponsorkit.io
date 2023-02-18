@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.EntityFrameworkCore;
-using Octokit;
+﻿using Microsoft.EntityFrameworkCore;
 using Sponsorkit.BusinessLogic.Domain.Helpers;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
@@ -13,18 +11,15 @@ public class PayoutJob : IJob
 {
     private readonly DataContext dataContext;
     private readonly PaymentIntentService paymentIntentService;
-    private readonly IGitHubClient gitHubClient;
 
     public string Identifier => "payout";
 
     public PayoutJob(
         DataContext dataContext,
-        PaymentIntentService paymentIntentService,
-        IGitHubClient gitHubClient)
+        PaymentIntentService paymentIntentService)
     {
         this.dataContext = dataContext;
         this.paymentIntentService = paymentIntentService;
-        this.gitHubClient = gitHubClient;
     }
     
     public async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -35,8 +30,8 @@ public class PayoutJob : IJob
             .Include(x => x.Bounty.Creator)
             .AsQueryable()
             .Where(x => 
-                x.ExpiredAt == null && 
-                x.Bounty.AwardedToId == null)
+                x.CreatedAt < DateTime.UtcNow.AddDays(Constants.ClaimVerdictExpiryInDays) &&
+                x.CompletedAt == null)
             .GroupBy(x => new
             {
                 x.Bounty.IssueId
@@ -49,54 +44,28 @@ public class PayoutJob : IJob
             .ToArrayAsync(cancellationToken);
         foreach (var claimRequestsForIssue in bountyClaimRequestsByIssueId)
         {
-            var overallVerdict = claimRequestsForIssue.ClaimRequests
+            var claimVerdictsByCount = claimRequestsForIssue.ClaimRequests
                 .Where(x => x.Verdict != ClaimVerdict.Undecided)
                 .GroupBy(x => x.Verdict)
                 .OrderByDescending(x => x.Count())
                 .Select(x => x.Key)
-                .FirstOrDefault();
-            if (overallVerdict == ClaimVerdict.Undecided)
-                overallVerdict = ClaimVerdict.Solved;
+                .ToArray();
+            var verdictByMostVotes = claimVerdictsByCount.FirstOrDefault(ClaimVerdict.Solved);
                 
             foreach (var claimRequest in claimRequestsForIssue.ClaimRequests)
             {
-                var finalVerdict = claimRequest.Verdict;
-                if (finalVerdict == ClaimVerdict.Undecided)
+                var finalVerdictForClaimRequest = claimRequest.Verdict;
+                if (finalVerdictForClaimRequest == ClaimVerdict.Undecided)
                 {
-                    finalVerdict = overallVerdict;
+                    finalVerdictForClaimRequest = verdictByMostVotes;
                 }
 
-                if (finalVerdict == ClaimVerdict.Solved)
+                if (finalVerdictForClaimRequest == ClaimVerdict.Solved)
                 {
                     await PayoutFundsAsync(claimRequest);
                 }
-                else
-                {
-                    await RedistributeFundsToTopOpenSourceIssuesAsync(claimRequest);
-                }
             }
         }
-    }
-
-    [SuppressMessage("ReSharper", "UnusedParameter.Local")]
-    private async Task RedistributeFundsToTopOpenSourceIssuesAsync(BountyClaimRequest claimRequest)
-    {
-        await gitHubClient.Search.SearchIssues(new()
-        {
-            Archived = false,
-            State = ItemState.Open,
-            Type = IssueTypeQualifier.Issue,
-            Parameters =
-            {
-                {"sort", "reactions-+1-desc "},
-                {"is", "open"},
-                {"is", "issue"},
-                {"archived", "false"},
-                {"sort", "reactions-+1-desc"}
-            }
-        });
-            
-        throw new NotImplementedException();
     }
 
     private async Task PayoutFundsAsync(BountyClaimRequest claimRequest)

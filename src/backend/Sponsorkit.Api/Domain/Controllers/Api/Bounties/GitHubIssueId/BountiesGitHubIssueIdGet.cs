@@ -49,7 +49,7 @@ public class BountiesGitHubIssueIdGet : EndpointBaseAsync
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [SuppressMessage("ReSharper", "NullableWarningSuppressionIsUsed")]
-    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new())
     {
         var issue = await dataContext.Issues
             .Include(x => x.Bounties).ThenInclude(x => x.Payments)

@@ -49,7 +49,7 @@ public class ClaimsPost : EndpointBaseAsync
     [HttpPost("bounties/claims")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new())
     {
         var issue = await dataContext.Issues
             .Include(x => x.Bounties).ThenInclude(x => x.Creator)

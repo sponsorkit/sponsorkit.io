@@ -46,7 +46,7 @@ public class Get : EndpointBaseAsync
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [HttpGet("github/repositories/{repositoryOwner}/{repositoryName}/pull-requests/from-user")]
-    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
 

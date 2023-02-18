@@ -29,7 +29,7 @@ public class VerdictPost : EndpointBaseAsync
     [HttpPost("bounties/claims/{claimId}/verdict")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult> HandleAsync(PostRequest request, CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             

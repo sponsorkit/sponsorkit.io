@@ -12,7 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Sponsorkit.Api.Infrastructure.AspNet.HostedServices;
+using Sponsorkit.Api.Infrastructure.AspNet;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
 using Sponsorkit.BusinessLogic.Infrastructure.Options;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
@@ -49,7 +49,6 @@ public sealed class ApiIocRegistry
             assemblies);
         businessLogicRegistry.Register();
         
-        ConfigureHostedServices();
         ConfigureNGrok();
         
         ConfigureAspNetCore();
@@ -86,11 +85,6 @@ public sealed class ApiIocRegistry
                     }
                 };
             });
-    }
-
-    private void ConfigureHostedServices()
-    {
-        Services.AddScoped<PayoutHostedService>();
     }
 
     private void ConfigureNGrok()

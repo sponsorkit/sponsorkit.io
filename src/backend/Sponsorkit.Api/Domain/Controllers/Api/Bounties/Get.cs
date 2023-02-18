@@ -37,7 +37,7 @@ public class Get : EndpointBaseAsync
         
     [HttpGet("bounties")]
     [AllowAnonymous]
-    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new())
     {
         var databaseResponse = await dataContext.Bounties
             .AsQueryable()

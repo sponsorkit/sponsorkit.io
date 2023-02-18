@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 using Sponsorkit.BusinessLogic.Infrastructure.Options;
 using Stripe;
 
-namespace Sponsorkit.Api.Infrastructure.AspNet.HostedServices;
+namespace Sponsorkit.Api.Infrastructure.AspNet;
 
 public class StripeWebhookNgrokLifetimeHook : INgrokLifetimeHook
 {

@@ -58,7 +58,7 @@ public class AccountGet : EndpointBaseAsync
     [HttpGet("account")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<Response>> HandleAsync(CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             

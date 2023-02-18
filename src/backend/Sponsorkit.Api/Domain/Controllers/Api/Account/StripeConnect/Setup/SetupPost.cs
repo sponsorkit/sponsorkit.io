@@ -43,7 +43,7 @@ public class SetupPost : EndpointBaseAsync
     [ProducesResponseType(StatusCodes.Status200OK)]
     public override async Task<ActionResult<Response>> HandleAsync(
         [FromBody] Request request,
-        CancellationToken cancellationToken = new CancellationToken())
+        CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             

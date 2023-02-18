@@ -31,7 +31,7 @@ public class BountyClaimRequest
         
     public DateTimeOffset CreatedAt { get; set; }
         
-    public DateTimeOffset? ExpiredAt { get; set; }
+    public DateTimeOffset? CompletedAt { get; set; }
 }
     
 public class BountyClaimRequestConfiguration : IEntityTypeConfiguration<BountyClaimRequest>

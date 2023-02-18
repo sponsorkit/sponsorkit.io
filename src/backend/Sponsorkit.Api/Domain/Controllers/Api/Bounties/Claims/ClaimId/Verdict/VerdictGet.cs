@@ -41,7 +41,7 @@ public class VerdictGet : EndpointBaseAsync
     [HttpGet("bounties/claims/{claimId}/verdict")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<GetResponse>> HandleAsync([FromRoute] GetRequest request, CancellationToken cancellationToken = new())
     {
         var userId = User.GetRequiredId();
             

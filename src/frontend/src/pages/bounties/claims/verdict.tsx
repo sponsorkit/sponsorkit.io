@@ -1,11 +1,9 @@
 import Currency from "@components/currency";
 import LoginDialog from "@components/login/login-dialog";
-import BountyRelocationTooltip from "@components/tooltips/bounty-relocation-tooltip-contents";
-import TooltipLink from "@components/tooltips/tooltip-link";
 import { useApi, useOctokit } from "@hooks/clients";
 import { useConfiguration } from "@hooks/configuration";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Button, ButtonBase, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
+import { Button, ButtonBase, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogTitle, Typography } from "@mui/material";
 import { RestEndpointMethodTypes } from "@octokit/rest";
 import { AppBarLayout } from "@pages/index";
 import { useRouter } from "next/router";
@@ -80,17 +78,6 @@ function ClaimVerdictContents(props: {
             onClose={() => setIsRejectOpen(false)}
         >
             <DialogTitle>Reject claim</DialogTitle>
-            <DialogContent>
-                <Typography>
-                    In <b>1337</b> days, the verdict phase of the bounty will be over.
-                </Typography>
-                <Typography>
-                    <i>If you have not awarded the bounty to anyone before that date, the <Currency amount={amount} /> bounty amount will be charged from your card and redistributed into new bounties across the <a href="https://github.com/issues?q=is%3Aopen+sort%3Areactions-%2B1-desc+" target="_blank">most popular GitHub issues</a> automatically.</i>
-                </Typography>
-                <Typography>
-                    <TooltipLink text="Why isn't the amount refunded?"><BountyRelocationTooltip /></TooltipLink>
-                </Typography>
-            </DialogContent>
             <DialogActions>
                 <Button 
                     variant="text"
@@ -113,10 +100,6 @@ function ClaimVerdictContents(props: {
             onClose={() => setIsApproveOpen(false)}
         >
             <DialogTitle>Award bounty</DialogTitle>
-            <DialogContent>
-                {/* <FeeDisplay 
-                    amount={amount} /> */}
-            </DialogContent>
             <DialogActions>
                 <Button 
                     variant="text"

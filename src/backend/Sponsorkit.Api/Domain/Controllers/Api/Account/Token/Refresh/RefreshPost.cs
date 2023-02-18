@@ -42,7 +42,7 @@ public class RefreshPost : EndpointBaseAsync
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public override async Task<ActionResult<PostResponse>> HandleAsync(PostRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public override async Task<ActionResult<PostResponse>> HandleAsync(PostRequest request, CancellationToken cancellationToken = new())
     {
         var claimsPrincipal = JwtValidator.GetClaimsPrincipal(
             request.Token,

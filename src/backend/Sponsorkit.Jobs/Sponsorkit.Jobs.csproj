@@ -21,8 +21,4 @@
       <PackageReference Include="AWSSDK.EventBridge" Version="3.7.101.14" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Infrastructure" />
-    </ItemGroup>
-
 </Project>
