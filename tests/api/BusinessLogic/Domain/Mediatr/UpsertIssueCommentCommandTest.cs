@@ -60,7 +60,7 @@ public class UpsertIssueCommentCommandTest
 
         environment.GitHub.FakeClient.Issue.Comment
             .GetAllForIssue(
-                "owner",
+                "sponsorkit",
                 "repo",
                 1)
             .Returns(new List<IssueComment>()
@@ -83,7 +83,7 @@ public class UpsertIssueCommentCommandTest
         //Act
         await environment.Mediator.Send(
             new UpsertIssueCommentCommand(
-                "owner",
+                "sponsorkit",
                 "repo",
                 1,
                 "body"));
@@ -107,7 +107,7 @@ public class UpsertIssueCommentCommandTest
         //Act
         await environment.Mediator.Send(
             new UpsertIssueCommentCommand(
-                "owner",
+                "sponsorkit",
                 "repo",
                 1,
                 "body"));

@@ -44,7 +44,7 @@ jobs:
       
     - name: Install Docker
       run: |
-        curl -fsSL https://get.docker.com | shc
+        curl -fsSL https://get.docker.com | sh
         dockerd &
 
     - name: Use proper .NET version
