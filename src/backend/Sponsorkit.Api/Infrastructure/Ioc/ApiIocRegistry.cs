@@ -47,9 +47,12 @@ public sealed class ApiIocRegistry
             Configuration,
             assemblies);
         businessLogicRegistry.Register();
-        
-        ConfigureNGrok();
-        
+
+        if (Environment.IsDevelopment())
+        {
+            ConfigureNGrok();
+        }
+
         ConfigureAspNetCore();
         ConfigureSwagger();
         ConfigureAuthentication();
