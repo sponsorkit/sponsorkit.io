@@ -33,6 +33,7 @@ public class GetPaymentMethodForCustomerQueryTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var customer = await environment.Stripe.CustomerBuilder
+            .WithUser(await environment.Database.UserBuilder.BuildAsync())
             .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder)
             .BuildAsync();
 
@@ -56,7 +57,9 @@ public class GetPaymentMethodForCustomerQueryTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var customer = await environment.Stripe.CustomerBuilder.BuildAsync();
+        var customer = await environment.Stripe.CustomerBuilder
+            .WithUser(await environment.Database.UserBuilder.BuildAsync())
+            .BuildAsync();
 
         var paymentMethod = await environment.Stripe.PaymentMethodBuilder
             .WithCustomer(customer)

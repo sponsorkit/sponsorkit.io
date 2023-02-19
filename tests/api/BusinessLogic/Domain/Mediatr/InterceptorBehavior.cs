@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -23,10 +24,14 @@ public class InterceptorBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        if (request is IRequest)
+        var type = request
+            .GetType()
+            .GetInterfaces()
+            .First(x => x.Namespace == nameof(MediatR));
+        if (type == typeof(IRequest) || type == typeof(IRequest<Unit>))
         {
             interceptor.Intercept((IRequest)request);
-        } else if (request.GetType().GetGenericTypeDefinition() == typeof(IRequest<>))
+        } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IRequest<>))
         {
             interceptor.Intercept((IRequest<TResponse>)request);
         }
