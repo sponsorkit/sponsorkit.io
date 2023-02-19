@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Jobs", "src\back
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.BusinessLogic", "src\backend\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj", "{72615852-A78F-4AA6-AA05-5389DDF3979E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.FrontendTestBridge", "src\backend\Sponsorkit.FrontendTestBridge\Sponsorkit.FrontendTestBridge.csproj", "{5B7CD7DC-9E71-44C5-AA00-DF137DFFB7BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,5 +42,9 @@ Global
 		{72615852-A78F-4AA6-AA05-5389DDF3979E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72615852-A78F-4AA6-AA05-5389DDF3979E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72615852-A78F-4AA6-AA05-5389DDF3979E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B7CD7DC-9E71-44C5-AA00-DF137DFFB7BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B7CD7DC-9E71-44C5-AA00-DF137DFFB7BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B7CD7DC-9E71-44C5-AA00-DF137DFFB7BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B7CD7DC-9E71-44C5-AA00-DF137DFFB7BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
