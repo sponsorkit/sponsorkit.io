@@ -45,7 +45,6 @@ public sealed class ApiIocRegistry
         var businessLogicRegistry = new BusinessLogicIocRegistry(
             Services, 
             Configuration,
-            Environment,
             assemblies);
         businessLogicRegistry.Register();
         

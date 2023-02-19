@@ -28,7 +28,7 @@ public class TestStripeAccountBuilder : StripeAccountBuilder
 
     public TestStripeAccountBuilder WithDetailsSubmitted()
     {
-        this.isVerificationCompleted = true;
+        isVerificationCompleted = true;
         return this;
     }
 

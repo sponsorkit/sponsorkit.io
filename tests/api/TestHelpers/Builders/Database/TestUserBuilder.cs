@@ -38,7 +38,7 @@ public class TestUserBuilder : UserBuilder
 
     public TestUserBuilder WithStripeCustomer(Customer customer)
     {
-        this.stripeCustomer = customer;
+        stripeCustomer = customer;
         return this;
     }
 

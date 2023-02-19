@@ -114,7 +114,7 @@ public class DatabaseTransactionBehaviorTest
         public TestCommand(
             Func<Task> action)
         {
-            this.Action = action;
+            Action = action;
         }
 
         public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
@@ -122,10 +122,10 @@ public class DatabaseTransactionBehaviorTest
 
     public class TestCommandHandler : IRequestHandler<TestCommand>
     {
-        public async Task<Unit> Handle(TestCommand request, CancellationToken cancellationToken)
+        public async Task Handle(TestCommand request, CancellationToken cancellationToken)
         {
             await request.Action();
-            return Unit.Value;
+            
         }
     }
 }

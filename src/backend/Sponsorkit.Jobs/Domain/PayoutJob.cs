@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Sponsorkit.BusinessLogic.Domain.Helpers;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
@@ -11,15 +13,22 @@ public class PayoutJob : IJob
 {
     private readonly DataContext dataContext;
     private readonly PaymentIntentService paymentIntentService;
+    private readonly PaymentMethodService paymentMethodService;
+    
+    private readonly IMediator mediator;
 
     public string Identifier => "payout";
 
     public PayoutJob(
         DataContext dataContext,
-        PaymentIntentService paymentIntentService)
+        PaymentIntentService paymentIntentService,
+        PaymentMethodService paymentMethodService,
+        IMediator mediator)
     {
         this.dataContext = dataContext;
         this.paymentIntentService = paymentIntentService;
+        this.paymentMethodService = paymentMethodService;
+        this.mediator = mediator;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
@@ -66,16 +75,18 @@ public class PayoutJob : IJob
 
                 if (finalVerdictForClaimRequest == ClaimVerdict.Solved)
                 {
-                    await PayoutFundsAsync(claimRequest);
+                    await PayoutFundsAsync(claimRequest, cancellationToken);
                 }
 
-                claimRequest.CompletedAt = DateTimeOffset.Now;
-                await dataContext.SaveChangesAsync(cancellationToken);
+                claimRequest.CompletedAt = DateTimeOffset.UtcNow;
+                await dataContext.SaveChangesAsync(CancellationToken.None);
             }
         }
     }
 
-    private async Task PayoutFundsAsync(BountyClaimRequest claimRequest)
+    private async Task PayoutFundsAsync(
+        BountyClaimRequest claimRequest, 
+        CancellationToken cancellationToken)
     {
         var stripeConnectId = claimRequest.Creator.StripeConnectId;
         if (stripeConnectId == null)
@@ -89,20 +100,20 @@ public class PayoutJob : IJob
             var sumInHundreds = payment.AmountInHundreds;
             var feeInHundreds = payment.FeeInHundreds;
 
+            var paymentMethod = await ClonePlatformCustomerPaymentMethodToConnectedAccountAsync(
+                claimRequest.Bounty.Creator,
+                claimRequest.Creator,
+                cancellationToken);
+
             await paymentIntentService.CreateAsync(
                 new PaymentIntentCreateOptions()
                 {
-                    Customer = claimRequest.Bounty.Creator.StripeCustomerId,
+                    PaymentMethod = paymentMethod.Id,
                     Amount = sumInHundreds + feeInHundreds,
                     Currency = "usd",
+                    SetupFutureUsage = "on_session",
                     Confirm = true,
                     ApplicationFeeAmount = feeInHundreds,
-                    TransferData = new PaymentIntentTransferDataOptions()
-                    {
-                        Amount = sumInHundreds,
-                        Destination = stripeConnectId
-                    },
-                    OnBehalfOf = stripeConnectId,
                     ErrorOnRequiresAction = true,
                     Metadata = new Dictionary<string, string>()
                     {
@@ -122,8 +133,38 @@ public class PayoutJob : IJob
                 },
                 new RequestOptions()
                 {
-                    IdempotencyKey = $"bounty-payment-intent-{claimRequest.BountyId}"
-                });
+                    IdempotencyKey = $"bounty-payment-intent-{claimRequest.BountyId}",
+                    StripeAccount = stripeConnectId
+                },
+                CancellationToken.None);
         }
+    }
+
+    /// <summary>
+    /// When creating direct charges towards a connected account, we need to clone the payment method from the platform account's customer into the connected account first.
+    /// </summary>
+    private async Task<PaymentMethod> ClonePlatformCustomerPaymentMethodToConnectedAccountAsync(
+        User bountyCreator,
+        User bountyClaimer,
+        CancellationToken cancellationToken)
+    {
+        var bountyCreatorPaymentMethod = await mediator.Send(
+            new GetPaymentMethodForCustomerQuery(bountyCreator.StripeCustomerId),
+            cancellationToken);
+        if (bountyCreatorPaymentMethod == null)
+            throw new InvalidOperationException("The given user does not have a payment method.");
+
+        var paymentMethod = await paymentMethodService.CreateAsync(
+            new PaymentMethodCreateOptions()
+            {
+                Customer = bountyCreator.StripeCustomerId,
+                PaymentMethod = bountyCreatorPaymentMethod.Id
+            },
+            new RequestOptions()
+            {
+                StripeAccount = bountyClaimer.StripeConnectId
+            },
+            cancellationToken: CancellationToken.None);
+        return paymentMethod;
     }
 }

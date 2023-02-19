@@ -23,19 +23,19 @@ public class BountyClaimRequestBuilder : AsyncModelBuilder<BountyClaimRequest>
 
     public BountyClaimRequestBuilder WithBounty(Bounty bounty)
     {
-        this.Bounty = bounty;
+        Bounty = bounty;
         return this;
     }
 
     public BountyClaimRequestBuilder WithCreator(User creator)
     {
-        this.Creator = creator;
+        Creator = creator;
         return this;
     }
 
     public BountyClaimRequestBuilder WithPullRequest(PullRequest pullRequest)
     {
-        this.PullRequest = pullRequest;
+        PullRequest = pullRequest;
         return this;
     }
 

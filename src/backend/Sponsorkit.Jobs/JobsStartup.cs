@@ -1,5 +1,4 @@
 ﻿using Amazon.Lambda.Core;
-using Microsoft.Extensions.Hosting.Internal;
 using Sponsorkit.BusinessLogic.Infrastructure;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
 using Sponsorkit.Jobs.Domain;
@@ -24,7 +23,6 @@ public static class JobsStartup
         var registry = new BusinessLogicIocRegistry(
             services,
             configurationBuilder.Build(),
-            new HostingEnvironment(),
             new []
             {
                 typeof(Program).Assembly,

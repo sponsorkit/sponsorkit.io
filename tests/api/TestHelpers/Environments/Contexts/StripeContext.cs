@@ -38,6 +38,8 @@ public class StripeContext
     public StripePlanBuilder PlanBuilder => 
         new(serviceProvider.GetRequiredService<PlanService>());
     
+    public ApplicationFeeService ApplicationFeeService => serviceProvider.GetRequiredService<ApplicationFeeService>();
+    
     public BalanceService BalanceService => serviceProvider.GetRequiredService<BalanceService>();
     
     public PaymentIntentService PaymentIntentService => serviceProvider.GetRequiredService<PaymentIntentService>();
@@ -63,7 +65,7 @@ public class StripeContext
         this.serviceProvider = serviceProvider;
         this.logger = logger;
 
-        this.stripeEvents = new HashSet<Event>();
+        stripeEvents = new HashSet<Event>();
     }
 
     public async Task WaitForWebhookAsync(Func<Event, bool> predicate)

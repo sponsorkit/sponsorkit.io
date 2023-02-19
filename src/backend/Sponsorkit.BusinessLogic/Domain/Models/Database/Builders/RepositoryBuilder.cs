@@ -19,7 +19,7 @@ public class RepositoryBuilder : AsyncModelBuilder<Repository>
         string ownerName,
         string name)
     {
-        this.gitHub = new RepositoryGitHubInformation()
+        gitHub = new RepositoryGitHubInformation()
         {
             Id = gitHubId,
             Name = name,

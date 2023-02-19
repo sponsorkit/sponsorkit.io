@@ -20,7 +20,7 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
 
     public IssueBuilder WithRepository(Repository repository)
     {
-        this.Repository = repository;
+        Repository = repository;
         return this;
     }
 
@@ -29,7 +29,7 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
         int number,
         string titleSnapshot)
     {
-        this.gitHub = new IssueGitHubInformation()
+        gitHub = new IssueGitHubInformation()
         {
             Id = id,
             Number = number,

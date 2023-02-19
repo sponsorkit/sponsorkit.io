@@ -18,14 +18,14 @@ public enum TemplateDirectory
     BountyClaimRequest,
     VerifyEmailAddress
 }
-    
+
 public record SendEmailCommand(
     EmailSender Sender,
     string To,
     string Subject,
     TemplateDirectory TemplateDirectory,
     IMailModel Model) : IRequest;
-    
+
 public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
 {
     private readonly IAmazonSimpleEmailServiceV2 simpleEmailService;
@@ -35,8 +35,8 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
     {
         this.simpleEmailService = simpleEmailService;
     }
-        
-    public async Task<Unit> Handle(SendEmailCommand request, CancellationToken cancellationToken)
+
+    public async Task Handle(SendEmailCommand request, CancellationToken cancellationToken)
     {
         var html = await RenderRazorEmailTemplateAsync(request, cancellationToken);
         await simpleEmailService.SendEmailAsync(
@@ -76,8 +76,6 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
                 }
             },
             cancellationToken);
-
-        return Unit.Value;
     }
 
     private async Task<string> RenderRazorEmailTemplateAsync(SendEmailCommand request, CancellationToken cancellationToken)
@@ -96,7 +94,7 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
         var executingAssembly = Assembly.GetAssembly(GetType());
         if (executingAssembly == null)
             throw new InvalidOperationException("Could not load assembly.");
-        
+
         var metadataReference = MetadataReference.CreateFromFile(executingAssembly.Location);
 
         var engine = new RazorLightEngineBuilder()
@@ -106,8 +104,8 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
             .Build();
 
         var html = await engine.CompileRenderStringAsync(
-            request.TemplateDirectory.ToString(), 
-            template, 
+            request.TemplateDirectory.ToString(),
+            template,
             request.Model);
         return html;
     }

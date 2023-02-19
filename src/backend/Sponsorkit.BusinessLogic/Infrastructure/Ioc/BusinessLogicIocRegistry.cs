@@ -9,7 +9,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Octokit.Internal;
 using Serilog;
@@ -37,18 +36,15 @@ public sealed class BusinessLogicIocRegistry
     
     private IServiceCollection Services { get; }
     private IConfiguration Configuration { get; }
-    private IHostEnvironment Environment { get; }
 
     public BusinessLogicIocRegistry(IServiceCollection services,
         IConfiguration configuration, 
-        IHostEnvironment environment,
         Assembly[] assemblies)
     {
         this.assemblies = assemblies;
         
         Services = services;
         Configuration = configuration;
-        Environment = environment;
     }
 
     public void Register()
@@ -173,6 +169,7 @@ public sealed class BusinessLogicIocRegistry
         Services.AddSingleton<CustomerBalanceTransactionService>();
         Services.AddSingleton<PlanService>();
         Services.AddSingleton<BalanceService>();
+        Services.AddSingleton<ApplicationFeeService>();
         Services.AddSingleton<ChargeService>();
         Services.AddSingleton<PaymentIntentService>();
 
@@ -239,7 +236,11 @@ public sealed class BusinessLogicIocRegistry
 
     private void ConfigureMediatr()
     {
-        Services.AddMediatR(x => x.AsTransient(), assemblies);
+        Services.AddMediatR(x =>
+        {
+            x.Lifetime = ServiceLifetime.Transient;
+            x.RegisterServicesFromAssemblies(assemblies);
+        });
             
         Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(DatabaseTransactionBehavior<,>));
     }

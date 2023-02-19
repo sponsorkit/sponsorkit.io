@@ -14,13 +14,13 @@ public class BountyBuilder : AsyncModelBuilder<Bounty>
 
     public BountyBuilder WithCreator(User creator)
     {
-        this.Creator = creator;
+        Creator = creator;
         return this;
     }
 
     public BountyBuilder WithIssue(Issue issue)
     {
-        this.Issue = issue;
+        Issue = issue;
         return this;
     }
 

@@ -6,6 +6,7 @@ namespace Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
 
 public interface IFakeMediatorInterceptor
 {
+    void Intercept(IRequest request);
     void Intercept<TResponse>(IRequest<TResponse> request);
 }
 

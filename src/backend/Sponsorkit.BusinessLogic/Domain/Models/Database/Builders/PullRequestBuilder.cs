@@ -9,7 +9,7 @@ public class PullRequestBuilder : AsyncModelBuilder<PullRequest>
         long id,
         int number)
     {
-        this.GitHub = new PullRequestGitHubInformation()
+        GitHub = new PullRequestGitHubInformation()
         {
             Id = id,
             Number = number
@@ -19,16 +19,16 @@ public class PullRequestBuilder : AsyncModelBuilder<PullRequest>
 
     public PullRequestBuilder WithRepository(Repository repository)
     {
-        this.Repository = repository;
+        Repository = repository;
         return this;
     }
 
     public override Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (this.GitHub == null)
+        if (GitHub == null)
             throw new InvalidOperationException("GitHub information not set.");
 
-        if (this.Repository == null)
+        if (Repository == null)
             throw new InvalidOperationException("Repository not set.");
 
         var pullRequest = new PullRequest()

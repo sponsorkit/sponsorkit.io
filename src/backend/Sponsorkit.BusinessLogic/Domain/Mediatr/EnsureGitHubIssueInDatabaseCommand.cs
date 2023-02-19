@@ -14,12 +14,12 @@ namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
 public record EnsureGitHubIssueInDatabaseCommand(
     string OwnerName,
     string RepositoryName,
-    int IssueNumber) : IRequest<Result<Models.Database.Issue>>, IDatabaseTransactionRequest
+    int IssueNumber) : IRequest<Result<Issue>>, IDatabaseTransactionRequest
 {
     public IsolationLevel TransactionIsolationLevel => IsolationLevel.Serializable;
 }
 
-public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureGitHubIssueInDatabaseCommand, Result<Models.Database.Issue>>
+public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureGitHubIssueInDatabaseCommand, Result<Issue>>
 {
     private readonly DataContext dataContext;
     private readonly IGitHubClient gitHubClient;

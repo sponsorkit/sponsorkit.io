@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,7 @@ public class PayoutJobTest
         Issue Issue);
 
     [TestMethod]
-    public async Task FullFlow_TODO()
+    public async Task FullFlow_OneBountyOnIssue_ApplicationFeeAndBountyAmountAreTransferred()
     {
         //Arrange & act
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
@@ -84,15 +85,21 @@ public class PayoutJobTest
         await verdictPost.HandleAsync(new VerdictPostRequest(
             claimRequest.Id,
             ClaimVerdict.Solved));
+
+        var preconditionPlatformFees = await environment.Stripe.ApplicationFeeService
+            .ListAutoPagingAsync(new ApplicationFeeListOptions())
+            .ToListAsync();
         
-        var preconditionBalance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
+        var preconditionClaimerBalance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
         {
             StripeAccount = bountyClaimerUser.StripeConnectId
         });
-        Assert.AreEqual(0, preconditionBalance.Available.Single().Amount);
+        Assert.AreEqual(0, preconditionClaimerBalance.Pending.Single().Amount);
 
         var lambdaContext = Substitute.For<ILambdaContext>();
         lambdaContext.RemainingTime.Returns(TimeSpan.FromMinutes(5));
+        
+        await WaitForAccountToBeReadyAsync(environment, bountyClaimerUser);
         
         //Act
         await JobsStartup.Handler(
@@ -102,12 +109,33 @@ public class PayoutJobTest
         await environment.Stripe.WaitForWebhookAsync(e => e.Type == Events.PaymentIntentSucceeded);
         
         //Assert
-        var balance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
+        var platformFees = await environment.Stripe.ApplicationFeeService
+            .ListAutoPagingAsync(new ApplicationFeeListOptions())
+            .ToListAsync();
+        Assert.AreEqual(
+            preconditionPlatformFees.Sum(x => x.Amount) + 0_50,
+            platformFees.Sum(x => x.Amount));
+        
+        var claimerBalance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
         {
             StripeAccount = bountyClaimerUser.StripeConnectId
         });
+        Assert.AreEqual(9_40, claimerBalance.Pending.Single().Amount);
+    }
 
-        Assert.AreEqual(10_00, balance.Available.Single().Amount);
+    private static async Task WaitForAccountToBeReadyAsync(SponsorkitIntegrationTestEnvironment environment, User bountyClaimerUser)
+    {
+        var cancellationToken = new CancellationTokenSource(TimeSpan.FromMinutes(3)).Token;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var account = await environment.Stripe.AccountService.GetAsync(
+                bountyClaimerUser.StripeConnectId, 
+                cancellationToken: cancellationToken);
+            if (account.ChargesEnabled && account.PayoutsEnabled)
+                break;
+
+            await Task.Delay(1000, cancellationToken);
+        }
     }
 
     private static async Task<User> CreateUserAndPlaceBountyAsync(
@@ -119,6 +147,9 @@ public class PayoutJobTest
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
             .WithGitHub(1, "author", "")
             .BuildAsync();
+
+        var customer = await environment.Stripe.CustomerService
+            .GetAsync(bountyAuthorUser.StripeCustomerId);
 
         var setupIntentPost = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
         setupIntentPost.FakeAuthentication(bountyAuthorUser);

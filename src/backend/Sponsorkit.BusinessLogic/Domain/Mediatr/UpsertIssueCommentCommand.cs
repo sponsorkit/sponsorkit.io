@@ -29,10 +29,10 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
         this.hostEnvironment = hostEnvironment;
     }
 
-    public async Task<Unit> Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)
     {
         if (!hostEnvironment.IsProduction() && request.OwnerName != "sponsorkit")
-            return Unit.Value;
+            return; 
 
         var client = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(
             gitHubOptions.CurrentValue.BountyhuntBot.PersonalAccessToken);
@@ -77,6 +77,6 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
                     requestContent);
         }
 
-        return Unit.Value;
+        
     }
 }

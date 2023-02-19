@@ -20,7 +20,7 @@ public class PaymentBuilder : AsyncModelBuilder<Payment>
 
     public PaymentBuilder WithStripeEventId(string eventId)
     {
-        this.stripeEventId = eventId;
+        stripeEventId = eventId;
         return this;
     }
 

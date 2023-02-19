@@ -12,7 +12,7 @@ public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
 
     public TestGitHubPullRequestBuilder()
     {
-        this.user = new TestGitHubUser();
+        user = new TestGitHubUser();
     }
 
     public TestGitHubPullRequestBuilder WithUser(User user)
