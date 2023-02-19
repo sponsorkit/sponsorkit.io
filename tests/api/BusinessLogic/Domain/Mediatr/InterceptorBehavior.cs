@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 
@@ -22,7 +23,18 @@ public class InterceptorBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        interceptor.Intercept((IRequest<TResponse>)request);
+        if (request is IRequest)
+        {
+            interceptor.Intercept((IRequest)request);
+        } else if (request.GetType().GetGenericTypeDefinition() == typeof(IRequest<>))
+        {
+            interceptor.Intercept((IRequest<TResponse>)request);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Interceptor does not support request type {request.GetType()}");
+        }
+
         return next();
     }
 }

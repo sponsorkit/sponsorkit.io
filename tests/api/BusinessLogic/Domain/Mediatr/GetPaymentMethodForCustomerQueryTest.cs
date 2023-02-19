@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sponsorkit.BusinessLogic.Domain.Mediatr;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
@@ -14,30 +16,59 @@ public class GetPaymentMethodForCustomerQueryTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
         //Act
+        var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
+        {
+            await environment.Mediator.Send(
+                new GetPaymentMethodForCustomerQuery("customer-id"));
+        });
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.AreEqual("The customer could not be found.", exception.Message);
     }
         
     [TestMethod]
     public async Task Handle_CustomerHasDefaultPaymentMethod_ReturnsDefaultPaymentMethod()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var customer = await environment.Stripe.CustomerBuilder
+            .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder)
+            .BuildAsync();
+
+        var defaultPaymentMethod = await environment.Stripe.PaymentIntentService.GetAsync(
+            customer.InvoiceSettings.DefaultPaymentMethodId);
+        Assert.IsNotNull(defaultPaymentMethod);
+        
         //Act
+        var fetchedPaymentMethod = await environment.Mediator.Send(
+            new GetPaymentMethodForCustomerQuery(customer.Id));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.AreEqual(
+            defaultPaymentMethod.Id, 
+            fetchedPaymentMethod.Id);
     }
         
     [TestMethod]
     public async Task Handle_CustomerDoesNotHaveDefaultPaymentMethod_ReturnsFirstPaymentMethod()
     {
         //Arrange
-            
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var customer = await environment.Stripe.CustomerBuilder.BuildAsync();
+
+        var paymentMethod = await environment.Stripe.PaymentMethodBuilder
+            .WithCustomer(customer)
+            .BuildAsync();
+        
         //Act
+        var fetchedPaymentMethod = await environment.Mediator.Send(
+            new GetPaymentMethodForCustomerQuery(customer.Id));
             
         //Assert
-        Assert.Fail("Not implemented.");
+        Assert.AreEqual(
+            paymentMethod.Id, 
+            fetchedPaymentMethod.Id);
     }
 }
