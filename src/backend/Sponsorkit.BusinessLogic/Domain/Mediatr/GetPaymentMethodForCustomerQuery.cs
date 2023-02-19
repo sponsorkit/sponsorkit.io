@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Net;
+using MediatR;
 using Stripe;
 
 namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
@@ -21,18 +22,24 @@ public class GetPaymentMethodForCustomerQueryHandler : IRequestHandler<GetPaymen
         
     public async Task<PaymentMethod?> Handle(GetPaymentMethodForCustomerQuery request, CancellationToken cancellationToken)
     {
-        var customer = await customerService.GetAsync(
-            request.CustomerId,
-            new CustomerGetOptions()
-            {
-                Expand = new ()
+        try
+        {
+            //TODO: work on query that fetches customer with Ardalis.Result.
+            var customer = await customerService.GetAsync(
+                request.CustomerId,
+                new CustomerGetOptions()
                 {
-                    "invoice_settings.default_payment_method"
-                }
-            },
-            cancellationToken: cancellationToken);
-        if (customer == null)
+                    Expand = new()
+                    {
+                        "invoice_settings.default_payment_method"
+                    }
+                },
+                cancellationToken: cancellationToken);
+        }
+        catch (StripeException ex) when (ex.HttpStatusCode == HttpStatusCode.NotFound)
+        {
             throw new InvalidOperationException("The customer could not be found.");
+        }
 
         if (customer.InvoiceSettings?.DefaultPaymentMethod != null)
             return customer.InvoiceSettings.DefaultPaymentMethod;
