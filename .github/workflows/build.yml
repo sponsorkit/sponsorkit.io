@@ -37,6 +37,9 @@ jobs:
     - name: Checkout Github Action
       uses: actions/checkout@master
 
+    - name: Install CURL
+      run: apt-get update && apt-get install -y curl
+
     - name: Use proper .NET version
       uses: actions/setup-dotnet@v1
       with:
