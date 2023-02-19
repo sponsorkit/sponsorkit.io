@@ -23,7 +23,7 @@ jobs:
       DOTNET_JOB_LAMBDA_FUNCTION_NAME: sponsorkit-job
       DOTNET_JOB_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Jobs
       DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
-    timeout-minutes: 10
+    timeout-minutes: 60
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +33,6 @@ jobs:
 
     - name: Checkout Github Action
       uses: actions/checkout@master
-      
-    - name: Start Docker daemon
-      run: dockerd &
 
     - name: Use proper .NET version
       uses: actions/setup-dotnet@v1
