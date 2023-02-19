@@ -4,7 +4,7 @@ using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 namespace Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors.Database;
 
 public class DatabaseTransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
 {
     private readonly DataContext dataContext;
 

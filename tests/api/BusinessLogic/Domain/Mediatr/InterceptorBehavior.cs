@@ -10,7 +10,7 @@ public interface IFakeMediatorInterceptor
     void Intercept<TResponse>(IRequest<TResponse> request);
 }
 
-public class InterceptorBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public class InterceptorBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
     private readonly IFakeMediatorInterceptor interceptor;
 
@@ -22,7 +22,7 @@ public class InterceptorBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        interceptor.Intercept(request);
+        interceptor.Intercept((IRequest<TResponse>)request);
         return next();
     }
 }

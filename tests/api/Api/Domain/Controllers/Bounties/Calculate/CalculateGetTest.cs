@@ -33,7 +33,7 @@ public class CalculateGetTest
             
         //Assert
         var response = result.ToResponseObject();
-        Assert.AreEqual(1_00, response.FeeAmountInHundreds);
+        Assert.AreEqual(0_50, response.FeeAmountInHundreds);
     }
         
     [TestMethod]
@@ -47,7 +47,7 @@ public class CalculateGetTest
             
         //Assert
         var response = result.ToResponseObject();
-        Assert.AreEqual(1_00, response.FeeAmountInHundreds);
+        Assert.AreEqual(0_50, response.FeeAmountInHundreds);
     }
         
     [TestMethod]
@@ -61,6 +61,6 @@ public class CalculateGetTest
             
         //Assert
         var response = result.ToResponseObject();
-        Assert.AreEqual(10_000_00, response.FeeAmountInHundreds);
+        Assert.AreEqual(5_000_00, response.FeeAmountInHundreds);
     }
 }

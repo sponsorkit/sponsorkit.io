@@ -238,11 +238,10 @@ public sealed class BusinessLogicIocRegistry
     {
         Services.AddMediatR(x =>
         {
+            x.AddOpenBehavior(typeof(DatabaseTransactionBehavior<,>), ServiceLifetime.Scoped);
             x.Lifetime = ServiceLifetime.Transient;
             x.RegisterServicesFromAssemblies(assemblies);
         });
-            
-        Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(DatabaseTransactionBehavior<,>));
     }
 
     private void ConfigureAutoMapper()
