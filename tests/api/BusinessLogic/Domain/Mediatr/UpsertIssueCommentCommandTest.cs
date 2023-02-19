@@ -94,7 +94,7 @@ public class UpsertIssueCommentCommandTest
             .Create(default, default, default, default);
 
         await environment.GitHub.FakeClient.Issue.Comment
-            .Received(1)
+            .ReceivedWithAnyArgs(1)
             .Update(default, default, default, default);
     }
         
@@ -114,7 +114,7 @@ public class UpsertIssueCommentCommandTest
             
         //Assert
         await environment.GitHub.FakeClient.Issue.Comment
-            .Received(1)
+            .ReceivedWithAnyArgs(1)
             .Create(default, default, default, default);
 
         await environment.GitHub.FakeClient.Issue.Comment
