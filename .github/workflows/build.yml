@@ -34,8 +34,8 @@ jobs:
     - name: Checkout Github Action
       uses: actions/checkout@master
       
-    - name: Install Docker
-      run: curl -fsSL https://get.docker.com | sh
+    - name: Start Docker daemon
+      run: dockerd &
 
     - name: Use proper .NET version
       uses: actions/setup-dotnet@v1
