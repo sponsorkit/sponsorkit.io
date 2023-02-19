@@ -80,6 +80,7 @@ public class StripeCustomerBuilder : AsyncModelBuilder<Customer>
                 },
                 default,
                 CancellationToken.None);
+            customer.InvoiceSettings.DefaultPaymentMethodId = paymentMethod.Id;
         }
 
         return customer;

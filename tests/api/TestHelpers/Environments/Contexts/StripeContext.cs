@@ -55,6 +55,7 @@ public class StripeContext
         AccountService,
         serviceProvider.GetRequiredService<IMediator>());
 
+    public PaymentMethodService PaymentMethodService => serviceProvider.GetRequiredService<PaymentMethodService>();
     public TestStripePaymentMethodBuilder PaymentMethodBuilder => 
         new(serviceProvider.GetRequiredService<PaymentMethodService>());
 

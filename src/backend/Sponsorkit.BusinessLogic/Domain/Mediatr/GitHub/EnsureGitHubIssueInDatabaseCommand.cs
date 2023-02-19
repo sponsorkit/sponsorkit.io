@@ -3,13 +3,13 @@ using Ardalis.Result;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Octokit;
-using Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors.Database;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Issue = Sponsorkit.BusinessLogic.Domain.Models.Database.Issue;
 using Repository = Sponsorkit.BusinessLogic.Domain.Models.Database.Repository;
 
-namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
+namespace Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 
 public record EnsureGitHubIssueInDatabaseCommand(
     string OwnerName,

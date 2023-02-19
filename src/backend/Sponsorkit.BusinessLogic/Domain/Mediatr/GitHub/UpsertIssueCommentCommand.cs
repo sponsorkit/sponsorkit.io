@@ -5,7 +5,7 @@ using Sponsorkit.BusinessLogic.Domain.Helpers;
 using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.BusinessLogic.Infrastructure.Options.GitHub;
 
-namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
+namespace Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 
 public record UpsertIssueCommentCommand(
     string OwnerName,

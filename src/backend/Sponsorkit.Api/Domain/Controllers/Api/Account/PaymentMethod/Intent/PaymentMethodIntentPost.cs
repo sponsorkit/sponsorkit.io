@@ -6,7 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Sponsorkit.BusinessLogic.Domain.Models.Stripe.Metadata;

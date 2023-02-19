@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CliWrap;
 using MediatR;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
 using Stripe;
 

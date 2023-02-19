@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 
-namespace Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors.Database;
+namespace Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors;
 
 public class DatabaseTransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull

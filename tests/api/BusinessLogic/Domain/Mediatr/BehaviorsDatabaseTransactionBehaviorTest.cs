@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors.Database;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 

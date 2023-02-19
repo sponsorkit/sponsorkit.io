@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
@@ -37,7 +37,7 @@ public class GetPaymentMethodForCustomerQueryTest
             .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder)
             .BuildAsync();
 
-        var defaultPaymentMethod = await environment.Stripe.PaymentIntentService.GetAsync(
+        var defaultPaymentMethod = await environment.Stripe.PaymentMethodService.GetAsync(
             customer.InvoiceSettings.DefaultPaymentMethodId);
         Assert.IsNotNull(defaultPaymentMethod);
         

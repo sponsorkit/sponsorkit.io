@@ -1,8 +1,7 @@
-﻿using System.Net;
-using MediatR;
+﻿using MediatR;
 using Stripe;
 
-namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
+namespace Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 
 public record GetPaymentMethodForCustomerQuery(
     string CustomerId) : IRequest<PaymentMethod?>;
@@ -10,36 +9,24 @@ public record GetPaymentMethodForCustomerQuery(
 public class GetPaymentMethodForCustomerQueryHandler : IRequestHandler<GetPaymentMethodForCustomerQuery, PaymentMethod?>
 {
     private readonly PaymentMethodService paymentMethodService;
-    private readonly CustomerService customerService;
+    private readonly IMediator mediator;
 
     public GetPaymentMethodForCustomerQueryHandler(
         PaymentMethodService paymentMethodService,
-        CustomerService customerService)
+        IMediator mediator)
     {
         this.paymentMethodService = paymentMethodService;
-        this.customerService = customerService;
+        this.mediator = mediator;
     }
         
     public async Task<PaymentMethod?> Handle(GetPaymentMethodForCustomerQuery request, CancellationToken cancellationToken)
     {
-        try
-        {
-            //TODO: work on query that fetches customer with Ardalis.Result.
-            var customer = await customerService.GetAsync(
-                request.CustomerId,
-                new CustomerGetOptions()
-                {
-                    Expand = new()
-                    {
-                        "invoice_settings.default_payment_method"
-                    }
-                },
-                cancellationToken: cancellationToken);
-        }
-        catch (StripeException ex) when (ex.HttpStatusCode == HttpStatusCode.NotFound)
-        {
+        var customer = await mediator.Send(
+            new GetCustomerByIdQuery(request.CustomerId),
+            cancellationToken);
+        
+        if(customer == null)
             throw new InvalidOperationException("The customer could not be found.");
-        }
 
         if (customer.InvoiceSettings?.DefaultPaymentMethod != null)
             return customer.InvoiceSettings.DefaultPaymentMethod;

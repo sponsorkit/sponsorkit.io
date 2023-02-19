@@ -5,7 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Sponsorkit.BusinessLogic.Domain.Helpers;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;

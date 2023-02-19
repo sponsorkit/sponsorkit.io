@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
 

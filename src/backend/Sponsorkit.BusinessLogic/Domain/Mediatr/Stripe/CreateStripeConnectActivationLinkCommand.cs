@@ -2,7 +2,7 @@
 using Sponsorkit.BusinessLogic.Domain.Helpers;
 using Stripe;
 
-namespace Sponsorkit.BusinessLogic.Domain.Mediatr;
+namespace Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 
 public record CreateStripeConnectActivationLinkCommand(
     string StripeConnectId, 

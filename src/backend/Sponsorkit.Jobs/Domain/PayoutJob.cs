@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Sponsorkit.BusinessLogic.Domain.Helpers;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Infrastructure.Stripe;

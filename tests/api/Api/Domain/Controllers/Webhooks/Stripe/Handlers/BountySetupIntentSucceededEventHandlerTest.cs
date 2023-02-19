@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.BusinessLogic.Domain.Helpers;
-using Sponsorkit.BusinessLogic.Domain.Mediatr;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers;
 using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Tests.TestHelpers;

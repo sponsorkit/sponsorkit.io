@@ -2,9 +2,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.ApiEndpoints;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sponsorkit.BusinessLogic.Domain.Mediatr.Stripe;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
@@ -35,22 +37,22 @@ public class AccountGet : EndpointBaseAsync
     .WithActionResult<Response>
 {
     private readonly IEncryptionHelper encryptionHelper;
-        
+    private readonly IMediator mediator;
+
     private readonly DataContext dataContext;
-    private readonly CustomerService customerService;
     private readonly PaymentMethodService paymentMethodService;
     private readonly AccountService accountService;
 
     public AccountGet(
         IEncryptionHelper encryptionHelper,
+        IMediator mediator,
         DataContext dataContext,
-        CustomerService customerService,
         PaymentMethodService paymentMethodService,
         AccountService accountService)
     {
         this.encryptionHelper = encryptionHelper;
+        this.mediator = mediator;
         this.dataContext = dataContext;
-        this.customerService = customerService;
         this.paymentMethodService = paymentMethodService;
         this.accountService = accountService;
     }
@@ -66,10 +68,10 @@ public class AccountGet : EndpointBaseAsync
             x => x.Id == userId,
             cancellationToken);
 
-        var stripeCustomer = await customerService.GetAsync(
-            user.StripeCustomerId, 
+        var stripeCustomer = await mediator.Send(
+            new GetCustomerByIdQuery(user.StripeCustomerId),
             cancellationToken: cancellationToken);
-        if (stripeCustomer.Deleted == true)
+        if (stripeCustomer == null || stripeCustomer.Deleted == true)
             return NoContent();
 
         var paymentMethod = await GetPaymentMethodAsync(stripeCustomer, cancellationToken);
