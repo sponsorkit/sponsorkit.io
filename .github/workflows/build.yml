@@ -25,6 +25,7 @@ jobs:
       DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
     container:
       image: ubuntu
+      options: --privileged
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
     timeout-minutes: 10
