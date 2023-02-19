@@ -23,11 +23,6 @@ jobs:
       DOTNET_JOB_LAMBDA_FUNCTION_NAME: sponsorkit-job
       DOTNET_JOB_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Jobs
       DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
-    container:
-      image: ubuntu
-      options: --privileged
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -45,7 +40,6 @@ jobs:
     - name: Install Docker
       run: |
         curl -fsSL https://get.docker.com | sh
-        dockerd &
 
     - name: Use proper .NET version
       uses: actions/setup-dotnet@v1

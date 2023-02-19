@@ -33,9 +33,22 @@ public class TestServiceProviderFactory
         
         services.AddSingleton(entrypoint);
 
+        RegisterFakeGitHubClients(services);
+
         services.AddSingleton(Substitute.For<ILogger>());
-        services.AddSingleton(Substitute.For<IGitHubClientFactory>());
         services.AddSingleton(Substitute.For<IAmazonSimpleEmailServiceV2>());
-        services.AddSingleton(Substitute.For<IGitHubClient>());
+    }
+
+    private static void RegisterFakeGitHubClients(IServiceCollection services)
+    {
+        var gitHubClient = Substitute.For<IGitHubClient>();
+
+        var gitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+        gitHubClientFactory
+            .CreateClientFromOAuthAuthenticationToken(Arg.Any<string>())
+            .Returns(gitHubClient);
+
+        services.AddSingleton(gitHubClientFactory);
+        services.AddSingleton(gitHubClient);
     }
 }
