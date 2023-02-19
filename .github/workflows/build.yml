@@ -22,6 +22,10 @@ jobs:
       DOTNET_JOB_LAMBDA_PACKAGE_NAME: ${{ github.sha }}-job.zip
       DOTNET_JOB_LAMBDA_FUNCTION_NAME: sponsorkit-job
       DOTNET_JOB_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Jobs
+    container:
+      image: ubuntu
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     timeout-minutes: 10
     runs-on: ubuntu-latest
 

@@ -20,4 +20,6 @@ public class GitHubContext
     public IGitHubClientFactory FakeClientFactory => serviceProvider.GetRequiredService<IGitHubClientFactory>();
 
     public TestGitHubPullRequestBuilder PullRequestBuilder => new ();
+
+    public TestGitHubUserBuilder UserBuilder => new ();
 }
