@@ -36,38 +36,8 @@ public class PayoutJobTest
         //Arrange & act
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var testRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(testRepository);
+        var gitHubContext = await ConfigureGitHubAsync(environment);
 
-        var testIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<int>())
-            .Returns(testIssue);
-
-        var gitHubContext = new GitHubContext(
-            testRepository,
-            testIssue);
-
-        var repository = await environment.Database.RepositoryBuilder
-            .WithGitHubInformation(
-                gitHubContext.Repository.Id, 
-                gitHubContext.Repository.Owner.Name, 
-                gitHubContext.Repository.Name)
-            .BuildAsync();
-
-        await environment.Database.IssueBuilder
-            .WithGitHubInformation(
-                gitHubContext.Issue.Id, 
-                gitHubContext.Issue.Number, 
-                "some-title")
-            .WithRepository(repository)
-            .BuildAsync();
-        
         var bountyAuthorUser = await CreateUserAndPlaceBountyAsync(
             environment, 
             gitHubContext);
@@ -79,12 +49,11 @@ public class PayoutJobTest
         var claimRequest = await environment.Database.WithoutCachingAsync(async context =>
             await context.BountyClaimRequests.SingleAsync());
 
-        var verdictPost = environment.ServiceProvider.GetRequiredService<VerdictPost>();
-        verdictPost.FakeAuthentication(bountyAuthorUser);
-
-        await verdictPost.HandleAsync(new VerdictPostRequest(
-            claimRequest.Id,
-            ClaimVerdict.Solved));
+        await ApplyVerdictToClaimAsync(
+            environment, 
+            bountyAuthorUser, 
+            claimRequest, 
+            ClaimVerdict.Solved);
 
         var preconditionPlatformFees = await environment.Stripe.ApplicationFeeService
             .ListAutoPagingAsync(new ApplicationFeeListOptions())
@@ -121,6 +90,56 @@ public class PayoutJobTest
             StripeAccount = bountyClaimerUser.StripeConnectId
         });
         Assert.AreEqual(9_40, claimerBalance.Pending.Single().Amount);
+    }
+
+    private static async Task ApplyVerdictToClaimAsync(
+        SponsorkitIntegrationTestEnvironment environment, 
+        User bountyAuthorUser, 
+        BountyClaimRequest claimRequest, 
+        ClaimVerdict verdict)
+    {
+        var verdictPost = environment.ServiceProvider.GetRequiredService<VerdictPost>();
+        verdictPost.FakeAuthentication(bountyAuthorUser);
+
+        await verdictPost.HandleAsync(new VerdictPostRequest(
+            claimRequest.Id,
+            verdict));
+    }
+
+    private static async Task<GitHubContext> ConfigureGitHubAsync(SponsorkitIntegrationTestEnvironment environment)
+    {
+        var testRepository = new TestRepository();
+        environment.GitHub.FakeClient.Repository
+            .Get(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(testRepository);
+
+        var testIssue = new TestIssue();
+        environment.GitHub.FakeClient.Issue
+            .Get(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int>())
+            .Returns(testIssue);
+
+        var gitHubContext = new GitHubContext(
+            testRepository,
+            testIssue);
+
+        var repository = await environment.Database.RepositoryBuilder
+            .WithGitHubInformation(
+                gitHubContext.Repository.Id,
+                gitHubContext.Repository.Owner.Name,
+                gitHubContext.Repository.Name)
+            .BuildAsync();
+
+        await environment.Database.IssueBuilder
+            .WithGitHubInformation(
+                gitHubContext.Issue.Id,
+                gitHubContext.Issue.Number,
+                "some-title")
+            .WithRepository(repository)
+            .BuildAsync();
+        return gitHubContext;
     }
 
     private static async Task WaitForAccountToBeReadyAsync(SponsorkitIntegrationTestEnvironment environment, User bountyClaimerUser)
