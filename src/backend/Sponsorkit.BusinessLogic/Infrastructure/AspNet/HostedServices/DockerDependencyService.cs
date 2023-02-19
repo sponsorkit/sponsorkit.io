@@ -39,7 +39,8 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         if (EnvironmentHelper.IsRunningInContainer)
             return;
 
-        using var dockerConfiguration = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine"));
+
+        using var dockerConfiguration = new DockerClientConfiguration();
         docker = dockerConfiguration.CreateClient();
     }
 
