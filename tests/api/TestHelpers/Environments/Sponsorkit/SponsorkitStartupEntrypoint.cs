@@ -73,9 +73,9 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         var hostStartTask = application.StartAsync(cancellationTokenSource.Token);
         await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
 
-        // var ngrokService = ScopeProvider.GetService<INgrokService>();
-        // if (ngrokService != null)
-        //     await ngrokService.WaitUntilReadyAsync(cancellationTokenSource.Token);
+        var ngrokService = ScopeProvider.GetService<INgrokService>();
+        if (ngrokService != null)
+            await ngrokService.WaitUntilReadyAsync(cancellationTokenSource.Token);
 
         await hostStartTask;
         
