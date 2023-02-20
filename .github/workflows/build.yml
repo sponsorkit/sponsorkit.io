@@ -40,7 +40,7 @@ jobs:
         dotnet-version: 6.0.x
       
     - name: Run tests
-      run: dotnet test --filter "FullyQualifiedName=Sponsorkit.Tests.BusinessLogic.Domain.Mediatr.GetPaymentMethodForCustomerQueryTest.Handle_CustomerHasDefaultPaymentMethod_ReturnsDefaultPaymentMethod"
+      run: dotnet test
 
     - name: Install AWS .NET CLI
       run: dotnet tool install -g Amazon.Lambda.Tools
