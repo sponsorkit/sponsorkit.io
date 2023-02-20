@@ -30,7 +30,7 @@ public class GetPaymentMethodForCustomerQueryTest
     public async Task Handle_CustomerHasDefaultPaymentMethod_ReturnsDefaultPaymentMethod()
     {
         //Arrange
-        // await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         //
         // var customer = await environment.Stripe.CustomerBuilder
         //     .WithUser(await environment.Database.UserBuilder.BuildAsync())
