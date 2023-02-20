@@ -39,8 +39,8 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         if (EnvironmentHelper.IsRunningInContainer)
             return;
 
-        // using var dockerConfiguration = new DockerClientConfiguration();
-        // docker = dockerConfiguration.CreateClient();
+        using var dockerConfiguration = new DockerClientConfiguration();
+        docker = dockerConfiguration.CreateClient();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -58,9 +58,9 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
 
     private async Task StartDatabase()
     {
-        // await InitializeDockerAsync();
-        // await WaitForHealthyDockerDependenciesAsync();
-        // await PrepareDatabaseAsync();
+        await InitializeDockerAsync();
+        await WaitForHealthyDockerDependenciesAsync();
+        await PrepareDatabaseAsync();
         await Task.Delay(1);
     }
 

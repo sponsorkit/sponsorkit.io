@@ -31,25 +31,24 @@ public class GetPaymentMethodForCustomerQueryTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-        //
-        // var customer = await environment.Stripe.CustomerBuilder
-        //     .WithUser(await environment.Database.UserBuilder.BuildAsync())
-        //     .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder)
-        //     .BuildAsync();
-        //
-        // var defaultPaymentMethod = await environment.Stripe.PaymentMethodService.GetAsync(
-        //     customer.InvoiceSettings.DefaultPaymentMethodId);
-        // Assert.IsNotNull(defaultPaymentMethod);
-        //
-        // //Act
-        // var fetchedPaymentMethod = await environment.Mediator.Send(
-        //     new GetPaymentMethodForCustomerQuery(customer.Id));
-        //     
-        // //Assert
-        // Assert.AreEqual(
-        //     defaultPaymentMethod.Id, 
-        //     fetchedPaymentMethod.Id);
-        Assert.Fail();
+        
+        var customer = await environment.Stripe.CustomerBuilder
+            .WithUser(await environment.Database.UserBuilder.BuildAsync())
+            .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder)
+            .BuildAsync();
+        
+        var defaultPaymentMethod = await environment.Stripe.PaymentMethodService.GetAsync(
+            customer.InvoiceSettings.DefaultPaymentMethodId);
+        Assert.IsNotNull(defaultPaymentMethod);
+        
+        //Act
+        var fetchedPaymentMethod = await environment.Mediator.Send(
+            new GetPaymentMethodForCustomerQuery(customer.Id));
+            
+        //Assert
+        Assert.AreEqual(
+            defaultPaymentMethod.Id, 
+            fetchedPaymentMethod.Id);
     }
         
     [TestMethod]

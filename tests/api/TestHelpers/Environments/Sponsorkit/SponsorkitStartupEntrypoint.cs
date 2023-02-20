@@ -84,7 +84,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
         await hostStartTask;
         
-        // await DatabaseMigrator.MigrateDatabaseForHostAsync(application);
+        await DatabaseMigrator.MigrateDatabaseForHostAsync(application);
     }
 
     public async Task OnBackgroundEndpointErrorAsync(Exception exception)
