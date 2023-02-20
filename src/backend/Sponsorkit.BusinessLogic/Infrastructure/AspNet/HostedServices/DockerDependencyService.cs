@@ -58,9 +58,10 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
 
     private async Task StartDatabase()
     {
-        await InitializeDockerAsync();
-        await WaitForHealthyDockerDependenciesAsync();
-        await PrepareDatabaseAsync();
+        // await InitializeDockerAsync();
+        // await WaitForHealthyDockerDependenciesAsync();
+        // await PrepareDatabaseAsync();
+        await Task.Delay(1);
     }
 
     private async Task CleanupStripeDataAsync()
