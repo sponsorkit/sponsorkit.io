@@ -75,7 +75,12 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
         var ngrokService = ScopeProvider.GetService<INgrokService>();
         if (ngrokService != null)
-            await ngrokService.WaitUntilReadyAsync(cancellationTokenSource.Token);
+        {
+            var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationTokenSource.Token,
+                new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token);
+            await ngrokService.WaitUntilReadyAsync(combinedCancellationTokenSource.Token);
+        }
 
         await hostStartTask;
         
