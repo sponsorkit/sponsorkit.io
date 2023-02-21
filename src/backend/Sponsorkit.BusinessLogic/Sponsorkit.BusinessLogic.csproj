@@ -23,8 +23,8 @@
         <PackageReference Include="CliWrap" Version="3.6.0" />
         <PackageReference Include="Destructurama.Attributed" Version="3.0.0" />
         <PackageReference Include="Docker.DotNet" Version="3.125.12" />
-        <PackageReference Include="FluffySpoon.Ngrok" Version="1.131.0" />
-        <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.131.0" />
+        <PackageReference Include="FluffySpoon.Ngrok" Version="1.132.0" />
+        <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.132.0" />
         <PackageReference Include="Flurl" Version="3.0.7" />
         <PackageReference Include="Flurl.Http" Version="3.2.4" />
         <PackageReference Include="MediatR" Version="12.0.0" />
