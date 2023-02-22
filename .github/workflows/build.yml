@@ -34,9 +34,19 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
+
+    - name: Install Puppeteer prerequisites
+      run: |
+        apt-get install -y xvfb
+        apt-get -y install xorg xvfb gtk2-engines-pixbuf
+        apt-get -y install dbus-x11 xfonts-base xfonts-100dpi xfonts-75dpi xfonts-cyrillic xfonts-scalable
+        
+        Xvfb -ac :99 -screen 0 1280x1024x16 &
       
     - name: Run tests
       run: dotnet test
+      env:
+        DISPLAY: ":99"
 
     - name: Install AWS .NET CLI
       run: dotnet tool install -g Amazon.Lambda.Tools
