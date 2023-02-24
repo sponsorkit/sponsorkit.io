@@ -32,89 +32,89 @@ jobs:
     - name: Checkout Github Action
       uses: actions/checkout@master
 
-    - name: Use proper .NET version
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+#    - name: Use proper .NET version
+#      uses: actions/setup-dotnet@v1
+#      with:
+#        dotnet-version: 6.0.x
 
-    - name: Install Puppeteer prerequisites
-      run: |
-        sudo apt-get install -y xvfb
-        sudo apt-get -y install xorg xvfb gtk2-engines-pixbuf
-        sudo apt-get -y install dbus-x11 xfonts-base xfonts-100dpi xfonts-75dpi xfonts-cyrillic xfonts-scalable
-        
-        Xvfb -ac :99 -screen 0 1280x1024x16 &
+#    - name: Install Puppeteer prerequisites
+#      run: |
+#        sudo apt-get install -y xvfb
+#        sudo apt-get -y install xorg xvfb gtk2-engines-pixbuf
+#        sudo apt-get -y install dbus-x11 xfonts-base xfonts-100dpi xfonts-75dpi xfonts-cyrillic xfonts-scalable
+#        
+#        Xvfb -ac :99 -screen 0 1280x1024x16 &
       
-    - name: Run tests
-      run: echo lol #dotnet test
-      env:
-        DISPLAY: ":99"
+#    - name: Run tests
+#      run: dotnet test
+#      env:
+#        DISPLAY: ":99"
 
-    - name: Install AWS .NET CLI
-      run: dotnet tool install -g Amazon.Lambda.Tools
+#    - name: Install AWS .NET CLI
+#      run: dotnet tool install -g Amazon.Lambda.Tools
       
     - name: Install Vercel CLI
       run: npm install --global vercel@latest
-
-    - name: .NET Lambda build and upload to S3 (API)
-      working-directory: src/backend/Sponsorkit.Api
-      run: |
-        dotnet lambda package $DOTNET_API_LAMBDA_PACKAGE_NAME
-        aws s3 cp --only-show-errors $DOTNET_API_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_API_LAMBDA_PACKAGE_NAME
-
-    - name: .NET Lambda build and upload to S3 (Jobs)
-      working-directory: src/backend/Sponsorkit.Jobs
-      run: |
-        dotnet lambda package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
-        aws s3 cp --only-show-errors $DOTNET_JOB_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_JOB_LAMBDA_PACKAGE_NAME
-
-    - name: Deploy to staging (API)
-      working-directory: src/backend/Sponsorkit.Api
-      run: |
-        dotnet lambda deploy-function \
-          --region $AWS_REGION \
-          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-staging \
-          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
-
-    - name: Deploy to staging (Jobs)
-      working-directory: src/backend/Sponsorkit.Jobs
-      run: |
-        dotnet lambda deploy-function \
-          --region $AWS_REGION \
-          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-staging \
-          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+#
+#    - name: .NET Lambda build and upload to S3 (API)
+#      working-directory: src/backend/Sponsorkit.Api
+#      run: |
+#        dotnet lambda package $DOTNET_API_LAMBDA_PACKAGE_NAME
+#        aws s3 cp --only-show-errors $DOTNET_API_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_API_LAMBDA_PACKAGE_NAME
+#
+#    - name: .NET Lambda build and upload to S3 (Jobs)
+#      working-directory: src/backend/Sponsorkit.Jobs
+#      run: |
+#        dotnet lambda package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+#        aws s3 cp --only-show-errors $DOTNET_JOB_LAMBDA_PACKAGE_NAME s3://$DOTNET_LAMBDA_S3_LOCATION/$DOTNET_JOB_LAMBDA_PACKAGE_NAME
+#
+#    - name: Deploy to staging (API)
+#      working-directory: src/backend/Sponsorkit.Api
+#      run: |
+#        dotnet lambda deploy-function \
+#          --region $AWS_REGION \
+#          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-staging \
+#          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
+#          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
+#
+#    - name: Deploy to staging (Jobs)
+#      working-directory: src/backend/Sponsorkit.Jobs
+#      run: |
+#        dotnet lambda deploy-function \
+#          --region $AWS_REGION \
+#          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-staging \
+#          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
+#          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
 
     - name: Deploy to staging (Frontend)
       run: |
-        vercel pull --scope=Sponsorkit --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        vercel build --scope=Sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
-        vercel deploy --scope=Sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        vercel pull --scope=sponsorkit --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
+        vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
           
-    - name: Deploy to production (API)
-      working-directory: src/backend/Sponsorkit.Api
-      if: github.event_name == 'release' && github.event.action == 'created'
-      run: |
-        dotnet lambda deploy-function \
-          --region $AWS_REGION \
-          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-production \
-          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
-
-    - name: Deploy to production (Jobs)
-      working-directory: src/backend/Sponsorkit.Jobs
-      if: github.event_name == 'release' && github.event.action == 'created'
-      run: | 
-        dotnet lambda deploy-function \
-          --region $AWS_REGION \
-          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-production \
-          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
-          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
-
-    - name: Deploy to production (Frontend)
-      if: github.event_name == 'release' && github.event.action == 'created'
-      run: |
-        vercel pull --scope=Sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        vercel build --scope=Sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
-        vercel deploy --scope=Sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+#    - name: Deploy to production (API)
+#      working-directory: src/backend/Sponsorkit.Api
+#      if: github.event_name == 'release' && github.event.action == 'created'
+#      run: |
+#        dotnet lambda deploy-function \
+#          --region $AWS_REGION \
+#          --function-name $DOTNET_API_LAMBDA_FUNCTION_NAME-production \
+#          --function-handler $DOTNET_API_LAMBDA_FUNCTION_HANDLER \
+#          --package $DOTNET_API_LAMBDA_PACKAGE_NAME
+#
+#    - name: Deploy to production (Jobs)
+#      working-directory: src/backend/Sponsorkit.Jobs
+#      if: github.event_name == 'release' && github.event.action == 'created'
+#      run: | 
+#        dotnet lambda deploy-function \
+#          --region $AWS_REGION \
+#          --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-production \
+#          --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
+#          --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+#
+#    - name: Deploy to production (Frontend)
+#      if: github.event_name == 'release' && github.event.action == 'created'
+#      run: |
+#        vercel pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+#        vercel build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
+#        vercel deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
