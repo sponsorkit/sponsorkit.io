@@ -123,8 +123,13 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
 
     public async ValueTask DisposeAsync()
     {
+        var ngrokService = ScopeProvider.GetService<INgrokService>();
+        await ngrokService.StopAsync();
+        
         await application.StopAsync();
         await application.DisposeAsync();
+
+        scope.Dispose();
 
         if (backgroundEndpointExceptions.Count > 0)
             throw new AggregateException(backgroundEndpointExceptions);
