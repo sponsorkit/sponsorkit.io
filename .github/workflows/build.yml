@@ -23,6 +23,8 @@ jobs:
       DOTNET_JOB_LAMBDA_FUNCTION_NAME: sponsorkit-job
       DOTNET_JOB_LAMBDA_FUNCTION_HANDLER: Sponsorkit.Jobs
       DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
