@@ -52,9 +52,6 @@ jobs:
 
 #    - name: Install AWS .NET CLI
 #      run: dotnet tool install -g Amazon.Lambda.Tools
-      
-    - name: Install Vercel CLI
-      run: npm install --global vercel@latest
 #
 #    - name: .NET Lambda build and upload to S3 (API)
 #      working-directory: src/backend/Sponsorkit.Api
@@ -89,9 +86,9 @@ jobs:
     - name: Deploy to staging (Frontend)
       run: |
         cd ./src/frontend
-        vercel pull --token=${{ secrets.VERCEL_TOKEN }} --yes --environment=preview --scope=sponsorkit
-        vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
-        vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        npx vercel pull --token=${{ secrets.VERCEL_TOKEN }} --yes --environment=preview --scope=sponsorkit
+        npx vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
+        npx vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
         cd ../..
           
 #    - name: Deploy to production (API)
@@ -118,7 +115,7 @@ jobs:
 #      if: github.event_name == 'release' && github.event.action == 'created'
 #      run: |
 #        cd ./src/frontend
-#        vercel pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-#        vercel build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
-#        vercel deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 #        cd ../..
