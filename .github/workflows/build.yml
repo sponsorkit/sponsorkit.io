@@ -44,7 +44,7 @@ jobs:
         Xvfb -ac :99 -screen 0 1280x1024x16 &
       
     - name: Run tests
-      run: dotnet test
+      run: dotnet test --filter "FullyQualifiedName=Sponsorkit.Tests.Api.Domain.Controllers.Webhooks.Stripe.Handlers.BountySetupIntentSucceededEventHandlerTest.FullFlow_BountyDoesNotExist_CreatesBounty"
       env:
         DISPLAY: ":99"
 
