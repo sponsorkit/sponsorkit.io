@@ -88,8 +88,8 @@ jobs:
 
     - name: Deploy to staging (Frontend)
       run: |
-        vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        vercel pull --scope=sponsorkit --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
         vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
           
     - name: Deploy to production (API)
@@ -115,6 +115,6 @@ jobs:
     - name: Deploy to production (Frontend)
       if: github.event_name == 'release' && github.event.action == 'created'
       run: |
-        vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        vercel pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
         vercel deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
