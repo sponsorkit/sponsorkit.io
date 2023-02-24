@@ -88,7 +88,7 @@ jobs:
 
     - name: Deploy to staging (Frontend)
       run: |
-        vercel switch
+        vercel switch --token=${{ secrets.VERCEL_TOKEN }}
         vercel pull --scope=sponsorkit --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
         vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
