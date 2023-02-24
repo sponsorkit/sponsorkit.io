@@ -68,7 +68,6 @@ jobs:
 
     - name: Deploy to staging (API)
       working-directory: src/backend/Sponsorkit.Api
-      if: github.event_name != 'release' || github.event.action != 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
@@ -78,7 +77,6 @@ jobs:
 
     - name: Deploy to staging (Jobs)
       working-directory: src/backend/Sponsorkit.Jobs
-      if: github.event_name != 'release' || github.event.action != 'created'
       run: |
         dotnet lambda deploy-function \
           --region $AWS_REGION \
@@ -113,6 +111,7 @@ jobs:
           --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
 
     - name: Deploy to production (Frontend)
+      if: github.event_name == 'release' && github.event.action == 'created'
       run: |
         vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
