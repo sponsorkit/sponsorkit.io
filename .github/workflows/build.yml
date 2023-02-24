@@ -86,9 +86,9 @@ jobs:
     - name: Deploy to staging (Frontend)
       run: |
         cd ./src/frontend
-        npx vercel pull --token=${{ secrets.VERCEL_TOKEN }} --yes --environment=preview --scope=sponsorkit
-        npx vercel build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
-        npx vercel deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        npx vercel@latest pull --token=${{ secrets.VERCEL_TOKEN }} --yes --environment=preview --scope=sponsorkit
+        npx vercel@latest build --scope=sponsorkit --token=${{ secrets.VERCEL_TOKEN }}
+        npx vercel@latest deploy --scope=sponsorkit --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
         cd ../..
           
 #    - name: Deploy to production (API)
@@ -115,7 +115,7 @@ jobs:
 #      if: github.event_name == 'release' && github.event.action == 'created'
 #      run: |
 #        cd ./src/frontend
-#        npx vercel pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-#        npx vercel build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
-#        npx vercel deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel@latest pull --scope=sponsorkit --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel@latest build --scope=sponsorkit --prod --token=${{ secrets.VERCEL_TOKEN }}
+#        npx vercel@latest deploy --scope=sponsorkit --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 #        cd ../..
