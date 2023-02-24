@@ -50,6 +50,9 @@ jobs:
 
     - name: Install AWS .NET CLI
       run: dotnet tool install -g Amazon.Lambda.Tools
+      
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
 
     - name: .NET Lambda build and upload to S3 (API)
       working-directory: src/backend/Sponsorkit.Api
@@ -82,6 +85,12 @@ jobs:
           --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-staging \
           --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to staging (Frontend)
+      run: |
+        vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
           
     - name: Deploy to production (API)
       working-directory: src/backend/Sponsorkit.Api
@@ -102,3 +111,9 @@ jobs:
           --function-name $DOTNET_JOB_LAMBDA_FUNCTION_NAME-production \
           --function-handler $DOTNET_JOB_LAMBDA_FUNCTION_HANDLER \
           --package $DOTNET_JOB_LAMBDA_PACKAGE_NAME
+
+    - name: Deploy to production (Frontend)
+      run: |
+        vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
