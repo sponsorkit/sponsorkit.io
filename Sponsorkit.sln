@@ -12,6 +12,7 @@ ProjectSection(SolutionItems) = preProject
 	docker-compose.yml = docker-compose.yml
 	Dockerfile = Dockerfile
 	.github\workflows\build.yml = .github\workflows\build.yml
+	.gitignore = .gitignore
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sponsorkit.Jobs", "src\backend\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj", "{E0E7D9E9-8BFD-44B5-9565-23680DAF3F23}"

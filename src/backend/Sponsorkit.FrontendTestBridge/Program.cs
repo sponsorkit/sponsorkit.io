@@ -1,17 +1,47 @@
-var builder = WebApplication.CreateBuilder(args);
+using System.Runtime.CompilerServices;
+using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// ReSharper disable AccessToDisposedClosure
+
+[assembly: InternalsVisibleTo("Sponsorkit.Tests")]
+
+var builder = WebApplication.CreateBuilder();
+
+const int port = 14569;
+builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+await using var testBridge = new TestBridge();
+app.MapPost("/tests/environment", async () =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    await testBridge.CreateNewEnvironmentAsync();
+    return Results.Ok(new CreateTestEnvironmentResponse(port));
+});
+
+await app.RunAsync();
+
+public class TestBridge : IAsyncDisposable
+{
+    private SponsorkitIntegrationTestEnvironment? environment;
+    
+    public async Task CreateNewEnvironmentAsync()
+    {
+        if (environment != null)
+        {
+            await environment.DisposeAsync();
+        }
+        
+        environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if(environment != null)
+            await environment.DisposeAsync();
+
+        environment = null;
+    }
 }
 
-app.MapControllers();
-
-app.Run();
+record CreateTestEnvironmentResponse(int Port);
