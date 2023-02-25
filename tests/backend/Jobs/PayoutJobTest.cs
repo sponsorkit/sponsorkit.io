@@ -15,7 +15,6 @@ using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.Jobs;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 using Issue = Octokit.Issue;
 using Repository = Octokit.Repository;
@@ -108,21 +107,10 @@ public class PayoutJobTest
 
     private static async Task<GitHubContext> ConfigureGitHubAsync(SponsorkitIntegrationTestEnvironment environment)
     {
-        var testRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(testRepository);
-
-        var testIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<int>())
-            .Returns(testIssue);
+        var testIssue = await environment.GitHub.IssueBuilder.BuildAsync();
 
         var gitHubContext = new GitHubContext(
-            testRepository,
+            testIssue.Repository,
             testIssue);
 
         var repository = await environment.Database.RepositoryBuilder
@@ -200,24 +188,14 @@ public class PayoutJobTest
             .WithGitHub(2, "claimer", "")
             .BuildAsync();
 
-        var fakeGitHubPullRequestNumber = 1338;
-        environment.GitHub.FakeClient.PullRequest
-            .Get(
-                gitHubContext.Repository.Id,
-                fakeGitHubPullRequestNumber)
-            .Returns(environment.GitHub.PullRequestBuilder
-                .WithUser(new TestGitHubUser()
-                {
-                    Id = (int)bountyClaimerUser.GitHub.Id
-                })
-                .BuildAsync());
+        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
 
         var claimsPost = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         claimsPost.FakeAuthentication(bountyClaimerUser);
 
         var result = await claimsPost.HandleAsync(new ClaimsRequest(
             gitHubContext.Issue.Id,
-            fakeGitHubPullRequestNumber));
+            pullRequest.Id));
         Assert.IsInstanceOfType<OkResult>(result);
 
         return bountyClaimerUser;

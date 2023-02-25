@@ -44,10 +44,10 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
 
     public IEncryptionHelper EncryptionHelper => ServiceProvider.GetRequiredService<IEncryptionHelper>();
     public DatabaseContext Database => new (entrypoint, this);
-    public GitHubContext GitHub => new (ServiceProvider);
+    public GitHubContext GitHub => ServiceProvider.GetRequiredService<GitHubContext>();
     public IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
     public StripeContext Stripe => ServiceProvider.GetRequiredService<StripeContext>();
-    public EmailContext Email => new(ServiceProvider);
+    public EmailContext Email => ServiceProvider.GetRequiredService<EmailContext>();
 
     protected abstract IIntegrationTestEntrypoint GetEntrypoint(TOptions options);
 
@@ -63,6 +63,8 @@ public abstract class IntegrationTestEnvironment<TOptions> : IAsyncDisposable, I
             services.AddSingleton<IIntegrationTestEnvironment>(this);
 
             services.AddTransient<StripeContext>();
+            services.AddTransient<GitHubContext>();
+            services.AddTransient<EmailContext>();
         
             RegisterMediatrInterception(services);
             

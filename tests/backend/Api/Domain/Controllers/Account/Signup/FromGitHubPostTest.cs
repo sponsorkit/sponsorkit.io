@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using Octokit;
 using Sponsorkit.Api.Domain.Controllers.Api.Account.Signup.FromGitHub;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Jwt;
 using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
@@ -23,9 +24,18 @@ public class FromGitHubPostTest
     public async Task HandleAsync_ValidCodeGiven_ExchangesCodeForAccessToken()
     {
         //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
+            }
+        });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -40,9 +50,8 @@ public class FromGitHubPostTest
 
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestGitHubUserBuilder().BuildAsync());
-
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
+            .Returns(new TestGitHubUser());
+        
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-github-token")
             .Returns(fakeGitHubClient);
@@ -61,9 +70,18 @@ public class FromGitHubPostTest
     public async Task HandleAsync_UserAlreadyExistsInDatabase_UpdatesDatabaseUserWithNewAccessToken()
     {
         //Arrange
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
+        {
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
+            }
+        });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -83,8 +101,7 @@ public class FromGitHubPostTest
             {
                 Id = gitHubUserId
             });
-
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
+        
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -124,12 +141,19 @@ public class FromGitHubPostTest
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
         
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
-            IocConfiguration = services => services.AddSingleton(fakeTokenFactory)
+            IocConfiguration = services =>
+            {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
+                services.AddSingleton(fakeTokenFactory);
+            }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -150,7 +174,6 @@ public class FromGitHubPostTest
                 Id = gitHubUserId
             });
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -187,16 +210,19 @@ public class FromGitHubPostTest
         fakeTokenFactory
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
             IocConfiguration = services =>
             {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
                 services.AddSingleton(fakeTokenFactory);
             }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -213,7 +239,6 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -239,16 +264,19 @@ public class FromGitHubPostTest
         fakeTokenFactory
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
             IocConfiguration = services =>
             {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
                 services.AddSingleton(fakeTokenFactory);
             }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -265,7 +293,6 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -296,16 +323,19 @@ public class FromGitHubPostTest
         fakeTokenFactory
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
             IocConfiguration = services =>
             {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
                 services.AddSingleton(fakeTokenFactory);
             }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -322,7 +352,6 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -353,16 +382,19 @@ public class FromGitHubPostTest
         fakeTokenFactory
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
             IocConfiguration = services =>
             {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
                 services.AddSingleton(fakeTokenFactory);
             }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -379,7 +411,6 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);
@@ -413,16 +444,19 @@ public class FromGitHubPostTest
         fakeTokenFactory
             .Create(Arg.Any<Claim[]>())
             .Returns("some-jwt-token");
-            
+        var fakeGitHubClient = Substitute.For<IGitHubClient>();
+        var fakeGitHubClientFactory = Substitute.For<IGitHubClientFactory>();
+
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new()
         {
             IocConfiguration = services =>
             {
+                services.AddSingleton(fakeGitHubClient);
+                services.AddSingleton(fakeGitHubClientFactory);
                 services.AddSingleton(fakeTokenFactory);
             }
         });
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
         fakeGitHubClient.Oauth
             .CreateAccessToken(
                 Arg.Is<OauthTokenRequest>(request => 
@@ -439,7 +473,6 @@ public class FromGitHubPostTest
             .Current()
             .Returns(new TestGitHubUserBuilder().BuildAsync());
 
-        var fakeGitHubClientFactory = environment.GitHub.FakeClientFactory;
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-new-github-token")
             .Returns(fakeGitHubClient);

@@ -1,12 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
-using Octokit;
 using Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
-using Sponsorkit.BusinessLogic.Infrastructure.Options.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
@@ -19,83 +14,53 @@ public class UpsertIssueCommentCommandTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
             
         //Act
         await environment.Mediator.Send(
             new UpsertIssueCommentCommand(
-                "owner",
-                "repo",
-                1,
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Id,
                 "body"));
             
         //Assert
-        await environment.GitHub.FakeClient.Issue.Comment
-            .DidNotReceiveWithAnyArgs()
-            .Create(default, default, default, default);
-
-        await environment.GitHub.FakeClient.Issue.Comment
-            .DidNotReceiveWithAnyArgs()
-            .Update(default, default, default, default);
+        var comments = await environment.GitHub.RestClient.Issue.Comment.GetAllForIssue(
+            issue.Repository.Owner.Name,
+            issue.Repository.Name,
+            issue.Number);
+        Assert.AreEqual(0, comments.Count);
     }
         
     [TestMethod]
     public async Task Handle_ExistingBotCommentFound_UpdatesExistingComment()
     {
         //Arrange
-        var botUserId = 1337;
+        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var fakeGitHubOptions = Substitute.For<IOptionsMonitor<GitHubOptions>>();
-        fakeGitHubOptions.CurrentValue.Returns(new GitHubOptions()
-        {
-            BountyhuntBot = new GitHubBotOptions()
-            {
-                UserId = botUserId
-            }
-        });
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        await environment.GitHub.RestClient.Issue.Comment.Create(
+            issue.Repository.Owner.Name,
+            issue.Repository.Name,
+            issue.Number,
+            "old-body");
 
-        await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new ()
-        {
-            IocConfiguration = services => services.AddSingleton(fakeGitHubOptions)
-        });
-
-        environment.GitHub.FakeClient.Issue.Comment
-            .GetAllForIssue(
-                "sponsorkit",
-                "repo",
-                1)
-            .Returns(new List<IssueComment>()
-            {
-                new (
-                    default,
-                    default,
-                    default,
-                    default,
-                    default,
-                    default,
-                    default,
-                    await environment.GitHub.UserBuilder
-                        .WithId(botUserId)
-                        .BuildAsync(),
-                    default,
-                    default)
-            });
-            
         //Act
         await environment.Mediator.Send(
             new UpsertIssueCommentCommand(
-                "sponsorkit",
-                "repo",
-                1,
-                "body"));
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Number,
+                "new-body"));
             
         //Assert
-        await environment.GitHub.FakeClient.Issue.Comment
-            .DidNotReceiveWithAnyArgs()
-            .Create(default, default, default, default);
-
-        await environment.GitHub.FakeClient.Issue.Comment
-            .ReceivedWithAnyArgs(1)
-            .Update(default, default, default, default);
+        var comments = await environment.GitHub.RestClient.Issue.Comment.GetAllForIssue(
+            issue.Repository.Owner.Name,
+            issue.Repository.Name,
+            issue.Number);
+        Assert.AreEqual(1, comments.Count);
+        Assert.AreEqual("new-body", comments.Single().Body);
     }
         
     [TestMethod]
@@ -103,22 +68,23 @@ public class UpsertIssueCommentCommandTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-            
+
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+
         //Act
         await environment.Mediator.Send(
             new UpsertIssueCommentCommand(
-                "sponsorkit",
-                "repo",
-                1,
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Number,
                 "body"));
             
         //Assert
-        await environment.GitHub.FakeClient.Issue.Comment
-            .ReceivedWithAnyArgs(1)
-            .Create(default, default, default, default);
-
-        await environment.GitHub.FakeClient.Issue.Comment
-            .DidNotReceiveWithAnyArgs()
-            .Update(default, default, default, default);
+        var comments = await environment.GitHub.RestClient.Issue.Comment.GetAllForIssue(
+            issue.Repository.Owner.Name,
+            issue.Repository.Name,
+            issue.Number);
+        Assert.AreEqual(1, comments.Count);
+        Assert.AreEqual("body", comments.Single().Body);
     }
 }

@@ -1,25 +1,27 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
-using Octokit;
-using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
+﻿using Octokit;
 using Sponsorkit.Tests.TestHelpers.Builders.GitHub;
+using IConnection = Octokit.GraphQL.IConnection;
 
 namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 public class GitHubContext
 {
-    private readonly IServiceProvider serviceProvider;
+    private readonly IGitHubClient gitHubRestClient;
+    private readonly IConnection gitHubGraphClient;
 
-    public GitHubContext(IServiceProvider serviceProvider)
+    public IGitHubClient RestClient => gitHubRestClient;
+
+    public IConnection GraphClient => gitHubGraphClient;
+    
+    public TestGitHubPullRequestBuilder PullRequestBuilder => new (gitHubRestClient);
+    
+    public TestGitHubIssueBuilder IssueBuilder => new (gitHubRestClient);
+
+    public GitHubContext(
+        IGitHubClient gitHubRestClient,
+        IConnection gitHubGraphClient)
     {
-        this.serviceProvider = serviceProvider;
+        this.gitHubRestClient = gitHubRestClient;
+        this.gitHubGraphClient = gitHubGraphClient;
     }
-    
-    public IGitHubClient FakeClient => serviceProvider.GetRequiredService<IGitHubClient>();
-    
-    public IGitHubClientFactory FakeClientFactory => serviceProvider.GetRequiredService<IGitHubClientFactory>();
-
-    public TestGitHubPullRequestBuilder PullRequestBuilder => new ();
-
-    public TestGitHubUserBuilder UserBuilder => new ();
 }

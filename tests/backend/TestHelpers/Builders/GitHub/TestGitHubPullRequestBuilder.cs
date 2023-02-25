@@ -2,65 +2,29 @@
 using System.Threading.Tasks;
 using Octokit;
 using Sponsorkit.BusinessLogic.Domain.Models;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
 public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
 {
-    private User user;
+    private readonly IGitHubClient gitHubClient;
 
-    public TestGitHubPullRequestBuilder()
+    public TestGitHubPullRequestBuilder(
+        IGitHubClient gitHubClient)
     {
-        user = new TestGitHubUser();
+        this.gitHubClient = gitHubClient;
     }
 
-    public TestGitHubPullRequestBuilder WithUser(User user)
+    public override async Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        this.user = user;
-        return this;
-    }
+        var pullRequest = await gitHubClient.PullRequest.Create(
+            "sponsorkit",
+            "playground",
+            new NewPullRequest(
+                "some-title",
+                "integration-test",
+                "main"));
 
-    public override Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(new PullRequest(
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            user,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default,
-            default));
+        return pullRequest;
     }
 }

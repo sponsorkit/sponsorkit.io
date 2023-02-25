@@ -10,7 +10,6 @@ using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers;
 using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 
 namespace Sponsorkit.Tests.Api.Domain.Controllers.Webhooks.Stripe.Handlers;
@@ -23,19 +22,6 @@ public class SetupIntentSucceededEventHandlerTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-        environment.GitHub.FakeClient.Repository
-            .Get(
-                "repository-owner",
-                "repository-name")
-            .Returns(new TestRepository());
-
-        environment.GitHub.FakeClient.Issue
-            .Get(
-                "repository-owner",
-                "repository-name",
-                1337)
-            .Returns(new TestIssue());
         
         var authenticatedUser = await environment.Database.UserBuilder
             .WithoutStripeCustomer()
@@ -59,13 +45,15 @@ public class SetupIntentSucceededEventHandlerTest
             authenticatedUser.StripeCustomerId,
             GetCustomerGetOptions());
         Assert.IsNull(preStripeCustomer.InvoiceSettings.DefaultPaymentMethod);
+
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
         
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
             new GitHubIssueRequest(
-                "repository-owner",
-                "repository-name",
-                1337),
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Number),
             10_00));
         var response = result.ToResponseObject();
         

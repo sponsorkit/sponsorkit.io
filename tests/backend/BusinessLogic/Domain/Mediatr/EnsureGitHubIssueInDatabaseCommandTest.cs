@@ -2,10 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
 using Sponsorkit.BusinessLogic.Domain.Mediatr.GitHub;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.BusinessLogic.Domain.Mediatr;
 
@@ -35,17 +33,13 @@ public class EnsureGitHubIssueInDatabaseCommandTest
     {
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
-
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(new TestRepository());
         
         //Act
         var result = await environment.Mediator.Send(
             new EnsureGitHubIssueInDatabaseCommand(
-                "owner",
-                "name",
-                1337));
+                "sponsorkit",
+                "playground",
+                13371337));
 
         //Assert
         Assert.IsFalse(result.IsSuccess);
@@ -58,31 +52,27 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var gitHubIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-            .Returns(gitHubIssue);
-        
-        var gitHubRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(gitHubRepository);
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var repository = await environment.GitHub.RestClient.Repository.Get(
+            "sponsorkit",
+            "playground");
         
         //Act
         var result = await environment.Mediator.Send(
             new EnsureGitHubIssueInDatabaseCommand(
-                gitHubRepository.Owner.Login,
-                gitHubRepository.Name,
-                gitHubIssue.Number));
+                "sponsorkit",
+                "playground",
+                issue.Number));
 
         //Assert
         var databaseRepository = await environment.Database.WithoutCachingAsync(async dataContext =>
             await dataContext.Repositories.SingleOrDefaultAsync());
         Assert.IsNotNull(databaseRepository);
         
-        Assert.AreEqual(gitHubRepository.Id, databaseRepository.GitHub.Id);
-        Assert.AreEqual(gitHubRepository.Name, databaseRepository.GitHub.Name);
-        Assert.AreEqual(gitHubRepository.Owner.Login, databaseRepository.GitHub.OwnerName);
+        Assert.AreEqual(repository.Id, databaseRepository.GitHub.Id);
+        Assert.AreEqual(repository.Name, databaseRepository.GitHub.Name);
+        Assert.AreEqual(repository.Owner.Login, databaseRepository.GitHub.OwnerName);
     }
         
     [TestMethod]
@@ -91,29 +81,25 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var gitHubIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-            .Returns(gitHubIssue);
-        
-        var gitHubRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(gitHubRepository);
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var repository = await environment.GitHub.RestClient.Repository.Get(
+            "sponsorkit",
+            "playground");
         
         var databaseRepository = await environment.Database.RepositoryBuilder
             .WithGitHubInformation(
-                gitHubRepository.Id,
-                gitHubRepository.Name,
-                gitHubRepository.Owner.Login)
+                repository.Id,
+                repository.Owner.Login,
+                repository.Name)
             .BuildAsync();
         
         //Act
         var result = await environment.Mediator.Send(
             new EnsureGitHubIssueInDatabaseCommand(
-                gitHubRepository.Owner.Login,
-                gitHubRepository.Name,
-                gitHubIssue.Number));
+                repository.Owner.Login,
+                repository.Name,
+                issue.Number));
 
         //Assert
         var refreshedDatabaseRepository = await environment.Database.WithoutCachingAsync(async dataContext =>
@@ -129,31 +115,27 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var gitHubIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-            .Returns(gitHubIssue);
-        
-        var gitHubRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(gitHubRepository);
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var repository = await environment.GitHub.RestClient.Repository.Get(
+            "sponsorkit",
+            "playground");
         
         //Act
         var result = await environment.Mediator.Send(
             new EnsureGitHubIssueInDatabaseCommand(
-                gitHubRepository.Owner.Login,
-                gitHubRepository.Name,
-                gitHubIssue.Number));
+                repository.Owner.Login,
+                repository.Name,
+                issue.Number));
 
         //Assert
         var databaseIssue = await environment.Database.WithoutCachingAsync(async dataContext =>
             await dataContext.Issues.SingleOrDefaultAsync());
         Assert.IsNotNull(databaseIssue);
         
-        Assert.AreEqual(gitHubIssue.Id, databaseIssue.GitHub.Id);
-        Assert.AreEqual(gitHubIssue.Number, databaseIssue.GitHub.Number);
-        Assert.AreEqual(gitHubIssue.Title, databaseIssue.GitHub.TitleSnapshot);
+        Assert.AreEqual(issue.Id, databaseIssue.GitHub.Id);
+        Assert.AreEqual(issue.Number, databaseIssue.GitHub.Number);
+        Assert.AreEqual(issue.Title, databaseIssue.GitHub.TitleSnapshot);
     }
         
     [TestMethod]
@@ -162,29 +144,25 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var gitHubIssue = new TestIssue();
-        environment.GitHub.FakeClient.Issue
-            .Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-            .Returns(gitHubIssue);
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var repository = await environment.GitHub.RestClient.Repository.Get(
+            "sponsorkit",
+            "playground");
         
         var databaseIssue = await environment.Database.IssueBuilder
             .WithGitHubInformation(
-                gitHubIssue.Id,
-                gitHubIssue.Number,
-                gitHubIssue.Title)
+                issue.Id,
+                issue.Number,
+                issue.Title)
             .BuildAsync();
-        
-        var gitHubRepository = new TestRepository();
-        environment.GitHub.FakeClient.Repository
-            .Get(Arg.Any<string>(), Arg.Any<string>())
-            .Returns(gitHubRepository);
         
         //Act
         var result = await environment.Mediator.Send(
             new EnsureGitHubIssueInDatabaseCommand(
-                gitHubRepository.Owner.Login,
-                gitHubRepository.Name,
-                gitHubIssue.Number));
+                repository.Owner.Login,
+                repository.Name,
+                issue.Number));
 
         //Assert
         var refreshedDatabaseIssue = await environment.Database.WithoutCachingAsync(async dataContext =>

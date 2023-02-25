@@ -15,14 +15,13 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 public class EmailContext
 {
-    private readonly IServiceProvider serviceProvider;
 
-    public EmailContext(IServiceProvider serviceProvider)
+    public EmailContext(IAmazonSimpleEmailServiceV2 amazonSimpleEmailServiceV2)
     {
-        this.serviceProvider = serviceProvider;
+        FakeEmailService = amazonSimpleEmailServiceV2;
     }
     
-    public IAmazonSimpleEmailServiceV2 FakeEmailService => serviceProvider.GetRequiredService<IAmazonSimpleEmailServiceV2>();
+    public IAmazonSimpleEmailServiceV2 FakeEmailService { get; }
 }
 
 public class StripeContext

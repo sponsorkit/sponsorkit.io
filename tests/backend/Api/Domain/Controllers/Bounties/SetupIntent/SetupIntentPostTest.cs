@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
 using Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
-using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.Api.Domain.Controllers.Bounties.SetupIntent;
 
@@ -36,20 +34,16 @@ public class SetupIntentPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
-        fakeGitHubClient.Issue
-            .Get("owner-name", "repo-name", 1337)
-            .Returns(new TestIssue());
-        
-        fakeGitHubClient.Repository
-            .Get("owner-name", "repo-name")
-            .Returns(new TestRepository());
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
-            new GitHubIssueRequest("owner-name", "repo-name", 1337),
+            new GitHubIssueRequest(
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Number),
             Constants.MinimumBountyAmountInHundreds - 0_01));
 
         //Assert
@@ -62,20 +56,16 @@ public class SetupIntentPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
-        var fakeGitHubClient = environment.GitHub.FakeClient;
-        fakeGitHubClient.Issue
-            .Get("owner-name", "repo-name", 1337)
-            .Returns(new TestIssue());
-        
-        fakeGitHubClient.Repository
-            .Get("owner-name", "repo-name")
-            .Returns(new TestRepository());
+        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
-            new GitHubIssueRequest("owner-name", "repo-name", 1337),
+            new GitHubIssueRequest(
+                issue.Repository.Owner.Name,
+                issue.Repository.Name,
+                issue.Number),
             Constants.MinimumBountyAmountInHundreds - 0_01));
 
         //Assert

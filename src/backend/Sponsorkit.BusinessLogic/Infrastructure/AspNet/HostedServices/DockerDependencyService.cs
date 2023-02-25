@@ -8,8 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
+using Octokit;
+using Octokit.GraphQL;
+using Octokit.GraphQL.Model;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Stripe;
+using IConnection = Octokit.GraphQL.IConnection;
+using Plan = Stripe.Plan;
 
 namespace Sponsorkit.BusinessLogic.Infrastructure.AspNet.HostedServices;
 
@@ -23,6 +28,9 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
     private DataContext? dataContext;
     private CustomerService? customerService;
     private PlanService? planService;
+    
+    private IConnection? gitHubGraphClient;
+    private IGitHubClient? gitHubRestClient;
 
     private DockerClient? docker;
 
@@ -50,10 +58,44 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
         dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
         customerService = scope.ServiceProvider.GetRequiredService<CustomerService>();
         planService = scope.ServiceProvider.GetRequiredService<PlanService>();
+        gitHubGraphClient = scope.ServiceProvider.GetRequiredService<IConnection>();
+        gitHubRestClient = scope.ServiceProvider.GetRequiredService<IGitHubClient>();
         
         await Task.WhenAll(
             StartDatabase(),
-            CleanupStripeDataAsync());
+            CleanupStripeDataAsync(),
+            CleanupGitHubAsync());
+    }
+
+    private async Task CleanupGitHubAsync()
+    {
+        if(gitHubGraphClient == null)
+            throw new InvalidOperationException("GitHub GraphQL client is null.");
+        
+        if(gitHubRestClient == null)
+            throw new InvalidOperationException("GitHub REST client is null.");
+        
+        var playgroundRepositoryId = 413480113;
+        var issues = await gitHubRestClient.Issue.GetAllForRepository(
+            playgroundRepositoryId,
+            new RepositoryIssueRequest()
+            {
+                State = ItemStateFilter.Open
+            });
+        
+        await Task.WhenAll(
+            issues.Select(async issue =>
+            {
+                var mutation = new Mutation()
+                    .DeleteIssue(new DeleteIssueInput()
+                    {
+                        IssueId = new ID(issue.NodeId),
+                        ClientMutationId = Guid.NewGuid().ToString()
+                    })
+                    .Select(x => x.ClientMutationId)
+                    .Compile();
+                await gitHubGraphClient.Run(mutation);
+            }));
     }
 
     private async Task StartDatabase()
