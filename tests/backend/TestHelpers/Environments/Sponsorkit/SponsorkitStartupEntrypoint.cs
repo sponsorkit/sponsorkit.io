@@ -24,18 +24,20 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
     private readonly CancellationTokenSource cancellationTokenSource;
 
     private readonly IList<Exception> backgroundEndpointExceptions;
+    
+    private readonly SponsorkitEnvironmentSetupOptions options;
 
     public SponsorkitStartupEntrypoint(SponsorkitEnvironmentSetupOptions options)
     {
+        this.options = options;
+        
         cancellationTokenSource = new CancellationTokenSource();
         backgroundEndpointExceptions = new List<Exception>();
 
         var builder = ApiStartup.CreateWebApplicationBuilder(
             new WebApplicationOptions()
             {
-                EnvironmentName = 
-                    options.EnvironmentName ?? 
-                    Microsoft.Extensions.Hosting.Environments.Development
+                EnvironmentName = Microsoft.Extensions.Hosting.Environments.Development
             });
 
         var configuration = TestConfigurationFactory
@@ -51,7 +53,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
             this);
         
         builder.WebHost
-            .UseUrls("http://*:14568")
+            .UseUrls($"http://*:{this.options.Port}")
             .ConfigureServices((_, services) =>
             {
                 options.IocConfiguration?.Invoke(services);
@@ -71,7 +73,7 @@ class SponsorkitStartupEntrypoint : IIntegrationTestEntrypoint
         Console.WriteLine("Initializing integration test environment.");
 
         var hostStartTask = application.StartAsync(cancellationTokenSource.Token);
-        await WaitForUrlToBeAvailable(hostStartTask, "http://localhost:14568/health");
+        await WaitForUrlToBeAvailable(hostStartTask, $"http://localhost:{options.Port}/health");
 
         var ngrokService = ScopeProvider.GetService<INgrokService>();
         if (ngrokService != null)

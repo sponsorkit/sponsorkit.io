@@ -1,16 +1,2 @@
 {
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "files.exclude": {
-        // "**/node_modules/": true
-    },
-    "editor.codeActionsOnSave": {
-        "addMissingImports": true,
-        "source.fixAll": true,
-        "source.organizeImports": true
-    },
-    "javascript.preferences.importModuleSpecifier": "non-relative",
-    "editor.unfoldOnClickAfterEndOfLine": true,
-    "files.eol": "\n",
-    "terminal.integrated.scrollback": 100000,
-    "debug.javascript.autoAttachFilter": "smart"
 }

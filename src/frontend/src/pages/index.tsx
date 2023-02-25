@@ -34,7 +34,7 @@ const BountyhuntLogo = forwardRef(function (
       classes.bountyhunt)}
   >
     <Box className={classes.image}>
-      <Image width={50} height={50} src={BountyhuntBlueIcon} />
+      <Image alt="Bountyhunt logo" width={50} height={50} src={BountyhuntBlueIcon} />
     </Box>
     <Box className={classes["text-container"]}>
       <Typography className={classes["main-text"]}>bountyhunt.io</Typography>
@@ -57,7 +57,7 @@ const SponsorkitLogo = forwardRef(function (
       classes.logo,
       classes.sponsorkit)}
   >
-    <Image width={70} height={70} src={SponsorkitBlueIcon} className={classes.image} />
+    <Image alt="Sponsorkit logo" width={70} height={70} src={SponsorkitBlueIcon} className={classes.image} />
     <Box className={classes["text-container"]}>
       <Typography className={classes["main-text"]}>sponsorkit.io</Typography>
     </Box>

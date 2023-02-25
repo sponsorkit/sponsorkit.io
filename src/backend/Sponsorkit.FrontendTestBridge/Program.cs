@@ -13,6 +13,8 @@ builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
 var app = builder.Build();
 
 await using var testBridge = new TestBridge();
+await testBridge.CreateNewEnvironmentAsync();
+
 app.MapPost("/tests/environment", async () =>
 {
     await testBridge.CreateNewEnvironmentAsync();
@@ -32,7 +34,10 @@ public class TestBridge : IAsyncDisposable
             await environment.DisposeAsync();
         }
         
-        environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
+        environment = await SponsorkitIntegrationTestEnvironment.CreateAsync(new SponsorkitEnvironmentSetupOptions()
+        {
+            Port = 5000
+        });
     }
 
     public async ValueTask DisposeAsync()

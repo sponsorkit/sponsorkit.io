@@ -1,28 +1,44 @@
 {
 	"name": "Sponsorkit",
 	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			"VARIANT": "16"
-		}
+		"dockerfile": "Dockerfile"
 	},
-	"settings": {},
-	"extensions": [
-		"dbaeumer.vscode-eslint",
-		"ms-azuretools.vscode-docker",
-		"github.copilot",
-		"wraith13.zoombar-vscode"
-	],
 	"forwardPorts": [
 		3000,
 		6006
 	],
-	"remoteUser": "node",
 	"mounts": [
-		"source=sponsorkit-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+		"source=sponsorkit-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+		"source=${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind",
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
 	],
-	"postCreateCommand": "sudo chown node node_modules && npm i",
+	"postCreateCommand": "npm i --legacy-peer-deps && Xvfb :99 -screen 0 1920x1080x8 -nolisten tcp &",
 	"containerEnv": {
 		"NODE_OPTIONS": "--max_old_space_size=4096"
+	},
+	"runArgs": [
+		"--network=host"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.copilot",
+				"ms-edgedevtools.vscode-edge-devtools",
+				"ms-playwright.playwright",
+				"jpotterm.simple-vim"
+			],
+			"settings": {
+				"debug.node.autoAttach": "off",
+				"typescript.tsdk": "node_modules/typescript/lib",
+				"files.exclude": {
+					"**/node_modules/": true
+				},
+				"javascript.preferences.importModuleSpecifier": "non-relative",
+				"editor.unfoldOnClickAfterEndOfLine": true,
+				"files.eol": "\n",
+				"terminal.integrated.scrollback": 100000,
+				"debug.javascript.autoAttachFilter": "disabled"
+			}
+		}
 	}
 }

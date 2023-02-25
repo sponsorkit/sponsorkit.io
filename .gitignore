@@ -267,3 +267,4 @@ __pycache__/
 **/*.zip
 **/*.tar.gz
 **/*.tgz
+**/ngrok

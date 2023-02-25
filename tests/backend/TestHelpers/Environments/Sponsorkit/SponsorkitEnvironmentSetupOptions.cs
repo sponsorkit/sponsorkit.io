@@ -5,7 +5,6 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 public class SponsorkitEnvironmentSetupOptions : IEnvironmentSetupOptions
 {
-    public string EnvironmentName { get; set; }
     public Action<IServiceCollection> IocConfiguration { get; set; }
-    public bool IncludeWebServer { get; set; }
+    public int Port { get; set; } = 14568;
 }
