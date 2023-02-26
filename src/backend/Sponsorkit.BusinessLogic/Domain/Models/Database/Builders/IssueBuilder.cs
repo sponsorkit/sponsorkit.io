@@ -3,9 +3,9 @@
 public class IssueBuilder : AsyncModelBuilder<Issue>
 {
     protected Repository? Repository;
+    protected IssueGitHubInformation? GitHub;
     
     private Bounty[] bounties;
-    private IssueGitHubInformation? gitHub;
 
     public IssueBuilder()
     {
@@ -24,12 +24,20 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
         return this;
     }
 
+    public IssueBuilder WithGitHubInformation(Octokit.Issue issue)
+    {
+        return WithGitHubInformation(
+            issue.Id,
+            issue.Number,
+            issue.Title);
+    }
+
     public IssueBuilder WithGitHubInformation(
         long id,
         int number,
         string titleSnapshot)
     {
-        gitHub = new IssueGitHubInformation()
+        GitHub = new IssueGitHubInformation()
         {
             Id = id,
             Number = number,
@@ -40,7 +48,7 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
 
     public override Task<Issue> BuildAsync(CancellationToken cancellationToken = default)
     {
-        if (gitHub == null)
+        if (GitHub == null)
             throw new InvalidOperationException("GitHub information was not set.");
 
         if (Repository == null)
@@ -50,7 +58,7 @@ public class IssueBuilder : AsyncModelBuilder<Issue>
         {
             Bounties = bounties.ToList(),
             Repository = Repository,
-            GitHub = gitHub
+            GitHub = GitHub
         });
     }
 }

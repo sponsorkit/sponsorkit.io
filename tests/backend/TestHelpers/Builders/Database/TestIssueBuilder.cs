@@ -10,14 +10,10 @@ public class TestIssueBuilder : IssueBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
 
-    public TestIssueBuilder(IIntegrationTestEnvironment environment)
+    public TestIssueBuilder(
+        IIntegrationTestEnvironment environment)
     {
         this.environment = environment;
-        
-        WithGitHubInformation(
-            1337,
-            1338,
-            "dummy-title");
     }
 
     public override async Task<Issue> BuildAsync(CancellationToken cancellationToken = default)
