@@ -37,16 +37,24 @@ public class ClaimsPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var pullRequestNumber = 13371337;
+        var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.Database.IssueBuilder
-            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var issue = await environment.Database.IssueBuilder
+            .WithRepository(repository)
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
             .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
 
         //Act
-        var result = await handler.HandleAsync(new ClaimsRequest(gitHubIssue.GitHub.Id, pullRequestNumber));
+        var result = await handler.HandleAsync(new ClaimsRequest(
+            issue.GitHub.Id, 
+            13371337));
 
         //Assert
         Assert.IsTrue(result is NotFoundObjectResult { Value: "Invalid pull request specified." });
@@ -62,8 +70,16 @@ public class ClaimsPostTest
             .WithoutGitHub()
             .BuildAsync();
 
-        var gitHubIssue = await environment.Database.IssueBuilder
-            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+        var repository = await environment.Database.RepositoryBuilder.BuildAsync();
+
+        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var issue = await environment.Database.IssueBuilder
+            .WithRepository(repository)
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
             .BuildAsync();
 
         var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
@@ -73,7 +89,7 @@ public class ClaimsPostTest
 
         //Act
         var result = await handler.HandleAsync(new ClaimsRequest(
-            gitHubIssue.GitHub.Id,
+            issue.GitHub.Id,
             pullRequest.Number));
 
         //Assert
@@ -86,12 +102,18 @@ public class ClaimsPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(1337, "test", "test")
-            .BuildAsync();
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.Database.IssueBuilder
-            .WithRepository(await environment.Database.RepositoryBuilder.BuildAsync())
+        var repository = await environment.Database.RepositoryBuilder.BuildAsync();
+
+        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+
+        var issue = await environment.Database.IssueBuilder
+            .WithRepository(repository)
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
             .BuildAsync();
 
         var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
@@ -101,7 +123,7 @@ public class ClaimsPostTest
 
         //Act
         var result = await handler.HandleAsync(new ClaimsRequest(
-            gitHubIssue.GitHub.Id,
+            issue.GitHub.Id,
             pullRequest.Number));
 
         //Assert
@@ -114,14 +136,18 @@ public class ClaimsPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(1337, "test", "test")
-            .BuildAsync();
+        var authenticatedUser = await environment.Database.UserBuilder.BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
+        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
             .BuildAsync();
 
         var bounty = await environment.Database.BountyBuilder
@@ -170,8 +196,14 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
+        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
+            .WithGitHubInformation(
+                gitHubIssue.Id,
+                gitHubIssue.Number,
+                gitHubIssue.Title)
             .BuildAsync();
 
         var bounty1 = await environment.Database.BountyBuilder

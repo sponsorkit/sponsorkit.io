@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Infrastructure;
 using Sponsorkit.Tests.TestHelpers.Environments;
 using Stripe;
 
@@ -27,7 +28,7 @@ public class TestUserBuilder : UserBuilder
         WithStripeCustomerId(string.Empty);
         WithEmail("integration-test@example.com");
         WithStripeCustomer(environment.Stripe.CustomerBuilder);
-        WithGitHub(1337, "username", "access-token");
+        WithGitHub(TestConstants.BountyhuntBotUserId, "bountyhunt-bot", "access-token");
     }
 
     public TestUserBuilder WithStripeCustomer(StripeCustomerBuilder stripeCustomerBuilder)

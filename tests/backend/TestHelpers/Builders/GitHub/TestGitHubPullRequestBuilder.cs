@@ -17,23 +17,13 @@ public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
 
     public override async Task<PullRequest> BuildAsync(CancellationToken cancellationToken = default)
     {
-        var defaultBranch = await gitHubClient.Git.Reference.Get(
-            "sponsorkit",
-            "playground",
-            "heads/main");
-        
-        var integrationTestBranch = await gitHubClient.Git.Reference.Get(
-            "sponsorkit",
-            "playground",
-            "heads/integration-test");
-        
         var pullRequest = await gitHubClient.PullRequest.Create(
             "sponsorkit",
             "playground",
             new NewPullRequest(
                 "some-title",
-                integrationTestBranch.Ref,
-                defaultBranch.Ref));
+                "main",
+                "integration-test"));
 
         return pullRequest;
     }

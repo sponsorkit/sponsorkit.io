@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Npgsql;
 using Octokit;
 using Octokit.GraphQL;
+using Octokit.GraphQL.Core.Deserializers;
 using Octokit.GraphQL.Model;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Stripe;
@@ -69,32 +70,78 @@ public class DockerDependencyService : IDockerDependencyService, IHostedService
 
     private async Task CleanupGitHubAsync()
     {
+        await Task.WhenAll(
+            DeleteIssuesAsync(),
+            ClosePullRequests());
+    }
+
+    private async Task ClosePullRequests()
+    {
         if(gitHubGraphClient == null)
             throw new InvalidOperationException("GitHub GraphQL client is null.");
         
         if(gitHubRestClient == null)
             throw new InvalidOperationException("GitHub REST client is null.");
+
+        var pullRequests = await gitHubRestClient.PullRequest.GetAllForRepository(
+            TestConstants.PlaygroundRepositoryId,
+            new PullRequestRequest()
+            {
+                State = ItemStateFilter.Open
+            });
+
+        await Task.WhenAll(
+            pullRequests.Select(async pullRequest =>
+            {
+                try
+                {
+                    await gitHubGraphClient.Run(new Mutation()
+                        .ClosePullRequest(new ClosePullRequestInput()
+                        {
+                            PullRequestId = new ID(pullRequest.NodeId),
+                            ClientMutationId = Guid.NewGuid().ToString()
+                        })
+                        .Select(x => x.ClientMutationId));
+                }
+                catch (ResponseDeserializerException)
+                {
+                    //ignored.
+                }
+            }));
+    }
+
+    private async Task DeleteIssuesAsync()
+    {
+        if(gitHubGraphClient == null)
+            throw new InvalidOperationException("GitHub GraphQL client is null.");
         
-        var playgroundRepositoryId = 413480113;
+        if(gitHubRestClient == null)
+            throw new InvalidOperationException("GitHub REST client is null.");
+
         var issues = await gitHubRestClient.Issue.GetAllForRepository(
-            playgroundRepositoryId,
+            TestConstants.PlaygroundRepositoryId,
             new RepositoryIssueRequest()
             {
                 State = ItemStateFilter.Open
             });
-        
+
         await Task.WhenAll(
             issues.Select(async issue =>
             {
-                var mutation = new Mutation()
-                    .DeleteIssue(new DeleteIssueInput()
-                    {
-                        IssueId = new ID(issue.NodeId),
-                        ClientMutationId = Guid.NewGuid().ToString()
-                    })
-                    .Select(x => x.ClientMutationId)
-                    .Compile();
-                await gitHubGraphClient.Run(mutation);
+                try
+                {
+                    await gitHubGraphClient.Run(new Mutation()
+                        .DeleteIssue(new DeleteIssueInput()
+                        {
+                            IssueId = new ID(issue.NodeId),
+                            ClientMutationId = Guid.NewGuid().ToString()
+                        })
+                        .Select(x => x.ClientMutationId));
+                }
+                catch (ResponseDeserializerException)
+                {
+                    //ignored.
+                }
             }));
     }
 

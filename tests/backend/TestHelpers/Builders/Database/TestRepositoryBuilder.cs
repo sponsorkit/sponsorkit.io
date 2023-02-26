@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
+using Sponsorkit.BusinessLogic.Infrastructure;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
@@ -15,9 +16,9 @@ public class TestRepositoryBuilder : RepositoryBuilder
         this.environment = environment;
         
         WithGitHubInformation(
-            1337,
-            "some-owner-name", 
-            "some-name");
+            TestConstants.PlaygroundRepositoryId,
+            "sponsorkit", 
+            "playground");
     }
 
     public override async Task<Repository> BuildAsync(CancellationToken cancellationToken = default)
