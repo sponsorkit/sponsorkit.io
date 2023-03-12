@@ -27,6 +27,7 @@ import { combineClassNames } from "@utils/strings";
 import { orderBy, sum } from 'lodash';
 import { useRouter } from "next/router";
 import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { ArrayContents } from "src/@types/sponsorkit";
 import uri from "uri-tag";
 import classes from './index.module.scss';
 
