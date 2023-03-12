@@ -270,3 +270,5 @@ __pycache__/
 **/ngrok
 .nx/installation
 .nx/cache
+
+dist/

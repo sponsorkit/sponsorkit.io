@@ -22,9 +22,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\tests\backend\Sponsorkit.Tests.csproj" />
       <ProjectReference Include="..\Sponsorkit.Api\Sponsorkit.Api.csproj" />
       <ProjectReference Include="..\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
+      <ProjectReference Include="..\Sponsorkit.Tests\Sponsorkit.Tests.csproj" />
     </ItemGroup>
 
     <ItemGroup>

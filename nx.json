@@ -9,5 +9,13 @@
   },
   "installation": {
     "version": "15.8.6"
+  },
+  "plugins": [
+    "@nx-dotnet/core"
+  ],
+  "generators": {
+    "@nx-dotnet/core:backend": {
+      "solutionFile": true
+    }
   }
 }

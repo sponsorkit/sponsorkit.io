@@ -1,0 +1,10 @@
+<!-- 
+  This file is imported late in the build order. 
+  Use it to override properties and define dependent properties.
+-->
+<Project>
+  <PropertyGroup>
+    <MSBuildProjectDirRelativePath>$([MSBuild]::MakeRelative($(RepoRoot), $(MSBuildProjectDirectory)))</MSBuildProjectDirRelativePath>
+    <NodeModulesRelativePath>$([MSBuild]::MakeRelative($(MSBuildProjectDirectory), $(RepoRoot)))</NodeModulesRelativePath>
+  </PropertyGroup>
+</Project>

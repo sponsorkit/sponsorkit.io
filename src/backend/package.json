@@ -1,0 +1,15 @@
+{
+    "name": "backend",
+    "version": "0.0.0",
+    "license": "MIT",
+    "scripts": {
+      "prepare": "nx g @nx-dotnet/core:restore"
+    },
+    "private": true,
+    "devDependencies": {
+      "@nx-dotnet/core": "latest",
+      "nx": "15.0.10",
+      "typescript": "^4.8.4"
+    }
+  }
+  

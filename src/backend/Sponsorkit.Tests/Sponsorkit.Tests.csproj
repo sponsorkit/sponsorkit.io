@@ -34,11 +34,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\src\backend\Sponsorkit.Api\appsettings.json">
+        <None Include="..\Sponsorkit.Api\appsettings.json">
             <Link>appsettings.json</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\src\backend\Sponsorkit.Api\appsettings.Development.json">
+        <None Include="..\Sponsorkit.Api\appsettings.Development.json">
             <Link>appsettings.Development.json</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
@@ -50,9 +50,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\backend\Sponsorkit.Api\Sponsorkit.Api.csproj" />
-      <ProjectReference Include="..\..\src\backend\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
-      <ProjectReference Include="..\..\src\backend\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj" />
+      <ProjectReference Include="..\Sponsorkit.Api\Sponsorkit.Api.csproj" />
+      <ProjectReference Include="..\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />
+      <ProjectReference Include="..\Sponsorkit.Jobs\Sponsorkit.Jobs.csproj" />
     </ItemGroup>
 
 </Project>
