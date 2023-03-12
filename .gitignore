@@ -268,3 +268,5 @@ __pycache__/
 **/*.tar.gz
 **/*.tgz
 **/ngrok
+.nx/installation
+.nx/cache
