@@ -40,8 +40,6 @@ public class EmailTemplateTest
         var solutionRoot = GetSolutionRoot();
         return Path.Combine(
             solutionRoot, 
-            "src", 
-            "backend",
             "Sponsorkit.BusinessLogic",
             "Domain", 
             "Mediatr", 
