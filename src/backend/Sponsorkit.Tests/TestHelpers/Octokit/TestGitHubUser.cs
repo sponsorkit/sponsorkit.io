@@ -10,6 +10,12 @@ public class TestGitHubUser : User
         Login = "some-login";
     }
 
+    public new string Email
+    {
+        get => base.Email;
+        set => base.Email = value;
+    }
+
     public new int Id
     {
         get => base.Id;

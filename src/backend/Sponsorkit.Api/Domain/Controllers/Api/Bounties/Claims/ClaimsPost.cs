@@ -17,6 +17,7 @@ using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
 using Sponsorkit.BusinessLogic.Infrastructure.AspNet;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Sponsorkit.BusinessLogic.Infrastructure.Security.Encryption;
 
 namespace Sponsorkit.Api.Domain.Controllers.Api.Bounties.Claims;
@@ -60,9 +61,9 @@ public class ClaimsPost : EndpointBaseAsync
         if (issue == null)
             return NotFound("Issue not found.");
 
-        var pullRequest = await gitHubClient.PullRequest.Get(
+        var pullRequest = await gitHubClient.TransformNotFoundErrorToNullResult(async client => await client.PullRequest.Get(
             issue.Repository.GitHub.Id,
-            (int)request.GitHubPullRequestNumber);
+            (int)request.GitHubPullRequestNumber));
         if (pullRequest == null)
             return NotFound("Invalid pull request specified.");
             

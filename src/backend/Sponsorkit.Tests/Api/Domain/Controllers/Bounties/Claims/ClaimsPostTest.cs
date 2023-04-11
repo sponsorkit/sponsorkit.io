@@ -116,8 +116,7 @@ public class ClaimsPostTest
                 gitHubIssue.Title)
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder
-            .BuildAsync();
+        var pullRequest = await environment.GitHub.SponsorkitBot.PullRequestBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);

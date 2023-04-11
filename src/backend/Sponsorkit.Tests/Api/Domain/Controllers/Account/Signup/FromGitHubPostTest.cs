@@ -50,7 +50,10 @@ public class FromGitHubPostTest
 
         fakeGitHubClient.User
             .Current()
-            .Returns(new TestGitHubUser());
+            .Returns(new TestGitHubUser()
+            {
+                Email = "some-email@example.com"
+            });
         
         fakeGitHubClientFactory
             .CreateClientFromOAuthAuthenticationToken("some-github-token")
