@@ -44,6 +44,6 @@ public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
     private static async Task WaitToPreventRateLimitingAsync(CancellationToken cancellationToken)
     {
         //GitHub recommends waiting 1 second after creating a pull request: https://docs.github.com/en/rest/guides/best-practices-for-integrators?apiVersion=2022-11-28#dealing-with-secondary-rate-limits
-        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        await Task.Delay(GitHubTestConstants.ApiCreationThrottleDelay, cancellationToken);
     }
 }
