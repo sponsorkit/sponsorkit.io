@@ -15,9 +15,9 @@ using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.Jobs;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 using Issue = Octokit.Issue;
-using Repository = Octokit.Repository;
 using SetupIntentRequest = Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent.PostRequest;
 
 namespace Sponsorkit.Tests.Jobs;
@@ -25,9 +25,7 @@ namespace Sponsorkit.Tests.Jobs;
 [TestClass]
 public class PayoutJobTest
 {
-    record GitHubContext(
-        Repository Repository,
-        Issue Issue);
+    private record GitHubContext(Issue Issue);
 
     [TestMethod]
     public async Task FullFlow_OneBountyOnIssue_ApplicationFeeAndBountyAmountAreTransferred()
@@ -35,15 +33,15 @@ public class PayoutJobTest
         //Arrange & act
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var gitHubContext = await ConfigureGitHubAsync(environment);
+        var testIssue = await ConfigureGitHubIssueAsync(environment);
 
         var bountyAuthorUser = await CreateUserAndPlaceBountyAsync(
             environment, 
-            gitHubContext);
+            testIssue);
 
         var bountyClaimerUser = await CreateUserAndMakeClaimRequestAsync(
             environment, 
-            gitHubContext);
+            testIssue);
 
         var claimRequest = await environment.Database.WithoutCachingAsync(async context =>
             await context.BountyClaimRequests.SingleAsync());
@@ -105,29 +103,26 @@ public class PayoutJobTest
             verdict));
     }
 
-    private static async Task<GitHubContext> ConfigureGitHubAsync(SponsorkitIntegrationTestEnvironment environment)
+    private static async Task<Issue> ConfigureGitHubIssueAsync(SponsorkitIntegrationTestEnvironment environment)
     {
-        var testIssue = await environment.GitHub.IssueBuilder.BuildAsync();
-
-        var gitHubContext = new GitHubContext(
-            testIssue.Repository,
-            testIssue);
+        var testIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder
             .WithGitHubInformation(
-                gitHubContext.Repository.Id,
-                gitHubContext.Repository.Owner.Name,
-                gitHubContext.Repository.Name)
+                GitHubTestConstants.RepositoryId,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName)
             .BuildAsync();
 
         await environment.Database.IssueBuilder
             .WithGitHubInformation(
-                gitHubContext.Issue.Id,
-                gitHubContext.Issue.Number,
+                testIssue.Id,
+                testIssue.Number,
                 "some-title")
             .WithRepository(repository)
             .BuildAsync();
-        return gitHubContext;
+        
+        return testIssue;
     }
 
     private static async Task WaitForAccountToBeReadyAsync(SponsorkitIntegrationTestEnvironment environment, User bountyClaimerUser)
@@ -147,7 +142,7 @@ public class PayoutJobTest
 
     private static async Task<User> CreateUserAndPlaceBountyAsync(
         SponsorkitIntegrationTestEnvironment environment, 
-        GitHubContext gitHubContext)
+        Issue issue)
     {
         var bountyAuthorUser = await environment.Database.UserBuilder
             .WithStripeCustomer(environment.Stripe.CustomerBuilder
@@ -163,9 +158,9 @@ public class PayoutJobTest
 
         var result = await setupIntentPost.HandleAsync(new SetupIntentRequest(
             new GitHubIssueRequest(
-                gitHubContext.Repository.Owner.Name,
-                gitHubContext.Repository.Name,
-                gitHubContext.Issue.Number),
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
+                issue.Number),
             10_00));
         var response = result.ToResponseObject();
 
@@ -179,7 +174,7 @@ public class PayoutJobTest
 
     private static async Task<User> CreateUserAndMakeClaimRequestAsync(
         SponsorkitIntegrationTestEnvironment environment, 
-        GitHubContext gitHubContext)
+        Issue issue)
     {
         var bountyClaimerUser = await environment.Database.UserBuilder
             .WithStripeCustomer(environment.Stripe.CustomerBuilder
@@ -188,13 +183,13 @@ public class PayoutJobTest
             .WithGitHub(2, "claimer", "")
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var pullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
 
         var claimsPost = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         claimsPost.FakeAuthentication(bountyClaimerUser);
 
         var result = await claimsPost.HandleAsync(new ClaimsRequest(
-            gitHubContext.Issue.Id,
+            issue.Id,
             pullRequest.Id));
         Assert.IsInstanceOfType<OkResult>(result);
 

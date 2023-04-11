@@ -13,6 +13,7 @@ using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers;
 using Sponsorkit.BusinessLogic.Domain.Stripe.Handlers.SetupIntentSucceeded;
 using Sponsorkit.Tests.TestHelpers;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
 
 namespace Sponsorkit.Tests.Api.Domain.Controllers.Webhooks.Stripe.Handlers;
@@ -38,13 +39,13 @@ public class BountySetupIntentSucceededEventHandlerTest
             await context.Bounties.SingleOrDefaultAsync());
         Assert.IsNull(preconditionBounty);
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
         
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
             new GitHubIssueRequest(
-                issue.Repository.Owner.Name,
-                issue.Repository.Name,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
                 issue.Number),
             10_00));
         var response = result.ToResponseObject();
@@ -77,13 +78,13 @@ public class BountySetupIntentSucceededEventHandlerTest
             await context.Bounties.SingleOrDefaultAsync());
         Assert.IsNull(preconditionBounty);
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
         
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
             new GitHubIssueRequest(
-                issue.Repository.Owner.Name,
-                issue.Repository.Name,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
                 issue.Number),
             10_00));
         var response = result.ToResponseObject();
@@ -122,13 +123,13 @@ public class BountySetupIntentSucceededEventHandlerTest
             await context.Bounties.SingleOrDefaultAsync());
         Assert.IsNull(preconditionBounty);
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
         
         //Act
         var result = await setupIntentPost.HandleAsync(new PostRequest(
             new GitHubIssueRequest(
-                issue.Repository.Owner.Name,
-                issue.Repository.Name,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
                 issue.Number),
             10_00));
         var response = result.ToResponseObject();

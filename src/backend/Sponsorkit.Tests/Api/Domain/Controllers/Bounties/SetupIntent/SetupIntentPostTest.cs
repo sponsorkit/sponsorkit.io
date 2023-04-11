@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.BusinessLogic.Infrastructure.Stripe;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.Api.Domain.Controllers.Bounties.SetupIntent;
 
@@ -34,15 +35,15 @@ public class SetupIntentPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
             new GitHubIssueRequest(
-                issue.Repository.Owner.Name,
-                issue.Repository.Name,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
                 issue.Number),
             Constants.MinimumBountyAmountInHundreds - 0_01));
 
@@ -56,15 +57,15 @@ public class SetupIntentPostTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
         
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<SetupIntentPost>();
 
         //Act
         var result = await handler.HandleAsync(new(
             new GitHubIssueRequest(
-                issue.Repository.Owner.Name,
-                issue.Repository.Name,
+                GitHubTestConstants.RepositoryOwnerName,
+                GitHubTestConstants.RepositoryName,
                 issue.Number),
             Constants.MinimumBountyAmountInHundreds - 0_01));
 

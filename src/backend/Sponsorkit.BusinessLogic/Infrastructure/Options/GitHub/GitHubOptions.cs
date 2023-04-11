@@ -9,4 +9,5 @@ public class GitHubOptions
 {
     public GitHubOAuthOptions OAuth { get; set; }
     public GitHubBotOptions BountyhuntBot { get; set; }
+    public GitHubBotOptions SponsorkitBot { get; set; }
 }

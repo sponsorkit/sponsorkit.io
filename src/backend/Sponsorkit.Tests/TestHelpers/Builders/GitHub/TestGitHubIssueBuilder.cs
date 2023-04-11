@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Octokit;
 using Sponsorkit.BusinessLogic.Domain.Models;
+using Sponsorkit.Tests.TestHelpers.Octokit;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.GitHub;
 
@@ -18,8 +19,8 @@ public class TestGitHubIssueBuilder : AsyncModelBuilder<Issue>
     public override async Task<Issue> BuildAsync(CancellationToken cancellationToken = default)
     {
         var issue = await gitHubClient.Issue.Create(
-            "sponsorkit",
-            "playground",
+            GitHubTestConstants.RepositoryOwnerName,
+            GitHubTestConstants.RepositoryName,
             new NewIssue(
                 "some-title"));
 

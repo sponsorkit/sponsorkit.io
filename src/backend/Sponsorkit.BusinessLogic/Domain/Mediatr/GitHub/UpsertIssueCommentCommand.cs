@@ -31,7 +31,9 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
 
     public async Task Handle(UpsertIssueCommentCommand request, CancellationToken cancellationToken)
     {
-        if (!hostEnvironment.IsProduction() && request.OwnerName != "sponsorkit")
+        var isPlayground = request is { OwnerName: "sponsorkit", RepositoryName: "playground" };
+        var isDevelopmentEnvironment = !hostEnvironment.IsProduction();
+        if (isDevelopmentEnvironment && !isPlayground)
             return; 
 
         var client = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(
@@ -49,9 +51,13 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
             x.User.Id == gitHubOptions.CurrentValue.BountyhuntBot.UserId);
 
         var requestContent = request.Text;
-        if (!hostEnvironment.IsProduction())
+        if (isDevelopmentEnvironment)
         {
-            requestContent = $"{GitHubCommentHelper.RenderBold("Warning:")} This comment was posted with a dev version of Bountyhunt. This means that any bounties offered here are not real bounties that can be claimed with a production account.\n\n{requestContent}";
+            requestContent = $"""
+                {GitHubCommentHelper.RenderBold("Warning:")} This comment was posted with a dev version of Bountyhunt. This means that any bounties offered here are not real bounties that can be claimed with a production account.
+
+                {requestContent}
+                """.Trim();
         }
 
         if (existingBotComment == null)
@@ -62,7 +68,7 @@ public class UpsertIssueCommentCommandHandler : IRequestHandler<UpsertIssueComme
                 .Create(
                     request.OwnerName,
                     request.RepositoryName,
-                    (int)request.IssueNumber,
+                    request.IssueNumber,
                     requestContent);
         }
         else

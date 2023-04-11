@@ -52,9 +52,9 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
-        var repository = await environment.GitHub.RestClient.Repository.Get(
+        var repository = await environment.GitHub.BountyhuntBot.RestClient.Repository.Get(
             "sponsorkit",
             "playground");
         
@@ -81,9 +81,9 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
-        var repository = await environment.GitHub.RestClient.Repository.Get(
+        var repository = await environment.GitHub.BountyhuntBot.RestClient.Repository.Get(
             "sponsorkit",
             "playground");
         
@@ -115,9 +115,9 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
-        var repository = await environment.GitHub.RestClient.Repository.Get(
+        var repository = await environment.GitHub.BountyhuntBot.RestClient.Repository.Get(
             "sponsorkit",
             "playground");
         
@@ -144,9 +144,9 @@ public class EnsureGitHubIssueInDatabaseCommandTest
         //Arrange
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
-        var issue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var issue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
-        var repository = await environment.GitHub.RestClient.Repository.Get(
+        var repository = await environment.GitHub.BountyhuntBot.RestClient.Repository.Get(
             "sponsorkit",
             "playground");
         

@@ -6,6 +6,7 @@ using Octokit;
 using Sponsorkit.BusinessLogic.Domain.Mediatr.Behaviors;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Builders;
 using Sponsorkit.BusinessLogic.Domain.Models.Database.Context;
+using Sponsorkit.BusinessLogic.Infrastructure.GitHub;
 using Issue = Sponsorkit.BusinessLogic.Domain.Models.Database.Issue;
 using Repository = Sponsorkit.BusinessLogic.Domain.Models.Database.Repository;
 
@@ -34,16 +35,18 @@ public class EnsureGitHubIssueInDatabaseCommandHandler : IRequestHandler<EnsureG
 
     public async Task<Result<Issue>> Handle(EnsureGitHubIssueInDatabaseCommand request, CancellationToken cancellationToken)
     {
-        var gitHubRepository = await gitHubClient.Repository.Get(
-            request.OwnerName,
-            request.RepositoryName);
+        var gitHubRepository = await gitHubClient.TransformNotFoundErrorToNullResult(
+            async client => await client.Repository.Get(
+                request.OwnerName,
+                request.RepositoryName));
         if (gitHubRepository == null)
             return Result<Issue>.NotFound("Repository not found.");
 
-        var gitHubIssue = await gitHubClient.Issue.Get(
-            request.OwnerName,
-            request.RepositoryName,
-            request.IssueNumber);
+        var gitHubIssue = await gitHubClient.TransformNotFoundErrorToNullResult(
+            async client => await client.Issue.Get(
+                request.OwnerName,
+                request.RepositoryName,
+                request.IssueNumber));
         if (gitHubIssue == null)
             return Result<Issue>.NotFound("Issue not found.");
 

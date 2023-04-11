@@ -39,7 +39,7 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var gitHubIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
@@ -72,7 +72,7 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var gitHubIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
@@ -82,7 +82,7 @@ public class ClaimsPostTest
                 gitHubIssue.Title)
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var pullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
@@ -106,7 +106,7 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var gitHubIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
@@ -116,7 +116,8 @@ public class ClaimsPostTest
                 gitHubIssue.Title)
             .BuildAsync();
 
-        var pullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var pullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder
+            .BuildAsync();
 
         var handler = environment.ServiceProvider.GetRequiredService<ClaimsPost>();
         handler.FakeAuthentication(authenticatedUser);
@@ -140,7 +141,7 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var gitHubIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
@@ -155,7 +156,7 @@ public class ClaimsPostTest
             .WithCreator(authenticatedUser)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var gitHubPullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
         
         var pullRequest = await environment.Database.PullRequestBuilder
             .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
@@ -196,7 +197,7 @@ public class ClaimsPostTest
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
 
-        var gitHubIssue = await environment.GitHub.IssueBuilder.BuildAsync();
+        var gitHubIssue = await environment.GitHub.BountyhuntBot.IssueBuilder.BuildAsync();
 
         var issue = await environment.Database.IssueBuilder
             .WithRepository(repository)
@@ -216,7 +217,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var gitHubPullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
         
         var pullRequest = await environment.Database.PullRequestBuilder
             .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
@@ -277,7 +278,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
 
-        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var gitHubPullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
         
         var pullRequest = await environment.Database.PullRequestBuilder
             .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
@@ -327,7 +328,7 @@ public class ClaimsPostTest
             .WithCreator(otherUser)
             .BuildAsync();
         
-        var gitHubPullRequest = await environment.GitHub.PullRequestBuilder.BuildAsync();
+        var gitHubPullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
 
         var pullRequest = await environment.Database.PullRequestBuilder
             .WithGitHubInformation(gitHubPullRequest.Id, gitHubPullRequest.Number)
