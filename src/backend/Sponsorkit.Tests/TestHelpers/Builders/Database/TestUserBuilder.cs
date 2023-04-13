@@ -10,6 +10,12 @@ using Stripe;
 
 namespace Sponsorkit.Tests.TestHelpers.Builders.Database;
 
+public enum GitHubUserType
+{
+    SponsorkitBot,
+    BountyhuntBot
+}
+
 public class TestUserBuilder : UserBuilder
 {
     private readonly IIntegrationTestEnvironment environment;
@@ -20,9 +26,13 @@ public class TestUserBuilder : UserBuilder
     private bool skipCustomerCreation;
     private DateTimeOffset? emailVerifiedAt;
 
+    private GitHubUserType? gitHubUserType;
+
     public TestUserBuilder(IIntegrationTestEnvironment environment) : base(environment.EncryptionHelper)
     {
         this.environment = environment;
+
+        this.gitHubUserType = null;
 
         WithId(Guid.NewGuid());
         WithStripeCustomerId(string.Empty);
@@ -40,6 +50,12 @@ public class TestUserBuilder : UserBuilder
     public TestUserBuilder WithStripeCustomer(Customer customer)
     {
         stripeCustomer = customer;
+        return this;
+    }
+
+    public TestUserBuilder WithGitHub(GitHubUserType type)
+    {
+        gitHubUserType = type;
         return this;
     }
 
@@ -66,6 +82,19 @@ public class TestUserBuilder : UserBuilder
 
     public override async Task<User> BuildAsync(CancellationToken cancellationToken = default)
     {
+        if (gitHubUserType != null)
+        {
+            var contextToUse = gitHubUserType switch
+            {
+                GitHubUserType.SponsorkitBot => environment.GitHub.SponsorkitBot,
+                GitHubUserType.BountyhuntBot => environment.GitHub.BountyhuntBot,
+                _ => throw new InvalidOperationException("Invalid GitHub user type.")
+            };
+
+            var gitHubUser = await contextToUse.RestClient.User.Current();
+            WithGitHub(gitHubUser.Id, gitHubUser.Login, contextToUse.Options.PersonalAccessToken);
+        }
+        
         var user = await base.BuildAsync(cancellationToken);
         user.EmailVerifiedAt = emailVerifiedAt;
 

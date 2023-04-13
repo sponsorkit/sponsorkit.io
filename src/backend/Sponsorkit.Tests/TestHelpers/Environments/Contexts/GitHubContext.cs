@@ -9,26 +9,19 @@ namespace Sponsorkit.Tests.TestHelpers.Environments.Contexts;
 
 public class GitHubContext
 {
-    public GitHubUserContext SponsorkitBot { get; }
-    public GitHubUserContext BountyhuntBot { get; }
+    public GitHubBotContext SponsorkitBot { get; }
+    public GitHubBotContext BountyhuntBot { get; }
     
     public GitHubContext(
         IGitHubClientFactory gitHubClientFactory,
         IOptionsMonitor<GitHubOptions> gitHubOptionsMonitor)
     {
-        var bountyhuntOptions = gitHubOptionsMonitor.CurrentValue.BountyhuntBot;
-        var sponsorkitOptions = gitHubOptionsMonitor.CurrentValue.SponsorkitBot;
-        
-        SponsorkitBot = new GitHubUserContext(
-            gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(sponsorkitOptions.PersonalAccessToken),
-            gitHubClientFactory.CreateGraphQlClientFromOAuthAuthenticationToken(sponsorkitOptions.PersonalAccessToken));
-        BountyhuntBot = new GitHubUserContext(
-            gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(bountyhuntOptions.PersonalAccessToken),
-            gitHubClientFactory.CreateGraphQlClientFromOAuthAuthenticationToken(bountyhuntOptions.PersonalAccessToken));
+        SponsorkitBot = new GitHubBotContext(gitHubClientFactory, gitHubOptionsMonitor.CurrentValue.SponsorkitBot);
+        BountyhuntBot = new GitHubBotContext(gitHubClientFactory, gitHubOptionsMonitor.CurrentValue.BountyhuntBot);
     }
 }
 
-public class GitHubUserContext
+public class GitHubBotContext
 {
     private readonly IGitHubClient gitHubRestClient;
     private readonly IConnection gitHubGraphClient;
@@ -40,12 +33,16 @@ public class GitHubUserContext
     public TestGitHubPullRequestBuilder PullRequestBuilder => new (gitHubRestClient);
     
     public TestGitHubIssueBuilder IssueBuilder => new (gitHubRestClient);
+    
+    public GitHubBotOptions Options { get; }
 
-    public GitHubUserContext(
-        IGitHubClient gitHubRestClient,
-        IConnection gitHubGraphClient)
+    public GitHubBotContext(
+        IGitHubClientFactory gitHubClientFactory,
+        GitHubBotOptions options)
     {
-        this.gitHubRestClient = gitHubRestClient;
-        this.gitHubGraphClient = gitHubGraphClient;
+        this.gitHubRestClient = gitHubClientFactory.CreateClientFromOAuthAuthenticationToken(options.PersonalAccessToken);
+        this.gitHubGraphClient = gitHubClientFactory.CreateGraphQlClientFromOAuthAuthenticationToken(options.PersonalAccessToken);
+        
+        this.Options = options;
     }
 }

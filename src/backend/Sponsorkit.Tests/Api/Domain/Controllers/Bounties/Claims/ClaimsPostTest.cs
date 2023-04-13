@@ -9,6 +9,7 @@ using NSubstitute;
 using Sponsorkit.Api.Domain.Controllers.Api.Bounties.Claims;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 
 namespace Sponsorkit.Tests.Api.Domain.Controllers.Bounties.Claims;
@@ -187,11 +188,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(1337, "test1", "test1")
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(1338, "test2", "test2")
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
@@ -254,11 +255,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(1337, "test1", "test1")
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(1338, "test2", "test2")
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
@@ -304,11 +305,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(1337, "test1", "test1")
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(1338, "test2", "test2")
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
