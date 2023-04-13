@@ -26,7 +26,6 @@ namespace Sponsorkit.Tests.Jobs;
 [TestClass]
 public class PayoutJobTest
 {
-    private record GitHubContext(Issue Issue);
 
     [TestMethod]
     public async Task FullFlow_OneBountyOnIssue_ApplicationFeeAndBountyAmountAreTransferred()
