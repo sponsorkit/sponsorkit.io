@@ -14,6 +14,7 @@ using Sponsorkit.Api.Domain.Controllers.Api.Bounties.SetupIntent;
 using Sponsorkit.BusinessLogic.Domain.Models.Database;
 using Sponsorkit.Jobs;
 using Sponsorkit.Tests.TestHelpers;
+using Sponsorkit.Tests.TestHelpers.Builders.Database;
 using Sponsorkit.Tests.TestHelpers.Environments.Sponsorkit;
 using Sponsorkit.Tests.TestHelpers.Octokit;
 using Stripe;
@@ -147,7 +148,7 @@ public class PayoutJobTest
         var bountyAuthorUser = await environment.Database.UserBuilder
             .WithStripeCustomer(environment.Stripe.CustomerBuilder
                 .WithDefaultPaymentMethod(environment.Stripe.PaymentMethodBuilder))
-            .WithGitHub(1, "author", "")
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var customer = await environment.Stripe.CustomerService
@@ -180,7 +181,7 @@ public class PayoutJobTest
             .WithStripeCustomer(environment.Stripe.CustomerBuilder
                 .WithAccount(environment.Stripe.AccountBuilder
                     .WithDetailsSubmitted()))
-            .WithGitHub(2, "claimer", "")
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var pullRequest = await environment.GitHub.BountyhuntBot.PullRequestBuilder.BuildAsync();
@@ -190,7 +191,7 @@ public class PayoutJobTest
 
         var result = await claimsPost.HandleAsync(new ClaimsRequest(
             issue.Id,
-            pullRequest.Id));
+            pullRequest.Number));
         Assert.IsInstanceOfType<OkResult>(result);
 
         return bountyClaimerUser;
