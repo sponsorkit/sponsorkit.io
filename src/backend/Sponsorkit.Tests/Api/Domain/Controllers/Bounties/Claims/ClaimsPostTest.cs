@@ -188,11 +188,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.SponsorkitBot)
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.BountyhuntBot)
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
@@ -255,11 +255,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.SponsorkitBot)
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.BountyhuntBot)
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
@@ -305,11 +305,11 @@ public class ClaimsPostTest
         await using var environment = await SponsorkitIntegrationTestEnvironment.CreateAsync();
 
         var authenticatedUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.SponsorkitBot)
+            .WithGitHub(GitHubUserType.BountyhuntBot)
             .BuildAsync();
 
         var otherUser = await environment.Database.UserBuilder
-            .WithGitHub(GitHubUserType.BountyhuntBot)
+            .WithGitHub(GitHubUserType.SponsorkitBot)
             .BuildAsync();
 
         var repository = await environment.Database.RepositoryBuilder.BuildAsync();
