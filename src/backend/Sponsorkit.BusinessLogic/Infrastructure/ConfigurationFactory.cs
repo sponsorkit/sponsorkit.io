@@ -20,7 +20,10 @@ public static class ConfigurationFactory
             configureSource.Optional = false;
             configureSource.AwsOptions = new AWSOptions()
             {
-                Region = RegionEndpoint.EUNorth1
+                Region = RegionEndpoint.EUNorth1,
+                Profile = Debugger.IsAttached || EnvironmentHelper.IsRunningInTest ? 
+                    "sponsorkit" :
+                    null,
             };
 
             configureSource.OnLoadException += exceptionContext =>

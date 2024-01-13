@@ -10,6 +10,9 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <UserSecretsId>sponsorkit-secrets</UserSecretsId>
     </PropertyGroup>
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);AD0001</NoWarn>
+    </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Sponsorkit.BusinessLogic\Sponsorkit.BusinessLogic.csproj" />

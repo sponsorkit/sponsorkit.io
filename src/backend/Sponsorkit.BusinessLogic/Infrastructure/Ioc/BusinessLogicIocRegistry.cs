@@ -103,7 +103,7 @@ public sealed class BusinessLogicIocRegistry
             new AWSOptions()
             {
                 Region = RegionEndpoint.EUNorth1,
-                Profile = Debugger.IsAttached ? 
+                Profile = Debugger.IsAttached || EnvironmentHelper.IsRunningInTest ? 
                     "sponsorkit" :
                     null,
                     

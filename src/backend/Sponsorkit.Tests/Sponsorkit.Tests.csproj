@@ -11,8 +11,8 @@
     <ItemGroup>
         <PackageReference Include="CliWrap" Version="3.6.5-test" />
         <PackageReference Include="Docker.DotNet" Version="3.125.15" />
-        <PackageReference Include="FluffySpoon.Ngrok" Version="1.163.0" />
-        <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.163.0" />
+        <PackageReference Include="FluffySpoon.Ngrok" Version="1.164.0" />
+        <PackageReference Include="FluffySpoon.Ngrok.AspNet" Version="1.164.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.1" />
