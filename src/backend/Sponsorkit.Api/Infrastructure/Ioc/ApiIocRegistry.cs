@@ -93,7 +93,7 @@ public sealed class ApiIocRegistry
     {
         Services.AddNgrokHostedService();
         Services.AddSingleton<INgrokLifetimeHook, StripeWebhookNgrokLifetimeHook>();
-        Services.AddOptions<NgrokOptions>(Configuration.GetSection("Ngrok"));
+        Services.Configure<NgrokOptions>(Configuration.GetSection("Ngrok"));
     }
     
     private void ConfigureAspNetCore()
