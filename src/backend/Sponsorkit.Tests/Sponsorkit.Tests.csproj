@@ -4,15 +4,8 @@
         <TargetFramework>net8.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <PreserveCompilationContext>true</PreserveCompilationContext>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-      <NoWarn>1701;1702;CS1998</NoWarn>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>$(NoWarn);1701;1702;CS1998;AD0001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,7 +16,7 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.1" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0-release-23619-01" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
         <PackageReference Include="MSTest.TestAdapter" Version="3.2.0-preview.23623.1" />
         <PackageReference Include="MSTest.TestFramework" Version="3.2.0-preview.23623.1" />
         <PackageReference Include="coverlet.collector" Version="6.0.0">

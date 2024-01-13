@@ -13,6 +13,7 @@ public class TestRepository : Repository
         default,
         default,
         default,
+        default,
         1337,
         default,
         new TestGitHubUser(),
@@ -48,7 +49,9 @@ public class TestRepository : Repository
         default,
         default,
         default,
+        default,
         Array.Empty<string>(),
+        default,
         default,
         default)
     {

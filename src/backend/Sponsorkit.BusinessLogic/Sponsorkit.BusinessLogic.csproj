@@ -6,7 +6,9 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
-    
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);AD0001</NoWarn>
+    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="6.0.0" />
         <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.1.1" />

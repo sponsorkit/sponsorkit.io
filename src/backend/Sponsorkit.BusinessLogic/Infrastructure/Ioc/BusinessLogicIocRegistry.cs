@@ -117,7 +117,7 @@ public sealed class BusinessLogicIocRegistry
 
     private void ConfigureFlurl()
     {
-        Services.AddSingleton<IFlurlClientFactory, PerBaseUrlFlurlClientFactory>();
+        Services.AddSingleton<IFlurlClientCache>(_ => new FlurlClientCache());
     }
 
     private void ConfigureHealthChecks()

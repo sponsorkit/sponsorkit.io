@@ -46,6 +46,9 @@ public class FromGitHubPostTest
                 default,
                 default,
                 default,
+                default,
+                default,
+                default,
                 default));
 
         fakeGitHubClient.User
@@ -92,6 +95,9 @@ public class FromGitHubPostTest
             .Returns(new OauthToken(
                 default,
                 "some-new-github-token",
+                default,
+                default,
+                default,
                 default,
                 default,
                 default,
@@ -167,6 +173,9 @@ public class FromGitHubPostTest
                 default,
                 default,
                 default,
+                default,
+                default,
+                default,
                 default));
 
         var gitHubUserId = 1337;
@@ -236,6 +245,9 @@ public class FromGitHubPostTest
                 default,
                 default,
                 default,
+                default,
+                default,
+                default,
                 default));
 
         fakeGitHubClient.User
@@ -287,6 +299,9 @@ public class FromGitHubPostTest
             .Returns(new OauthToken(
                 default,
                 "some-new-github-token",
+                default,
+                default,
+                default,
                 default,
                 default,
                 default,
@@ -349,6 +364,9 @@ public class FromGitHubPostTest
                 default,
                 default,
                 default,
+                default,
+                default,
+                default,
                 default));
 
         fakeGitHubClient.User
@@ -405,6 +423,9 @@ public class FromGitHubPostTest
             .Returns(new OauthToken(
                 default,
                 "some-new-github-token",
+                default,
+                default,
+                default,
                 default,
                 default,
                 default,
@@ -467,6 +488,9 @@ public class FromGitHubPostTest
             .Returns(new OauthToken(
                 default,
                 "some-new-github-token",
+                default,
+                default,
+                default,
                 default,
                 default,
                 default,

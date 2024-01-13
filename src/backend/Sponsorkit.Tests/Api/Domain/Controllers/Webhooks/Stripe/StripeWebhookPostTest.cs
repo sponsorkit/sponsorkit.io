@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,7 +32,7 @@ public class StripeWebhookPostTest
 
             var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
             handler.EnsureControllerContext();
-            handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+            handler.Request.Headers.Append("Stripe-Signature", "some-signature");
 
             //Act
             result = await handler.HandleAsync();
@@ -82,7 +83,7 @@ public class StripeWebhookPostTest
 
         var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
         handler.EnsureControllerContext();
-        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+        handler.Request.Headers.Append("Stripe-Signature", "some-signature");
             
         //Act
         var result = await handler.HandleAsync();
@@ -140,7 +141,7 @@ public class StripeWebhookPostTest
 
         var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
         handler.EnsureControllerContext();
-        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+        handler.Request.Headers.Append("Stripe-Signature", "some-signature");
             
         //Act
         var result = await handler.HandleAsync();
@@ -173,7 +174,7 @@ public class StripeWebhookPostTest
 
         var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
         handler.EnsureControllerContext();
-        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+        handler.Request.Headers.Append("Stripe-Signature", "some-signature");
             
         //Act
         var result = await handler.HandleAsync();
@@ -217,7 +218,7 @@ public class StripeWebhookPostTest
 
         var handler = environment.ServiceProvider.GetRequiredService<StripeWebhookPost>();
         handler.EnsureControllerContext();
-        handler.Request.Headers.Add("Stripe-Signature", "some-signature");
+        handler.Request.Headers.Append("Stripe-Signature", "some-signature");
             
         //Act
         var result = await handler.HandleAsync();

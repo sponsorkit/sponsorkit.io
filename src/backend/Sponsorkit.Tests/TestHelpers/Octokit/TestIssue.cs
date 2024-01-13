@@ -29,6 +29,7 @@ public class TestIssue : Issue
         default,
         default,
         default,
+        default,
         default)
     {
     }
