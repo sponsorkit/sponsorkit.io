@@ -36,26 +36,26 @@ public class PayoutJobTest
         var testIssue = await ConfigureGitHubIssueAsync(environment);
 
         var bountyAuthorUser = await CreateUserAndPlaceBountyAsync(
-            environment, 
+            environment,
             testIssue);
 
         var bountyClaimerUser = await CreateUserAndMakeClaimRequestAsync(
-            environment, 
+            environment,
             testIssue);
 
         var claimRequest = await environment.Database.WithoutCachingAsync(async context =>
             await context.BountyClaimRequests.SingleAsync());
 
         await ApplyVerdictToClaimAsync(
-            environment, 
-            bountyAuthorUser, 
-            claimRequest, 
+            environment,
+            bountyAuthorUser,
+            claimRequest,
             ClaimVerdict.Solved);
 
         var preconditionPlatformFees = await environment.Stripe.ApplicationFeeService
             .ListAutoPagingAsync(new ApplicationFeeListOptions())
             .ToListAsync();
-        
+
         var preconditionClaimerBalance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
         {
             StripeAccount = bountyClaimerUser.StripeConnectId
@@ -64,16 +64,16 @@ public class PayoutJobTest
 
         var lambdaContext = Substitute.For<ILambdaContext>();
         lambdaContext.RemainingTime.Returns(TimeSpan.FromMinutes(5));
-        
+
         await WaitForAccountToBeReadyAsync(environment, bountyClaimerUser);
-        
+
         //Act
         await JobsStartup.Handler(
             new JobRequest("payout"),
             lambdaContext);
 
         await environment.Stripe.WaitForWebhookAsync(e => e.Type == Events.PaymentIntentSucceeded);
-        
+
         //Assert
         var platformFees = await environment.Stripe.ApplicationFeeService
             .ListAutoPagingAsync(new ApplicationFeeListOptions())
@@ -81,7 +81,7 @@ public class PayoutJobTest
         Assert.AreEqual(
             preconditionPlatformFees.Sum(x => x.Amount) + 0_50,
             platformFees.Sum(x => x.Amount));
-        
+
         var claimerBalance = await environment.Stripe.BalanceService.GetAsync(new RequestOptions()
         {
             StripeAccount = bountyClaimerUser.StripeConnectId
@@ -90,9 +90,9 @@ public class PayoutJobTest
     }
 
     private static async Task ApplyVerdictToClaimAsync(
-        SponsorkitIntegrationTestEnvironment environment, 
-        User bountyAuthorUser, 
-        BountyClaimRequest claimRequest, 
+        SponsorkitIntegrationTestEnvironment environment,
+        User bountyAuthorUser,
+        BountyClaimRequest claimRequest,
         ClaimVerdict verdict)
     {
         var verdictPost = environment.ServiceProvider.GetRequiredService<VerdictPost>();
@@ -121,7 +121,7 @@ public class PayoutJobTest
                 "some-title")
             .WithRepository(repository)
             .BuildAsync();
-        
+
         return testIssue;
     }
 
@@ -131,7 +131,7 @@ public class PayoutJobTest
         while (!cancellationToken.IsCancellationRequested)
         {
             var account = await environment.Stripe.AccountService.GetAsync(
-                bountyClaimerUser.StripeConnectId, 
+                bountyClaimerUser.StripeConnectId,
                 cancellationToken: cancellationToken);
             if (account.ChargesEnabled && account.PayoutsEnabled)
                 break;
@@ -141,7 +141,7 @@ public class PayoutJobTest
     }
 
     private static async Task<User> CreateUserAndPlaceBountyAsync(
-        SponsorkitIntegrationTestEnvironment environment, 
+        SponsorkitIntegrationTestEnvironment environment,
         Issue issue)
     {
         var bountyAuthorUser = await environment.Database.UserBuilder
@@ -164,7 +164,10 @@ public class PayoutJobTest
             10_00));
         var response = result.ToResponseObject();
 
-        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
+        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id, new()
+        {
+            ReturnUrl = "https://sponsorkit.io/landing/stripe-setup-intent",
+        });
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
         await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
@@ -173,7 +176,7 @@ public class PayoutJobTest
     }
 
     private static async Task<User> CreateUserAndMakeClaimRequestAsync(
-        SponsorkitIntegrationTestEnvironment environment, 
+        SponsorkitIntegrationTestEnvironment environment,
         Issue issue)
     {
         var bountyClaimerUser = await environment.Database.UserBuilder

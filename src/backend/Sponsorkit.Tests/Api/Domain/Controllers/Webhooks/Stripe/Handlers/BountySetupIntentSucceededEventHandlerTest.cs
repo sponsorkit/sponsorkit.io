@@ -49,7 +49,10 @@ public class BountySetupIntentSucceededEventHandlerTest
                 issue.Number),
             10_00));
         var response = result.ToResponseObject();
-        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id);
+        var refreshedIntent = await environment.Stripe.SetupIntentService.ConfirmAsync(response.PaymentIntent.Id, new ()
+        {
+            ReturnUrl = "https://sponsorkit.io/landing/stripe-setup-intent"
+        });
         Assert.AreEqual("succeeded", refreshedIntent.Status);
 
         await environment.Stripe.WaitForWebhookAsync(ev => ev.Type == Events.SetupIntentSucceeded);
