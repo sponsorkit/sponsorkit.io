@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Octokit;
 using Sponsorkit.BusinessLogic.Domain.Models;
@@ -23,16 +25,54 @@ public class TestGitHubPullRequestBuilder : AsyncModelBuilder<PullRequest>
 
         try
         {
+            var mainBranch = await gitHubClient.RetryOnRateLimitExceeded(
+                async client => await client.Repository.Branch.Get(
+                    GitHubTestConstants.RepositoryOwnerName,
+                    GitHubTestConstants.RepositoryName,
+                    "main"));
+
+            var newBranch = await gitHubClient.RetryOnRateLimitExceeded(
+                async client => await client.Git.Reference.Create(
+                    GitHubTestConstants.RepositoryOwnerName,
+                    GitHubTestConstants.RepositoryName,
+                    new NewReference(
+                        $"refs/heads/{Guid.NewGuid()}",
+                        mainBranch.Commit.Sha)));
+
+            const string branchMarkdownFileName = "BRANCH.md";
+
+            var branchMarkdownFile = await gitHubClient.RetryOnRateLimitExceeded(
+                async client => await client.Repository.Content.GetAllContentsByRef(
+                    GitHubTestConstants.RepositoryOwnerName,
+                    GitHubTestConstants.RepositoryName,
+                    branchMarkdownFileName,
+                    newBranch.Ref));
+
+            var commit = await gitHubClient.RetryOnRateLimitExceeded(
+                async client => await client.Repository.Content.UpdateFile(
+                    GitHubTestConstants.RepositoryOwnerName,
+                    GitHubTestConstants.RepositoryName,
+                    branchMarkdownFileName,
+                    new UpdateFileRequest(
+                        Guid.NewGuid().ToString(),
+                        Guid.NewGuid().ToString(),
+                        branchMarkdownFile.First().Sha,
+                        newBranch.Ref)));
+
             var pullRequest = await gitHubClient.RetryOnRateLimitExceeded(
                 async client => await client.PullRequest.Create(
                     GitHubTestConstants.RepositoryOwnerName,
                     GitHubTestConstants.RepositoryName,
                     new NewPullRequest(
-                        "some-title",
-                        "main",
-                        "integration-test")));
+                        Guid.NewGuid().ToString(),
+                        newBranch.Ref,
+                        "main")));
 
             return pullRequest;
+        }
+        catch (Exception)
+        {
+            throw;
         }
         finally
         {

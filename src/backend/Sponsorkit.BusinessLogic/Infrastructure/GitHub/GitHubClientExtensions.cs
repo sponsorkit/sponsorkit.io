@@ -40,7 +40,7 @@ public static class GitHubClientExtensions
             {
                 var retryAfterTimeSpan = GetRetryAfterTimespanFromHeaders(ex.HttpResponse.Headers);
                 Console.WriteLine($"Waiting for rate limit to reset: {retryAfterTimeSpan}");
-                
+
                 await Task.Delay(retryAfterTimeSpan);
             }
         }
