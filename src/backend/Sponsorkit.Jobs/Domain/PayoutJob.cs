@@ -115,10 +115,7 @@ public class PayoutJob : IJob
                     Confirm = true,
                     ApplicationFeeAmount = feeInHundreds,
                     ErrorOnRequiresAction = true,
-                    AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions()
-                    {
-                        Enabled = true
-                    },
+                    PaymentMethodTypes = ["card"],
                     Metadata = new Dictionary<string, string>()
                     {
                         {
