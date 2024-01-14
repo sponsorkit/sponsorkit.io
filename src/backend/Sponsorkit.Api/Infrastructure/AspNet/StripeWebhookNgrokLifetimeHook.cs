@@ -41,7 +41,7 @@ public class StripeWebhookNgrokLifetimeHook : INgrokLifetimeHook
             new WebhookEndpointCreateOptions()
             {
                 Url = webhookUrl,
-                ApiVersion = "2022-11-16",
+                ApiVersion = "2023-10-16",
                 EnabledEvents = new List<string>()
                 {
                     "*"
