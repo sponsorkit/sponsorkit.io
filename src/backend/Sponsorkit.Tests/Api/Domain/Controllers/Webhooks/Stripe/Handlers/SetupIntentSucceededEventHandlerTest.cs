@@ -154,10 +154,7 @@ public class SetupIntentSucceededEventHandlerTest
     {
         return new CustomerGetOptions()
         {
-            Expand = new ()
-            {
-                "invoice_settings.default_payment_method"
-            }
+            Expand = ["invoice_settings.default_payment_method"]
         };
     }
 }

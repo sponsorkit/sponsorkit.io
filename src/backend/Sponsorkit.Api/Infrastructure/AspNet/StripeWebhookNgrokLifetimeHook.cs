@@ -42,10 +42,7 @@ public class StripeWebhookNgrokLifetimeHook : INgrokLifetimeHook
             {
                 Url = webhookUrl,
                 ApiVersion = "2023-10-16",
-                EnabledEvents = new List<string>()
-                {
-                    "*"
-                }
+                EnabledEvents = ["*"]
             }, 
             cancellationToken: cancellationToken);
 

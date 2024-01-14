@@ -23,7 +23,7 @@ public class Sponsorship
         
     public string Reference { get; set; } = null!;
 
-    public List<Payment> Payments { get; set; } = new();
+    public List<Payment> Payments { get; set; } = [];
         
     public User Beneficiary { get; set; } = null!;
     public Guid BeneficiaryId { get; set; }

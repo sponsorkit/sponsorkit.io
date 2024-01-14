@@ -20,9 +20,9 @@ public class Bounty
     public Issue Issue { get; set; } = null!;
     public Guid IssueId { get; set; }
 
-    public List<BountyClaimRequest> ClaimRequests { get; set; } = new();
+    public List<BountyClaimRequest> ClaimRequests { get; set; } = [];
 
-    public List<Payment> Payments { get; set; } = new();
+    public List<Payment> Payments { get; set; } = [];
 }
     
 public class BountyConfiguration : IEntityTypeConfiguration<Bounty>

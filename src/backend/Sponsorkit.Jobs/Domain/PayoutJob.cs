@@ -9,7 +9,7 @@ using Stripe;
 
 namespace Sponsorkit.Jobs.Domain;
 
-public class PayoutJob : IJob
+public class PayoutJob : Job<PaymentIntent[]>
 {
     private readonly DataContext dataContext;
     private readonly PaymentIntentService paymentIntentService;
@@ -17,7 +17,7 @@ public class PayoutJob : IJob
     
     private readonly IMediator mediator;
 
-    public string Identifier => "payout";
+    public override string Identifier => "payout";
 
     public PayoutJob(
         DataContext dataContext,
@@ -31,7 +31,7 @@ public class PayoutJob : IJob
         this.mediator = mediator;
     }
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public override async Task<PaymentIntent[]> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         //each issue has multiple bounties. up to one per user.
         var bountyClaimRequests = await dataContext.BountyClaimRequests
@@ -56,6 +56,8 @@ public class PayoutJob : IJob
                 ClaimRequests = x
             })
             .ToArray();
+
+        var createdPaymentIntents = new List<PaymentIntent>();
         foreach (var claimRequestsForIssue in bountyClaimRequestsByIssueId)
         {
             var verdictByMostVotes = claimRequestsForIssue.ClaimRequests
@@ -75,16 +77,18 @@ public class PayoutJob : IJob
 
                 if (finalVerdictForClaimRequest == ClaimVerdict.Solved)
                 {
-                    await PayoutFundsAsync(claimRequest, cancellationToken);
+                    createdPaymentIntents.AddRange(await PayoutFundsAsync(claimRequest, cancellationToken));
                 }
 
                 claimRequest.CompletedAt = DateTimeOffset.UtcNow;
                 await dataContext.SaveChangesAsync(CancellationToken.None);
             }
         }
+
+        return createdPaymentIntents.ToArray();
     }
 
-    private async Task PayoutFundsAsync(
+    private async Task<PaymentIntent[]> PayoutFundsAsync(
         BountyClaimRequest claimRequest, 
         CancellationToken cancellationToken)
     {
@@ -92,6 +96,7 @@ public class PayoutJob : IJob
         if (stripeConnectId == null)
             throw new InvalidOperationException("The creator of the claim request does not have a Stripe Connect ID.");
 
+        var createdIntents = new List<PaymentIntent>();
         foreach (var payment in claimRequest.Bounty.Payments)
         {
             if (payment.TransferredToConnectedAccountAt != null)
@@ -105,7 +110,7 @@ public class PayoutJob : IJob
                 claimRequest.Creator,
                 cancellationToken);
 
-            await paymentIntentService.CreateAsync(
+            var intent = await paymentIntentService.CreateAsync(
                 new PaymentIntentCreateOptions()
                 {
                     PaymentMethod = paymentMethod.Id,
@@ -115,6 +120,7 @@ public class PayoutJob : IJob
                     Confirm = true,
                     ApplicationFeeAmount = feeInHundreds,
                     ErrorOnRequiresAction = true,
+                    Expand = ["latest_charge.balance_transaction"],
                     PaymentMethodTypes = ["card"],
                     Metadata = new Dictionary<string, string>()
                     {
@@ -138,7 +144,11 @@ public class PayoutJob : IJob
                     StripeAccount = stripeConnectId
                 },
                 CancellationToken.None);
+            
+            createdIntents.Add(intent);
         }
+
+        return createdIntents.ToArray();
     }
 
     /// <summary>

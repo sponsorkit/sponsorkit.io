@@ -66,7 +66,7 @@ public class StripeContext
         this.serviceProvider = serviceProvider;
         this.logger = logger;
 
-        stripeEvents = new HashSet<Event>();
+        stripeEvents = [];
     }
 
     public async Task WaitForWebhookAsync(Func<Event, bool> predicate)

@@ -132,19 +132,20 @@ public sealed class ApiIocRegistry
                     .SetIsOriginAllowedToAllowWildcardSubdomains()
                     .WithOrigins(Environment.EnvironmentName switch
                     {
-                        "Development" => new []
-                        {
+                        "Development" =>
+                        [
                             "http://localhost:3000", 
                             "http://localhost:9000", 
                             "http://localhost:6006"
-                        },
-                        "Staging" => new [] {
+                        ],
+                        "Staging" =>
+                        [
                             "https://*.vercel.app"
-                        },
-                        "Production" => new []
-                        {
+                        ],
+                        "Production" =>
+                        [
                             "https://sponsorkit.io"
-                        },
+                        ],
                         _ => throw new InvalidOperationException("Environment not recognized.")
                     })
                     .AllowAnyHeader()

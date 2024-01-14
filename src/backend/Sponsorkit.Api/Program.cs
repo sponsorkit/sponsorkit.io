@@ -25,10 +25,10 @@ var registry = new ApiIocRegistry(
     builder.Services,
     builder.Configuration,
     builder.Environment,
-    new [] {
+    [
         typeof(BusinessLogicIocRegistry).Assembly,
         typeof(ApiIocRegistry).Assembly
-    });
+    ]);
 registry.Register();
 
 var app = builder.Build();

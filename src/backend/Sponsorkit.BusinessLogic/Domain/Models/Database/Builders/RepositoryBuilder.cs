@@ -55,8 +55,8 @@ public class RepositoryBuilder : AsyncModelBuilder<Repository>
         {
             Id = id,
             Owner = owner,
-            Issues = issues ?? new List<Issue>(),
-            Sponsorships = sponsorships ?? new List<Sponsorship>(),
+            Issues = issues ?? [],
+            Sponsorships = sponsorships ?? [],
             GitHub = gitHub
         });
     }

@@ -6,6 +6,7 @@ using NSubstitute;
 using Serilog;
 using Sponsorkit.Api.Infrastructure.Ioc;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
+using Sponsorkit.Jobs.Infrastructure;
 using Sponsorkit.Tests.TestHelpers.Environments;
 
 namespace Sponsorkit.Tests.TestHelpers;
@@ -18,16 +19,21 @@ public class TestServiceProviderFactory
         IHostEnvironment environment,
         IIntegrationTestEntrypoint entrypoint)
     {
-        var registry = new ApiIocRegistry(
+        var apiRegistry = new ApiIocRegistry(
             services,
             configuration,
             environment,
-            new [] {
+            [
                 typeof(ApiIocRegistry).Assembly,
                 typeof(BusinessLogicIocRegistry).Assembly,
                 typeof(TestServiceProviderFactory).Assembly
-            });
-        registry.Register();
+            ]);
+        apiRegistry.Register();
+
+        var jobsRegistry = new JobsIocRegistry(
+            services,
+            configuration);
+        jobsRegistry.Register();
         
         services.AddSingleton(entrypoint);
 

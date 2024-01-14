@@ -13,7 +13,7 @@ public class Issue
 
     public Repository Repository { get; set; } = null!;
 
-    public List<Bounty> Bounties { get; set; } = new();
+    public List<Bounty> Bounties { get; set; } = [];
 }
 
 public class IssueGitHubInformation

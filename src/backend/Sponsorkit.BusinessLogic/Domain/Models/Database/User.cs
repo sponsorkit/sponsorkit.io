@@ -22,14 +22,14 @@ public class User
 
     public DateTimeOffset CreatedAt { get; set; }
         
-    public List<Repository> Repositories { get; set; } = new();
+    public List<Repository> Repositories { get; set; } = [];
         
-    public List<Bounty> CreatedBounties { get; set; } = new();
+    public List<Bounty> CreatedBounties { get; set; } = [];
         
-    public List<BountyClaimRequest> BountyClaimRequests { get; set; } = new();
+    public List<BountyClaimRequest> BountyClaimRequests { get; set; } = [];
 
-    public List<Sponsorship> CreatedSponsorships { get; set; } = new();
-    public List<Sponsorship> AwardedSponsorships { get; set; } = new();
+    public List<Sponsorship> CreatedSponsorships { get; set; } = [];
+    public List<Sponsorship> AwardedSponsorships { get; set; } = [];
 }
 
 public class UserGitHubInformation

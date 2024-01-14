@@ -50,10 +50,7 @@ public class SendEmailCommandHandler : IRequestHandler<SendEmailCommand>
                 },
                 Destination = new Destination()
                 {
-                    ToAddresses = new List<string>()
-                    {
-                        request.To
-                    }
+                    ToAddresses = [request.To]
                 },
                 Content = new EmailContent()
                 {

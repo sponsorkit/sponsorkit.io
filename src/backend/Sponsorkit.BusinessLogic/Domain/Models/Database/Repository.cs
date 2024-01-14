@@ -11,17 +11,17 @@ public class Repository
 
     public RepositoryGitHubInformation GitHub { get; set; } = null!;
 
-    public List<PullRequest> PullRequests { get; set; } = new();
+    public List<PullRequest> PullRequests { get; set; } = [];
 
     public User? Owner { get; set; }
     public Guid? OwnerId { get; set; }
         
-    public List<Issue> Issues { get; set; } = new();
+    public List<Issue> Issues { get; set; } = [];
         
     /// <summary>
     /// The sponsorships that have been made on the basis of this repository.
     /// </summary>
-    public List<Sponsorship> Sponsorships { get; set; } = new();
+    public List<Sponsorship> Sponsorships { get; set; } = [];
 }
 
 public class RepositoryGitHubInformation

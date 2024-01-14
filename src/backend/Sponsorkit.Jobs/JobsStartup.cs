@@ -2,6 +2,7 @@
 using Sponsorkit.BusinessLogic.Infrastructure;
 using Sponsorkit.BusinessLogic.Infrastructure.Ioc;
 using Sponsorkit.Jobs.Domain;
+using Sponsorkit.Jobs.Infrastructure;
 
 namespace Sponsorkit.Jobs;
 
@@ -12,23 +13,28 @@ public static class JobsStartup
     public static async Task Handler(JobRequest jobRequest, ILambdaContext context)
     {
         var services = new ServiceCollection();
-        services.AddTransient<IJob, PayoutJob>();
 
         var configurationBuilder = new ConfigurationBuilder();
         ConfigurationFactory.Configure(
             configurationBuilder,
             Array.Empty<string>(),
             "sponsorkit-secrets");
-    
-        var registry = new BusinessLogicIocRegistry(
+
+        var configuration = configurationBuilder.Build();
+
+        var jobsRegistry = new JobsIocRegistry(
             services,
-            configurationBuilder.Build(),
-            new []
-            {
+            configuration);
+        jobsRegistry.Register();
+    
+        var businessLogicRegistry = new BusinessLogicIocRegistry(
+            services,
+            configuration,
+            [
                 typeof(Program).Assembly,
                 typeof(BusinessLogicIocRegistry).Assembly
-            });
-        registry.Register();
+            ]);
+        businessLogicRegistry.Register();
 
         await using var serviceProvider = services.BuildServiceProvider();
 
