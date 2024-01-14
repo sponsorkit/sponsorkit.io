@@ -4,10 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SimpleEmailV2;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Sponsorkit.BusinessLogic.Domain.Models.Stripe;
+using Sponsorkit.BusinessLogic.Infrastructure.Options;
 using Sponsorkit.Tests.TestHelpers.Builders.Stripe;
 using Stripe;
 
@@ -52,7 +53,7 @@ public class StripeContext
     
     public TestStripeAccountBuilder AccountBuilder => new(
         AccountService,
-        serviceProvider.GetRequiredService<IMediator>());
+        serviceProvider.GetRequiredService<IOptionsMonitor<StripeOptions>>());
 
     public PaymentMethodService PaymentMethodService => serviceProvider.GetRequiredService<PaymentMethodService>();
     public TestStripePaymentMethodBuilder PaymentMethodBuilder => 
