@@ -30,7 +30,7 @@ public class TokenFactory : ITokenFactory
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(
                     Encoding.ASCII.GetBytes(jwtOptionsMonitor.CurrentValue.PrivateKey)),
-                SecurityAlgorithms.HmacSha512Signature),
+                SecurityAlgorithms.HmacSha256Signature),
             Audience = "sponsorkit.io",
             Issuer = "sponsorkit.io"
         };
