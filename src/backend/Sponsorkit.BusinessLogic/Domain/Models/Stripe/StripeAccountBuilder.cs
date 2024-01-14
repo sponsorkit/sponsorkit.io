@@ -124,7 +124,11 @@ public class StripeSetupIntentBuilder : AsyncModelBuilder<SetupIntent>
                 Customer = user.StripeCustomerId,
                 PaymentMethod = paymentMethod?.Id,
                 Usage = "off_session",
-                Metadata = metadata
+                Metadata = metadata,
+                AutomaticPaymentMethods = new SetupIntentAutomaticPaymentMethodsOptions()
+                {
+                    Enabled = true
+                }
             },
             new RequestOptions()
             {

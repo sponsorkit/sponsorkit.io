@@ -8,5 +8,5 @@ public class GitHubTestConstants
     public const string RepositoryName = "playground";
     public const string RepositoryOwnerName = "sponsorkit";
     
-    public static readonly TimeSpan ApiCreationThrottleDelay = TimeSpan.FromSeconds(5);
+    public static readonly TimeSpan ApiCreationThrottleDelay = TimeSpan.FromSeconds(10);
 }
