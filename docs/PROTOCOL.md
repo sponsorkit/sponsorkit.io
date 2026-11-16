@@ -305,6 +305,7 @@ Otherwise it is off. Go, Rust and .NET have no implicit signal.
     - Malformed targets throw `invalid_config` even when disabled.
     - The dev-time existence check happens on the first async call, never in the constructor.
 11. **`verifySession`** compares canonical target params and touches no storage.
+12. **Mock presets and their expansion rules** are defined by `sdks/conformance/fixtures/mock-presets.json` (reference implementation: `src/mock-presets.ts`). Every SDK embeds them identically.
 13. **`cacheTtl`.**
     - A constructor value below 60 is raised to 60.
     - A per-call `cacheTtl` may be any value ≥ 0. `0` forces a request, unless a `Retry-After` is in force.
@@ -312,7 +313,6 @@ Otherwise it is off. Go, Rust and .NET have no implicit signal.
 15. **`openCheckout`'s `timeout`** covers only the polling phase. Sign-in uses `signInTimeout`. Cancellation applies to both phases.
 16. **`checkoutUrl`** throws `invalid_config` for options that name an unconfigured provider or an invalid frequency, amount or currency. In Go it returns `(string, error)`. It never touches network or disk.
 17. **Loopback redirect after a checkout sign-in.** The redirect carries exactly `targets`, plus `provider`, `amount`, `currency` and `frequency` when set, plus `step=choose`.
-12. **Mock presets and their expansion rules** are defined by `sdks/conformance/fixtures/mock-presets.json` (reference implementation: `src/mock-presets.ts`). Every SDK embeds them identically.
 
 ## 8. SDK local storage format
 
