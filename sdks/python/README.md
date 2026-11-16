@@ -59,7 +59,7 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 |---|---|---|
 | `github` / `opencollective` | – | The account(s) you receive sponsorships on. At least one; case and whitespace are normalized. |
 | `app_name` | `None` | Shown on the consent page as "says it is" (≤ 64 chars). |
-| `cache_ttl` | `3600` | Seconds a result is served from the local cache (minimum 60). |
+| `cache_ttl` | `3600` | Seconds a result is served from the local cache. Values below 60 are raised to 60 (a per-call `cache_ttl` may be any value ≥ 0). |
 | `mock` | `None` | Preset name or `{"contributions": [...]}` (see [Mock mode](#mock-mode-and-testing)). |
 | `storage_dir` | per-user config dir | Where state files live (see [Local storage](#local-storage)). |
 | `storage` | `FileStorage(storage_dir)` | Custom backend implementing the `Storage` protocol (`read`/`write`/`delete`). |
@@ -67,8 +67,10 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | `sign_in_method` | `"auto"` | `"auto"`, `"loopback"` or `"paste"`. |
 | `open_browser` | `webbrowser.open` | `open_browser(url)`; return `False` or raise if it could not open. |
 | `prompt_for_code` | read a line from stdin | `prompt_for_code(url) -> str` for paste-back sign-in. |
-| `env` | `os.environ` | Where `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG` and `CI` are read. |
-| `dev_checks` | `sys.flags.dev_mode` | Check once per process that the targets exist (`GET /api/v1/targets`); raises `invalid_config` on the first call that does I/O. Enable it while developing. |
+| `sign_in_timeout` | `300.0` | Seconds to wait for a loopback or paste-back sign-in before raising `timeout`. |
+| `interactive` | TTY detection | Overrides the stdout/stderr TTY check used by the [nag helper](#nag-helper). |
+| `env` | `os.environ` | Where `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI` are read. A mapping given here **replaces** the process environment for these variables (it is not merged). A variable counts as set when it is non-empty and not `0`/`false`. |
+| `dev_checks` | on if `SPONSORKIT_DEV_CHECKS` is set or `sys.flags.dev_mode` | Check once per process that the targets exist (`GET /api/v1/targets`); raises `invalid_config` on the first call that does I/O. `True`/`False` forces it. |
 | `checkout_poll_interval` | `60.0` | Seconds between checks while waiting for a checkout. |
 | `clock` | `datetime.now(utc)` | Injectable time source (cache TTL, nag, `Retry-After`). |
 | `timeout` | `10.0` | HTTP timeout in seconds. |
@@ -79,10 +81,10 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | Sync | Async | Description |
 |---|---|---|
 | `get_financial_contribution(*, cache_ttl=None)` | `aget_financial_contribution` | The current `ContributionResult`. `cache_ttl=0` forces a refresh. Never raises for network/server problems. |
-| `sign_in(provider=None, *, method=None, timeout=300, cancel=None)` | `asign_in` | Signs in, or adds a second provider identity when already signed in. Returns the fresh result. |
+| `sign_in(provider=None, *, method=None, timeout=None, cancel=None)` | `asign_in` | Signs in, or adds a second provider identity when already signed in. Returns the fresh result. `timeout` overrides `sign_in_timeout` for this call. |
 | `is_signed_in()` | `ais_signed_in` | Whether a session is stored. No network. |
-| `open_checkout(*, provider, amount, currency, frequency, timeout=600, cancel=None, method=None, poll_interval=None)` | `aopen_checkout` | Signs in if needed, opens the checkout page, then polls until a new or changed contribution appears. Returns `CheckoutResult("contributed", contribution)` or `CheckoutResult("unknown")` on timeout/cancellation. |
-| `checkout_url(*, provider, amount, currency, frequency)` | – | Offline, synchronous link to the checkout page (no sign-in). Great for nags and READMEs. |
+| `open_checkout(*, provider, amount, currency, frequency, timeout=600, cancel=None, method=None, poll_interval=None)` | `aopen_checkout` | Signs in if needed, opens the checkout page, then polls until a new or changed contribution appears. Returns `CheckoutResult("contributed", contribution)`, or `CheckoutResult("unknown")` when polling times out or `cancel` is set. `timeout` covers only the polling phase; the sign-in phase uses `sign_in_timeout` (and raises `timeout`). |
+| `checkout_url(*, provider, amount, currency, frequency)` | – | Offline, synchronous link to the checkout page (no sign-in). Great for nags and READMEs. Raises `invalid_config` for an unconfigured provider, an unknown frequency, a non-positive amount or a malformed currency. |
 | `sign_out()` | `asign_out` | Deletes the stored token and cache locally (nag state is kept). No network. |
 | `nag(id, *, every=10, or_every=None)` | – | A [`Nag`](#nag-helper). |
 
@@ -122,13 +124,18 @@ Everything raised is a `SponsorkitError` with a stable `.code`:
 
 | Code | When |
 |---|---|
-| `invalid_config` | No/malformed targets, invalid option, unknown mock preset, or (dev check) a target that doesn't exist. |
+| `invalid_config` | No/malformed targets, invalid option (including `checkout_url` options), unknown mock preset, unwritable storage, or (dev check) a target that doesn't exist. |
 | `disabled` | `sign_in` / `open_checkout` while `SPONSORKIT_DISABLE` is set. |
+| `popup_blocked` | Browser SDKs only; never raised here. |
 | `access_denied`, `invalid_state`, `provider_error` | Sign-in error delivered by the sign-in page. |
-| `invalid_code` | The sign-in code could not be exchanged. |
-| `timeout`, `cancelled` | Sign-in did not complete (5 min default) or was cancelled. |
-| `network_error`, `internal` | Sign-in or `verify_session` could not reach the API / got an unexpected response. |
+| `invalid_code` | The API rejected the code exchange (`400 invalid_code`). |
+| `cancelled` | Sign-in was cancelled (`cancel` event, cancelled task, or no code entered at the prompt). |
+| `timeout` | Sign-in exceeded `sign_in_timeout` (300 s by default). |
+| `network_error` | Sign-in or `verify_session` could not reach the API, or it answered `5xx`, `429` or something unexpected. `e.retry_after` holds the API's `Retry-After` in seconds when it sent one, else `None`. |
 | `session_invalid`, `targets_mismatch` | Only from `verify_session`. |
+
+If adding an identity finds the stored session dead (`401 session_invalid`), the stored session is
+cleared and the code is exchanged again once without it, starting a fresh session.
 
 `get_financial_contribution()` never raises for network errors, `5xx` or `429`: it returns the
 cached result (`from_cache=True, stale=True`), or a signed-in empty result with `stale=True`, and
@@ -138,9 +145,10 @@ the signed-out result. `SPONSORKIT_DISABLE=1` turns everything into a no-op (`di
 ## Sign-in
 
 - **Loopback** (desktop): listens on `127.0.0.1:<random>/callback`, opens the browser, waits up to
-  5 minutes for the code, exchanges it with its PKCE verifier.
+  `sign_in_timeout` (5 minutes) for the code, exchanges it with its PKCE verifier.
 - **Paste-back** (SSH, containers): prints a `https://sponsorkit.io/connect?…&delivery=paste` URL to
-  stderr and asks for the code shown in the browser (valid for 10 minutes).
+  stderr and asks for the code shown in the browser (valid for 10 minutes). `sign_in_timeout` and
+  `cancel` apply to the prompt too (a blocked `prompt_for_code` is left running in a daemon thread).
 - **`auto`** (default) picks paste-back when `SSH_CONNECTION`/`SSH_TTY` is set or there is no
   display, and falls back to it if the browser can't be opened.
 
@@ -163,7 +171,7 @@ if nag.due(lambda fc: not fc.active()):
   `shown()` resets the counter and records the time. `or_every` takes an ISO-8601 duration or a
   `timedelta`.
 - `due()` is always `False` when `SPONSORKIT_DISABLE`, `SPONSORKIT_NO_NAG` or `CI` is set, or when
-  stdout/stderr isn't a TTY, unless you pass `force=True` (which still respects
+  the session isn't interactive (stdout/stderr isn't a TTY, or `interactive=False`), unless you pass `force=True` (which still respects
   `SPONSORKIT_DISABLE`). It never signs anyone in. Async: `await nag.adue(...)`, `await nag.ashown()`.
 
 ## Backend verification
@@ -179,7 +187,7 @@ try:
 except SponsorkitError as e:
     if e.code in ("session_invalid", "targets_mismatch"):
         raise PermissionError from e
-    raise                                                  # network_error / internal
+    raise                                                  # network_error (see e.retry_after)
 if fc.active():
     grant_pro()
 ```
@@ -202,7 +210,7 @@ SPONSORKIT_DISABLE=1 my-cli               # disable Sponsorkit entirely (beats m
 SPONSORKIT_NO_NAG=1 my-cli                # never nag
 ```
 
-Mock mode performs no network or disk access; `sign_in()` and `open_checkout()` resolve
+Mock mode performs no network or disk access (nag state lives in memory, per instance); `sign_in()` and `open_checkout()` resolve
 immediately (checkout simulates a new contribution). The `mock` option beats `SPONSORKIT_MOCK`.
 
 For tests of your own code, inject `env={}`, `storage=MemoryStorage()`, `clock=...`,
@@ -235,6 +243,10 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 The conformance suite starts `sdks/conformance/server.ts` (the fake Sponsorkit API) and runs every
 scenario in `sdks/conformance/scenarios.json` twice: `test_conformance[<id>]` through the sync API
 and `test_conformance_async[<id>]` through the async variants.
+Run it without Python development mode (`-X dev` / `PYTHONDEVMODE`): scenarios that omit
+`devChecks` expect the SDK default, which dev mode would turn on. The harness supports the
+`processEnv`, `signInTimeout`, `interactive` and `cancelAfter` step arguments and checks
+`expect.error` against `{"code": e.code, "retryAfter": e.retry_after}`.
 
 ## License
 

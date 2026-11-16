@@ -31,8 +31,9 @@ CONFIGURE_DEFAULTS: dict[str, Any] = {
     "apiBaseUrl": "$BASE_URL",
     "storageDir": "$STORAGE_DIR",
     "env": {},
-    "devChecks": False,
 }
+"""Defaults of the configure step (scenarios.schema.json). ``devChecks``, ``signInTimeout`` and
+``interactive`` have none: when absent, the SDK default applies (PROTOCOL §7)."""
 
 PREDICATES: dict[str, Callable[[ContributionResult], bool]] = {
     "always": lambda fc: True,
@@ -106,7 +107,42 @@ class Adapter(Protocol):
     def verify_session(self, token: str, targets: dict[str, str], base_url: str) -> Any: ...
 
 
+def _with_cancel_after(args: dict[str, Any], fn: Callable[[threading.Event], Any]) -> Any:
+    """Run ``fn(cancel)``, setting ``cancel`` ``args["cancelAfter"]`` seconds after the call starts."""
+    cancel = threading.Event()
+    timer = threading.Timer(args["cancelAfter"], cancel.set) if "cancelAfter" in args else None
+    if timer:
+        timer.start()
+    try:
+        return fn(cancel)
+    finally:
+        if timer:
+            timer.cancel()
+
+
+async def _awith_cancel_after(args: dict[str, Any], fn: Callable[[asyncio.Event], Any]) -> Any:
+    """Async :func:`_with_cancel_after`, with an :class:`asyncio.Event`."""
+    cancel = asyncio.Event()
+    handle = (
+        asyncio.get_running_loop().call_later(args["cancelAfter"], cancel.set)
+        if "cancelAfter" in args
+        else None
+    )
+    try:
+        return await fn(cancel)
+    finally:
+        if handle:
+            handle.cancel()
+
+
 def _construct(config: dict[str, Any], hooks: Hooks) -> Sponsorkit:
+    optional: dict[str, Any] = {}
+    if "devChecks" in config:
+        optional["dev_checks"] = config["devChecks"]
+    if "signInTimeout" in config:
+        optional["sign_in_timeout"] = config["signInTimeout"]
+    if "interactive" in config:
+        optional["interactive"] = config["interactive"]
     return Sponsorkit(
         github=config.get("github"),
         opencollective=config.get("opencollective"),
@@ -117,9 +153,9 @@ def _construct(config: dict[str, Any], hooks: Hooks) -> Sponsorkit:
         storage_dir=config["storageDir"],
         sign_in_method=config.get("signInMethod", "auto"),
         env=config["env"],
-        dev_checks=config["devChecks"],
         open_browser=hooks.open_browser,
         prompt_for_code=hooks.prompt_for_code,
+        **optional,
     )
 
 
@@ -149,22 +185,15 @@ class SyncInstance:
     def run(self, action: str, args: dict[str, Any]) -> Any:
         sk = self.sk
         if action == "signIn":
-            return sk.sign_in(args.get("provider"), method=args["method"])
+            return _with_cancel_after(
+                args, lambda c: sk.sign_in(args.get("provider"), method=args["method"], cancel=c)
+            )
         if action == "isSignedIn":
             return sk.is_signed_in()
         if action == "getFinancialContribution":
             return sk.get_financial_contribution(cache_ttl=args.get("cacheTtl"))
         if action == "openCheckout":
-            cancel = threading.Event()
-            timer = None
-            if "cancelAfter" in args:
-                timer = threading.Timer(args["cancelAfter"], cancel.set)
-                timer.start()
-            try:
-                return sk.open_checkout(cancel=cancel, **_checkout_kwargs(args))
-            finally:
-                if timer:
-                    timer.cancel()
+            return _with_cancel_after(args, lambda c: sk.open_checkout(cancel=c, **_checkout_kwargs(args)))
         if action == "checkoutUrl":
             return sk.checkout_url(**_url_kwargs(args))
         if action == "signOut":
@@ -199,21 +228,17 @@ class AsyncInstance:
     async def _run(self, action: str, args: dict[str, Any]) -> Any:
         sk = self.sk
         if action == "signIn":
-            return await sk.asign_in(args.get("provider"), method=args["method"])
+            return await _awith_cancel_after(
+                args, lambda c: sk.asign_in(args.get("provider"), method=args["method"], cancel=c)
+            )
         if action == "isSignedIn":
             return await sk.ais_signed_in()
         if action == "getFinancialContribution":
             return await sk.aget_financial_contribution(cache_ttl=args.get("cacheTtl"))
         if action == "openCheckout":
-            cancel = asyncio.Event()
-            handle = None
-            if "cancelAfter" in args:
-                handle = asyncio.get_running_loop().call_later(args["cancelAfter"], cancel.set)
-            try:
-                return await sk.aopen_checkout(cancel=cancel, **_checkout_kwargs(args))
-            finally:
-                if handle:
-                    handle.cancel()
+            return await _awith_cancel_after(
+                args, lambda c: sk.aopen_checkout(cancel=c, **_checkout_kwargs(args))
+            )
         if action == "checkoutUrl":
             return sk.checkout_url(**_url_kwargs(args))
         if action == "signOut":
@@ -288,6 +313,22 @@ def run_scenario(
     def resolve(value: Any) -> Any:
         return substitute(substitute(substitute(value, constants), constants), runtime_vars())
 
+    saved_env: dict[str, str | None] = {}
+
+    def set_process_env(values: dict[str, str] | None) -> None:
+        for k, v in (values or {}).items():
+            if k not in saved_env:
+                saved_env[k] = os.environ.get(k)
+            os.environ[k] = v
+
+    def restore_process_env() -> None:
+        for k, v in saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        saved_env.clear()
+
     hooks = Hooks()
     config: dict[str, Any] | None = None
     instance: Instance | None = None
@@ -301,6 +342,7 @@ def run_scenario(
             instance = None
             config = {**CONFIGURE_DEFAULTS, **args}
             config = resolve(config)
+            set_process_env(config.get("processEnv"))
             instance = adapter.create(config, hooks)
             return None
         if action == "restart":
@@ -311,7 +353,7 @@ def run_scenario(
             instance = adapter.create(config, hooks)
             return None
         if action == "verifySession":
-            return adapter.verify_session(args["token"], args["targets"], base_url)
+            return adapter.verify_session(args["token"], args["targets"], args.get("apiBaseUrl") or base_url)
         if action == "control":
             return control.call("PATCH", "/__control", args)
         if action == "mintSession":
@@ -332,6 +374,22 @@ def run_scenario(
             raise AssertionError("No SDK instance (configure failed or was not called)")
         return target.run(action, args)
 
+    try:
+        _run_steps(scenario, control, exec_step, resolve, adapter, hooks, lambda: config)
+    finally:
+        restore_process_env()
+    _check_final(scenario, control, resolve, start_seq)
+
+
+def _run_steps(
+    scenario: dict[str, Any],
+    control: Control,
+    exec_step: Callable[..., Any],
+    resolve: Callable[[Any], Any],
+    adapter: Adapter,
+    hooks: Hooks,
+    current_config: Callable[[], dict[str, Any] | None],
+) -> None:
     for index, raw in enumerate(scenario["steps"]):
         label = f"step {index + 1} ({raw['action']})"
         seq = control.state()["lastRequestSeq"]
@@ -346,6 +404,7 @@ def run_scenario(
                         s["args"] = resolve(s.get("args", {}))
                     returned = exec_step(s)
             elif raw["action"] == "parallel":
+                config = current_config()
                 if config is None:
                     raise AssertionError("parallel before configure")
                 inner = dict(raw["args"]["step"])
@@ -378,6 +437,12 @@ def run_scenario(
             value = _normalize(returned)
             if thrown is None and "returns" in ex:
                 problems.extend(match(value, ex["returns"], "returns"))
+            if thrown is not None and "error" in ex:
+                err = {
+                    "code": thrown.code if isinstance(thrown, SponsorkitError) else None,
+                    "retryAfter": thrown.retry_after if isinstance(thrown, SponsorkitError) else None,
+                }
+                problems.extend(match(err, ex["error"], "error"))
             if thrown is None and "contributionIds" in ex:
                 v = value if isinstance(value, dict) else {}
                 items = v.get("contributions") or ([v["contribution"]] if v.get("contribution") else [])
@@ -394,6 +459,10 @@ def run_scenario(
         if problems:
             raise ScenarioError(f"{scenario['id']} / {label}:\n  - " + "\n  - ".join(problems))
 
+
+def _check_final(
+    scenario: dict[str, Any], control: Control, resolve: Callable[[Any], Any], start_seq: int
+) -> None:
     final = scenario.get("expect")
     if not final:
         return

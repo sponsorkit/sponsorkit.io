@@ -8,6 +8,8 @@ from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urlencode, urlsplit
 
+import httpx
+
 from ._version import __version__
 from .errors import SponsorkitError
 
@@ -38,10 +40,10 @@ def problem_code(body: Any) -> str | None:
     return None
 
 
-def retry_after_seconds(value: str | None, now: datetime) -> float:
-    """Parse ``Retry-After`` (delta seconds or HTTP date). Defaults to 60 s."""
-    if not value:
-        return 60.0
+def parse_retry_after(value: str | None, now: datetime) -> float | None:
+    """Parse ``Retry-After`` (delta seconds or HTTP date); ``None`` when absent or invalid."""
+    if not value or not value.strip():
+        return None
     value = value.strip()
     try:
         return max(0.0, float(value))
@@ -50,10 +52,31 @@ def retry_after_seconds(value: str | None, now: datetime) -> float:
     try:
         when = parsedate_to_datetime(value)
     except (TypeError, ValueError):
-        return 60.0
+        return None
     if when.tzinfo is None:
         when = when.replace(tzinfo=timezone.utc)
     return max(0.0, (when - now).total_seconds())
+
+
+def retry_after_seconds(value: str | None, now: datetime) -> float:
+    """Parse ``Retry-After`` (delta seconds or HTTP date). Defaults to 60 s."""
+    parsed = parse_retry_after(value, now)
+    return 60.0 if parsed is None else parsed
+
+
+def unexpected_response(response: httpx.Response, what: str, body: Any = None) -> SponsorkitError:
+    """``network_error`` for a 5xx, 429 or otherwise unexpected API response (PROTOCOL §7).
+
+    Carries ``retry_after`` when the API sent ``Retry-After``.
+    """
+    code = problem_code(body)
+    detail = f"{response.status_code}" + (f" {code}" if code else "")
+    return SponsorkitError(
+        "network_error",
+        f"{what}: unexpected API response ({detail})",
+        request_id=response.headers.get("sponsorkit-request-id"),
+        retry_after=parse_retry_after(response.headers.get("retry-after"), datetime.now(timezone.utc)),
+    )
 
 
 def iso(dt: datetime) -> str:

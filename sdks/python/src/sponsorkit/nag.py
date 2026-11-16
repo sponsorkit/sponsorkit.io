@@ -56,7 +56,8 @@ class Nag:
     :meth:`shown` resets the counter and records the time.
 
     ``due()`` is always ``False`` when ``SPONSORKIT_DISABLE`` is set, and (unless ``force=True``)
-    when ``SPONSORKIT_NO_NAG`` or ``CI`` is set or stdout/stderr is not a TTY. It never signs in.
+    when ``SPONSORKIT_NO_NAG`` or ``CI`` is set or the session is not interactive (stdout/stderr not
+    a TTY, or the ``interactive=False`` option). It never signs in.
     """
 
     def __init__(self, sk: Sponsorkit, id: str, every: int, or_every: timedelta | None) -> None:

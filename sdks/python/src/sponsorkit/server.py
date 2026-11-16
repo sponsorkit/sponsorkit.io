@@ -20,7 +20,14 @@ from typing import Any, TypeAlias
 
 import httpx
 
-from ._http import DEFAULT_API_BASE_URL, DEFAULT_HTTP_TIMEOUT, USER_AGENT, normalize_base_url, problem_code
+from ._http import (
+    DEFAULT_API_BASE_URL,
+    DEFAULT_HTTP_TIMEOUT,
+    USER_AGENT,
+    normalize_base_url,
+    problem_code,
+    unexpected_response,
+)
 from .errors import SponsorkitError
 from .models import ContributionResult
 from .targets import Target, coerce_targets, targets_param
@@ -56,15 +63,11 @@ def _interpret(expected: str, response: httpx.Response) -> ContributionResult:
             "session_invalid", "The session token is invalid or expired", request_id=request_id
         )
     if response.status_code != 200:
-        raise SponsorkitError(
-            "internal",
-            f"Sponsorkit API error {response.status_code} ({problem_code(body) or 'unknown'})",
-            request_id=request_id,
-        )
+        raise unexpected_response(response, "Could not verify the session", body)
     try:
         result = ContributionResult.from_dict(body)
     except (KeyError, TypeError, ValueError) as e:
-        raise SponsorkitError("internal", f"Malformed API response: {e}", request_id=request_id) from e
+        raise SponsorkitError("network_error", f"Malformed API response: {e}", request_id=request_id) from e
     if ",".join(result.targets) != expected:
         raise SponsorkitError(
             "targets_mismatch",
@@ -89,8 +92,9 @@ def verify_session(
 
     Raises:
         SponsorkitError: ``session_invalid`` (rejected or malformed token), ``targets_mismatch``
-            (bound to other targets), ``invalid_config`` (bad ``targets``), ``network_error``
-            (API unreachable) or ``internal`` (unexpected API response, including ``429``).
+            (bound to other targets), ``invalid_config`` (bad ``targets``) or ``network_error``
+            (API unreachable, ``5xx``, ``429`` or an unexpected response; ``retry_after`` carries
+            the API's ``Retry-After`` in seconds when it sent one).
     """
     expected, url, headers = _prepare(token, targets, api_base_url)
     try:

@@ -26,6 +26,7 @@ from ._http import (
     parse_iso,
     problem_code,
     retry_after_seconds,
+    unexpected_response,
 )
 from ._loopback import LoopbackReceiver
 from ._state import PROCESS, CacheEntry, StateStore, StoredState, _DevCheck, log
@@ -50,8 +51,8 @@ SignInMethod = Literal["auto", "loopback", "paste"]
 CancelEvent = threading.Event
 """The cancellation primitive for sync calls: set the event to cancel."""
 
-LOOPBACK_TIMEOUT = 300.0
-"""Native loopback sign-in gives up after 5 minutes (PROTOCOL §7)."""
+SIGN_IN_TIMEOUT = 300.0
+"""Default ``sign_in_timeout``: sign-in gives up after 5 minutes (PROTOCOL §7)."""
 
 
 def _flag(value: str | None) -> bool:
@@ -77,6 +78,11 @@ def _default_open_browser(url: str) -> bool:
         return webbrowser.open(url)
     except webbrowser.Error:
         return False
+
+
+def _dev_mode() -> bool:
+    """Python's implicit development signal (PROTOCOL §7, ``devChecks`` default)."""
+    return bool(sys.flags.dev_mode)
 
 
 def _default_prompt_for_code(url: str) -> str:
@@ -145,10 +151,15 @@ class Sponsorkit:
         prompt_for_code: ``prompt_for_code(url)`` returns the code the user pasted (paste-back sign-in).
             Default: read a line from stdin.
         sign_in_method: ``auto`` (default), ``loopback`` or ``paste``.
-        env: Environment used for ``SPONSORKIT_DISABLE``, ``SPONSORKIT_MOCK``, ``SPONSORKIT_NO_NAG`` and
-            ``CI`` (default: ``os.environ``).
-        dev_checks: Force the dev-time target existence check on or off. Default: on only in Python
-            development mode (``python -X dev``).
+        sign_in_timeout: Seconds to wait for a loopback or paste-back sign-in before raising
+            ``timeout`` (default 300).
+        interactive: Overrides the stdout/stderr TTY check used by the nag helper (default: TTY
+            detection).
+        env: Where ``SPONSORKIT_DISABLE``, ``SPONSORKIT_MOCK``, ``SPONSORKIT_NO_NAG``,
+            ``SPONSORKIT_DEV_CHECKS`` and ``CI`` are read (default: ``os.environ``). A mapping given
+            here *replaces* the process environment for these variables; it is not merged.
+        dev_checks: Force the dev-time target existence check on or off. Default: on when
+            ``SPONSORKIT_DEV_CHECKS`` is set or in Python development mode (``python -X dev``).
         checkout_poll_interval: Seconds between checks while waiting for a checkout (default 60).
         clock: Returns the current time; injectable for tests.
         timeout: HTTP timeout in seconds for API calls.
@@ -172,6 +183,8 @@ class Sponsorkit:
         open_browser: Callable[[str], object] | None = None,
         prompt_for_code: Callable[[str], str] | None = None,
         sign_in_method: SignInMethod = "auto",
+        sign_in_timeout: float = SIGN_IN_TIMEOUT,
+        interactive: bool | None = None,
         env: Mapping[str, str] | None = None,
         dev_checks: bool | None = None,
         checkout_poll_interval: float = 60.0,
@@ -193,6 +206,16 @@ class Sponsorkit:
         if isinstance(cache_ttl, bool) or not isinstance(cache_ttl, (int, float)) or cache_ttl < 0:
             raise SponsorkitError("invalid_config", "cache_ttl must be a number of seconds")
         self._cache_ttl = max(60.0, float(cache_ttl))
+        if (
+            isinstance(sign_in_timeout, bool)
+            or not isinstance(sign_in_timeout, (int, float))
+            or sign_in_timeout <= 0
+        ):
+            raise SponsorkitError("invalid_config", "sign_in_timeout must be a positive number of seconds")
+        self._sign_in_timeout = float(sign_in_timeout)
+        if interactive is not None and not isinstance(interactive, bool):
+            raise SponsorkitError("invalid_config", "interactive must be a boolean or None")
+        self._interactive = interactive
         if checkout_poll_interval <= 0:
             raise SponsorkitError("invalid_config", "checkout_poll_interval must be positive")
         self._poll_interval = float(checkout_poll_interval)
@@ -213,7 +236,11 @@ class Sponsorkit:
         if self._mock is not None and not self._disabled:
             r = mock_result(self._targets, self._mock)
             self._mock_state = _MockState(r.signed_in, list(r.contributions))
-        self._dev_checks = bool(sys.flags.dev_mode) if dev_checks is None else bool(dev_checks)
+        self._dev_checks = (
+            (_flag(self._env.get("SPONSORKIT_DEV_CHECKS")) or _dev_mode())
+            if dev_checks is None
+            else bool(dev_checks)
+        )
 
         backend: Storage
         if self._mock_state is not None or self._disabled:
@@ -501,8 +528,11 @@ class Sponsorkit:
         deadline: float,
         cancel: threading.Event | None,
         continue_url: str | None = None,
-    ) -> str | None:
-        """Run the browser part of sign-in. Returns the code, or ``None`` on timeout/cancellation."""
+    ) -> str:
+        """Run the browser part of sign-in and return the code.
+
+        Raises ``timeout`` once ``deadline`` (monotonic) passes and ``cancelled`` when ``cancel`` is set.
+        """
         resolved = self._resolve_method(method)
         if resolved in ("auto", "loopback"):
             receiver = LoopbackReceiver(continue_url)
@@ -515,7 +545,7 @@ class Sponsorkit:
                     else:
                         print(f"Open this URL in a browser to continue:\n\n  {url}\n", file=sys.stderr)
                 if resolved != "paste":
-                    outcome = receiver.wait(min(deadline, time.monotonic() + LOOPBACK_TIMEOUT), cancel)
+                    outcome = receiver.wait(deadline, cancel)
                     if outcome.kind == "code":
                         return outcome.value
                     if outcome.kind == "error":
@@ -523,7 +553,7 @@ class Sponsorkit:
                         if code not in ("access_denied", "invalid_state", "provider_error"):
                             code = "provider_error"
                         raise SponsorkitError(cast(Any, code), f"Sign-in failed: {outcome.value}")
-                    return None
+                    raise self._abandoned(outcome.kind == "cancelled")
             finally:
                 receiver.close()
         url = build_url(self._api, path, self._with_app({**params, "delivery": "paste"}))
@@ -531,19 +561,54 @@ class Sponsorkit:
             f"To sign in to Sponsorkit, open this URL in a browser on any device:\n\n  {url}\n",
             file=sys.stderr,
         )
-        if cancel is not None and cancel.is_set():
-            return None
-        code = (self._prompt(url) or "").strip()
+        code = self._prompt_until(url, deadline, cancel).strip()
         if not code:
-            raise SponsorkitError("invalid_code", "No sign-in code was entered")
+            raise SponsorkitError("cancelled", "No sign-in code was entered")
         return code
+
+    def _abandoned(self, cancelled: bool) -> SponsorkitError:
+        if cancelled:
+            return SponsorkitError("cancelled", "Sign-in was cancelled")
+        return SponsorkitError(
+            "timeout", f"Sign-in did not complete within {self._sign_in_timeout:g} s (sign_in_timeout)"
+        )
+
+    def _prompt_until(self, url: str, deadline: float, cancel: threading.Event | None) -> str:
+        """Call ``prompt_for_code`` in a helper thread so ``deadline`` and ``cancel`` still apply.
+
+        On timeout or cancellation the prompt thread is abandoned (it is a daemon thread).
+        """
+        if cancel is not None and cancel.is_set():
+            raise self._abandoned(True)
+        done = threading.Event()
+        box: dict[str, Any] = {}
+
+        def run() -> None:
+            try:
+                box["code"] = self._prompt(url)
+            except BaseException as e:
+                box["error"] = e
+            finally:
+                done.set()
+
+        threading.Thread(target=run, name="sponsorkit-prompt", daemon=True).start()
+        while not done.is_set():
+            if cancel is not None and cancel.is_set():
+                raise self._abandoned(True)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise self._abandoned(False)
+            done.wait(min(remaining, 0.05))
+        if "error" in box:
+            raise box["error"]
+        return str(box.get("code") or "")
 
     def _exchange(self, code: str, verifier: str) -> ContributionResult:
         stored = self._read()
         body: dict[str, str] = {"code": code, "codeVerifier": verifier}
         if stored.session_token:
             body["sessionToken"] = stored.session_token
-        for _attempt in range(2):
+        while True:
             try:
                 res = self._client().post(f"{self._api}/api/v1/auth/token", json=body)
             except httpx.HTTPError as e:
@@ -554,20 +619,17 @@ class Sponsorkit:
             except ValueError:
                 data = None
             if res.status_code == 401 and "sessionToken" in body:
-                # The stored session is no longer valid: start a fresh session with this identity.
+                # PROTOCOL §7: the stored session is dead. Clear it and retry the same code once
+                # without sessionToken, which starts a fresh session with this identity.
                 self._clear_session()
                 del body["sessionToken"]
                 continue
-            if res.status_code == 400:
+            if res.status_code == 400 and problem_code(data) == "invalid_code":
                 raise SponsorkitError(
-                    "invalid_code",
-                    f"The sign-in code could not be exchanged ({problem_code(data) or 'invalid_code'})",
-                    request_id=request_id,
+                    "invalid_code", "The sign-in code was rejected (invalid_code)", request_id=request_id
                 )
             if res.status_code != 200:
-                raise SponsorkitError(
-                    "internal", f"Sponsorkit API error {res.status_code}", request_id=request_id
-                )
+                raise unexpected_response(res, "Sign-in failed", data)
             try:
                 session_token = data["sessionToken"]
                 if not isinstance(session_token, str) or not session_token.startswith("sks_"):
@@ -575,11 +637,10 @@ class Sponsorkit:
                 result = replace(ContributionResult.from_dict(data["result"]), from_cache=False)
             except (KeyError, TypeError, ValueError) as e:
                 raise SponsorkitError(
-                    "internal", f"Malformed token response: {e}", request_id=request_id
+                    "network_error", f"Malformed token response: {e}", request_id=request_id
                 ) from e
             self._save_session(session_token, result)
             return result
-        raise SponsorkitError("internal", "Sign-in failed")  # pragma: no cover
 
     def _save_session(self, session_token: str, result: ContributionResult) -> None:
         """Store the new token and cache the token response's result (PROTOCOL §7.1 rule 1)."""
@@ -592,7 +653,9 @@ class Sponsorkit:
         try:
             self._store.update(save)
         except OSError as e:
-            raise SponsorkitError("internal", f"Could not store the session: {e}") from e
+            raise SponsorkitError(
+                "invalid_config", f"Could not store the session (check storage_dir): {e}"
+            ) from e
 
     def _check_provider(self, provider: str | None) -> Provider | None:
         if provider is None:
@@ -608,7 +671,7 @@ class Sponsorkit:
         provider: Provider | None = None,
         *,
         method: SignInMethod | None = None,
-        timeout: float = LOOPBACK_TIMEOUT,
+        timeout: float | None = None,
         cancel: threading.Event | None = None,
     ) -> ContributionResult:
         """Sign the user in (or add another provider identity when already signed in).
@@ -617,10 +680,13 @@ class Sponsorkit:
         (paste-back). ``provider`` skips the provider picker; signing in with a second provider adds
         that identity to the existing session. Returns the fresh result, which is also cached.
 
+        ``timeout`` overrides the instance's ``sign_in_timeout`` (seconds) for this call. Setting
+        ``cancel`` abandons the sign-in.
+
         Raises:
-            SponsorkitError: ``disabled``, ``access_denied``, ``invalid_state``, ``provider_error``,
-                ``invalid_code``, ``network_error``, ``internal``, ``timeout`` (5 minutes by default)
-                or ``cancelled``.
+            SponsorkitError: ``disabled``, ``invalid_config``, ``access_denied``, ``invalid_state``,
+                ``provider_error``, ``invalid_code``, ``network_error`` (with ``retry_after`` when the
+                API sent ``Retry-After``), ``timeout`` or ``cancelled``.
         """
         if self._disabled:
             raise SponsorkitError("disabled", "Sponsorkit is disabled (SPONSORKIT_DISABLE)")
@@ -636,25 +702,25 @@ class Sponsorkit:
             params["provider"] = prov
         if self.is_signed_in():
             params["add"] = "1"
-        deadline = time.monotonic() + timeout
-        code = self._acquire_code("/connect", params, method, deadline, cancel)
-        if code is None:
-            if cancel is not None and cancel.is_set():
-                raise SponsorkitError("cancelled", "Sign-in was cancelled")
-            raise SponsorkitError("timeout", "Sign-in did not complete in time")
+        limit = self._sign_in_timeout if timeout is None else float(timeout)
+        code = self._acquire_code("/connect", params, method, time.monotonic() + limit, cancel)
         return self._exchange(code, verifier)
 
     # ------------------------------------------------------------------ checkout
 
     def _checkout_options(
-        self, provider: str | None, amount: int | None, currency: str | None, frequency: str | None
+        self, provider: object, amount: object, currency: object, frequency: object
     ) -> _CheckoutOptions:
+        """Validate checkout options (PROTOCOL §7.1 item 16); ``invalid_config`` for anything invalid."""
+        if provider is not None and not isinstance(provider, str):
+            raise SponsorkitError("invalid_config", "provider must be a string")
         prov = self._check_provider(provider)
-        if amount is not None and (isinstance(amount, bool) or not isinstance(amount, int) or amount < 0):
-            raise SponsorkitError("invalid_config", "amount must be a non-negative integer in minor units")
+        if amount is not None and (isinstance(amount, bool) or not isinstance(amount, int) or amount <= 0):
+            raise SponsorkitError("invalid_config", "amount must be a positive integer in minor units")
         if currency is not None and (
             not isinstance(currency, str)
             or len(currency) != 3
+            or not currency.isascii()
             or not currency.isalpha()
             or not currency.isupper()
         ):
@@ -674,6 +740,12 @@ class Sponsorkit:
         """A link to the checkout page that needs no sign-in. Offline and synchronous.
 
         Suitable for nags, READMEs and ``--help`` output. ``amount`` is in minor units (cents).
+        Touches neither the network nor the disk.
+
+        Raises:
+            SponsorkitError: ``invalid_config`` for a provider that is not configured, a frequency
+                other than ``one_time``/``monthly``/``yearly``, an amount that is not a positive
+                integer, or a currency that is not three uppercase letters.
         """
         opts = self._checkout_options(provider, amount, currency, frequency)
         return build_url(self._api, "/checkout", {"targets": self._param, **opts.params()})
@@ -692,13 +764,16 @@ class Sponsorkit:
     ) -> CheckoutResult:
         """Send the user to contribute, then wait for the new contribution to show up.
 
-        Signs in first if needed (so the contribution can be detected), opens the checkout page,
-        then re-checks every ``poll_interval`` seconds (default: ``checkout_poll_interval``) until a
-        new or changed contribution appears. Resolves ``CheckoutResult("unknown")`` on ``timeout``
-        (seconds, default 10 minutes) or when ``cancel`` is set; it does not raise for those.
+        Signs in first if needed (so the contribution can be detected; this phase is bounded by
+        ``sign_in_timeout``), opens the checkout page, then re-checks every ``poll_interval`` seconds
+        (default: ``checkout_poll_interval``) until a new or changed contribution appears. ``timeout``
+        (seconds, default 10 minutes) covers only that polling phase. Resolves
+        ``CheckoutResult("unknown")`` when polling times out or when ``cancel`` is set during either
+        phase; it does not raise for those.
 
         Raises:
-            SponsorkitError: ``disabled``, ``invalid_config`` or a sign-in error.
+            SponsorkitError: ``disabled``, ``invalid_config`` or a sign-in error (including
+                ``timeout`` when the sign-in phase exceeds ``sign_in_timeout``).
         """
         if self._disabled:
             raise SponsorkitError("disabled", "Sponsorkit is disabled (SPONSORKIT_DISABLE)")
@@ -719,7 +794,6 @@ class Sponsorkit:
             self._mock_state = _MockState(True, [*kept, c])
             return CheckoutResult("contributed", c)
         self._dev_check()
-        deadline = time.monotonic() + timeout
         interval = self._poll_interval if poll_interval is None else float(poll_interval)
         query = {"targets": self._param, **opts.params()}
         baseline: ContributionResult
@@ -731,19 +805,24 @@ class Sponsorkit:
                 print(f"Open this URL in a browser to contribute:\n\n  {url}\n", file=sys.stderr)
         else:
             verifier = generate_code_verifier()
+            # PROTOCOL §7.1 item 17: the redirect carries exactly the checkout params + step=choose.
             continue_url = build_url(self._api, "/checkout", {**query, "step": "choose"})
-            code = self._acquire_code(
-                "/checkout",
-                {**query, "challenge": code_challenge(verifier)},
-                method,
-                deadline,
-                cancel,
-                continue_url,
-            )
-            if code is None:
-                return CheckoutResult("unknown")
+            try:
+                code = self._acquire_code(
+                    "/checkout",
+                    {**query, "challenge": code_challenge(verifier)},
+                    method,
+                    time.monotonic() + self._sign_in_timeout,
+                    cancel,
+                    continue_url,
+                )
+            except SponsorkitError as e:
+                if e.code == "cancelled" and cancel is not None and cancel.is_set():
+                    return CheckoutResult("unknown")
+                raise
             baseline = self._exchange(code, verifier)
 
+        deadline = time.monotonic() + timeout
         before = {c.id: c.to_dict() for c in baseline.contributions}
         waiter = cancel or threading.Event()
         while not waiter.is_set() and time.monotonic() < deadline:
@@ -805,8 +884,9 @@ class Sponsorkit:
                 s.nags[nag.id] = {"runs": int(prev.get("runs", 0)) + 1, "lastShown": prev.get("lastShown")}
 
             self._safe_update(count)
+        interactive = _is_tty() if self._interactive is None else self._interactive
         if not force and (
-            _flag(self._env.get("SPONSORKIT_NO_NAG")) or _flag(self._env.get("CI")) or not _is_tty()
+            _flag(self._env.get("SPONSORKIT_NO_NAG")) or _flag(self._env.get("CI")) or not interactive
         ):
             return False
         fc = self.get_financial_contribution()
@@ -846,7 +926,7 @@ class Sponsorkit:
         provider: Provider | None = None,
         *,
         method: SignInMethod | None = None,
-        timeout: float = LOOPBACK_TIMEOUT,
+        timeout: float | None = None,
         cancel: threading.Event | asyncio.Event | None = None,
     ) -> ContributionResult:
         """Async variant of :meth:`sign_in`. Cancelling the awaiting task also cancels the sign-in."""

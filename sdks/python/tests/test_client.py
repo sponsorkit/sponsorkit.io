@@ -500,17 +500,19 @@ def test_verify_session_errors() -> None:
     with pytest.raises(SponsorkitError) as e:
         verify_session("", {"github": "ok"})
     assert e.value.code == "session_invalid"
-    cases: list[tuple[httpx.Response | Exception, str]] = [
-        (httpx.ConnectError("down"), "network_error"),
-        (httpx.Response(503, json={"code": "internal"}), "internal"),
-        (httpx.Response(429, headers={"Retry-After": "5"}), "internal"),
+    cases: list[tuple[httpx.Response | Exception, str, float | None]] = [
+        (httpx.ConnectError("down"), "network_error", None),
+        (httpx.Response(503, json={"code": "internal"}), "network_error", None),
+        (httpx.Response(429, headers={"Retry-After": "5"}), "network_error", 5.0),
+        (httpx.Response(200, text="<html>"), "network_error", None),
         (
             httpx.Response(401, json={"code": "session_invalid"}, headers={"Sponsorkit-Request-Id": "r1"}),
             "session_invalid",
+            None,
         ),
-        (httpx.Response(200, json={**RESULT, "targets": ["github:other"]}), "targets_mismatch"),
+        (httpx.Response(200, json={**RESULT, "targets": ["github:other"]}), "targets_mismatch", None),
     ]
-    for response, code in cases:
+    for response, code, retry_after in cases:
         api = Api()
         api.responses.append(response)
         with pytest.raises(SponsorkitError) as e:
@@ -520,6 +522,7 @@ def test_verify_session_errors() -> None:
                 http_client=api.client(),
             )
         assert e.value.code == code
+        assert e.value.retry_after == retry_after
 
 
 async def test_averify_session_with_client() -> None:
@@ -534,3 +537,123 @@ async def test_averify_session_with_client() -> None:
             http_client=client,
         )
     assert r.signed_in and len(r.contributions) == 3
+
+
+# ---------------------------------------------------------------- PROTOCOL §7 / §7.1 pins
+
+
+def test_dev_checks_default_follows_env_and_dev_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert make(env={})._dev_checks is False
+    assert make(env={"SPONSORKIT_DEV_CHECKS": "1"})._dev_checks is True
+    assert make(env={"SPONSORKIT_DEV_CHECKS": "false"})._dev_checks is False
+    assert make(env={"SPONSORKIT_DEV_CHECKS": "1"}, dev_checks=False)._dev_checks is False
+    monkeypatch.setattr(client_mod, "_dev_mode", lambda: True)
+    assert make(env={})._dev_checks is True
+
+
+def test_env_override_replaces_process_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPONSORKIT_DISABLE", "1")
+    monkeypatch.setenv("SPONSORKIT_DEV_CHECKS", "1")
+    sk = make(env={})
+    assert not sk.disabled and sk._dev_checks is False
+
+
+def test_interactive_option_overrides_tty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(client_mod, "_is_tty", lambda: False)
+    assert make(storage=MemoryStorage(), interactive=True).nag("n", every=1).due() is True
+    monkeypatch.setattr(client_mod, "_is_tty", lambda: True)
+    assert make(storage=MemoryStorage(), interactive=False).nag("n", every=1).due() is False
+    with pytest.raises(SponsorkitError) as e:
+        make(interactive="yes")
+    assert e.value.code == "invalid_config"
+
+
+@pytest.mark.parametrize("value", [0, -1, True, "5"])
+def test_sign_in_timeout_must_be_positive(value: Any) -> None:
+    with pytest.raises(SponsorkitError) as e:
+        make(sign_in_timeout=value)
+    assert e.value.code == "invalid_config"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"amount": 0},
+        {"amount": -500},
+        {"amount": 1.5},
+        {"currency": "EURO"},
+        {"currency": "eur"},
+        {"frequency": "weekly"},
+        {"provider": "patreon"},
+    ],
+)
+def test_checkout_url_rejects_invalid_options(kwargs: dict[str, Any]) -> None:
+    with pytest.raises(SponsorkitError) as e:
+        make().checkout_url(**kwargs)
+    assert e.value.code == "invalid_config"
+
+
+def test_checkout_url_rejects_unconfigured_provider() -> None:
+    sk = Sponsorkit(github="sponsorkit-conformance", env={})
+    with pytest.raises(SponsorkitError) as e:
+        sk.checkout_url(provider="opencollective")
+    assert e.value.code == "invalid_config"
+
+
+def _paste_sk(api: Api, prompt: Callable[[str], str], **kw: Any) -> Sponsorkit:
+    return make(api, storage=MemoryStorage(), sign_in_method="paste", prompt_for_code=prompt, **kw)
+
+
+def test_paste_sign_in_honours_timeout_and_cancel() -> None:
+    release = threading.Event()
+
+    def blocking_prompt(url: str) -> str:
+        release.wait(10)
+        return "skc_late"
+
+    sk = _paste_sk(Api(), blocking_prompt, sign_in_timeout=0.3)
+    started = time.monotonic()
+    with pytest.raises(SponsorkitError) as e:
+        sk.sign_in()
+    assert e.value.code == "timeout" and time.monotonic() - started < 5
+    cancel = threading.Event()
+    threading.Timer(0.2, cancel.set).start()
+    with pytest.raises(SponsorkitError) as e:
+        sk.sign_in(cancel=cancel)
+    assert e.value.code == "cancelled"
+    release.set()
+    with pytest.raises(SponsorkitError) as e:
+        _paste_sk(Api(), lambda url: "  ").sign_in()
+    assert e.value.code == "cancelled"
+
+
+@pytest.mark.parametrize(
+    ("response", "code", "retry_after"),
+    [
+        (httpx.Response(400, json={"code": "invalid_code"}), "invalid_code", None),
+        (httpx.Response(400, json={"code": "invalid_request"}), "network_error", None),
+        (httpx.Response(503, json={"code": "internal"}), "network_error", None),
+        (httpx.Response(429, headers={"Retry-After": "30"}), "network_error", 30.0),
+        (httpx.Response(200, json={"sessionToken": "nope"}), "network_error", None),
+        (httpx.ConnectError("down"), "network_error", None),
+    ],
+)
+def test_token_exchange_errors(
+    response: httpx.Response | Exception, code: str, retry_after: float | None
+) -> None:
+    api = Api()
+    api.responses.append(response)
+    sk = _paste_sk(api, lambda url: "skc_x")
+    with pytest.raises(SponsorkitError) as e:
+        sk.sign_in()
+    assert e.value.code == code and e.value.retry_after == retry_after
+    assert not sk.is_signed_in()
+
+
+def test_mock_nag_state_is_in_memory(tmp_path: Path) -> None:
+    sk = make(mock="none", storage_dir=tmp_path / "store")
+    nag = sk.nag("m", every=1)
+    assert nag.due(force=True) is True
+    nag.shown()
+    assert nag.due(force=True) is False
+    assert not (tmp_path / "store").exists()
