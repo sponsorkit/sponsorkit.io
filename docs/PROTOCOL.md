@@ -43,6 +43,10 @@ At least one parameter is required. The response is `TargetsResponse`:
 - A target that doesn't exist is still returned, with `exists: false`.
 - Malformed parameters return `400 invalid_target`.
 - The response is cacheable (`Cache-Control: public, max-age=3600`).
+- **A GitHub account without a Sponsors listing** has `exists: false`. `displayName` and `avatarUrl` are still filled when the account exists.
+- **Open Collective tiers:** `FLEXIBLE`-frequency tiers and non-contribution tiers (tickets, products) are omitted. OC tiers have `url: null`.
+- **`TargetTier.id`** is the provider's opaque id. For GitHub this is the GraphQL node id.
+- **A provider that can't be reached** gives `502` with code `internal`. That response is not cached.
 
 ### 3.2 `POST /api/v1/auth/token`
 
@@ -72,6 +76,12 @@ At least one parameter is required. The response is `TargetsResponse`:
   - `401 session_invalid`: the token is missing, malformed, tampered with, expired or sealed with an unknown key.
   - `429 rate_limited`: more than 1 refresh per 60 s per session. Comes with `Retry-After`.
 
+### 3.3.1 Semantics
+
+- **`supporter.id`** is derived from the session's **first** identity, the original sign-in. Adding a second provider keeps it stable.
+- **Identities flagged `needsReconnect`:** their provider is also listed in `unavailable`, and `stale` is `true`, so the SDK keeps its cached data for that provider.
+- **GitHub amount:** when GitHub hides `tier`, `amount` is `{ value: 0, currency: "USD" }` and `tier` is `null`.
+
 ### 3.4 `GET /api/v1/health`
 
 Returns `{ ok: true, providers: { github: "ok" | "degraded", opencollective: "ok" | "degraded" } }`.
@@ -92,6 +102,12 @@ These are used by `/connect`, `/checkout` and `/api/oauth/:provider/start`. All 
 | `app_name` | Optional. Up to 64 characters. Native apps only; shown on screen as "says it is". |
 | `provider` | Optional. `github` or `opencollective`. Skips the provider picker. |
 | `add` | `1` when adding an identity to an existing session. This only affects the UI copy; the merge happens at `/auth/token`. |
+
+Additional rules:
+
+- `origin` and `redirect_uri` that don't match the chosen `delivery` are ignored.
+- `targets` is canonicalized by whoever receives it.
+- `/api/oauth/:provider/start` always requires `challenge`.
 
 ### 4.2 `/connect` (static page)
 
@@ -130,14 +146,15 @@ These are used by `/connect`, `/checkout` and `/api/oauth/:provider/start`. All 
 
 **Failures:**
 
-- **The user denied access at the provider** (`error=access_denied`), or the state is invalid. The Worker delivers an error the same way it would deliver a code:
+- **The user denied access at the provider** (`error=access_denied`), or the state can be decrypted but has expired. The Worker delivers an error the same way it would deliver a code:
   - `web_message`: `/connect/done#error=<code>&origin=…`
   - `redirect`: `sponsorkit_error=<code>`
   - `loopback`: `?error=<code>`
   - `paste`: `/connect/done#error=<code>`
 
   `<code>` is one of `access_denied`, `invalid_state` or `provider_error`.
-- **The nonce cookie doesn't match the state.** The Worker shows an HTML error page and delivers nothing.
+- **The nonce cookie doesn't match the state, or the state can't be decrypted** (a tampered state carries no delivery params), **or the provider doesn't match.** The Worker shows an HTML error page and delivers nothing.
+- **Order of checks:** the nonce cookie is verified before any delivery, including error deliveries.
 
 ### 4.5 `/connect/done` (static page)
 
@@ -192,16 +209,18 @@ A provider is **eligible** if all of these hold:
    - GitHub: `["monthly", "one_time"]`.
    - Open Collective: `["one_time", "monthly", "yearly"]`.
 3. **Currency:** if `currency` is given, it equals `TargetInfo.currency`. GitHub is always `USD`.
-4. **Tiers (GitHub only):** at least one tier matches the frequency, or `monthly` when no frequency is given.
+4. **Tiers (GitHub only):** at least one tier matches the frequency, or `monthly` when no frequency is given. A GitHub target with no matching tier is ineligible.
+
+**When the requested `provider` isn't eligible** but another provider is, `/checkout` shows the chooser with a notice and the reasons. It never silently switches provider.
 
 **Redirect URL:**
 
-- **GitHub:** pick the cheapest tier with `amount.value >= amount` for the frequency, or else the highest tier.
-  - The URL is the tier's `url` if present.
-  - Otherwise it is `https://github.com/sponsors/<login>/sponsorships?tier_id=<id>`, where `id` is the tier's numeric databaseId.
-  - Without any tiers, the URL is `https://github.com/sponsors/<login>`.
+- **GitHub:** pick the cheapest tier with `amount.value >= amount` for the frequency, or else the highest tier. With no `amount`, pick the cheapest tier for the frequency.
+  - The URL is the tier's `url` if present. The Worker builds it as `https://github.com/sponsors/<login>/sponsorships?tier_id=<databaseId>` when it can decode the databaseId.
+  - Otherwise it is `https://github.com/sponsors/<login>`.
+  - Clients never build `tier_id` themselves.
 - **Open Collective:** `https://opencollective.com/<slug>/donate`. The query string includes:
-  - `amount=<major units, e.g. 5 or 5.5>`, when `amount` is given;
+  - `amount=<major units, e.g. 5 or 5.5>`, when `amount` is given. Major units use the currency's ISO 4217 minor-unit digits, so JPY uses 0 decimals and KWD uses 3;
   - `interval=month|year` for `monthly`/`yearly`; it is omitted for one-time;
   - `redirect=<sponsorkit origin>/checkout/thanks`.
 
@@ -217,6 +236,23 @@ Every SDK must accept the following options, using names idiomatic to its langua
 | `storageDir` / `storage` | Per-user config directory or `localStorage` | The tests use a temporary directory. |
 | `clock` | Not required | If present, it must be injectable for nag and cache-TTL tests. Otherwise the tests use small TTLs. |
 | `signInMethod` | `auto` | `"auto" \| "loopback" \| "paste"`, which forces a sign-in flow. |
+| `env` | Process environment | A per-instance override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG` and `CI`. A variable counts as **set** when it is non-empty and not `0` or `false` (case-insensitive). |
+| `devChecks` | Build-mode detection | Forces the dev-time `/targets` existence check on or off. |
+| `checkoutPollInterval` | 60 s | The interval at which checkout polls for a new contribution. |
+| `restart` | n/a | A way to reset per-process memo state: nag runs already counted, the dev-check memo, and the `Retry-After` memo. A fresh SDK instance with a `restart: true` option, or a static reset function, both satisfy this. |
+
+`promptForCode` receives the paste URL as its argument: `promptForCode(url)`.
+
+**SDK error codes.** Every error thrown carries `SponsorkitError.code`, which is one of:
+
+| Code(s) | Meaning |
+|---|---|
+| `invalid_config` | Missing or invalid configuration |
+| `disabled` | Sponsorkit is disabled |
+| `popup_blocked` | Browser only |
+| `access_denied`, `invalid_state`, `provider_error` | Sign-in errors delivered to the callback; `signIn` rejects with these |
+| `invalid_code` | Code exchange failed |
+| `session_invalid`, `targets_mismatch` | Only from `verifySession` |
 
 **Native loopback sign-in:**
 
@@ -229,9 +265,36 @@ Every SDK must accept the following options, using names idiomatic to its langua
 
 **Paste-back sign-in:** print the `/connect…&delivery=paste` URL to stderr, call `promptForCode()`, then exchange the code.
 
+## 7.1 Normative SDK behaviour (pinned by the conformance kit)
+
+1. **Sign-in caches the token result.** After `/auth/token`, the SDK stores `result` as its cache, with `storedAt` set to the exchange time.
+2. **Fresh cache hits** return `fromCache: true`; `stale` keeps its cached value.
+3. **Offline, 5xx or 429 with no cache.** The result is `{ signedIn: true, supporter: null, contributions: [], fetchedAt: null, stale: true, fromCache: false }`, and the token is kept.
+4. **`Retry-After`** is honoured per process. While it applies, even `cacheTtl: 0` is served from the cache without a request.
+5. **Partial outage.** The API's contributions are merged with the cached contributions for the providers listed in `unavailable`. The result has `stale: true` and `fromCache: false`.
+6. **`signOut`** removes `sessionToken` and `cache` but keeps nag state.
+7. **Adding an identity.** `signIn` while signed in sends `add=1` and passes the stored `sessionToken` to `/auth/token`.
+8. **Checkout:**
+   - When already signed in, the `/checkout` URL carries no `challenge`.
+   - The baseline for detection is the result the SDK already holds. A new contribution id, or a changed contribution, counts as detected.
+   - Cancellation or timeout resolves `{ status: "unknown" }`.
+   - After a loopback sign-in, the browser is redirected to `<apiBaseUrl>/checkout?<checkout params>&step=choose`.
+9. **Nag:**
+   - `lastShown: null` makes the `orEvery` clause false.
+   - `force: true` bypasses the TTY, `CI` and `SPONSORKIT_NO_NAG` checks, but not `SPONSORKIT_DISABLE`.
+   - Runs are counted even when the predicate is false.
+10. **Precedence:**
+    - `SPONSORKIT_DISABLE` beats mock, and the `mock` option beats `SPONSORKIT_MOCK`.
+    - Malformed targets throw `invalid_config` even when disabled.
+    - The dev-time existence check happens on the first async call, never in the constructor.
+11. **`verifySession`** compares canonical target params and touches no storage.
+12. **Mock presets and their expansion rules** are defined by `sdks/conformance/fixtures/mock-presets.json` (reference implementation: `src/mock-presets.ts`). Every SDK embeds them identically.
+
 ## 8. SDK local storage format
 
 The storage directory contains one JSON file per target set, named `<targets_hash>.json`:
+
+When signed out, `sessionToken` and `cache` may be absent or `null`.
 
 ```json
 { "v": 1, "sessionToken": "sks_…", "cache": { "result": { …ContributionResult… }, "storedAt": "ISO-8601" }, "nags": { "<id>": { "runs": 3, "lastShown": "ISO-8601" | null } } }
