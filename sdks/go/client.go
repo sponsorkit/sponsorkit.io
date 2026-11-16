@@ -1,6 +1,7 @@
 package sponsorkit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -28,6 +29,7 @@ const (
 	defaultCheckoutTimeout = 10 * time.Minute
 	defaultSignInTimeout   = 5 * time.Minute
 	defaultRetryAfter      = 60 * time.Second
+	defaultRequestTimeout  = 30 * time.Second
 	maxAppNameLength       = 64
 )
 
@@ -71,8 +73,15 @@ type Options struct {
 	Storage Storage
 	// APIBaseURL overrides the API origin (self-hosting, tests).
 	APIBaseURL string
-	// HTTPClient is used for all API calls. Defaults to a client with a 30 s timeout.
+	// HTTPClient is used for all API calls. Defaults to http.DefaultClient's
+	// transport; RequestTimeout applies whichever client is used.
 	HTTPClient *http.Client
+	// RequestTimeout bounds every HTTP request, including reading the
+	// response body (PROTOCOL §7.0). Zero means 30 s; NoRequestTimeout (or any
+	// negative value) disables it. A timeout counts as a network error:
+	// GetFinancialContribution serves the stale cache and SignIn returns
+	// network_error.
+	RequestTimeout time.Duration
 
 	// OpenBrowser opens a URL for the user. Defaults to OpenSystemBrowser.
 	OpenBrowser func(ctx context.Context, url string) error
@@ -107,6 +116,23 @@ type Options struct {
 	Interactive *bool
 }
 
+// NoRequestTimeout disables Options.RequestTimeout and WithRequestTimeout.
+// (The protocol's requestTimeout of 0 disables the timeout; in Go the zero
+// value selects the 30 s default instead.)
+const NoRequestTimeout time.Duration = -1
+
+// requestTimeoutOf maps the RequestTimeout option to the effective timeout:
+// 0 means none.
+func requestTimeoutOf(d time.Duration) time.Duration {
+	switch {
+	case d == 0:
+		return defaultRequestTimeout
+	case d < 0:
+		return 0
+	}
+	return d
+}
+
 // Client is a Sponsorkit client for one target set. It is safe for concurrent use.
 type Client struct {
 	targets       []target
@@ -122,6 +148,7 @@ type Client struct {
 	signInMethod  SignInMethod
 	env           func(string) string
 	httpClient    *http.Client
+	reqTimeout    time.Duration
 	openBrowser   func(ctx context.Context, url string) error
 	customBrowser bool
 	promptForCode func(ctx context.Context, url string) (string, error)
@@ -212,6 +239,7 @@ func New(opts Options) (*Client, error) {
 		stderr:        opts.Stderr,
 		interactive:   opts.Interactive,
 		httpClient:    opts.HTTPClient,
+		reqTimeout:    requestTimeoutOf(opts.RequestTimeout),
 	}
 	c.hash = hashParam(c.param)
 	if len(c.appName) > maxAppNameLength {
@@ -261,7 +289,7 @@ func New(opts Options) (*Client, error) {
 		c.env = os.Getenv
 	}
 	if c.httpClient == nil {
-		c.httpClient = &http.Client{Timeout: 30 * time.Second}
+		c.httpClient = &http.Client{}
 	}
 	if c.openBrowser == nil {
 		c.openBrowser = OpenSystemBrowser
@@ -468,7 +496,7 @@ func (c *Client) refresh(ctx context.Context, ttl time.Duration) *Result {
 		return fallback()
 	}
 
-	res := fetchContributions(ctx, c.httpClient, c.apiBaseURL, token)
+	res := fetchContributions(ctx, c.httpClient, c.reqTimeout, c.apiBaseURL, token)
 	switch res.kind {
 	case fetchSessionInvalid:
 		_ = st.update(func(f *storageFile) *storageFile {
@@ -505,9 +533,10 @@ func (c *Client) refresh(ctx context.Context, ttl time.Duration) *Result {
 	renewed := res.renewedToken
 	storedAt := isoTime(c.now())
 	_ = st.update(func(f *storageFile) *storageFile {
-		cur := f.token()
-		if cur != token && (renewed == "" || cur != renewed) {
-			return nil // another instance signed out or replaced the session meanwhile
+		if f.token() != token {
+			// PROTOCOL §7.0: another instance signed out, signed in again or
+			// renewed the session meanwhile; keep what it stored.
+			return nil
 		}
 		if renewed != "" {
 			f.SessionToken = strPtr(renewed)
@@ -544,12 +573,15 @@ func (c *Client) SignOut(_ context.Context) error {
 	if !st.exists() {
 		return nil
 	}
-	return st.update(func(f *storageFile) *storageFile {
+	if err := st.update(func(f *storageFile) *storageFile {
 		if f.SessionToken == nil && f.Cache == nil {
 			return nil
 		}
 		return &storageFile{V: 1, Nags: f.Nags}
-	})
+	}); err != nil {
+		return newError(CodeInvalidConfig, "could not clear the stored session", err)
+	}
+	return nil
 }
 
 // devCheck runs the dev-time target existence check once per process.
@@ -569,7 +601,7 @@ func (c *Client) devCheck(ctx context.Context) error {
 		for _, t := range c.targets {
 			q.Set(string(t.provider), t.account)
 		}
-		infos, ok := fetchTargets(ctx, c.httpClient, c.apiBaseURL, q)
+		infos, ok := fetchTargets(ctx, c.httpClient, c.reqTimeout, c.apiBaseURL, q)
 		if !ok {
 			return // offline or API error: skip the check
 		}
@@ -608,45 +640,69 @@ type fetchResult struct {
 	err            error
 }
 
-func newRequest(ctx context.Context, method, u string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, method, u, body)
+// httpResponse is a fully read API response.
+type httpResponse struct {
+	status int
+	header http.Header
+	body   []byte
+}
+
+// doHTTP sends one API request and reads its body, all within timeout (0
+// means none). Any transport, timeout or body read failure is an error.
+func doHTTP(ctx context.Context, hc *http.Client, timeout time.Duration, method, u string, body []byte, header map[string]string) (*httpResponse, error) {
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	var rd io.Reader
+	if body != nil {
+		rd = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, u, rd)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "sponsorkit-go/"+Version)
-	return req, nil
-}
-
-func fetchContributions(ctx context.Context, hc *http.Client, base, token string) fetchResult {
-	req, err := newRequest(ctx, http.MethodGet, base+"/api/v1/contributions", nil)
-	if err != nil {
-		return fetchResult{kind: fetchFailed, err: err}
+	for k, v := range header {
+		req.Header.Set(k, v)
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
 	res, err := hc.Do(req)
 	if err != nil {
-		return fetchResult{kind: fetchFailed, err: err}
+		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(res.Body, 4<<20))
+	b, err := io.ReadAll(io.LimitReader(res.Body, 4<<20))
+	if err != nil {
+		return nil, err
+	}
+	return &httpResponse{status: res.StatusCode, header: res.Header, body: b}, nil
+}
+
+func fetchContributions(ctx context.Context, hc *http.Client, timeout time.Duration, base, token string) fetchResult {
+	res, err := doHTTP(ctx, hc, timeout, http.MethodGet, base+"/api/v1/contributions", nil,
+		map[string]string{"Authorization": "Bearer " + token})
+	if err != nil {
+		return fetchResult{kind: fetchFailed, err: err}
+	}
 	switch {
-	case res.StatusCode == http.StatusUnauthorized:
-		return fetchResult{kind: fetchSessionInvalid, status: res.StatusCode}
-	case res.StatusCode == http.StatusTooManyRequests:
-		ra, sent := parseRetryAfter(res.Header.Get("Retry-After"), time.Now())
-		return fetchResult{kind: fetchRateLimited, status: res.StatusCode, retryAfter: ra, retryAfterSent: sent}
-	case res.StatusCode != http.StatusOK || err != nil:
-		return fetchResult{kind: fetchFailed, status: res.StatusCode, err: err}
+	case res.status == http.StatusUnauthorized:
+		return fetchResult{kind: fetchSessionInvalid, status: res.status}
+	case res.status == http.StatusTooManyRequests:
+		ra, sent := parseRetryAfter(res.header.Get("Retry-After"), time.Now())
+		return fetchResult{kind: fetchRateLimited, status: res.status, retryAfter: ra, retryAfterSent: sent}
+	case res.status != http.StatusOK:
+		return fetchResult{kind: fetchFailed, status: res.status}
 	}
 	var r Result
-	if err := json.Unmarshal(body, &r); err != nil || r.Targets == nil {
-		return fetchResult{kind: fetchFailed, status: res.StatusCode, err: err}
+	if err := json.Unmarshal(res.body, &r); err != nil || r.Targets == nil {
+		return fetchResult{kind: fetchFailed, status: res.status, err: err}
 	}
 	if r.Contributions == nil {
 		r.Contributions = []Contribution{}
 	}
-	return fetchResult{kind: fetchOK, result: &r, renewedToken: strings.TrimSpace(res.Header.Get("Sponsorkit-Session")), status: res.StatusCode}
+	return fetchResult{kind: fetchOK, result: &r, renewedToken: strings.TrimSpace(res.header.Get("Sponsorkit-Session")), status: res.status}
 }
 
 // maxRetryAfter caps a parsed Retry-After so that huge values cannot overflow
@@ -682,23 +738,15 @@ type targetInfo struct {
 	Exists bool   `json:"exists"`
 }
 
-func fetchTargets(ctx context.Context, hc *http.Client, base string, q url.Values) ([]targetInfo, bool) {
-	req, err := newRequest(ctx, http.MethodGet, base+"/api/v1/targets?"+q.Encode(), nil)
-	if err != nil {
-		return nil, false
-	}
-	res, err := hc.Do(req)
-	if err != nil {
-		return nil, false
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+func fetchTargets(ctx context.Context, hc *http.Client, timeout time.Duration, base string, q url.Values) ([]targetInfo, bool) {
+	res, err := doHTTP(ctx, hc, timeout, http.MethodGet, base+"/api/v1/targets?"+q.Encode(), nil, nil)
+	if err != nil || res.status != http.StatusOK {
 		return nil, false
 	}
 	var body struct {
 		Targets []targetInfo `json:"targets"`
 	}
-	if err := json.NewDecoder(io.LimitReader(res.Body, 4<<20)).Decode(&body); err != nil {
+	if err := json.Unmarshal(res.body, &body); err != nil {
 		return nil, false
 	}
 	return body.Targets, true
