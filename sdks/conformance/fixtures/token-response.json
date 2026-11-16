@@ -1,0 +1,89 @@
+{
+  "sessionToken": "sks_AQAAAAAAAAAAAAAAAExampleOnlyNotARealSealedSessionToken",
+  "expiresAt": "2027-05-15T18:00:00.000Z",
+  "result": {
+    "signedIn": true,
+    "disabled": false,
+    "mock": false,
+    "targets": [
+      "github:sponsorkit-conformance",
+      "opencollective:sponsorkit-conformance"
+    ],
+    "supporter": {
+      "id": "sup_a4ab3d6pwlxvnsytl6f4ab3ctr",
+      "identities": [
+        {
+          "provider": "github",
+          "id": "583231",
+          "handle": "conformance-user",
+          "needsReconnect": false
+        }
+      ]
+    },
+    "contributions": [
+      {
+        "id": "con_github_md3xP94JRrHj9QVsU16tuK",
+        "provider": "github",
+        "target": "github:sponsorkit-conformance",
+        "sponsor": {
+          "type": "user",
+          "provider": "github",
+          "id": "583231",
+          "handle": "conformance-user"
+        },
+        "via": "direct",
+        "kind": "recurring",
+        "frequency": "monthly",
+        "status": "active",
+        "amount": {
+          "value": 500,
+          "currency": "USD"
+        },
+        "tier": {
+          "id": "ST_kwDOconf101",
+          "name": "Coffee"
+        },
+        "flags": [],
+        "private": false,
+        "startedAt": "2026-03-01T10:00:00Z",
+        "endedAt": null,
+        "lastChargedAt": null,
+        "nextChargeAt": null,
+        "totalContributed": null
+      },
+      {
+        "id": "con_github_HTRhsr74qaWXC6EPhLcswE",
+        "provider": "github",
+        "target": "github:sponsorkit-conformance",
+        "sponsor": {
+          "type": "organization",
+          "provider": "github",
+          "id": "9919",
+          "handle": "conformance-org"
+        },
+        "via": "organization",
+        "kind": "one_time",
+        "frequency": "one_time",
+        "status": "paid",
+        "amount": {
+          "value": 10000,
+          "currency": "USD"
+        },
+        "tier": {
+          "id": "ST_kwDOconf201",
+          "name": "One-time thank you"
+        },
+        "flags": [],
+        "private": true,
+        "startedAt": "2026-05-20T08:30:00Z",
+        "endedAt": null,
+        "lastChargedAt": null,
+        "nextChargeAt": null,
+        "totalContributed": null
+      }
+    ],
+    "fetchedAt": "2026-11-16T18:00:00.000Z",
+    "stale": false,
+    "fromCache": false
+  }
+}

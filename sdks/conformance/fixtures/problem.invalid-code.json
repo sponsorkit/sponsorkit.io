@@ -1,0 +1,7 @@
+{
+  "type": "https://sponsorkit.io/problems/invalid_code",
+  "title": "Invalid code",
+  "status": 400,
+  "code": "invalid_code",
+  "detail": "The code verifier does not match the code challenge"
+}

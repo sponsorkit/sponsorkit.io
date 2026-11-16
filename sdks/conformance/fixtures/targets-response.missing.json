@@ -1,0 +1,17 @@
+{
+  "targets": [
+    {
+      "target": "github:sponsorkit-conformance-missing",
+      "provider": "github",
+      "account": "sponsorkit-conformance-missing",
+      "exists": false,
+      "displayName": null,
+      "avatarUrl": null,
+      "url": null,
+      "currency": null,
+      "frequencies": [],
+      "customAmount": false,
+      "tiers": []
+    }
+  ]
+}
