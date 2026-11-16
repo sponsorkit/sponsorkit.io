@@ -125,9 +125,22 @@ describe("configuration", () => {
 
   test("default storage directory per platform", () => {
     expect(defaultStorageDir({ XDG_CONFIG_HOME: "/x/cfg" }, "linux")).toBe("/x/cfg/sponsorkit");
-    expect(defaultStorageDir({}, "linux")).toMatch(/\.config\/sponsorkit$/);
-    expect(defaultStorageDir({}, "darwin")).toMatch(/Library\/Application Support\/sponsorkit$/);
-    expect(defaultStorageDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32")).toContain("sponsorkit");
+    expect(defaultStorageDir({ HOME: "/home/a" }, "linux")).toBe("/home/a/.config/sponsorkit");
+    expect(defaultStorageDir({ HOME: "/home/a", XDG_CONFIG_HOME: "rel" }, "linux")).toBe("/home/a/.config/sponsorkit");
+    expect(defaultStorageDir({ HOME: "/Users/a" }, "darwin")).toBe("/Users/a/Library/Application Support/sponsorkit");
+    expect(defaultStorageDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32")).toBe("C:\\Users\\a\\AppData\\Roaming\\sponsorkit");
+    expect(defaultStorageDir({ USERPROFILE: "C:\\Users\\a" }, "win32")).toBe("C:\\Users\\a\\AppData\\Roaming\\sponsorkit");
+    // PROTOCOL §7.0: no determinable per-user directory -> null (in-memory storage), never a cwd-relative path.
+    for (const [env, platform] of [
+      [{}, "linux"],
+      [{ HOME: "" }, "linux"],
+      [{ HOME: "relative/home" }, "linux"],
+      [{}, "darwin"],
+      [{}, "win32"],
+      [{ APPDATA: "relative" }, "win32"],
+    ] as const) {
+      expect(defaultStorageDir(env, platform)).toBeNull();
+    }
   });
 
   test("browser opener never uses a shell", () => {

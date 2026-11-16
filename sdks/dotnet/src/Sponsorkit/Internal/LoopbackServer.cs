@@ -36,11 +36,14 @@ internal sealed class LoopbackServer : IDisposable
     public LoopbackServer(string? redirectAfterCode = null)
     {
         _redirectAfterCode = redirectAfterCode;
-        _listener = new TcpListener(IPAddress.Loopback, 0);
+        _listener = new TcpListener(TestBindAddress.Value ?? IPAddress.Loopback, 0);
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
         _ = AcceptLoopAsync();
     }
+
+    /// <summary>Tests only: binds to another address (one that cannot be bound simulates a bind failure).</summary>
+    internal static readonly AsyncLocal<IPAddress?> TestBindAddress = new();
 
     public int Port { get; }
 

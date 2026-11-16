@@ -15,7 +15,7 @@ import { createInterface } from "node:readline";
 import { abortError, type CodeRequest, type OpenCheckoutOptions, type SignInOptions, SponsorkitCore, type SponsorkitCoreOptions } from "../core";
 import { SponsorkitError } from "../errors";
 import type { FinancialContribution } from "../result";
-import type { SponsorkitStorage } from "../storage";
+import { memoryStorage, type SponsorkitStorage } from "../storage";
 import type { CheckoutResult } from "../types";
 import { isEnvSet } from "../util";
 import { openSystemBrowser } from "./browser";
@@ -120,8 +120,10 @@ export class Sponsorkit extends SponsorkitCore<null> {
     return super.openCheckout(options);
   }
 
+  /** `storageDir`, else the per-user config directory, else (no home directory) in-memory storage. Never the cwd. */
   protected defaultStorage(): SponsorkitStorage {
-    return fileStorage(this.storageDir ?? defaultStorageDir());
+    const dir = this.storageDir ?? defaultStorageDir();
+    return dir ? fileStorage(dir) : memoryStorage();
   }
 
   protected beginInteraction(): null {
@@ -172,13 +174,19 @@ export class Sponsorkit extends SponsorkitCore<null> {
       // request.signal aborts on cancellation (`cancelled`) or signInTimeout (`timeout`).
       const outcome = raceAbort(receiver.result, request.signal);
       outcome.catch(() => undefined);
-      try {
-        await this.openBrowserFn(url);
-      } catch {
+      // PROTOCOL §7.0: the callback is accepted while the opener is still running.
+      const opening = Promise.resolve()
+        .then(() => this.openBrowserFn(url))
+        .then(
+          () => ({ kind: "opened" as const }),
+          () => ({ kind: "failed" as const }),
+        );
+      const first = await Promise.race([outcome.then((r) => ({ kind: "result" as const, r })), opening]);
+      if (first.kind === "failed") {
         if (allowFallback) return null;
         this.output.write(`Open this URL in your browser to sign in:\n\n  ${url}\n\n`);
       }
-      const r = await outcome;
+      const r = first.kind === "result" ? first.r : await outcome;
       if ("error" in r) throw new SponsorkitError(signInErrorCode(r.error), `Sign-in failed: ${r.error}`);
       return r.code;
     } finally {

@@ -60,7 +60,7 @@ public static class SponsorkitServer
         ContributionsResponse response;
         try
         {
-            response = await api.GetContributionsAsync(token, cancellationToken).ConfigureAwait(false);
+            response = await api.GetContributionsAsync(token!, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException e)
         {

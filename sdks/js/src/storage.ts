@@ -1,8 +1,9 @@
 /**
  * Local storage (PROTOCOL §8): one JSON document per target set, keyed by `targets_hash`.
  */
+import { isSessionToken } from "./http";
 import type { ContributionResult, NagState, StorageFile } from "./types";
-import { isObject } from "./util";
+import { isObject, parseIsoTimestamp } from "./util";
 
 /**
  * Where the SDK keeps its per-target-set document. Implementations store an
@@ -68,12 +69,43 @@ export function hasLocalStorage(): boolean {
 }
 
 function isIsoDate(v: unknown): v is string {
-  return typeof v === "string" && !Number.isNaN(Date.parse(v));
+  return parseIsoTimestamp(v) !== null;
 }
 
-/** Parses a stored document leniently: unknown or malformed parts are dropped. */
-export function parseStorageFile(json: string | null): StorageFile {
-  if (!json) return { v: 1 };
+const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+
+/** A cached contribution the SDK can filter and compare without crashing. */
+function isStoredContribution(c: unknown): boolean {
+  return (
+    isObject(c) &&
+    typeof c.id === "string" &&
+    typeof c.provider === "string" &&
+    typeof c.status === "string" &&
+    typeof c.kind === "string" &&
+    isObject(c.amount)
+  );
+}
+
+/** A cached ContributionResult whose parts all have the expected types (PROTOCOL §7.0). */
+function isStoredResult(r: unknown): r is ContributionResult {
+  return (
+    isObject(r) &&
+    typeof r.signedIn === "boolean" &&
+    isStringArray(r.targets) &&
+    (r.supporter === null || isObject(r.supporter)) &&
+    Array.isArray(r.contributions) &&
+    r.contributions.every(isStoredContribution) &&
+    (r.fetchedAt === undefined || r.fetchedAt === null || typeof r.fetchedAt === "string") &&
+    (r.unavailable === undefined || isStringArray(r.unavailable))
+  );
+}
+
+/**
+ * Parses a stored document leniently (PROTOCOL §7.0 "Reading never throws"): a document that can't be
+ * parsed counts as absent, and so does each malformed part (bad token, cache or nag entry).
+ */
+export function parseStorageFile(json: unknown): StorageFile {
+  if (typeof json !== "string" || !json) return { v: 1 };
   let data: unknown;
   try {
     data = JSON.parse(json);
@@ -82,15 +114,15 @@ export function parseStorageFile(json: string | null): StorageFile {
   }
   if (!isObject(data) || data.v !== 1) return { v: 1 };
   const out: StorageFile = { v: 1 };
-  if (typeof data.sessionToken === "string" && data.sessionToken.startsWith("sks_")) out.sessionToken = data.sessionToken;
+  if (isSessionToken(data.sessionToken)) out.sessionToken = data.sessionToken;
   const cache = data.cache;
-  if (isObject(cache) && isIsoDate(cache.storedAt) && isObject(cache.result) && Array.isArray(cache.result.contributions)) {
-    out.cache = { result: cache.result as unknown as ContributionResult, storedAt: cache.storedAt };
+  if (isObject(cache) && isIsoDate(cache.storedAt) && isStoredResult(cache.result)) {
+    out.cache = { result: cache.result, storedAt: cache.storedAt };
   }
   if (isObject(data.nags)) {
     const nags: Record<string, NagState> = {};
     for (const [id, n] of Object.entries(data.nags)) {
-      if (isObject(n) && typeof n.runs === "number" && Number.isInteger(n.runs) && n.runs >= 0) {
+      if (isObject(n) && typeof n.runs === "number" && Number.isSafeInteger(n.runs) && n.runs >= 0) {
         nags[id] = { runs: n.runs, lastShown: isIsoDate(n.lastShown) ? n.lastShown : null };
       }
     }
@@ -121,8 +153,13 @@ export class Store {
     private readonly lockKey: object = storage,
   ) {}
 
+  /** Never throws: a failing or malformed read counts as an absent document. */
   async read(hash: string): Promise<StorageFile> {
-    return parseStorageFile(await this.storage.read(hash));
+    try {
+      return parseStorageFile(await this.storage.read(hash));
+    } catch {
+      return { v: 1 };
+    }
   }
 
   /** Read-modify-write. Returns the written document. Skips the write if `fn` returns `null`. */

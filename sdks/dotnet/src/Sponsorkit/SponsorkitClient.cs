@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Sponsorkit.Internal;
@@ -450,25 +451,52 @@ public sealed class SponsorkitClient
         bool fallBackToPaste,
         CancellationToken cancellationToken)
     {
-        using var server = new LoopbackServer(redirectAfterCode);
+        LoopbackServer server;
+        try
+        {
+            server = new LoopbackServer(redirectAfterCode);
+        }
+        catch (Exception e) when (e is SocketException or IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // PROTOCOL §7.0: Auto falls back to paste-back when 127.0.0.1 cannot be bound.
+            if (fallBackToPaste) throw new BrowserLaunchException(e);
+            throw new SponsorkitError(SponsorkitErrorCodes.NetworkError, "Could not listen on 127.0.0.1 for the sign-in callback: " + e.Message, e);
+        }
+        using var listening = server;
         var full = new List<KeyValuePair<string, string?>>(query)
         {
             new("delivery", "loopback"),
             new("redirect_uri", server.RedirectUri),
         };
         var url = PageUrl(page, full);
-        try
-        {
-            await OpenBrowserAsync(url, cancellationToken).ConfigureAwait(false);
-        }
-        catch (BrowserLaunchException) when (!fallBackToPaste)
-        {
-            // Loopback was forced: let the supporter open the URL by hand and keep waiting for the callback.
-            await Console.Error.WriteLineAsync("Could not open a browser. Open this URL to sign in:\n  " + url).ConfigureAwait(false);
-        }
 
+        // PROTOCOL §7.0: the callback is accepted while the browser opener is still running.
+        using var openCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var open = OpenBrowserAsync(url, openCts.Token);
         var waiter = Task.Delay(Timeout.Infinite, cancellationToken);
-        var done = await Task.WhenAny(server.Result, waiter).ConfigureAwait(false);
+        var done = await Task.WhenAny(server.Result, open, waiter).ConfigureAwait(false);
+        if (done == open && !server.Result.IsCompleted)
+        {
+            try
+            {
+                await open.ConfigureAwait(false);
+            }
+            catch (BrowserLaunchException) when (!fallBackToPaste)
+            {
+                // Loopback was forced: let the supporter open the URL by hand and keep waiting for the callback.
+                await Console.Error.WriteLineAsync("Could not open a browser. Open this URL to sign in:\n  " + url).ConfigureAwait(false);
+            }
+            catch (BrowserLaunchException) when (server.Result.IsCompleted)
+            {
+                // The callback arrived while the opener was failing: use it.
+            }
+            done = await Task.WhenAny(server.Result, waiter).ConfigureAwait(false);
+        }
+        if (!open.IsCompleted)
+        {
+            openCts.Cancel();
+            _ = open.ContinueWith(t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        }
         if (done != server.Result) cancellationToken.ThrowIfCancellationRequested();
         var callback = await server.Result.ConfigureAwait(false);
         if (callback.Code is { } code) return code;

@@ -5,13 +5,34 @@
  * sign-in flows and storage.
  */
 import { SponsorkitError } from "./errors";
-import { type FetchLike, fetchContributions, fetchTargets, problemCode, requestTimeoutMs, resolveFetch, retryAfterSeconds, withTimeout } from "./http";
+import {
+  type FetchLike,
+  fetchContributions,
+  fetchTargets,
+  isSessionToken,
+  problemCode,
+  requestTimeoutMs,
+  resolveFetch,
+  retryAfterSeconds,
+  withTimeout,
+} from "./http";
 import { initialMockState, type MockState, mockCheckoutContribution, mockResult, parseMockOption } from "./mock";
 import { FinancialContribution } from "./result";
 import { type SponsorkitStorage, Store, type WebStorageLike } from "./storage";
 import { codeChallenge, createCodeVerifier, type Target, targetsFrom, targetsHash, targetsParam, targetToString } from "./targets";
 import type { CheckoutOptions, CheckoutResult, Contribution, ContributionResult, Frequency, MockOption, NagState, Provider, StorageFile } from "./types";
-import { DEFAULT_API_BASE_URL, durationMs, type Env, isEnvSet, isObject, normalizeBaseUrl, processEnv, sleep, stableStringify } from "./util";
+import {
+  DEFAULT_API_BASE_URL,
+  durationMs,
+  type Env,
+  isEnvSet,
+  isObject,
+  normalizeBaseUrl,
+  parseIsoTimestamp,
+  processEnv,
+  sleep,
+  stableStringify,
+} from "./util";
 
 export { DEFAULT_API_BASE_URL };
 /** Default `cacheTtl` in seconds. */
@@ -313,7 +334,8 @@ export abstract class SponsorkitCore<I = unknown> {
 
   /**
    * Signs the user in (or adds a second identity when already signed in) and
-   * returns the fresh result. Rejects with `disabled`, `invalid_config`, `popup_blocked`,
+   * returns the fresh result. Rejects with `disabled`, `invalid_config` (unconfigured `provider`, or the
+   * session can't be written to storage), `popup_blocked`,
    * `access_denied`, `invalid_state`, `provider_error`, `invalid_code`, `cancelled`
    * (`signal` aborted, popup closed), `timeout` (`signInTimeout`) or `network_error`.
    */
@@ -433,14 +455,17 @@ export abstract class SponsorkitCore<I = unknown> {
     return `${this.apiBaseUrl}/checkout?${this.checkoutQuery(options)}`;
   }
 
-  /** Deletes the session token and cache locally (there is no server-side sign-out). Keeps nag state. */
+  /**
+   * Deletes the session token and cache locally (there is no server-side sign-out). Keeps nag state.
+   * Rejects with `invalid_config` if the storage can't be written.
+   */
   async signOut(): Promise<void> {
     if (this.disabled) return;
     if (this.mockState) {
       this.mockState = { signedIn: false, contributions: [] };
       return;
     }
-    await this.updateStorage((s) => (s.sessionToken || s.cache ? { v: 1, nags: s.nags } : null));
+    await this.persistStorage((s) => (s.sessionToken || s.cache ? { v: 1, nags: s.nags } : null), "clear the session");
   }
 
   /** A nag helper (SPEC §7.5). */
@@ -499,6 +524,15 @@ export abstract class SponsorkitCore<I = unknown> {
     }
   }
 
+  /** Like {@link updateStorage}, but a failed write rejects with `invalid_config` (PROTOCOL §7.0: signIn / signOut). */
+  protected async persistStorage(fn: (s: StorageFile) => StorageFile | null, what: string): Promise<void> {
+    try {
+      await this.store().update(await this.hash(), fn);
+    } catch (cause) {
+      throw new SponsorkitError("invalid_config", `Could not ${what}: the Sponsorkit storage can't be written`, { cause });
+    }
+  }
+
   private get memoKey(): string {
     return `${this.apiBaseUrl}|${this.targetsParam}`;
   }
@@ -548,7 +582,8 @@ export abstract class SponsorkitCore<I = unknown> {
     const cache = stored.cache ?? null;
     const now = this.now();
     const ttl = cacheTtlSeconds * 1000;
-    if (cache && ttl > 0 && now - Date.parse(cache.storedAt) < ttl) return { ...cache.result, fromCache: true };
+    const storedAt = cache ? parseIsoTimestamp(cache.storedAt) : null;
+    if (cache && storedAt !== null && ttl > 0 && now - storedAt < ttl) return { ...cache.result, fromCache: true };
     const fallback = (): ContributionResult => (cache ? { ...cache.result, fromCache: true, stale: true } : this.emptyResult({ signedIn: true, stale: true }));
     if ((processState.retryUntil.get(this.memoKey) ?? 0) > now) return fallback();
 
@@ -574,11 +609,12 @@ export abstract class SponsorkitCore<I = unknown> {
       }
     }
     const renewed = res.renewedToken;
-    const storedAt = new Date(this.now()).toISOString();
+    const fetchedAt = new Date(this.now()).toISOString();
     await this.updateStorage((s) => {
-      // Another instance may have signed out or replaced the session meanwhile.
-      if (s.sessionToken !== token && s.sessionToken !== renewed) return null;
-      return { ...s, sessionToken: renewed ?? s.sessionToken, cache: { result, storedAt } };
+      // PROTOCOL §7.0: write back only if the stored token is still the one this request used
+      // (another instance may have signed out, signed in again or renewed it meanwhile).
+      if (s.sessionToken !== token) return null;
+      return { ...s, sessionToken: renewed ?? token, cache: { result, storedAt: fetchedAt } };
     });
     return result;
   }
@@ -604,7 +640,8 @@ export abstract class SponsorkitCore<I = unknown> {
     if (res.status === 401 && stored.sessionToken) {
       // PROTOCOL §7: adding an identity to a dead session clears it and retries the (reusable) code once without it.
       await res.body?.cancel().catch(() => undefined);
-      await this.updateStorage((s) => ({ v: 1, nags: s.nags }));
+      const dead = stored.sessionToken;
+      await this.updateStorage((s) => (s.sessionToken === dead ? { v: 1, nags: s.nags } : null));
       res = await post(undefined);
     }
     if (!res.ok) {
@@ -619,13 +656,13 @@ export abstract class SponsorkitCore<I = unknown> {
     } catch (cause) {
       throw new SponsorkitError("network_error", "Malformed sign-in response", { cause });
     }
-    if (!isObject(body) || typeof body.sessionToken !== "string" || !isObject(body.result)) {
+    if (!isObject(body) || !isSessionToken(body.sessionToken) || !isObject(body.result)) {
       throw new SponsorkitError("network_error", "Malformed sign-in response");
     }
     const sessionToken = body.sessionToken;
     const result = { ...(body.result as unknown as ContributionResult), fromCache: false };
     const storedAt = new Date(this.now()).toISOString();
-    await this.updateStorage((s) => ({ ...s, sessionToken, cache: { result, storedAt } }));
+    await this.persistStorage((s) => ({ ...s, sessionToken, cache: { result, storedAt } }), "save the session");
     return result;
   }
 
@@ -703,7 +740,8 @@ export abstract class SponsorkitCore<I = unknown> {
       ? (this.mockNags[id] ?? { runs: 0, lastShown: null })
       : ((await this.readStorage()).nags?.[id] ?? { runs: 0, lastShown: null });
     if (state.runs >= every) return true;
-    if (orEveryMs !== null && state.lastShown) return this.now() - Date.parse(state.lastShown) >= orEveryMs;
+    const lastShown = parseIsoTimestamp(state.lastShown);
+    if (orEveryMs !== null && lastShown !== null) return this.now() - lastShown >= orEveryMs;
     return false;
   }
 

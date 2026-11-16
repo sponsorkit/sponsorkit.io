@@ -44,7 +44,7 @@ internal static class Platform
     }
 
     /// <summary>How long to wait for <c>xdg-open</c>/<c>open</c> to report whether it could open the URL.</summary>
-    internal static readonly TimeSpan OpenerExitWait = TimeSpan.FromSeconds(3);
+    internal static readonly TimeSpan OpenerExitWait = TimeSpan.FromSeconds(1.5);
 
     /// <summary>
     /// Opens <paramref name="url"/> in the system browser. Throws if no browser could be launched, including when
