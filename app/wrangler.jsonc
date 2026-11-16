@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sponsorkit",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Static Next.js export (web/). Assets are served without invoking the Worker,
+  // except for /api/* which always runs the Worker first.
+  "assets": {
+    "directory": "../web/out",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "404-page"
+  },
+
+  // Workers Rate Limiting bindings. The code treats a missing binding as "no limit".
+  // namespace_id values only need to be unique within the Cloudflare account.
+  "ratelimits": [
+    // /api/v1/auth/* and /api/oauth/*: 30 requests / 60 s per client IP.
+    { "name": "RL_AUTH", "namespace_id": "4201", "simple": { "limit": 30, "period": 60 } },
+    // /api/v1/contributions: 1 refresh / 60 s per session (hash of target set + identities).
+    { "name": "RL_REFRESH", "namespace_id": "4202", "simple": { "limit": 1, "period": 60 } },
+    // All /api/*: 120 requests / 60 s per client IP.
+    { "name": "RL_IP", "namespace_id": "4203", "simple": { "limit": 120, "period": 60 } }
+  ],
+
+  "observability": { "enabled": true },
+
+  // Secrets (set with `wrangler secret put <NAME>`; see .dev.vars.example):
+  // GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, OPENCOLLECTIVE_CLIENT_ID,
+  // OPENCOLLECTIVE_CLIENT_SECRET, SEALING_KEYS, PAIRWISE_KEY, GITHUB_METADATA_TOKEN
+  "vars": {}
+}

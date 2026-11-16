@@ -1,1 +1,22 @@
-{ "name": "@sponsorkit/app", "version": "0.0.0", "private": true, "type": "module" }
+{
+  "name": "@sponsorkit/app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@sponsorkit/shared": "workspace:*",
+    "hono": "^4.13.19",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.163.0"
+  }
+}
