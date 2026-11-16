@@ -75,6 +75,21 @@ scenarios! {
     verify_session_match => "verify-session-match",
     verify_session_mismatch => "verify-session-mismatch",
     verify_session_invalid => "verify-session-invalid",
+    sign_in_cancelled => "sign-in-cancelled",
+    sign_in_timeout => "sign-in-timeout",
+    sign_in_token_server_error => "sign-in-token-server-error",
+    sign_in_invalid_code => "sign-in-invalid-code",
+    sign_in_add_identity_dead_session => "sign-in-add-identity-dead-session",
+    verify_session_unreachable => "verify-session-unreachable",
+    verify_session_rate_limited => "verify-session-rate-limited",
+    verify_session_server_error => "verify-session-server-error",
+    mock_nag_in_memory => "mock-nag-in-memory",
+    checkout_url_invalid => "checkout-url-invalid",
+    config_dev_checks_env => "config-dev-checks-env",
+    config_dev_checks_default_off => "config-dev-checks-default-off",
+    config_env_replaces_process_env => "config-env-replaces-process-env",
+    config_cache_ttl_minimum => "config-cache-ttl-minimum",
+    nag_interactive => "nag-interactive",
 }
 
 /// Fails when scenarios.json gains a scenario this file has no test for (or loses one).

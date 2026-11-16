@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::io::{BufRead as _, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::{Arc, LazyLock, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
@@ -74,15 +74,16 @@ fn fake_server() -> &'static FakeServer {
 /// Scenarios share one server and per-process SDK state: run them one at a time.
 static SERIAL: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-static HTTP: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
-
 struct Control {
     base: String,
+    // One client per scenario: every #[tokio::test] has its own runtime, and a
+    // pooled connection from a runtime that has shut down fails the next request.
+    http: reqwest::Client,
 }
 
 impl Control {
     async fn call(&self, method: reqwest::Method, path: &str, body: Option<&Value>) -> Value {
-        let mut req = HTTP.request(method.clone(), format!("{}{}", self.base, path));
+        let mut req = self.http.request(method.clone(), format!("{}{}", self.base, path));
         if let Some(b) = body {
             req = req.json(b);
         }
@@ -135,6 +136,9 @@ fn hooks() -> (OpenBrowserHook, PromptForCodeHook) {
 enum StepError {
     Sdk(sponsorkit::Error),
     Harness(String),
+    /// The SDK's types cannot represent an argument (e.g. a fractional amount);
+    /// the runner treats such a step as passed.
+    Unrepresentable(String),
 }
 
 impl From<sponsorkit::Error> for StepError {
@@ -169,7 +173,47 @@ fn method(v: &Value) -> Option<SignInMethod> {
     }
 }
 
+/// Sets `configure.processEnv` in the real process environment and restores
+/// the previous values when dropped (at scenario end, even on failure).
+#[derive(Default)]
+struct ProcessEnvGuard {
+    saved: Vec<(String, Option<std::ffi::OsString>)>,
+}
+
+impl ProcessEnvGuard {
+    fn set(&mut self, vars: &Value) {
+        for (k, v) in vars.as_object().into_iter().flatten() {
+            if !self.saved.iter().any(|(name, _)| name == k) {
+                self.saved.push((k.clone(), std::env::var_os(k)));
+            }
+            // SAFETY: scenarios run one at a time (SERIAL); while one runs no
+            // other thread of this test binary reads these variables.
+            #[allow(unsafe_code)]
+            unsafe {
+                std::env::set_var(k, v.as_str().unwrap_or_default());
+            }
+        }
+    }
+}
+
+impl Drop for ProcessEnvGuard {
+    fn drop(&mut self) {
+        for (k, v) in self.saved.drain(..) {
+            // SAFETY: see `set`.
+            #[allow(unsafe_code)]
+            unsafe {
+                match v {
+                    Some(v) => std::env::set_var(&k, v),
+                    None => std::env::remove_var(&k),
+                }
+            }
+        }
+    }
+}
+
 /// Builds `Options` from `configure` args (README §3.3), with the schema defaults applied.
+/// `env` is always passed (it replaces the process env); `devChecks`,
+/// `signInTimeout` and `interactive` only when present.
 fn options_from(args: &Value, ctx: &Ctx) -> Result<Options, StepError> {
     let (open, prompt) = hooks();
     let mock = match &args["mock"] {
@@ -192,12 +236,11 @@ fn options_from(args: &Value, ctx: &Ctx) -> Result<Options, StepError> {
         storage_dir: Some(PathBuf::from(args["storageDir"].as_str().unwrap_or(&ctx.storage_dir))),
         api_base_url: Some(args["apiBaseUrl"].as_str().unwrap_or(&ctx.base_url).to_string()),
         sign_in_method: method(&args["signInMethod"]).unwrap_or_default(),
+        sign_in_timeout: secs(&args["signInTimeout"]),
         env: Some(env),
-        dev_checks: Some(args["devChecks"].as_bool().unwrap_or(false)),
+        dev_checks: args["devChecks"].as_bool(),
         checkout_poll_interval: None,
-        // Test runners are not terminals (nag-suppressed relies on it), even when
-        // `cargo test` itself runs in one.
-        interactive: Some(false),
+        interactive: args["interactive"].as_bool(),
         open_browser: Some(open),
         prompt_for_code: Some(prompt),
         restart: false,
@@ -211,6 +254,7 @@ struct Ctx {
     config: Option<Value>,
     instance: Option<Sponsorkit>,
     minted: Option<String>,
+    process_env: ProcessEnvGuard,
 }
 
 fn to_json<T: serde::Serialize>(v: &T) -> Value {
@@ -222,13 +266,25 @@ async fn exec_on(step: &Value, sk: Option<Sponsorkit>, ctx_base: &str) -> StepRe
     let need = || sk.clone().ok_or_else(|| StepError::Harness("no SDK instance (configure failed or missing)".into()));
     match step["action"].as_str().unwrap() {
         "signIn" => {
-            need()?
+            let cancel = CancellationToken::new();
+            let timer = secs(&args["cancelAfter"]).map(|d| {
+                let c = cancel.clone();
+                tokio::spawn(async move {
+                    tokio::time::sleep(d).await;
+                    c.cancel();
+                })
+            });
+            let r = need()?
                 .sign_in(SignInOptions {
                     provider: provider(&args["provider"])?,
                     method: method(&args["method"]),
-                    cancel: None,
+                    cancel: Some(cancel),
                 })
-                .await?;
+                .await;
+            if let Some(t) = timer {
+                t.abort();
+            }
+            r?;
             Ok(Value::Null)
         }
         "isSignedIn" => Ok(Value::Bool(need()?.is_signed_in())),
@@ -265,9 +321,13 @@ async fn exec_on(step: &Value, sk: Option<Sponsorkit>, ctx_base: &str) -> StepRe
             Ok(to_json(&r?))
         }
         "checkoutUrl" => {
+            let amount = match &args["amount"] {
+                Value::Null => None,
+                v => Some(v.as_i64().ok_or_else(|| StepError::Unrepresentable(format!("amount {v}")))?),
+            };
             let opts = CheckoutOptions {
                 provider: provider(&args["provider"])?,
-                amount: args["amount"].as_i64(),
+                amount,
                 currency: str_opt(&args["currency"]),
                 frequency: match args["frequency"].as_str() {
                     Some(f) => Some(f.parse()?),
@@ -275,7 +335,7 @@ async fn exec_on(step: &Value, sk: Option<Sponsorkit>, ctx_base: &str) -> StepRe
                 },
                 ..Default::default()
             };
-            Ok(Value::String(need()?.checkout_url(&opts)))
+            Ok(Value::String(need()?.checkout_url(&opts)?))
         }
         "signOut" => {
             need()?.sign_out().await?;
@@ -306,12 +366,13 @@ async fn exec_on(step: &Value, sk: Option<Sponsorkit>, ctx_base: &str) -> StepRe
             Ok(Value::Null)
         }
         "verifySession" => {
+            let base = args["apiBaseUrl"].as_str().unwrap_or(ctx_base).to_string();
             let t = &args["targets"];
             let targets = Targets { github: str_opt(&t["github"]), opencollective: str_opt(&t["opencollective"]) };
             let r = server::verify_session_with(
                 args["token"].as_str().unwrap(),
                 &targets,
-                server::VerifyOptions { api_base_url: Some(ctx_base.to_string()), ..Default::default() },
+                server::VerifyOptions { api_base_url: Some(base), ..Default::default() },
             )
             .await?;
             Ok(to_json(&r))
@@ -330,6 +391,7 @@ async fn exec(step: &Value, ctx: &mut Ctx) -> StepResult {
         "configure" => {
             ctx.instance = None;
             ctx.config = Some(args.clone());
+            ctx.process_env.set(&args["processEnv"]);
             ctx.instance = Some(Sponsorkit::new(options_from(args, ctx)?)?);
             Ok(Value::Null)
         }
@@ -471,7 +533,7 @@ pub async fn run(id: &str) {
         .unwrap_or_else(|| panic!("scenario {id} not found in scenarios.json"))
         .clone();
     let server = fake_server();
-    let control = Control { base: server.base_url.clone() };
+    let control = Control { base: server.base_url.clone(), http: reqwest::Client::new() };
     let suffix: u32 = std::process::id() ^ (Instant::now().elapsed().subsec_nanos() + rand_u32());
     let storage_dir = storage_root().join(format!("{id}-{suffix:08x}")).to_string_lossy().into_owned();
 
@@ -498,6 +560,7 @@ pub async fn run(id: &str) {
         config: None,
         instance: None,
         minted: None,
+        process_env: ProcessEnvGuard::default(),
     };
 
     async fn vars(ctx: &Ctx, unreachable: &str) -> Vars {
@@ -530,9 +593,13 @@ pub async fn run(id: &str) {
                     a.entry("apiBaseUrl").or_insert(json!("$BASE_URL"));
                     a.entry("storageDir").or_insert(json!("$STORAGE_DIR"));
                     a.entry("env").or_insert(json!({}));
-                    a.entry("devChecks").or_insert(json!(false));
                 } else {
-                    s["args"] = json!({ "apiBaseUrl": "$BASE_URL", "storageDir": "$STORAGE_DIR", "env": {}, "devChecks": false });
+                    s["args"] = json!({ "apiBaseUrl": "$BASE_URL", "storageDir": "$STORAGE_DIR", "env": {} });
+                }
+            }
+            Some("verifySession") => {
+                if let Some(a) = s["args"].as_object_mut() {
+                    a.entry("apiBaseUrl").or_insert(json!("$BASE_URL"));
                 }
             }
             Some("writeStorage") => {
@@ -587,7 +654,11 @@ pub async fn run(id: &str) {
             substitute(&resolve_const(&expect), &v)
         };
         let throws = expect.get("throws").and_then(Value::as_str);
+        if let Err(StepError::Unrepresentable(_)) = &outcome {
+            continue; // README: a value the SDK's types cannot express counts as passed.
+        }
         let returned = match &outcome {
+            Err(StepError::Unrepresentable(_)) => unreachable!(),
             Err(StepError::Harness(m)) => {
                 problems.push(format!("harness error: {m}"));
                 None
@@ -599,6 +670,13 @@ pub async fn run(id: &str) {
                         problems.push(format!("expected error {t}, got {} ({})", e.code().as_str(), e.message()))
                     }
                     _ => {}
+                }
+                if let Some(m) = expect.get("error") {
+                    let normalized = json!({
+                        "code": e.code().as_str(),
+                        "retryAfter": e.retry_after().map(|d| d.as_secs()),
+                    });
+                    problems.extend(matches(Some(&normalized), m, "error"));
                 }
                 None
             }

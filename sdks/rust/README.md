@@ -42,7 +42,7 @@ async fn main() -> Result<(), sponsorkit::Error> {
     if !fc.signed_in {
         println!("Already a sponsor? Run `my-cli sponsor login`.");
     } else if !supports {
-        println!("Support my-cli: {}", sk.checkout_url(&CheckoutOptions::default()));
+        println!("Support my-cli: {}", sk.checkout_url(&CheckoutOptions::default())?);
     }
 
     // `my-cli sponsor`: sign in if needed, open the checkout, wait for the contribution.
@@ -76,8 +76,9 @@ malformed (even when disabled), or the mock preset is unknown.
 | `storage_dir` | per-user config dir | Linux `$XDG_CONFIG_HOME/sponsorkit`, macOS `~/Library/Application Support/sponsorkit`, Windows `%APPDATA%\sponsorkit`. |
 | `api_base_url` | `https://sponsorkit.io` | Origin of the API (self-hosting, tests). |
 | `sign_in_method` | `Auto` | `Auto` (loopback, falls back to paste-back without a display, over SSH, or when the browser cannot open), `Loopback`, `Paste`. |
-| `env` | process environment | Override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `CI`. |
-| `dev_checks` | on in debug builds | Dev-time check that the targets exist (one `GET /api/v1/targets` per process, on the first async call). |
+| `sign_in_timeout` | 300 s | How long a loopback or paste-back sign-in may take (also the sign-in phase of `open_checkout`). Exceeding it fails with `timeout`. |
+| `env` | process environment | Override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS`, `CI`. When given, it **replaces** the process environment for these variables (not merged). |
+| `dev_checks` | on when `SPONSORKIT_DEV_CHECKS` is set | Dev-time check that the targets exist (one `GET /api/v1/targets` per process, on the first async call). Rust has no implicit development signal; the option beats the variable. |
 | `checkout_poll_interval` | 60 s | How often `open_checkout` re-checks. |
 | `interactive` | stdout+stderr are terminals | Override terminal detection for the nag helper. |
 | `open_browser` | system browser | Hook `Fn(String) -> BoxFuture<io::Result<()>>`. |
@@ -91,10 +92,10 @@ An environment variable counts as **set** when it is non-empty and not `0` or `f
 | Method | Returns | Notes |
 |---|---|---|
 | `get_financial_contribution(GetOptions { cache_ttl })` | `Result<ContributionResult>` | Never fails for network/server problems (see below). `GetOptions::fresh()` bypasses the cache. |
-| `sign_in(SignInOptions { provider, method, cancel })` | `Result<ContributionResult>` | Loopback (5-minute timeout) or paste-back. While signed in, adds a second identity (`provider: Some(Provider::OpenCollective)`). |
+| `sign_in(SignInOptions { provider, method, cancel })` | `Result<ContributionResult>` | Loopback or paste-back, bounded by `sign_in_timeout`. While signed in, adds a second identity (`provider: Some(Provider::OpenCollective)`); if the stored session is dead, it is cleared and the same code is exchanged again for a new session. |
 | `is_signed_in()` | `bool` | Local only. |
-| `open_checkout(CheckoutOptions { provider, amount, currency, frequency, timeout, poll_interval, cancel, sign_in_method })` | `Result<CheckoutOutcome>` | Signs in first if needed, opens `/checkout`, polls until a new or changed contribution appears. `Contributed { contribution }` or `Unknown` (timeout, default 10 min, or cancellation). |
-| `checkout_url(&CheckoutOptions)` | `String` | Synchronous, offline link to `/checkout` without sign-in. For nags and READMEs. |
+| `open_checkout(CheckoutOptions { provider, amount, currency, frequency, timeout, poll_interval, cancel, sign_in_method })` | `Result<CheckoutOutcome>` | Signs in first if needed, opens `/checkout`, polls until a new or changed contribution appears. `Contributed { contribution }` or `Unknown` (polling `timeout`, default 10 min, or cancellation in either phase). The `timeout` starts once the checkout page is open; signing in first is bounded by `sign_in_timeout` and fails with `timeout`. |
+| `checkout_url(&CheckoutOptions)` | `Result<String>` | Synchronous, offline link to `/checkout` without sign-in. For nags and READMEs. `invalid_config` for an unconfigured provider, an amount ≤ 0 or a currency that is not three letters. |
 | `sign_out()` | `Result<()>` | Deletes the session token and cache; keeps nag state. |
 | `nag(NagOptions)` | `Nag` | See [Nag helper](#nag-helper). |
 | `Sponsorkit::reset_process_state()` | – | Forget nag runs counted, the dev-check memo and `Retry-After` back-offs. |
@@ -118,7 +119,7 @@ Each `Contribution` has `id`, `provider`, `target`, `sponsor`, `via` (`Direct`/`
 
 | Situation | Behaviour |
 |---|---|
-| No targets / malformed target / target doesn't exist (dev check) | `Err` with `ErrorCode::InvalidConfig` |
+| No targets / malformed target / target doesn't exist (dev check) / invalid checkout options | `Err` with `ErrorCode::InvalidConfig` |
 | Not signed in | Signed-out result, no network call |
 | Session invalid | Token and cache cleared, signed-out result |
 | One provider unavailable | Its cached contributions are merged in, `stale: true` |
@@ -126,10 +127,19 @@ Each `Contribution` has `id`, `provider`, `target`, `sponsor`, `via` (`Direct`/`
 | `SPONSORKIT_DISABLE=1` | No network or disk. `disabled: true`; nags are never due; `sign_in`/`open_checkout` fail with `Disabled`. |
 
 `Error::code()` returns an `ErrorCode`; `ErrorCode::as_str()` gives the wire spelling shared
-by all SDKs: `invalid_config`, `disabled`, `popup_blocked`, `access_denied`,
-`invalid_state`, `provider_error`, `invalid_code`, `session_invalid`, `targets_mismatch`,
-plus `timeout` (sign-in not completed/cancelled) and `internal` (sign-in or verification
-could not reach the server, or local storage could not be written).
+by all SDKs (PROTOCOL §7):
+
+| Code | When |
+|---|---|
+| `invalid_config` | Bad options or targets, dev-time check failed, or a local environment the SDK cannot work in (unwritable storage directory) |
+| `disabled` | `sign_in`/`open_checkout` while `SPONSORKIT_DISABLE` is set |
+| `popup_blocked` | Browser SDK only; listed for parity |
+| `access_denied`, `invalid_state`, `provider_error` | Delivered by the sign-in page |
+| `invalid_code` | The API rejected the code exchange (`400 invalid_code`) |
+| `cancelled` | `SignInOptions::cancel` fired, or nothing was entered at the paste-back prompt |
+| `timeout` | Sign-in exceeded `sign_in_timeout` |
+| `network_error` | `sign_in` or `verify_session` could not reach the API, or got 5xx, 429 or an unexpected answer. `Error::retry_after()` returns the API's `Retry-After`, if any |
+| `session_invalid`, `targets_mismatch` | Only from `verify_session` |
 
 ```rust,no_run
 # async fn run(sk: sponsorkit::Sponsorkit) {
@@ -144,9 +154,10 @@ match sk.sign_in(SignInOptions::default()).await {
 
 ### Cancellation
 
-`open_checkout` takes a `tokio_util` `CancellationToken` (re-exported as
-`sponsorkit::CancellationToken`) in `CheckoutOptions::cancel`. Cancelling resolves
-`CheckoutOutcome::Unknown` instead of failing. Dropping the future (for example through
+`sign_in` and `open_checkout` take a `tokio_util` `CancellationToken` (re-exported as
+`sponsorkit::CancellationToken`) in `SignInOptions::cancel` / `CheckoutOptions::cancel`.
+Cancelling `sign_in` fails with `cancelled`; cancelling `open_checkout` (while it signs in
+or while it polls) resolves `CheckoutOutcome::Unknown` instead of failing. Dropping the future (for example through
 `tokio::time::timeout` or `tokio::select!`) also stops everything, including the loopback
 listener, but yields no result.
 
@@ -168,7 +179,7 @@ use sponsorkit::{CheckoutOptions, Frequency, NagOptions, parse_iso_duration};
 
 let nag = sk.nag(NagOptions::new("my-cli", 10).or_every(parse_iso_duration("P7D").unwrap()));
 if nag.due(|fc| fc.active().is_empty()).await {
-    let url = sk.checkout_url(&CheckoutOptions { frequency: Some(Frequency::Monthly), ..Default::default() });
+    let url = sk.checkout_url(&CheckoutOptions { frequency: Some(Frequency::Monthly), ..Default::default() }).unwrap();
     eprintln!("Enjoying my-cli? Support it: {url}");
     nag.shown().await;
 }
@@ -178,7 +189,7 @@ if nag.due(|fc| fc.active().is_empty()).await {
 - The run counter goes up once per process per `id`, on the first `due()` call (even when the predicate is false).
 - `due()` is `predicate && (runs >= every || since(last_shown) >= or_every)`; `shown()` resets both.
 - `due()` is always false when `SPONSORKIT_DISABLE`, `SPONSORKIT_NO_NAG` or `CI` is set, or stdout/stderr
-  is not a terminal, unless `due_with(pred, DueOptions { force: true })` (force never overrides `SPONSORKIT_DISABLE`).
+  is not a terminal (override with `Options::interactive`), unless `due_with(pred, DueOptions { force: true })` (force never overrides `SPONSORKIT_DISABLE`).
 - It never signs in implicitly.
 
 ## Mock mode and testing
@@ -200,7 +211,7 @@ assert!(fc.mock && fc.active().len() == 1);
 - `Mock::Contributions(vec![…])` gives a signed-in result with exactly those contributions.
 - `SPONSORKIT_MOCK=active-monthly` selects a preset from the environment (the `mock` option wins).
 - Mock mode performs no network and no disk access. `sign_in` resolves immediately and
-  `open_checkout` simulates a new contribution; state lives in memory per instance.
+  `open_checkout` simulates a new contribution; state, including nag runs, lives in memory per instance.
 - `SPONSORKIT_DISABLE=1` beats mock mode.
 - For end-to-end tests, inject `open_browser`, `prompt_for_code`, `storage_dir`,
   `api_base_url`, `env` and `checkout_poll_interval` (see `tests/common/mod.rs`).
@@ -224,7 +235,9 @@ match verify_session(token, &Targets::github("octocat")).await {
 ```
 
 `server::verify_session_with(token, &targets, VerifyOptions { api_base_url, http_client })`
-overrides the origin or reuses an HTTP client. It never touches local storage.
+overrides the origin or reuses an HTTP client. It never touches local storage. When the
+answer cannot be verified (API unreachable, 5xx, 429) it fails with `network_error`;
+on 429, `e.retry_after()` says how long to wait.
 
 ## Local storage
 
@@ -242,7 +255,12 @@ cargo clippy --all-targets -- -D warnings
 ```
 
 `tests/conformance.rs` has one test per scenario id of `sdks/conformance/scenarios.json`
-(`-` becomes `_`), run against `bun sdks/conformance/server.ts`.
+(`-` becomes `_`), run against `bun sdks/conformance/server.ts`. The harness
+(`tests/common/mod.rs`) always passes `configure.env` as the `env` override, passes
+`devChecks`, `signInTimeout` and `interactive` only when a scenario sets them, sets
+`processEnv` in the real process environment for the scenario, cancels `signIn` and
+`openCheckout` through a `CancellationToken` after `cancelAfter`, and matches
+`expect.error` against `{ code, retryAfter }` (from `Error::retry_after()`).
 
 ## License
 

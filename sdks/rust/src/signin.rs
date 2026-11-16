@@ -18,9 +18,6 @@ use crate::targets::Provider;
 use crate::time::now_iso;
 use crate::types::{ContributionResult, Problem, TokenResponse};
 
-/// How long loopback sign-in waits for the browser (PROTOCOL §7).
-pub const LOOPBACK_TIMEOUT: Duration = Duration::from_secs(5 * 60);
-
 /// Options for [`Sponsorkit::sign_in`].
 #[derive(Debug, Clone, Default)]
 pub struct SignInOptions {
@@ -29,7 +26,8 @@ pub struct SignInOptions {
     pub provider: Option<Provider>,
     /// Overrides the instance's [`SignInMethod`] for this call.
     pub method: Option<SignInMethod>,
-    /// Cancels a pending sign-in; it then fails with [`ErrorCode::Timeout`].
+    /// Cancels a pending sign-in; it then fails with [`ErrorCode::Cancelled`].
+    /// Dropping the `sign_in` future also stops it (without a result).
     pub cancel: Option<CancellationToken>,
 }
 
@@ -60,8 +58,8 @@ impl From<Error> for CodeError {
 impl From<CodeError> for Error {
     fn from(e: CodeError) -> Self {
         match e {
-            CodeError::OpenFailed(m) => Error::internal(format!("Cannot open the browser: {m}")),
-            CodeError::Cancelled => Error::new(ErrorCode::Timeout, "Sign-in was cancelled"),
+            CodeError::OpenFailed(m) => Error::environment(format!("Cannot start loopback sign-in: {m}")),
+            CodeError::Cancelled => Error::new(ErrorCode::Cancelled, "Sign-in was cancelled"),
             CodeError::Other(e) => e,
         }
     }
@@ -170,14 +168,19 @@ impl Sponsorkit {
     /// Signs the supporter in (SPEC §6.2) and returns the fresh result.
     ///
     /// Opens the browser on the consent page and waits for the code on a
-    /// loopback port (5-minute timeout), or prints a URL to stderr and reads
-    /// the code the page shows (paste-back). While already signed in, this
-    /// adds an identity (pass `provider` to pick it).
+    /// loopback port, or prints a URL to stderr and reads the code the page
+    /// shows (paste-back). Waits at most [`crate::Options::sign_in_timeout`]
+    /// (default 300 s). While already signed in, this adds an identity (pass
+    /// `provider` to pick it); if the stored session turns out to be dead, it
+    /// is cleared and a new session is started with the same code.
     ///
-    /// Errors: `disabled`, `access_denied` / `invalid_state` /
-    /// `provider_error` (delivered by the sign-in page), `invalid_code`,
-    /// `timeout`, `internal` (network or storage failure), `invalid_config`
-    /// (dev-time target check).
+    /// Errors (PROTOCOL §7): `disabled`; `access_denied` / `invalid_state` /
+    /// `provider_error` (delivered by the sign-in page); `invalid_code` (the
+    /// API rejected the code); `cancelled` ([`SignInOptions::cancel`], or
+    /// nothing entered at the paste-back prompt); `timeout`; `network_error`
+    /// (the API could not be reached or answered 5xx/429/unexpectedly, with
+    /// [`Error::retry_after`] when it sent `Retry-After`); `invalid_config`
+    /// (unconfigured provider, dev-time target check, unwritable storage).
     pub async fn sign_in(&self, options: SignInOptions) -> Result<ContributionResult> {
         self.ensure_enabled()?;
         if let Some(mut m) = self.mock_state() {
@@ -254,18 +257,30 @@ impl Sponsorkit {
     ) -> std::result::Result<(String, String), CodeError> {
         let verifier = generate_verifier()?;
         let challenge = code_challenge(&verifier);
-        let code = match method {
-            SignInMethod::Loopback => self.loopback(&page, &challenge, &extra, cancel, false).await?,
-            SignInMethod::Paste => self.paste(&page, &challenge, &extra, cancel).await?,
-            SignInMethod::Auto => {
-                if self.inner.open_browser.is_none() && !has_display() {
-                    self.paste(&page, &challenge, &extra, cancel).await?
-                } else {
-                    match self.loopback(&page, &challenge, &extra, cancel, true).await {
-                        Err(CodeError::OpenFailed(_)) => self.paste(&page, &challenge, &extra, cancel).await?,
-                        other => other?,
+        let limit = self.inner.sign_in_timeout;
+        let wait = async {
+            Ok::<String, CodeError>(match method {
+                SignInMethod::Loopback => self.loopback(&page, &challenge, &extra, cancel, false).await?,
+                SignInMethod::Paste => self.paste(&page, &challenge, &extra, cancel).await?,
+                SignInMethod::Auto => {
+                    if self.inner.open_browser.is_none() && !has_display() {
+                        self.paste(&page, &challenge, &extra, cancel).await?
+                    } else {
+                        match self.loopback(&page, &challenge, &extra, cancel, true).await {
+                            Err(CodeError::OpenFailed(_)) => self.paste(&page, &challenge, &extra, cancel).await?,
+                            other => other?,
+                        }
                     }
                 }
+            })
+        };
+        let code = match tokio::time::timeout(limit, wait).await {
+            Ok(code) => code?,
+            Err(_) => {
+                return Err(CodeError::Other(Error::new(
+                    ErrorCode::Timeout,
+                    format!("Sign-in was not completed within {} s", limit.as_secs_f64()),
+                )));
             }
         };
         Ok((code, verifier))
@@ -345,12 +360,8 @@ impl Sponsorkit {
                     ErrorCode::from_callback(&e),
                     format!("Sign-in failed: {e}"),
                 ))),
-                Err(_) => Err(CodeError::Other(Error::internal("The loopback server stopped"))),
+                Err(_) => Err(CodeError::Cancelled),
             },
-            _ = tokio::time::sleep(LOOPBACK_TIMEOUT) => Err(CodeError::Other(Error::new(
-                ErrorCode::Timeout,
-                "Sign-in was not completed within 5 minutes",
-            ))),
             _ = cancel.cancelled() => Err(CodeError::Cancelled),
         }
     }
@@ -381,12 +392,15 @@ impl Sponsorkit {
         let never = CancellationToken::new();
         let cancel = cancel.unwrap_or(&never);
         let code = tokio::select! {
-            c = prompt => c.map_err(|e| CodeError::Other(Error::internal(format!("Cannot read the sign-in code: {e}"))))?,
+            c = prompt => c.map_err(|e| CodeError::Other(Error::new(
+                ErrorCode::Cancelled,
+                format!("Cannot read the sign-in code: {e}"),
+            )))?,
             _ = cancel.cancelled() => return Err(CodeError::Cancelled),
         };
         let code = code.trim().to_string();
         if code.is_empty() {
-            return Err(CodeError::Other(Error::new(ErrorCode::InvalidCode, "No sign-in code was entered")));
+            return Err(CodeError::Other(Error::new(ErrorCode::Cancelled, "No sign-in code was entered")));
         }
         Ok(code)
     }
@@ -395,14 +409,21 @@ impl Sponsorkit {
     pub(crate) async fn exchange(&self, code: &str, verifier: &str) -> Result<ContributionResult> {
         let existing = self.storage().read().session_token;
         let res = match self.post_token(code, verifier, existing.as_deref()).await? {
-            // The stored session is no longer valid: start a fresh session instead of adding to it.
-            TokenOutcome::SessionInvalid if existing.is_some() => self.post_token(code, verifier, None).await?,
+            // Adding an identity to a dead session (PROTOCOL §7): clear the
+            // stored session and retry the same code once without it.
+            TokenOutcome::SessionInvalid if existing.is_some() => {
+                self.storage().update(|s| {
+                    s.session_token = None;
+                    s.cache = None;
+                })?;
+                self.post_token(code, verifier, None).await?
+            }
             other => other,
         };
         let token = match res {
             TokenOutcome::Ok(t) => t,
             TokenOutcome::SessionInvalid => {
-                return Err(Error::new(ErrorCode::InvalidCode, "The server rejected the session"));
+                return Err(Error::network("Unexpected 401 session_invalid from /auth/token", None));
             }
             TokenOutcome::Failed(e) => return Err(e),
         };
@@ -427,15 +448,16 @@ impl Sponsorkit {
             .json(&body)
             .send()
             .await
-            .map_err(|e| Error::internal(format!("Cannot reach Sponsorkit to finish sign-in: {e}")))?;
+            .map_err(|e| Error::network(format!("Cannot reach Sponsorkit to finish sign-in: {e}"), None))?;
         let status = res.status();
         if status.is_success() {
             let t = res
                 .json::<TokenResponse>()
                 .await
-                .map_err(|e| Error::internal(format!("Unexpected sign-in response: {e}")))?;
+                .map_err(|e| Error::network(format!("Unexpected sign-in response: {e}"), None))?;
             return Ok(TokenOutcome::Ok(Box::new(t)));
         }
+        let retry_after = retry_after_secs(res.headers());
         let problem = res.json::<Problem>().await.ok();
         let wire = problem.as_ref().and_then(|p| p.code.clone()).unwrap_or_default();
         let detail = problem
@@ -443,10 +465,10 @@ impl Sponsorkit {
             .and_then(|p| p.detail.clone().or_else(|| p.title.clone()))
             .unwrap_or_else(|| format!("HTTP {status}"));
         Ok(match (status.as_u16(), wire.as_str()) {
-            (401, _) | (_, "session_invalid") => TokenOutcome::SessionInvalid,
-            (_, "invalid_code") => TokenOutcome::Failed(Error::new(ErrorCode::InvalidCode, detail)),
-            (400, "invalid_request") => TokenOutcome::Failed(Error::new(ErrorCode::InvalidCode, detail)),
-            _ => TokenOutcome::Failed(Error::internal(format!("Sign-in failed: {detail}"))),
+            (401, _) => TokenOutcome::SessionInvalid,
+            (400, "invalid_code") => TokenOutcome::Failed(Error::new(ErrorCode::InvalidCode, detail)),
+            // 5xx, 429 and anything unexpected (PROTOCOL §7).
+            _ => TokenOutcome::Failed(Error::network(format!("Sign-in failed: HTTP {status}: {detail}"), retry_after)),
         })
     }
 }
@@ -455,4 +477,9 @@ enum TokenOutcome {
     Ok(Box<TokenResponse>),
     SessionInvalid,
     Failed(Error),
+}
+
+/// The `Retry-After` header as whole seconds (delta-seconds form only).
+pub(crate) fn retry_after_secs(headers: &reqwest::header::HeaderMap) -> Option<u64> {
+    headers.get(reqwest::header::RETRY_AFTER).and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<u64>().ok())
 }

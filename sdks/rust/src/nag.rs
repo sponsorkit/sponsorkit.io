@@ -55,7 +55,7 @@ impl Sponsorkit {
     /// use sponsorkit::{CheckoutOptions, Frequency, NagOptions};
     /// let nag = sk.nag(NagOptions::new("my-cli", 10).or_every(sponsorkit::parse_iso_duration("P7D").unwrap()));
     /// if nag.due(|fc| fc.active().is_empty()).await {
-    ///     let url = sk.checkout_url(&CheckoutOptions { frequency: Some(Frequency::Monthly), ..Default::default() });
+    ///     let url = sk.checkout_url(&CheckoutOptions { frequency: Some(Frequency::Monthly), ..Default::default() }).unwrap();
     ///     eprintln!("Enjoying my-cli? Support it: {url}");
     ///     nag.shown().await;
     /// }
@@ -85,7 +85,12 @@ impl Nag {
         }
         let id = &self.options.id;
         let key = format!("{}:{}", sk.inner.hash, id);
-        let first_run = process().nag_counted.insert(key);
+        // Mock mode keeps everything in memory, per instance (PROTOCOL §7.1 item 14).
+        let first_run = if sk.inner.mock.is_some() {
+            sk.inner.mock_nag_counted.lock().unwrap_or_else(|e| e.into_inner()).insert(key)
+        } else {
+            process().nag_counted.insert(key)
+        };
         if first_run {
             self.update(|n| n.runs += 1);
         }

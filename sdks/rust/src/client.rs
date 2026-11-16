@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::error::{Error, ErrorCode, Result};
+use crate::error::{Error, Result};
 use crate::mock::{Mock, MockPreset, MockState};
 use crate::platform::is_set;
 use crate::storage::{Cache, NagState, Storage, default_storage_dir};
@@ -26,6 +26,8 @@ pub const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(3600);
 pub const MIN_CACHE_TTL: Duration = Duration::from_secs(60);
 /// The default interval at which `open_checkout` polls for a new contribution (60 s).
 pub const DEFAULT_CHECKOUT_POLL_INTERVAL: Duration = Duration::from_secs(60);
+/// The default [`Options::sign_in_timeout`] (300 s).
+pub const DEFAULT_SIGN_IN_TIMEOUT: Duration = Duration::from_secs(300);
 
 pub(crate) const USER_AGENT: &str = concat!("sponsorkit-rust/", env!("CARGO_PKG_VERSION"));
 
@@ -85,12 +87,17 @@ pub struct Options {
     pub api_base_url: Option<String>,
     /// Forces a sign-in method. Default [`SignInMethod::Auto`].
     pub sign_in_method: SignInMethod,
+    /// How long `sign_in` (and the sign-in phase of `open_checkout`) waits for
+    /// the loopback callback or the paste-back code. Exceeding it fails with
+    /// `timeout`. Default [`DEFAULT_SIGN_IN_TIMEOUT`] (300 s).
+    pub sign_in_timeout: Option<Duration>,
     /// Environment override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`,
-    /// `SPONSORKIT_NO_NAG` and `CI`. When `Some`, the process environment is
-    /// not consulted for these variables.
+    /// `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`. When `Some`, it
+    /// replaces the process environment for these variables (it is not merged).
     pub env: Option<HashMap<String, String>>,
-    /// Forces the dev-time target existence check on or off. Default: on in
-    /// debug builds (`debug_assertions`), off in release builds.
+    /// Forces the dev-time target existence check on or off. Default: on when
+    /// `SPONSORKIT_DEV_CHECKS` is set (see [`Options::env`]), otherwise off.
+    /// Rust has no implicit development signal (PROTOCOL §7).
     pub dev_checks: Option<bool>,
     /// How often `open_checkout` polls for a new contribution. Default 60 s.
     pub checkout_poll_interval: Option<Duration>,
@@ -119,6 +126,7 @@ impl fmt::Debug for Options {
             .field("storage_dir", &self.storage_dir)
             .field("api_base_url", &self.api_base_url)
             .field("sign_in_method", &self.sign_in_method)
+            .field("sign_in_timeout", &self.sign_in_timeout)
             .field("env", &self.env)
             .field("dev_checks", &self.dev_checks)
             .field("checkout_poll_interval", &self.checkout_poll_interval)
@@ -169,9 +177,12 @@ pub(crate) struct Inner {
     pub disabled: bool,
     pub mock: Option<Mutex<MockState>>,
     pub mock_nags: Mutex<HashMap<String, NagState>>,
+    /// Mock mode: nag ids whose run was already counted by this instance.
+    pub mock_nag_counted: Mutex<HashSet<String>>,
     pub env: Option<HashMap<String, String>>,
     pub dev_checks: bool,
     pub sign_in_method: SignInMethod,
+    pub sign_in_timeout: Duration,
     pub poll_interval: Duration,
     pub interactive: Option<bool>,
     pub open_browser: Option<OpenBrowserHook>,
@@ -214,7 +225,7 @@ pub(crate) fn http_client() -> Result<reqwest::Client> {
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(30))
         .build()
-        .map_err(|e| Error::internal(format!("Cannot create HTTP client: {e}")))
+        .map_err(|e| Error::environment(format!("Cannot create HTTP client: {e}")))
 }
 
 /// What a `/contributions` request produced.
@@ -245,6 +256,7 @@ impl Sponsorkit {
             }
         };
         let disabled = is_set(lookup("SPONSORKIT_DISABLE").as_deref());
+        let dev_checks = options.dev_checks.unwrap_or_else(|| is_set(lookup("SPONSORKIT_DEV_CHECKS").as_deref()));
         let mock = match options.mock.clone() {
             Some(m) => Some(m),
             None => match lookup("SPONSORKIT_MOCK") {
@@ -278,9 +290,11 @@ impl Sponsorkit {
                 disabled,
                 mock: mock_state,
                 mock_nags: Mutex::new(HashMap::new()),
+                mock_nag_counted: Mutex::new(HashSet::new()),
                 env,
-                dev_checks: options.dev_checks.unwrap_or(cfg!(debug_assertions)),
+                dev_checks,
                 sign_in_method: options.sign_in_method,
+                sign_in_timeout: options.sign_in_timeout.unwrap_or(DEFAULT_SIGN_IN_TIMEOUT),
                 poll_interval: options.checkout_poll_interval.unwrap_or(DEFAULT_CHECKOUT_POLL_INTERVAL),
                 interactive: options.interactive,
                 open_browser: options.open_browser.clone(),
@@ -545,6 +559,6 @@ impl Sponsorkit {
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        Error::new(ErrorCode::Internal, format!("HTTP error: {e}"))
+        Error::network(format!("HTTP error: {e}"), None)
     }
 }

@@ -19,7 +19,7 @@
 //! let fc = sk.get_financial_contribution(GetOptions::default()).await?;
 //! let supports = fc.active().iter().any(|c| c.amount.currency == "USD" && c.amount.value >= 500);
 //! if fc.signed_in && !supports {
-//!     println!("Support my-cli: {}", sk.checkout_url(&CheckoutOptions::default()));
+//!     println!("Support my-cli: {}", sk.checkout_url(&CheckoutOptions::default())?);
 //! }
 //!
 //! // Interactive: sign in (if needed), open the checkout, wait for the contribution.
@@ -39,10 +39,21 @@
 //!
 //! ## Cancellation
 //!
-//! [`Sponsorkit::open_checkout`] accepts a [`CancellationToken`] in
-//! [`CheckoutOptions::cancel`]; cancelling resolves
-//! [`CheckoutOutcome::Unknown`]. Dropping the future (e.g. through
+//! [`Sponsorkit::sign_in`] accepts a [`CancellationToken`] in
+//! [`SignInOptions::cancel`]; cancelling fails with [`ErrorCode::Cancelled`].
+//! [`Sponsorkit::open_checkout`] accepts one in [`CheckoutOptions::cancel`];
+//! cancelling (in the sign-in or the polling phase) resolves
+//! [`CheckoutOutcome::Unknown`]. Dropping either future (e.g. through
 //! `tokio::time::timeout` or `select!`) also stops it, without a result.
+//!
+//! ## Errors
+//!
+//! Every error is an [`Error`] whose [`Error::code`] is one of the codes
+//! shared by all Sponsorkit SDKs (PROTOCOL §7): `invalid_config`,
+//! `disabled`, `popup_blocked`, `access_denied`, `invalid_state`,
+//! `provider_error`, `invalid_code`, `cancelled`, `timeout`,
+//! `network_error` (with [`Error::retry_after`]), `session_invalid` and
+//! `targets_mismatch`.
 //!
 //! ## Runtime
 //!
@@ -50,6 +61,7 @@
 //! storage uses small synchronous file operations.
 
 #![warn(missing_docs)]
+#![forbid(unsafe_code)]
 
 mod checkout;
 mod client;
@@ -67,14 +79,14 @@ mod types;
 
 pub use checkout::{CheckoutOptions, DEFAULT_CHECKOUT_TIMEOUT};
 pub use client::{
-    BoxFuture, DEFAULT_API_BASE_URL, DEFAULT_CACHE_TTL, DEFAULT_CHECKOUT_POLL_INTERVAL, GetOptions, MIN_CACHE_TTL,
-    OpenBrowserHook, Options, PromptForCodeHook, SignInMethod, Sponsorkit,
+    BoxFuture, DEFAULT_API_BASE_URL, DEFAULT_CACHE_TTL, DEFAULT_CHECKOUT_POLL_INTERVAL, DEFAULT_SIGN_IN_TIMEOUT,
+    GetOptions, MIN_CACHE_TTL, OpenBrowserHook, Options, PromptForCodeHook, SignInMethod, Sponsorkit,
 };
 pub use error::{Error, ErrorCode, Result};
 pub use mock::{MOCK_PRESETS_JSON, Mock, MockPreset, mock_result};
 pub use nag::{DueOptions, Nag, NagOptions};
 pub use pkce::{base64url, code_challenge, generate_verifier};
-pub use signin::{LOOPBACK_TIMEOUT, SignInOptions};
+pub use signin::SignInOptions;
 pub use targets::{Provider, Target, TargetSet, Targets};
 pub use time::parse_iso_duration;
 pub use tokio_util::sync::CancellationToken;

@@ -29,4 +29,7 @@ tokio = { version = "1.38", features = ["full"] }
 
 [lints.rust]
 missing_docs = "warn"
-unsafe_code = "forbid"
+# `deny` rather than `forbid` so the conformance harness can set process
+# environment variables (`configure.processEnv`); the library itself has
+# `#![forbid(unsafe_code)]`.
+unsafe_code = "deny"

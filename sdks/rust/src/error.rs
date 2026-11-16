@@ -10,7 +10,9 @@ use std::fmt;
 #[non_exhaustive]
 pub enum ErrorCode {
     /// Missing or invalid configuration: no targets, a malformed target, an
-    /// unknown mock preset, or (dev-time check) a target that does not exist.
+    /// unknown mock preset, invalid checkout options, (dev-time check) a
+    /// target that does not exist, or a local environment the SDK cannot work
+    /// in (an unwritable storage directory, no secure random source).
     InvalidConfig,
     /// Sponsorkit is disabled through `SPONSORKIT_DISABLE`.
     Disabled,
@@ -23,18 +25,23 @@ pub enum ErrorCode {
     InvalidState,
     /// The provider failed during sign-in.
     ProviderError,
-    /// Exchanging the sign-in code failed (malformed, expired or wrong verifier).
+    /// The API rejected the code exchange (`400 invalid_code`).
     InvalidCode,
+    /// Sign-in was cancelled through [`crate::SignInOptions::cancel`], or the
+    /// user abandoned it (e.g. nothing was entered at the paste-back prompt).
+    Cancelled,
+    /// Sign-in exceeded [`crate::Options::sign_in_timeout`] (default 300 s).
+    Timeout,
+    /// The API could not be reached, or answered 5xx, 429 or something
+    /// unexpected, during `sign_in`, `open_checkout`'s sign-in or
+    /// `verify_session`. [`Error::retry_after`] carries the API's
+    /// `Retry-After`, when it sent one. `get_financial_contribution` never
+    /// returns it.
+    NetworkError,
     /// The session token is invalid. Only returned by [`crate::server::verify_session`].
     SessionInvalid,
     /// The session is bound to different targets. Only returned by [`crate::server::verify_session`].
     TargetsMismatch,
-    /// Sign-in did not complete in time (loopback sign-in waits 5 minutes), or was cancelled.
-    Timeout,
-    /// An unexpected network, server or local I/O failure in an operation that
-    /// cannot degrade gracefully (sign-in, `verify_session`, writing storage).
-    /// `get_financial_contribution` never returns it.
-    Internal,
 }
 
 impl ErrorCode {
@@ -48,10 +55,11 @@ impl ErrorCode {
             ErrorCode::InvalidState => "invalid_state",
             ErrorCode::ProviderError => "provider_error",
             ErrorCode::InvalidCode => "invalid_code",
+            ErrorCode::Cancelled => "cancelled",
+            ErrorCode::Timeout => "timeout",
+            ErrorCode::NetworkError => "network_error",
             ErrorCode::SessionInvalid => "session_invalid",
             ErrorCode::TargetsMismatch => "targets_mismatch",
-            ErrorCode::Timeout => "timeout",
-            ErrorCode::Internal => "internal",
         }
     }
 
@@ -78,12 +86,13 @@ impl fmt::Display for ErrorCode {
 pub struct Error {
     code: ErrorCode,
     message: String,
+    retry_after: Option<u64>,
 }
 
 impl Error {
     /// Creates an error with the given code and human-readable message.
     pub fn new(code: ErrorCode, message: impl Into<String>) -> Self {
-        Error { code, message: message.into() }
+        Error { code, message: message.into(), retry_after: None }
     }
 
     /// The machine-readable error code.
@@ -96,6 +105,16 @@ impl Error {
         &self.message
     }
 
+    /// For [`ErrorCode::NetworkError`]: how long the API asked to wait before
+    /// retrying (its `Retry-After` header, in whole seconds), if it sent one.
+    pub fn retry_after(&self) -> Option<std::time::Duration> {
+        self.retry_after.map(std::time::Duration::from_secs)
+    }
+
+    pub(crate) fn network(message: impl Into<String>, retry_after: Option<u64>) -> Self {
+        Error { code: ErrorCode::NetworkError, message: message.into(), retry_after }
+    }
+
     pub(crate) fn invalid_config(message: impl Into<String>) -> Self {
         Error::new(ErrorCode::InvalidConfig, message)
     }
@@ -104,8 +123,9 @@ impl Error {
         Error::new(ErrorCode::Disabled, "Sponsorkit is disabled (SPONSORKIT_DISABLE is set)")
     }
 
-    pub(crate) fn internal(message: impl Into<String>) -> Self {
-        Error::new(ErrorCode::Internal, message)
+    /// A local environment problem (storage, randomness, HTTP client setup).
+    pub(crate) fn environment(message: impl Into<String>) -> Self {
+        Error::new(ErrorCode::InvalidConfig, message)
     }
 }
 

@@ -10,6 +10,7 @@
 
 use crate::client::{http_client, validate_base_url};
 use crate::error::{Error, ErrorCode, Result};
+use crate::signin::retry_after_secs;
 use crate::targets::Targets;
 use crate::types::ContributionResult;
 
@@ -33,9 +34,11 @@ pub async fn verify_session(token: &str, targets: &Targets) -> Result<Contributi
 /// session is bound to exactly `targets` (canonical comparison). Touches no
 /// local storage and never serves a cache.
 ///
-/// Errors: `invalid_config` (bad targets), `session_invalid`,
-/// `targets_mismatch`, `internal` (network, 5xx or rate limiting: the answer
-/// could not be verified).
+/// Errors: `invalid_config` (bad targets or `api_base_url`),
+/// `session_invalid`, `targets_mismatch`, and `network_error` when the answer
+/// could not be verified: the API is unreachable or answered 5xx, 429 or
+/// something unexpected. On 429, [`Error::retry_after`] carries the
+/// `Retry-After` the API sent.
 pub async fn verify_session_with(token: &str, targets: &Targets, options: VerifyOptions) -> Result<ContributionResult> {
     let expected = targets.canonical()?.param();
     let base = validate_base_url(options.api_base_url.as_deref())?;
@@ -52,16 +55,16 @@ pub async fn verify_session_with(token: &str, targets: &Targets, options: Verify
         .header(reqwest::header::ACCEPT, "application/json")
         .send()
         .await
-        .map_err(|e| Error::internal(format!("Cannot reach Sponsorkit: {e}")))?;
+        .map_err(|e| Error::network(format!("Cannot reach Sponsorkit: {e}"), None))?;
     let status = res.status();
     if status.as_u16() == 401 {
         return Err(Error::new(ErrorCode::SessionInvalid, "The session token is invalid or expired"));
     }
     if !status.is_success() {
-        return Err(Error::internal(format!("Sponsorkit answered HTTP {status}")));
+        return Err(Error::network(format!("Sponsorkit answered HTTP {status}"), retry_after_secs(res.headers())));
     }
     let result: ContributionResult =
-        res.json().await.map_err(|e| Error::internal(format!("Unexpected response from Sponsorkit: {e}")))?;
+        res.json().await.map_err(|e| Error::network(format!("Unexpected response from Sponsorkit: {e}"), None))?;
     let actual = result.targets.join(",");
     if actual != expected {
         return Err(Error::new(

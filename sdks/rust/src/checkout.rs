@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 use crate::client::{GetOptions, SignInMethod, Sponsorkit};
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::mock::mock_checkout_contribution;
 use crate::signin::{CodeError, StartPage};
 use crate::targets::Provider;
@@ -28,18 +28,44 @@ pub struct CheckoutOptions {
     pub currency: Option<String>,
     /// Suggested frequency.
     pub frequency: Option<Frequency>,
-    /// How long to wait for the contribution to show up. Default 10 minutes.
+    /// How long to wait for the contribution to show up once the checkout
+    /// page is open (the polling phase). Default 10 minutes. Signing in first
+    /// is bounded by [`crate::Options::sign_in_timeout`] instead.
     pub timeout: Option<Duration>,
     /// Overrides the instance's `checkout_poll_interval` for this call.
     pub poll_interval: Option<Duration>,
-    /// Stops waiting; `open_checkout` then resolves [`CheckoutOutcome::Unknown`].
-    /// Dropping the `open_checkout` future also stops it (without a result).
+    /// Stops waiting, in the sign-in or the polling phase; `open_checkout`
+    /// then resolves [`CheckoutOutcome::Unknown`]. Dropping the
+    /// `open_checkout` future also stops it (without a result).
     pub cancel: Option<CancellationToken>,
     /// Overrides the instance's sign-in method when the user is signed out.
     pub sign_in_method: Option<SignInMethod>,
 }
 
 impl Sponsorkit {
+    /// PROTOCOL §7.1 item 16: an unconfigured provider, a non-positive amount
+    /// or a malformed currency is `invalid_config`. (Frequencies are an enum.)
+    fn validate_checkout(&self, o: &CheckoutOptions) -> Result<()> {
+        if let Some(p) = o.provider {
+            if !self.has_provider(p) {
+                return Err(Error::invalid_config(format!("{p} is not one of the configured targets")));
+            }
+        }
+        if let Some(a) = o.amount {
+            if a <= 0 {
+                return Err(Error::invalid_config(format!("amount must be a positive number of minor units, got {a}")));
+            }
+        }
+        if let Some(c) = &o.currency {
+            if c.len() != 3 || !c.bytes().all(|b| b.is_ascii_alphabetic()) {
+                return Err(Error::invalid_config(format!(
+                    "currency must be an ISO 4217 code such as \"USD\", got \"{c}\""
+                )));
+            }
+        }
+        Ok(())
+    }
+
     fn checkout_params(&self, o: &CheckoutOptions) -> Vec<(String, String)> {
         let mut q = vec![("targets".to_string(), self.inner.targets.param())];
         if let Some(p) = o.provider {
@@ -48,7 +74,7 @@ impl Sponsorkit {
         if let Some(a) = o.amount {
             q.push(("amount".into(), a.to_string()));
         }
-        if let Some(c) = o.currency.as_deref().filter(|c| !c.is_empty()) {
+        if let Some(c) = o.currency.as_deref() {
             q.push(("currency".into(), c.to_ascii_uppercase()));
         }
         if let Some(f) = o.frequency {
@@ -59,12 +85,17 @@ impl Sponsorkit {
 
     /// A link to the `/checkout` page for these targets, without sign-in.
     ///
-    /// Synchronous and offline: suitable for nags, READMEs and `--help` output.
-    pub fn checkout_url(&self, options: &CheckoutOptions) -> String {
+    /// Synchronous and offline (no network, no disk): suitable for nags,
+    /// READMEs and `--help` output.
+    ///
+    /// Fails with `invalid_config` when `provider` is not configured, `amount`
+    /// is not positive or `currency` is not a three-letter ISO 4217 code.
+    pub fn checkout_url(&self, options: &CheckoutOptions) -> Result<String> {
+        self.validate_checkout(options)?;
         let mut url =
             reqwest::Url::parse(&format!("{}/checkout", self.inner.api_base_url)).expect("validated base URL");
         url.query_pairs_mut().extend_pairs(self.checkout_params(options));
-        url.to_string()
+        Ok(url.to_string())
     }
 
     /// Sends the supporter to contribute and waits until the contribution shows up.
@@ -75,11 +106,15 @@ impl Sponsorkit {
     /// 3. Polls `get_financial_contribution` (cache bypassed) every
     ///    `poll_interval` until a new or changed contribution appears.
     ///
-    /// Resolves [`CheckoutOutcome::Unknown`] on timeout or cancellation; it
-    /// does not fail for those. Errors: `disabled`, `invalid_config`, and the
-    /// sign-in errors of [`Sponsorkit::sign_in`].
+    /// Resolves [`CheckoutOutcome::Unknown`] when the polling `timeout`
+    /// elapses or on cancellation (in either phase); it does not fail for
+    /// those. Errors: `disabled`, `invalid_config` (see
+    /// [`Sponsorkit::checkout_url`]), and the sign-in errors of
+    /// [`Sponsorkit::sign_in`], including `timeout` when signing in exceeds
+    /// [`crate::Options::sign_in_timeout`].
     pub async fn open_checkout(&self, options: CheckoutOptions) -> Result<CheckoutOutcome> {
         self.ensure_enabled()?;
+        self.validate_checkout(&options)?;
         if let Some(mut m) = self.mock_state() {
             let provider = options.provider.filter(|p| self.has_provider(*p));
             let c = mock_checkout_contribution(
@@ -97,7 +132,6 @@ impl Sponsorkit {
         self.dev_check().await?;
         let never = CancellationToken::new();
         let cancel = options.cancel.as_ref().unwrap_or(&never);
-        let started = Instant::now();
         let timeout = options.timeout.unwrap_or(DEFAULT_CHECKOUT_TIMEOUT);
         let interval = options.poll_interval.unwrap_or(self.inner.poll_interval).max(Duration::from_millis(10));
         let params = self.checkout_params(&options);
@@ -107,7 +141,7 @@ impl Sponsorkit {
                 Some(c) => c.result,
                 None => self.get_financial_contribution(GetOptions::fresh()).await?,
             };
-            let url = self.checkout_url(&options);
+            let url = self.checkout_url(&options)?;
             let opened = tokio::select! {
                 r = self.open_url(url.clone()) => r,
                 _ = cancel.cancelled() => return Ok(CheckoutOutcome::Unknown),
@@ -126,6 +160,8 @@ impl Sponsorkit {
                 };
             self.exchange(&code, &verifier).await?
         };
+        // The timeout covers only the polling phase (PROTOCOL §7.1 item 15).
+        let started = Instant::now();
 
         let before: HashMap<String, serde_json::Value> = baseline
             .contributions

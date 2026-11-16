@@ -126,12 +126,12 @@ impl Storage {
     }
 
     fn write(&self, data: &StorageFile) -> Result<()> {
-        let io = |e: std::io::Error| Error::internal(format!("Cannot write {}: {e}", self.file.display()));
+        let io = |e: std::io::Error| Error::environment(format!("Cannot write {}: {e}", self.file.display()));
         create_private_dir(&self.dir).map_err(io)?;
         let suffix = base64url(&random_bytes::<6>()?);
         let name = self.file.file_name().and_then(|n| n.to_str()).unwrap_or("sponsorkit.json");
         let tmp = self.dir.join(format!("{name}.{suffix}.tmp"));
-        let json = serde_json::to_vec(&data.to_value()).map_err(|e| Error::internal(e.to_string()))?;
+        let json = serde_json::to_vec(&data.to_value()).map_err(|e| Error::environment(e.to_string()))?;
         let result = (|| {
             let mut f = open_private_file(&tmp)?;
             f.write_all(&json)?;

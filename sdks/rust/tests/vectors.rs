@@ -183,12 +183,67 @@ fn checkout_url_is_offline_and_canonical() {
         ..Default::default()
     })
     .unwrap();
-    let url = sk.checkout_url(&CheckoutOptions {
-        amount: Some(500),
-        frequency: Some(Frequency::Monthly),
-        ..Default::default()
-    });
+    let url = sk
+        .checkout_url(&CheckoutOptions { amount: Some(500), frequency: Some(Frequency::Monthly), ..Default::default() })
+        .unwrap();
     assert_eq!(url, "https://example.test/checkout?targets=github%3Aoctocat&amount=500&frequency=monthly");
+}
+
+#[test]
+fn checkout_url_rejects_invalid_options() {
+    let sk = Sponsorkit::new(Options {
+        github: Some("octocat".into()),
+        env: Some(Default::default()),
+        ..Default::default()
+    })
+    .unwrap();
+    let bad = [
+        CheckoutOptions { provider: Some(sponsorkit::Provider::OpenCollective), ..Default::default() },
+        CheckoutOptions { amount: Some(0), ..Default::default() },
+        CheckoutOptions { amount: Some(-500), ..Default::default() },
+        CheckoutOptions { currency: Some("EURO".into()), ..Default::default() },
+        CheckoutOptions { currency: Some(String::new()), ..Default::default() },
+    ];
+    for o in bad {
+        assert_eq!(sk.checkout_url(&o).unwrap_err().code(), ErrorCode::InvalidConfig, "{o:?}");
+    }
+    assert_eq!("weekly".parse::<Frequency>().unwrap_err().code(), ErrorCode::InvalidConfig);
+}
+
+#[test]
+fn error_codes_are_canonical() {
+    let all = [
+        ErrorCode::InvalidConfig,
+        ErrorCode::Disabled,
+        ErrorCode::PopupBlocked,
+        ErrorCode::AccessDenied,
+        ErrorCode::InvalidState,
+        ErrorCode::ProviderError,
+        ErrorCode::InvalidCode,
+        ErrorCode::Cancelled,
+        ErrorCode::Timeout,
+        ErrorCode::NetworkError,
+        ErrorCode::SessionInvalid,
+        ErrorCode::TargetsMismatch,
+    ];
+    let wire: Vec<&str> = all.iter().map(|c| c.as_str()).collect();
+    assert_eq!(
+        wire,
+        [
+            "invalid_config",
+            "disabled",
+            "popup_blocked",
+            "access_denied",
+            "invalid_state",
+            "provider_error",
+            "invalid_code",
+            "cancelled",
+            "timeout",
+            "network_error",
+            "session_invalid",
+            "targets_mismatch"
+        ]
+    );
 }
 
 #[test]

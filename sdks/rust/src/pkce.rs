@@ -14,7 +14,7 @@ pub fn base64url(bytes: &[u8]) -> String {
 /// Fills a buffer with cryptographically secure random bytes.
 pub(crate) fn random_bytes<const N: usize>() -> Result<[u8; N]> {
     let mut buf = [0u8; N];
-    getrandom::fill(&mut buf).map_err(|e| Error::internal(format!("No secure random source: {e}")))?;
+    getrandom::fill(&mut buf).map_err(|e| Error::environment(format!("No secure random source: {e}")))?;
     Ok(buf)
 }
 
