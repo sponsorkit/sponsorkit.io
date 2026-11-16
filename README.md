@@ -1,12 +1,11 @@
-**Current project status:** Launched as stable MVP, working on new features.
+# Sponsorkit
 
-# Sponsorkit & Bountyhunt
+Sponsorkit lets open source maintainers build financial contributions straight into their software.
 
-## Contributing
-You're always welcome to contribute to Sponsorkit and/or Bountyhunt by submitting pull requests or issues.
+It connects to GitHub Sponsors, Open Collective, Patreon and Stripe, and gives you SDKs (JS/TS, .NET, Python, Go, Rust) to:
 
-### Backend
-You need Docker installed and running. In addition, you need .NET SDK 6, and a C# IDE. The project is self-bootstrapping from there, so it should be easy to get started with your own AWS account.
+- check what the current user has contributed (`getFinancialContribution()`),
+- open a hosted checkout so users can start contributing,
+- gate features, show nag messages or ads based on contribution.
 
-### Frontend
-There is a VS Code DevContainer definition available for the project. So if you have Docker installed and running, contributing should be simple from there.
+> **Status:** being rebuilt from scratch. See [`docs/SPEC.md`](docs/SPEC.md) for the design.
