@@ -28,7 +28,6 @@ namespace Sponsorkit;
 /// </remarks>
 public sealed class SponsorkitClient
 {
-    private static readonly TimeSpan LoopbackTimeout = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan DefaultCheckoutTimeout = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan MinCacheTtl = TimeSpan.FromSeconds(60);
 
@@ -45,15 +44,18 @@ public sealed class SponsorkitClient
     private readonly ISponsorkitStorage? _storage;
     private readonly bool _devChecks;
     private readonly TimeSpan _cacheTtl;
+    private readonly TimeSpan _signInTimeout;
+    private readonly bool? _interactive;
     private readonly string? _appName;
     private readonly object _mockLock = new();
     private readonly SponsorkitMock? _mock;
     private bool _mockSignedIn;
     private List<Contribution> _mockContributions = new();
+    private readonly HashSet<string> _mockNagRunsCounted = new(StringComparer.Ordinal);
 
     /// <summary>Creates a client. Validates the configuration synchronously and performs no I/O.</summary>
     /// <param name="options">The configuration. At least one of <see cref="SponsorkitOptions.GitHub"/> and <see cref="SponsorkitOptions.OpenCollective"/> is required.</param>
-    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c> or <c>appName</c>, or an unknown mock preset.</exception>
+    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c> or <c>appName</c>, a non-positive <c>SignInTimeout</c>, or an unknown mock preset.</exception>
     public SponsorkitClient(SponsorkitOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -74,7 +76,11 @@ public sealed class SponsorkitClient
             throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Unknown mock preset \"{preset}\". Use one of: {string.Join(", ", SponsorkitMock.PresetNames)}");
 
         _cacheTtl = options.CacheTtl < MinCacheTtl ? MinCacheTtl : options.CacheTtl;
-        _devChecks = options.DevChecks ?? Platform.IsDebugBuild();
+        _devChecks = options.DevChecks ?? _env.IsSet("SPONSORKIT_DEV_CHECKS");
+        _interactive = options.Interactive;
+        if (options.SignInTimeout != Timeout.InfiniteTimeSpan && options.SignInTimeout <= TimeSpan.Zero)
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, "signInTimeout must be positive");
+        _signInTimeout = options.SignInTimeout.TotalMilliseconds > int.MaxValue ? Timeout.InfiniteTimeSpan : options.SignInTimeout;
 
         if (IsDisabled) return; // No network and no disk access at all.
 
@@ -317,7 +323,7 @@ public sealed class SponsorkitClient
         {
             throw new SponsorkitError(
                 SponsorkitErrorCodes.InvalidConfig,
-                $"Sponsorkit target(s) not found or without a sponsor listing: {string.Join(", ", missing)}. (This dev-time check is skipped in Release builds.)");
+                $"Sponsorkit target(s) not found or without a sponsor listing: {string.Join(", ", missing)}. (This dev-time check runs only when DevChecks or SPONSORKIT_DEV_CHECKS is set.)");
         }
     }
 
@@ -328,13 +334,14 @@ public sealed class SponsorkitClient
     /// identity (for example <c>new SignInOptions { Provider = "opencollective" }</c>) to the session.
     /// </summary>
     /// <param name="options">Provider and sign-in method overrides.</param>
-    /// <param name="cancellationToken">Cancels the sign-in.</param>
+    /// <param name="cancellationToken">Cancels the sign-in; it then throws <c>cancelled</c>.</param>
     /// <returns>The contribution result returned with the new session.</returns>
     /// <exception cref="SponsorkitError">
     /// <c>disabled</c>; <c>invalid_config</c>; <c>access_denied</c>, <c>invalid_state</c> or <c>provider_error</c> from the provider;
-    /// <c>invalid_code</c>; <c>timeout</c> (no callback within 5 minutes); <c>network_error</c>.
+    /// <c>invalid_code</c> (the API rejected the code); <c>cancelled</c> (the <paramref name="cancellationToken"/> fired or no
+    /// paste-back code was entered); <c>timeout</c> (not finished within <see cref="SponsorkitOptions.SignInTimeout"/>);
+    /// <c>network_error</c> (the API was unreachable or answered 5xx, 429 or an unexpected response).
     /// </exception>
-    /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was cancelled.</exception>
     public async Task<ContributionResult> SignInAsync(SignInOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (IsDisabled) throw new SponsorkitError(SponsorkitErrorCodes.Disabled, "Sponsorkit is disabled (SPONSORKIT_DISABLE).");
@@ -351,20 +358,27 @@ public sealed class SponsorkitClient
             }
             return MockNow();
         }
-        await DevCheckAsync(cancellationToken).ConfigureAwait(false);
-
-        var existing = _store!.Load().SessionToken;
-        var verifier = Pkce.CreateVerifier();
-        var query = new List<KeyValuePair<string, string?>>
+        try
         {
-            new("targets", _targets.Param),
-            new("challenge", Pkce.Challenge(verifier)),
-            new("app_name", _appName),
-            new("provider", options?.Provider),
-            new("add", existing is null ? null : "1"),
-        };
-        var code = await ObtainCodeAsync("/connect", query, options?.Method ?? _options.SignInMethod, null, cancellationToken).ConfigureAwait(false);
-        return await ExchangeAsync(code, verifier, existing, cancellationToken).ConfigureAwait(false);
+            await DevCheckAsync(cancellationToken).ConfigureAwait(false);
+
+            var existing = _store!.Load().SessionToken;
+            var verifier = Pkce.CreateVerifier();
+            var query = new List<KeyValuePair<string, string?>>
+            {
+                new("targets", _targets.Param),
+                new("challenge", Pkce.Challenge(verifier)),
+                new("app_name", _appName),
+                new("provider", options?.Provider),
+                new("add", existing is null ? null : "1"),
+            };
+            var code = await ObtainCodeAsync("/connect", query, options?.Method ?? _options.SignInMethod, null, cancellationToken).ConfigureAwait(false);
+            return await ExchangeAsync(code, verifier, existing, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException e) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new SponsorkitError(SponsorkitErrorCodes.Cancelled, "Sign-in was cancelled.", e);
+        }
     }
 
     private void ValidateProvider(string? provider)
@@ -373,6 +387,10 @@ public sealed class SponsorkitClient
             throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Provider \"{provider}\" is not one of the configured targets ({_targets.Param}).");
     }
 
+    /// <summary>
+    /// Waits for the supporter to finish signing in and returns the code. Bounded by <see cref="SponsorkitOptions.SignInTimeout"/>
+    /// (throws <c>timeout</c>); cancellation through <paramref name="cancellationToken"/> surfaces as <see cref="OperationCanceledException"/>.
+    /// </summary>
     private async Task<string> ObtainCodeAsync(
         string page,
         List<KeyValuePair<string, string?>> query,
@@ -380,26 +398,36 @@ public sealed class SponsorkitClient
         string? redirectAfterCode,
         CancellationToken cancellationToken)
     {
-        if (method == SignInMethod.Paste) return await PasteAsync(page, query, cancellationToken).ConfigureAwait(false);
-        if (method == SignInMethod.Auto && _options.OpenBrowser is null && !Platform.CanOpenLocalBrowser())
-            return await PasteAsync(page, query, cancellationToken).ConfigureAwait(false);
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(_signInTimeout);
         try
         {
-            return await LoopbackAsync(page, query, redirectAfterCode, cancellationToken).ConfigureAwait(false);
+            if (method == SignInMethod.Paste) return await PasteAsync(page, query, limit.Token).ConfigureAwait(false);
+            if (method == SignInMethod.Auto && _options.OpenBrowser is null && !Platform.CanOpenLocalBrowser())
+                return await PasteAsync(page, query, limit.Token).ConfigureAwait(false);
+            try
+            {
+                return await LoopbackAsync(page, query, redirectAfterCode, method == SignInMethod.Auto, limit.Token).ConfigureAwait(false);
+            }
+            catch (BrowserLaunchException)
+            {
+                return await PasteAsync(page, query, limit.Token).ConfigureAwait(false);
+            }
         }
-        catch (BrowserLaunchException) when (method == SignInMethod.Auto)
+        catch (OperationCanceledException e) when (limit.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            return await PasteAsync(page, query, cancellationToken).ConfigureAwait(false);
-        }
-        catch (BrowserLaunchException e)
-        {
-            throw new SponsorkitError(SponsorkitErrorCodes.ProviderError, "Could not open a browser for sign-in: " + e.InnerException?.Message, e.InnerException);
+            throw new SponsorkitError(SponsorkitErrorCodes.Timeout, $"Sign-in did not complete within {_signInTimeout.TotalSeconds:0.###} seconds.", e);
         }
     }
 
     private string PageUrl(string page, IEnumerable<KeyValuePair<string, string?>> query) => _api.BaseUrl + page + "?" + QueryString.Build(query);
 
-    private async Task<string> LoopbackAsync(string page, List<KeyValuePair<string, string?>> query, string? redirectAfterCode, CancellationToken cancellationToken)
+    private async Task<string> LoopbackAsync(
+        string page,
+        List<KeyValuePair<string, string?>> query,
+        string? redirectAfterCode,
+        bool fallBackToPaste,
+        CancellationToken cancellationToken)
     {
         using var server = new LoopbackServer(redirectAfterCode);
         var full = new List<KeyValuePair<string, string?>>(query)
@@ -408,17 +436,19 @@ public sealed class SponsorkitClient
             new("redirect_uri", server.RedirectUri),
         };
         var url = PageUrl(page, full);
-        await OpenBrowserAsync(url, cancellationToken).ConfigureAwait(false);
-
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(LoopbackTimeout);
-        var waiter = Task.Delay(Timeout.Infinite, timeout.Token);
-        var done = await Task.WhenAny(server.Result, waiter).ConfigureAwait(false);
-        if (done != server.Result)
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            throw new SponsorkitError(SponsorkitErrorCodes.Timeout, "Sign-in did not complete within 5 minutes.");
+            await OpenBrowserAsync(url, cancellationToken).ConfigureAwait(false);
         }
+        catch (BrowserLaunchException) when (!fallBackToPaste)
+        {
+            // Loopback was forced: let the supporter open the URL by hand and keep waiting for the callback.
+            await Console.Error.WriteLineAsync("Could not open a browser. Open this URL to sign in:\n  " + url).ConfigureAwait(false);
+        }
+
+        var waiter = Task.Delay(Timeout.Infinite, cancellationToken);
+        var done = await Task.WhenAny(server.Result, waiter).ConfigureAwait(false);
+        if (done != server.Result) cancellationToken.ThrowIfCancellationRequested();
         var callback = await server.Result.ConfigureAwait(false);
         if (callback.Code is { } code) return code;
         var error = callback.Error switch
@@ -466,7 +496,8 @@ public sealed class SponsorkitClient
         await Console.Error.WriteLineAsync("To sign in, open this URL in a browser on any device:\n  " + url).ConfigureAwait(false);
         var prompt = _options.PromptForCode ?? Platform.ReadCodeFromStdin;
         var code = (await prompt(url, cancellationToken).ConfigureAwait(false))?.Trim();
-        if (string.IsNullOrEmpty(code)) throw new SponsorkitError(SponsorkitErrorCodes.InvalidCode, "No sign-in code was entered.");
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrEmpty(code)) throw new SponsorkitError(SponsorkitErrorCodes.Cancelled, "No sign-in code was entered.");
         return code!;
     }
 
@@ -477,9 +508,9 @@ public sealed class SponsorkitClient
         {
             token = await _api.ExchangeAsync(code, verifier, existing, cancellationToken).ConfigureAwait(false);
         }
-        catch (SponsorkitError e) when (existing is not null && e.Code == SponsorkitErrorCodes.SessionInvalid)
+        catch (DeadSessionException)
         {
-            // The stored session is no longer valid: start a fresh session with this identity instead.
+            // PROTOCOL §7: the stored session is dead. Clear it and retry the same code once as a fresh session.
             SafeUpdate(f =>
             {
                 f.SessionToken = null;
@@ -506,12 +537,20 @@ public sealed class SponsorkitClient
     /// </summary>
     /// <param name="options">Preferred provider, amount (minor units), currency and frequency.</param>
     /// <returns>An absolute URL such as <c>https://sponsorkit.io/checkout?targets=github%3Aoctocat&amp;frequency=monthly</c>.</returns>
+    /// <exception cref="SponsorkitError"><c>invalid_config</c>: an unconfigured provider, or an invalid frequency, amount or currency.</exception>
     public string CheckoutUrl(CheckoutUrlOptions? options = null) => PageUrl("/checkout", CheckoutQuery(options ?? new CheckoutUrlOptions()));
 
     private List<KeyValuePair<string, string?>> CheckoutQuery(CheckoutUrlOptions o)
     {
+        // PROTOCOL §7.1 item 16: invalid options throw invalid_config, without network or disk access.
+        if (o.Provider is not null && o.Provider is not ("github" or "opencollective"))
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Unknown provider \"{o.Provider}\". Use github or opencollective.");
         ValidateProvider(o.Provider);
+        if (o.Frequency is not null && o.Frequency is not (Frequencies.OneTime or Frequencies.Monthly or Frequencies.Yearly))
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Invalid frequency \"{o.Frequency}\". Use one_time, monthly or yearly.");
         if (o.Amount is <= 0) throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, "amount must be a positive number of minor units");
+        if (o.Currency is not null && !IsCurrencyCode(o.Currency))
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Invalid currency \"{o.Currency}\". Use a three-letter ISO 4217 code such as USD.");
         return new List<KeyValuePair<string, string?>>
         {
             new("targets", _targets.Param),
@@ -522,15 +561,21 @@ public sealed class SponsorkitClient
         };
     }
 
+    private static bool IsCurrencyCode(string s) =>
+        s.Length == 3 && s.All(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+
     /// <summary>
     /// Sends the supporter to contribute and waits for the new contribution (SPEC §7.3). Signs in first when needed
     /// (in the same browser flow), opens the checkout page, then polls every
     /// <see cref="SponsorkitOptions.CheckoutPollInterval"/> until a new or changed contribution appears.
     /// </summary>
-    /// <param name="options">Checkout preferences and the time limit (default 10 minutes).</param>
-    /// <param name="cancellationToken">Stops waiting; the result is then <see cref="CheckoutStatus.Unknown"/>.</param>
-    /// <returns><see cref="CheckoutStatus.Contributed"/> with the contribution, or <see cref="CheckoutStatus.Unknown"/> on timeout or cancellation.</returns>
-    /// <exception cref="SponsorkitError"><c>disabled</c>, <c>invalid_config</c>, or a sign-in error.</exception>
+    /// <param name="options">Checkout preferences and the polling time limit (default 10 minutes).</param>
+    /// <param name="cancellationToken">Stops signing in or waiting, in either phase; the result is then <see cref="CheckoutStatus.Unknown"/>.</param>
+    /// <returns><see cref="CheckoutStatus.Contributed"/> with the contribution, or <see cref="CheckoutStatus.Unknown"/> when polling times out or on cancellation.</returns>
+    /// <exception cref="SponsorkitError">
+    /// <c>disabled</c>, <c>invalid_config</c>, or a sign-in error (including <c>timeout</c> when the sign-in phase exceeds
+    /// <see cref="SponsorkitOptions.SignInTimeout"/>).
+    /// </exception>
     public async Task<CheckoutResult> OpenCheckoutAsync(CheckoutOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (IsDisabled) throw new SponsorkitError(SponsorkitErrorCodes.Disabled, "Sponsorkit is disabled (SPONSORKIT_DISABLE).");
@@ -667,13 +712,23 @@ public sealed class SponsorkitClient
     public SponsorkitNag Nag(NagOptions options) => new(this, options ?? throw new ArgumentNullException(nameof(options)));
 
     internal bool NagSuppressedByEnvironment() =>
-        _env.IsSet("SPONSORKIT_NO_NAG") || _env.IsSet("CI") || !Platform.IsInteractiveTerminal();
+        _env.IsSet("SPONSORKIT_NO_NAG") || _env.IsSet("CI") || !(_interactive ?? Platform.IsInteractiveTerminal());
 
     internal void CountNagRun(string id)
     {
         if (IsDisabled) return;
-        var key = (_mock is not null ? "mock:" : _api.BaseUrl + "|") + _targets.Hash + ":" + id;
-        if (!NagRunsCounted.TryAdd(key, 0)) return;
+        if (_mock is not null)
+        {
+            // PROTOCOL §7.1 item 14: in mock mode nag state lives in memory, per instance.
+            lock (_mockLock)
+            {
+                if (!_mockNagRunsCounted.Add(id)) return;
+            }
+        }
+        else if (!NagRunsCounted.TryAdd(_api.BaseUrl + "|" + _targets.Hash + ":" + id, 0))
+        {
+            return;
+        }
         SafeUpdate(f =>
         {
             f.Nags ??= new Dictionary<string, NagState>(StringComparer.Ordinal);

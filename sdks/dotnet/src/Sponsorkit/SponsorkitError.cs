@@ -26,14 +26,31 @@ public sealed class SponsorkitError : Exception
         Code = code ?? throw new ArgumentNullException(nameof(code));
     }
 
+    /// <summary>Creates an error that carries a <c>Retry-After</c> delay.</summary>
+    /// <param name="code">One of <see cref="SponsorkitErrorCodes"/>.</param>
+    /// <param name="message">A human-readable description.</param>
+    /// <param name="retryAfter">How long the API asked the caller to wait, or <c>null</c>.</param>
+    /// <param name="innerException">The underlying exception, if any.</param>
+    public SponsorkitError(string code, string? message, TimeSpan? retryAfter, Exception? innerException)
+        : this(code, message, innerException)
+    {
+        RetryAfter = retryAfter;
+    }
+
     /// <summary>The machine-readable error code, for example <c>invalid_config</c> or <c>access_denied</c>.</summary>
     public string Code { get; }
+
+    /// <summary>
+    /// For <c>network_error</c> caused by a rate limit: how long the API asked the caller to wait (its <c>Retry-After</c>
+    /// header). <c>null</c> when the API sent none.
+    /// </summary>
+    public TimeSpan? RetryAfter { get; }
 }
 
-/// <summary>The values of <see cref="SponsorkitError.Code"/>.</summary>
+/// <summary>The values of <see cref="SponsorkitError.Code"/> (PROTOCOL §7, "SDK error codes").</summary>
 public static class SponsorkitErrorCodes
 {
-    /// <summary>Missing or invalid configuration: no targets, a malformed target, an unknown mock preset, or (dev-time check) a target that does not exist.</summary>
+    /// <summary>Missing or invalid configuration: no targets, a malformed target, an unknown mock preset, invalid checkout options, or (dev-time check) a target that does not exist.</summary>
     public const string InvalidConfig = "invalid_config";
 
     /// <summary>Sponsorkit is disabled through <c>SPONSORKIT_DISABLE</c>.</summary>
@@ -51,21 +68,24 @@ public static class SponsorkitErrorCodes
     /// <summary>The provider failed during sign-in.</summary>
     public const string ProviderError = "provider_error";
 
-    /// <summary>The sign-in code could not be exchanged (malformed, expired, or the PKCE verifier did not match).</summary>
+    /// <summary>The API rejected the sign-in code exchange (<c>400 invalid_code</c>): the code is malformed or expired, or the PKCE verifier did not match.</summary>
     public const string InvalidCode = "invalid_code";
+
+    /// <summary>Sign-in was abandoned or cancelled through its <see cref="System.Threading.CancellationToken"/>, or no paste-back code was entered.</summary>
+    public const string Cancelled = "cancelled";
+
+    /// <summary>Sign-in did not complete within <see cref="SponsorkitOptions.SignInTimeout"/> (default 5 minutes).</summary>
+    public const string Timeout = "timeout";
+
+    /// <summary>
+    /// During sign-in or <see cref="SponsorkitServer.VerifySessionAsync"/>, the API could not be reached or answered
+    /// 5xx, 429 or an unexpected response. <see cref="SponsorkitError.RetryAfter"/> is set when the API sent <c>Retry-After</c>.
+    /// </summary>
+    public const string NetworkError = "network_error";
 
     /// <summary>The session token is invalid or expired. Only thrown by <see cref="SponsorkitServer.VerifySessionAsync"/>.</summary>
     public const string SessionInvalid = "session_invalid";
 
     /// <summary>The session is bound to a different target set. Only thrown by <see cref="SponsorkitServer.VerifySessionAsync"/>.</summary>
     public const string TargetsMismatch = "targets_mismatch";
-
-    /// <summary>A sign-in or verification request could not reach the Sponsorkit API.</summary>
-    public const string NetworkError = "network_error";
-
-    /// <summary>The Sponsorkit API answered a sign-in or verification request with an unexpected error.</summary>
-    public const string Internal = "internal";
-
-    /// <summary>Sign-in did not complete within the time limit (5 minutes for loopback sign-in).</summary>
-    public const string Timeout = "timeout";
 }

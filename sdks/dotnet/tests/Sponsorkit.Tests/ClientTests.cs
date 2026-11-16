@@ -69,7 +69,49 @@ public sealed class ClientTests : IDisposable
             OpenBrowser = (_, _) => Task.CompletedTask,
         });
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sk.SignInAsync(null, cts.Token));
+        var e = await Assert.ThrowsAsync<SponsorkitError>(() => sk.SignInAsync(null, cts.Token));
+        Assert.Equal(SponsorkitErrorCodes.Cancelled, e.Code);
+    }
+
+    [Fact]
+    public async Task Paste_sign_in_times_out_and_an_empty_code_cancels()
+    {
+        SponsorkitClient Make(Func<string, CancellationToken, Task<string>> prompt) => new(new SponsorkitOptions
+        {
+            GitHub = "octocat",
+            ApiBaseUrl = UnreachableBaseUrl(),
+            StorageDirectory = _dir,
+            Environment = new Dictionary<string, string>(),
+            SignInMethod = SignInMethod.Paste,
+            SignInTimeout = TimeSpan.FromMilliseconds(200),
+            PromptForCode = prompt,
+        });
+        var timedOut = await Assert.ThrowsAsync<SponsorkitError>(() => Make(async (_, ct) =>
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+            return "never";
+        }).SignInAsync());
+        Assert.Equal(SponsorkitErrorCodes.Timeout, timedOut.Code);
+        var empty = await Assert.ThrowsAsync<SponsorkitError>(() => Make((_, _) => Task.FromResult("  ")).SignInAsync());
+        Assert.Equal(SponsorkitErrorCodes.Cancelled, empty.Code);
+        Assert.False(Directory.Exists(_dir));
+    }
+
+    [Fact]
+    public void Sign_in_timeout_must_be_positive()
+    {
+        var e = Assert.Throws<SponsorkitError>(() => new SponsorkitClient(new SponsorkitOptions { GitHub = "x", SignInTimeout = TimeSpan.Zero }));
+        Assert.Equal(SponsorkitErrorCodes.InvalidConfig, e.Code);
+        Assert.False(new SponsorkitClient(new SponsorkitOptions { GitHub = "x", SignInTimeout = Timeout.InfiniteTimeSpan }).IsDisabled);
+    }
+
+    [Fact]
+    public void Checkout_url_accepts_valid_options_and_normalizes_the_currency()
+    {
+        var sk = new SponsorkitClient(new SponsorkitOptions { GitHub = "octocat", Environment = new Dictionary<string, string>() });
+        var url = sk.CheckoutUrl(new CheckoutUrlOptions { Provider = "github", Amount = 500, Currency = "usd", Frequency = Frequencies.Monthly });
+        Assert.Equal("https://sponsorkit.io/checkout?targets=github%3Aoctocat&provider=github&amount=500&currency=USD&frequency=monthly", url);
+        Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => sk.CheckoutUrl(new CheckoutUrlOptions { Currency = "" })).Code);
     }
 
     [Fact]
@@ -94,7 +136,7 @@ public sealed class ClientTests : IDisposable
     public async Task Nag_uses_the_injected_clock_for_or_every()
     {
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        SponsorkitClient Make() => new(new SponsorkitOptions { GitHub = "octocat", StorageDirectory = _dir, Clock = () => now, Environment = new Dictionary<string, string>() });
+        SponsorkitClient Make() => new(new SponsorkitOptions { GitHub = "octocat", StorageDirectory = _dir, Clock = () => now, Environment = new Dictionary<string, string>(), Interactive = false });
         SponsorkitClient.ResetProcessState();
         var nag = Make().Nag(new NagOptions("clock") { Every = 100, OrEvery = TimeSpan.FromDays(7) });
         Assert.False(await nag.DueAsync(_ => true, force: true));
@@ -103,7 +145,7 @@ public sealed class ClientTests : IDisposable
         Assert.False(await nag.DueAsync(_ => true, force: true));
         now = now.AddDays(1);
         Assert.True(await nag.DueAsync(_ => true, force: true));
-        Assert.False(await nag.DueAsync(_ => true), "not a terminal under the test runner");
+        Assert.False(await nag.DueAsync(_ => true), "Interactive = false");
         SponsorkitClient.ResetProcessState();
     }
 

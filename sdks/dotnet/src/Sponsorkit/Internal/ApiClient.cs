@@ -66,6 +66,15 @@ internal sealed class TargetLookupItem
     public bool Exists { get; set; }
 }
 
+/// <summary><c>/auth/token</c> answered <c>401 session_invalid</c> for the session an identity was being added to.</summary>
+internal sealed class DeadSessionException : Exception
+{
+    public DeadSessionException()
+        : base("The stored session is no longer valid.")
+    {
+    }
+}
+
 /// <summary>The PROTOCOL §3 HTTP API.</summary>
 internal sealed class ApiClient
 {
@@ -172,11 +181,14 @@ internal sealed class ApiClient
         var ra = res.Headers.RetryAfter;
         if (ra is null) return null;
         if (ra.Delta is { } d) return d;
-        if (ra.Date is { } date) return date - DateTimeOffset.UtcNow;
+        if (ra.Date is { } date) return date > DateTimeOffset.UtcNow ? date - DateTimeOffset.UtcNow : TimeSpan.Zero;
         return null;
     }
 
-    /// <summary><c>POST /api/v1/auth/token</c>. Throws <see cref="SponsorkitError"/>.</summary>
+    /// <summary>
+    /// <c>POST /api/v1/auth/token</c>. Throws <see cref="SponsorkitError"/> (<c>invalid_code</c> or <c>network_error</c>),
+    /// or <see cref="DeadSessionException"/> when the <paramref name="sessionToken"/> being added to was rejected.
+    /// </summary>
     public async Task<TokenResponse> ExchangeAsync(string code, string verifier, string? sessionToken, CancellationToken cancellationToken)
     {
         var payload = new Dictionary<string, string> { ["code"] = code, ["codeVerifier"] = verifier };
@@ -198,12 +210,20 @@ internal sealed class ApiClient
             if (!res.IsSuccessStatusCode)
             {
                 var problem = TryParse<Problem>(body);
-                var errorCode = string.IsNullOrEmpty(problem?.Code) ? SponsorkitErrorCodes.Internal : problem!.Code!;
-                throw new SponsorkitError(errorCode, $"Sign-in failed ({(int)res.StatusCode} {errorCode}): {problem?.Detail ?? problem?.Title ?? "no details"}");
+                var status = (int)res.StatusCode;
+                var detail = problem?.Detail ?? problem?.Title ?? "no details";
+                if (status == 400 && problem?.Code == SponsorkitErrorCodes.InvalidCode)
+                    throw new SponsorkitError(SponsorkitErrorCodes.InvalidCode, "Sponsorkit rejected the sign-in code: " + detail);
+                if (status == 401 && sessionToken is not null) throw new DeadSessionException();
+                throw new SponsorkitError(
+                    SponsorkitErrorCodes.NetworkError,
+                    $"Sign-in failed: Sponsorkit answered {status} ({problem?.Code ?? "no code"}): {detail}",
+                    RetryAfter(res),
+                    null);
             }
             var token = TryParse<TokenResponse>(body);
             if (token is null || token.Result is null || !token.SessionToken.StartsWith("sks_", StringComparison.Ordinal))
-                throw new SponsorkitError(SponsorkitErrorCodes.Internal, "Sponsorkit returned an invalid token response.");
+                throw new SponsorkitError(SponsorkitErrorCodes.NetworkError, "Sponsorkit returned an invalid token response.");
             return token;
         }
     }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,23 +32,6 @@ internal sealed class EnvReader
 
 internal static class Platform
 {
-    /// <summary>Whether the entry assembly is a Debug build (JIT optimizer disabled).</summary>
-    public static bool IsDebugBuild()
-    {
-        try
-        {
-            var entry = Assembly.GetEntryAssembly();
-            var attr = entry?.GetCustomAttribute<DebuggableAttribute>();
-            return attr is not null && attr.IsJITOptimizerDisabled;
-        }
-#pragma warning disable CA1031 // Detection is best effort.
-        catch (Exception)
-        {
-            return false;
-        }
-#pragma warning restore CA1031
-    }
-
     /// <summary>Whether a local browser can plausibly be opened (SPEC §6.2 auto-pick).</summary>
     public static bool CanOpenLocalBrowser()
     {
@@ -104,6 +86,6 @@ internal static class Platform
         var done = await Task.WhenAny(read, cancelled).ConfigureAwait(false);
         if (done != read) cancellationToken.ThrowIfCancellationRequested();
         var line = await read.ConfigureAwait(false);
-        return line ?? throw new SponsorkitError(SponsorkitErrorCodes.InvalidCode, "No sign-in code was entered.");
+        return line ?? throw new SponsorkitError(SponsorkitErrorCodes.Cancelled, "No sign-in code was entered.");
     }
 }

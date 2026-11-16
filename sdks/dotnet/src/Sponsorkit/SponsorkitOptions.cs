@@ -72,15 +72,28 @@ public sealed class SponsorkitOptions
 
     /// <summary>
     /// Overrides the environment variables Sponsorkit reads (<c>SPONSORKIT_DISABLE</c>, <c>SPONSORKIT_MOCK</c>,
-    /// <c>SPONSORKIT_NO_NAG</c>, <c>CI</c>). When set, the process environment is ignored for these variables.
+    /// <c>SPONSORKIT_NO_NAG</c>, <c>SPONSORKIT_DEV_CHECKS</c>, <c>CI</c>). When set, it <em>replaces</em> the process
+    /// environment for these variables (it is not merged): a variable missing from the dictionary counts as unset.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Environment { get; set; }
 
     /// <summary>
-    /// Forces the dev-time check that the targets exist on or off. Default (<c>null</c>): on when the entry assembly
-    /// is a Debug build.
+    /// Forces the dev-time check that the targets exist on or off. Default (<c>null</c>): on only when
+    /// <c>SPONSORKIT_DEV_CHECKS</c> is set. .NET has no implicit development signal (PROTOCOL §7).
     /// </summary>
     public bool? DevChecks { get; set; }
+
+    /// <summary>
+    /// The maximum time to wait for the supporter to finish a loopback or paste-back sign-in. Default 5 minutes.
+    /// Exceeding it throws <c>timeout</c>. Also bounds the sign-in phase of <see cref="SponsorkitClient.OpenCheckoutAsync"/>.
+    /// </summary>
+    public TimeSpan SignInTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Overrides the terminal check used by the nag helper. Default (<c>null</c>): interactive when neither stdout nor
+    /// stderr is redirected.
+    /// </summary>
+    public bool? Interactive { get; set; }
 
     /// <summary>How often <see cref="SponsorkitClient.OpenCheckoutAsync"/> polls for a new contribution. Default 60 seconds.</summary>
     public TimeSpan CheckoutPollInterval { get; set; } = TimeSpan.FromSeconds(60);
@@ -139,23 +152,26 @@ public sealed class SignInOptions
 /// <summary>Options for <see cref="SponsorkitClient.CheckoutUrl"/>.</summary>
 public class CheckoutUrlOptions
 {
-    /// <summary>Preferred provider (<c>github</c> or <c>opencollective</c>).</summary>
+    /// <summary>Preferred provider (<c>github</c> or <c>opencollective</c>); it must be one of the configured targets.</summary>
     public string? Provider { get; set; }
 
-    /// <summary>Amount in minor units (for example 500 = $5.00).</summary>
+    /// <summary>Amount in minor units (for example 500 = $5.00). Must be positive.</summary>
     public long? Amount { get; set; }
 
-    /// <summary>ISO 4217 currency code.</summary>
+    /// <summary>ISO 4217 currency code: three letters, for example <c>USD</c>.</summary>
     public string? Currency { get; set; }
 
-    /// <summary><c>one_time</c>, <c>monthly</c> or <c>yearly</c> (see <see cref="Frequencies"/>).</summary>
+    /// <summary><c>one_time</c>, <c>monthly</c> or <c>yearly</c> (see <see cref="Frequencies"/>). Other values throw <c>invalid_config</c>.</summary>
     public string? Frequency { get; set; }
 }
 
 /// <summary>Options for <see cref="SponsorkitClient.OpenCheckoutAsync"/>.</summary>
 public sealed class CheckoutOptions : CheckoutUrlOptions
 {
-    /// <summary>How long to wait for the new contribution. Default 10 minutes.</summary>
+    /// <summary>
+    /// How long to poll for the new contribution. Default 10 minutes. It covers only the polling phase; a sign-in
+    /// first is bounded by <see cref="SponsorkitOptions.SignInTimeout"/>.
+    /// </summary>
     public TimeSpan? Timeout { get; set; }
 
     /// <summary>Overrides <see cref="SponsorkitOptions.CheckoutPollInterval"/> for this call.</summary>

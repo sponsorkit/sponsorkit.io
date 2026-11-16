@@ -106,7 +106,9 @@ internal sealed class ScenarioRunner
                 Default("apiBaseUrl", "$BASE_URL");
                 Default("storageDir", "$STORAGE_DIR");
                 Default("env", new JsonObject());
-                Default("devChecks", false);
+                break;
+            case "verifySession":
+                Default("apiBaseUrl", "$BASE_URL");
                 break;
             case "nagDue":
                 Default("force", false);
@@ -135,12 +137,16 @@ internal sealed class ScenarioRunner
             Mock = mock,
             ApiBaseUrl = Str(args, "apiBaseUrl"),
             StorageDirectory = Str(args, "storageDir"),
+            // `env` is always passed: it replaces the process environment for the SPONSORKIT_* variables and CI.
             Environment = ((JsonObject)args["env"]!).ToDictionary(kv => kv.Key, kv => kv.Value!.GetValue<string>()),
-            DevChecks = args["devChecks"]!.GetValue<bool>(),
+            // Absent `devChecks` means the SDK default (on only when SPONSORKIT_DEV_CHECKS is set).
+            DevChecks = args["devChecks"] is JsonValue dev ? dev.GetValue<bool>() : null,
+            Interactive = args["interactive"] is JsonValue interactive ? interactive.GetValue<bool>() : null,
             OpenBrowser = OpenBrowserAsync,
             PromptForCode = PromptForCodeAsync,
         };
         if (args["cacheTtl"] is JsonValue ttl) options.CacheTtl = TimeSpan.FromSeconds(ttl.GetValue<double>());
+        if (args["signInTimeout"] is JsonValue signInTimeout) options.SignInTimeout = TimeSpan.FromSeconds(signInTimeout.GetValue<double>());
         if (Str(args, "signInMethod") is { } method) options.SignInMethod = ParseMethod(method);
         return new SponsorkitClient(options);
     }
@@ -200,6 +206,7 @@ internal sealed class ScenarioRunner
             case "configure":
                 _instance = null;
                 _config = a;
+                SetProcessEnv(a["processEnv"] as JsonObject);
                 _instance = Create(a);
                 return null;
             case "restart":
@@ -209,8 +216,12 @@ internal sealed class ScenarioRunner
                 _instance = Create(_config);
                 return null;
             case "signIn":
-                await Need().SignInAsync(new SignInOptions { Provider = OptString(a, "provider"), Method = ParseMethod(OptString(a, "method")!) });
-                return null;
+                {
+                    using var cts = new CancellationTokenSource();
+                    if (OptNumber(a, "cancelAfter") is { } cancelAfter) cts.CancelAfter(TimeSpan.FromSeconds(cancelAfter));
+                    await Need().SignInAsync(new SignInOptions { Provider = OptString(a, "provider"), Method = ParseMethod(OptString(a, "method")!) }, cts.Token);
+                    return null;
+                }
             case "isSignedIn":
                 return Need().IsSignedIn();
             case "getFinancialContribution":
@@ -234,13 +245,18 @@ internal sealed class ScenarioRunner
                     return await Need().OpenCheckoutAsync(options, cts.Token);
                 }
             case "checkoutUrl":
-                return Need().CheckoutUrl(new CheckoutUrlOptions
                 {
-                    Provider = OptString(a, "provider"),
-                    Amount = (long?)OptNumber(a, "amount"),
-                    Currency = OptString(a, "currency"),
-                    Frequency = OptString(a, "frequency"),
-                });
+                    // Amount is a long (minor units): a fractional amount cannot be expressed, so that step passes.
+                    var amount = OptNumber(a, "amount");
+                    if (amount is { } v && (v != Math.Floor(v) || v > long.MaxValue || v < long.MinValue)) throw new NotExpressible();
+                    return Need().CheckoutUrl(new CheckoutUrlOptions
+                    {
+                        Provider = OptString(a, "provider"),
+                        Amount = (long?)amount,
+                        Currency = OptString(a, "currency"),
+                        Frequency = OptString(a, "frequency"),
+                    });
+                }
             case "signOut":
                 await Need().SignOutAsync();
                 return null;
@@ -267,7 +283,7 @@ internal sealed class ScenarioRunner
                     {
                         GitHub = OptString(targets, "github"),
                         OpenCollective = OptString(targets, "opencollective"),
-                        ApiBaseUrl = _server.BaseUrl,
+                        ApiBaseUrl = OptString(a, "apiBaseUrl"),
                     });
                 }
             case "control":
@@ -297,9 +313,40 @@ internal sealed class ScenarioRunner
         }
     }
 
+    // ------------------------------------------------------------------ process env (configure.processEnv)
+
+    private readonly Dictionary<string, string?> _savedEnv = new(StringComparer.Ordinal);
+
+    private void SetProcessEnv(JsonObject? vars)
+    {
+        foreach (var (k, v) in vars ?? [])
+        {
+            if (!_savedEnv.ContainsKey(k)) _savedEnv[k] = System.Environment.GetEnvironmentVariable(k);
+            System.Environment.SetEnvironmentVariable(k, v!.GetValue<string>());
+        }
+    }
+
+    private void RestoreProcessEnv()
+    {
+        foreach (var (k, v) in _savedEnv) System.Environment.SetEnvironmentVariable(k, v);
+        _savedEnv.Clear();
+    }
+
     // ------------------------------------------------------------------ run
 
     private async Task RunAsync()
+    {
+        try
+        {
+            await RunStepsAsync();
+        }
+        finally
+        {
+            RestoreProcessEnv();
+        }
+    }
+
+    private async Task RunStepsAsync()
     {
         var storageDir = Path.Combine(_server.StorageRoot, $"{Id}-{Guid.NewGuid().ToString("N")[..8]}");
         await _server.CallAsync(HttpMethod.Post, "/__control/reset");
@@ -341,6 +388,10 @@ internal sealed class ScenarioRunner
                     returned = await ExecAsync((JsonObject)(await ResolveAsync(raw))!, _instance);
                 }
             }
+            catch (NotExpressible)
+            {
+                continue; // The SDK's types cannot represent the step's arguments (scenarios.json vocabulary).
+            }
             catch (Exception e)
             {
                 thrown = e;
@@ -364,6 +415,16 @@ internal sealed class ScenarioRunner
                 var e = (JsonObject)(await ResolveAsync(expect))!;
                 var value = Normalize(returned is object?[] arr ? new JsonArray(arr.Select(Normalize).ToArray()) : returned);
                 if (thrown is null && e.ContainsKey("returns")) problems.AddRange(Matcher.Match(value, e["returns"], "returns"));
+                if (thrown is not null && e.ContainsKey("error"))
+                {
+                    var err = thrown as SponsorkitError;
+                    var normalized = new JsonObject
+                    {
+                        ["code"] = err?.Code,
+                        ["retryAfter"] = err?.RetryAfter is { } ra ? JsonValue.Create(ra.TotalSeconds) : null,
+                    };
+                    problems.AddRange(Matcher.Match(normalized, e["error"], "error"));
+                }
                 if (thrown is null && e["contributionIds"] is JsonArray ids)
                 {
                     var list = value?["contributions"] as JsonArray ?? (value?["contribution"] is JsonObject c ? new JsonArray(c.DeepClone()) : []);
@@ -441,3 +502,6 @@ internal sealed class ScenarioRunner
 }
 
 internal sealed class ScenarioFailure(string message) : Exception(message);
+
+/// <summary>A step whose arguments the .NET SDK's types cannot represent; the kit treats such a step as passed.</summary>
+internal sealed class NotExpressible : Exception;

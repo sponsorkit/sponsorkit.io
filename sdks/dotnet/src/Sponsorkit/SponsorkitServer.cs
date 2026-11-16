@@ -38,8 +38,10 @@ public static class SponsorkitServer
     /// <returns>The live contribution result.</returns>
     /// <exception cref="SponsorkitError">
     /// <c>session_invalid</c> (rejected or malformed token), <c>targets_mismatch</c>, <c>invalid_config</c> (bad expected
-    /// targets), <c>network_error</c>, or the API's problem code (for example <c>rate_limited</c> or <c>internal</c>).
+    /// targets), or <c>network_error</c> (unreachable, 5xx, 429 or an unexpected response; <see cref="SponsorkitError.RetryAfter"/>
+    /// is set when the API sent <c>Retry-After</c>).
     /// </exception>
+    /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was cancelled.</exception>
     public static async Task<ContributionResult> VerifySessionAsync(string sessionToken, VerifySessionOptions options, CancellationToken cancellationToken = default)
     {
         if (options is null) throw new ArgumentNullException(nameof(options));
@@ -62,8 +64,12 @@ public static class SponsorkitServer
             throw new SponsorkitError(SponsorkitErrorCodes.SessionInvalid, response.Problem?.Detail ?? "The session token is invalid or expired.");
         if (!response.IsSuccess)
         {
-            var code = string.IsNullOrEmpty(response.Problem?.Code) ? SponsorkitErrorCodes.Internal : response.Problem!.Code!;
-            throw new SponsorkitError(code, $"Sponsorkit answered {(int)response.Status} ({code}).");
+            // 5xx, 429 and anything unexpected (PROTOCOL §7): the API's problem code is only informative here.
+            throw new SponsorkitError(
+                SponsorkitErrorCodes.NetworkError,
+                $"Sponsorkit answered {(int)response.Status} ({response.Problem?.Code ?? "no code"}).",
+                response.RetryAfter,
+                null);
         }
 
         var result = response.Result!;

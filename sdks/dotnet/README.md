@@ -50,10 +50,10 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 | `new SponsorkitClient(SponsorkitOptions)` | Validates the configuration and performs no I/O. It throws `SponsorkitError("invalid_config")` when there are no targets, a target is malformed, `ApiBaseUrl` or `AppName` is invalid, or the mock preset is unknown. |
 | `Task<ContributionResult> GetFinancialContributionAsync(CancellationToken)` | Returns the supporter's contributions to your targets. The result comes from the local cache while it is younger than `CacheTtl`. |
 | `Task<ContributionResult> GetFinancialContributionAsync(TimeSpan cacheTtl, CancellationToken)` | The same with a per-call cache TTL. `TimeSpan.Zero` always asks the API, unless a `Retry-After` backoff is in force. |
-| `Task<ContributionResult> SignInAsync(SignInOptions?, CancellationToken)` | Signs in via loopback (system browser) or paste-back. While already signed in, `new SignInOptions { Provider = "opencollective" }` adds a second identity to the session. |
+| `Task<ContributionResult> SignInAsync(SignInOptions?, CancellationToken)` | Signs in via loopback (system browser) or paste-back. While already signed in, `new SignInOptions { Provider = "opencollective" }` adds a second identity to the session. If the stored session has died, it starts a fresh session with the new identity. Cancelling the token throws `cancelled`. |
 | `bool IsSignedIn()` | Whether a session token is stored. No network access. |
-| `Task<CheckoutResult> OpenCheckoutAsync(CheckoutOptions?, CancellationToken)` | Signs in first if needed, opens the checkout page, then polls until a new or changed contribution appears. It resolves `Unknown` on timeout (default 10 minutes) or cancellation. |
-| `string CheckoutUrl(CheckoutUrlOptions?)` | Returns an anonymous checkout link. It is synchronous and offline, so it suits nags, `--help` text and READMEs. |
+| `Task<CheckoutResult> OpenCheckoutAsync(CheckoutOptions?, CancellationToken)` | Signs in first if needed, opens the checkout page, then polls until a new or changed contribution appears. It resolves `Unknown` when polling times out (`Timeout`, default 10 minutes) or on cancellation in either phase. The sign-in phase is bounded by `SignInTimeout` and throws `timeout` when it runs out. |
+| `string CheckoutUrl(CheckoutUrlOptions?)` | Returns an anonymous checkout link. It is synchronous and offline, so it suits nags, `--help` text and READMEs. It throws `invalid_config` for an unconfigured provider or an invalid frequency, amount or currency. |
 | `Task SignOutAsync(CancellationToken)` | Deletes the session token and cache locally and keeps nag state. |
 | `SponsorkitNag Nag(NagOptions)` | The nag helper (see below). |
 | `static void ResetProcessState()` | Forgets per-process memo state: counted nag runs, the dev-time check and `Retry-After` backoff. Intended for tests. |
@@ -65,16 +65,18 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 |---|---|---|
 | `GitHub`, `OpenCollective` | — | Your accounts. At least one is required. They are trimmed and lowercased. |
 | `AppName` | `null` | Shown on the consent page as "says it is". 1–64 characters. |
-| `CacheTtl` | 1 hour | How long results are served from the local cache. The minimum is 60 s. |
+| `CacheTtl` | 1 hour | How long results are served from the local cache. Values below 60 s are raised to 60 s. A per-call TTL may be any value ≥ 0. |
 | `Mock` | `null` | Mock mode (see below). |
 | `StorageDirectory` | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit`, `~/Library/Application Support/sponsorkit` or `%APPDATA%\sponsorkit`. |
 | `Storage` | `null` | A custom `ISponsorkitStorage` backend, for example a keychain. |
 | `ApiBaseUrl` | `https://sponsorkit.io` | For self-hosting and tests. |
 | `SignInMethod` | `Auto` | `Auto` uses loopback, and falls back to paste-back over SSH, without a display, or when the browser cannot open. `Loopback` and `Paste` force one flow. |
 | `OpenBrowser` | system browser | `Func<string, CancellationToken, Task>`. |
-| `PromptForCode` | reads stdin | `Func<string url, CancellationToken, Task<string>>`, used by paste-back sign-in. |
-| `Environment` | process env | Overrides `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG` and `CI` for this instance. |
-| `DevChecks` | Debug build | Checks once per process that your targets exist (`invalid_config` if not). |
+| `PromptForCode` | reads stdin | `Func<string url, CancellationToken, Task<string>>`, used by paste-back sign-in. An empty answer throws `cancelled`. |
+| `SignInTimeout` | 5 minutes | How long to wait for a loopback or paste-back sign-in before throwing `timeout`. |
+| `Interactive` | TTY detection | Overrides the stdout/stderr terminal check used by the nag helper. |
+| `Environment` | process env | Replaces the process environment for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI` for this instance. It is not merged: a variable missing from the dictionary counts as unset. |
+| `DevChecks` | `SPONSORKIT_DEV_CHECKS` | Checks once per process that your targets exist (`invalid_config` if not). Without this option the check is on only when `SPONSORKIT_DEV_CHECKS` is set; .NET has no implicit development signal. |
 | `CheckoutPollInterval` | 60 s | How often `OpenCheckoutAsync` polls. |
 | `Clock` | `DateTimeOffset.UtcNow` | Injectable time for cache-expiry and nag tests. |
 | `HttpClient` | shared client | Bring your own `HttpClient`. |
@@ -100,12 +102,14 @@ Every exception is a `SponsorkitError` with a stable `Code` (`SponsorkitErrorCod
 
 | Code | When |
 |---|---|
-| `invalid_config` | Bad configuration, an unknown mock preset, or (dev-time) a target that doesn't exist. |
+| `invalid_config` | Bad configuration, invalid `CheckoutUrl` options, an unknown mock preset, or (dev-time) a target that doesn't exist. |
 | `disabled` | `SignInAsync` or `OpenCheckoutAsync` while `SPONSORKIT_DISABLE` is set. |
-| `access_denied`, `invalid_state`, `provider_error` | The provider sign-in failed. |
-| `invalid_code` | The sign-in code could not be exchanged. |
-| `timeout` | No loopback callback within 5 minutes. |
-| `network_error` | Sign-in or `VerifySessionAsync` could not reach Sponsorkit. |
+| `popup_blocked` | Browser only; never thrown by the .NET SDK. |
+| `access_denied`, `invalid_state`, `provider_error` | The provider sign-in failed (delivered to the loopback callback). |
+| `invalid_code` | The API rejected the code exchange (`400 invalid_code`). |
+| `cancelled` | Sign-in was cancelled through its `CancellationToken`, or no paste-back code was entered. |
+| `timeout` | Sign-in did not finish within `SignInTimeout` (default 5 minutes). |
+| `network_error` | During sign-in or `VerifySessionAsync`, Sponsorkit could not be reached or answered 5xx, 429 or an unexpected response. `RetryAfter` carries the API's `Retry-After` delay when it sent one. |
 | `session_invalid`, `targets_mismatch` | Only from `SponsorkitServer.VerifySessionAsync`. |
 
 `GetFinancialContributionAsync` does not throw for network errors, 5xx responses or rate limits:
@@ -114,7 +118,8 @@ Every exception is a `SponsorkitError` with a stable `Code` (`SponsorkitErrorCod
 - Without a cache, it returns a signed-in empty result with `Stale = true`.
 - On `session_invalid`, it clears the stored token and returns the signed-out result.
 
-Cancellation raises `OperationCanceledException` in the usual .NET way. The exception is `OpenCheckoutAsync`, which returns `Unknown` instead.
+Cancelling `SignInAsync` throws `SponsorkitError("cancelled")`, and cancelling `OpenCheckoutAsync` returns `Unknown`.
+Cancelling `GetFinancialContributionAsync` or `VerifySessionAsync` raises `OperationCanceledException` in the usual .NET way.
 
 ## Sign-in flows
 
@@ -147,7 +152,7 @@ if (await nag.DueAsync(fc => fc.Active().Count == 0))
 - **Counting runs.** Each process counts one run per nag id, on its first `DueAsync` call. The run counts even when your predicate is false.
 - **When it is due.** `DueAsync` returns `predicate && (runs >= Every || sinceLastShown >= OrEvery)`. Before the first `Shown()`, the `OrEvery` clause is false.
 - **Resetting.** `Shown()` resets both the counter and the timer.
-- **When it never fires.** `DueAsync` always returns `false` when `SPONSORKIT_DISABLE`, `SPONSORKIT_NO_NAG` or `CI` is set, or when stdout or stderr is not a terminal. `DueAsync(predicate, force: true)` bypasses every check except `SPONSORKIT_DISABLE`.
+- **When it never fires.** `DueAsync` always returns `false` when `SPONSORKIT_DISABLE`, `SPONSORKIT_NO_NAG` or `CI` is set, or when stdout or stderr is not a terminal (override the terminal check with the `Interactive` option). `DueAsync(predicate, force: true)` bypasses every check except `SPONSORKIT_DISABLE`.
 - **Durations.** `OrEvery` takes a `TimeSpan`. Use `NagOptions.ParseDuration("P7D")` for ISO-8601 durations.
 - **No implicit sign-in.** The nag helper never signs the user in.
 
@@ -163,7 +168,7 @@ var custom = new SponsorkitClient(new SponsorkitOptions
 });
 ```
 
-- Mock mode makes no network or disk access, and results carry `Mock = true`.
+- Mock mode makes no network or disk access, and results carry `Mock = true`. Nag state lives in memory, per client instance.
 - `SignInAsync()` and `SignOutAsync()` resolve immediately.
 - `OpenCheckoutAsync()` simulates a new contribution.
 - `SPONSORKIT_MOCK=active-monthly` selects a preset from the environment. The `Mock` option wins over it.
@@ -198,6 +203,7 @@ catch (SponsorkitError e) when (e.Code is SponsorkitErrorCodes.SessionInvalid or
 ```
 
 `VerifySessionAsync` calls the API live, checks that the session is bound to exactly your targets, and uses no local storage.
+When Sponsorkit is unreachable or answers 5xx or 429 it throws `network_error`, with `RetryAfter` set for rate limits.
 
 ## Development
 
