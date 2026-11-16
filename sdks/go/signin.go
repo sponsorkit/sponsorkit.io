@@ -183,6 +183,9 @@ func (c *Client) paste(ctx, sctx context.Context, r codeRequest) (string, error)
 	return code, nil
 }
 
+// listenLoopback binds the loopback receiver; tests replace it.
+var listenLoopback = func() (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
+
 type callback struct {
 	code, err string
 }
@@ -195,7 +198,7 @@ const closePage = `<!doctype html><html><head><meta charset="utf-8"><title>Spons
 // a failure to open the browser returns errBrowserFailed so that the caller
 // can fall back to paste-back.
 func (c *Client) loopback(ctx, sctx context.Context, r codeRequest, forced bool) (string, error) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := listenLoopback()
 	if err != nil {
 		if forced {
 			return "", newError(CodeNetworkError, "could not listen on 127.0.0.1", err)

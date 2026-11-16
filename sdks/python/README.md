@@ -65,15 +65,15 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | `storage` | `FileStorage(storage_dir)` | Custom backend implementing the `Storage` protocol (`read`/`write`/`delete`). |
 | `api_base_url` | `https://sponsorkit.io` | Self-hosting and tests. |
 | `sign_in_method` | `"auto"` | `"auto"`, `"loopback"` or `"paste"`. |
-| `open_browser` | `webbrowser.open` | `open_browser(url)`; return `False` or raise if it could not open. |
-| `prompt_for_code` | read a line from stdin | `prompt_for_code(url) -> str` for paste-back sign-in. |
+| `open_browser` | system launcher | `open_browser(url)`; return `False` or raise if it could not open. It runs in a helper thread: the loopback callback is accepted while it is still running. The default runs `xdg-open` / `open` / `rundll32` (or `webbrowser.open` when `$BROWSER` is set or no launcher exists): a non-zero exit counts as failed, still running after 1.5 s counts as opened. |
+| `prompt_for_code` | read a line from stdin | `prompt_for_code(url) -> str` for paste-back sign-in. See the [stdin limitation](#sign-in). |
 | `sign_in_timeout` | `300.0` | Seconds to wait for a loopback or paste-back sign-in before raising `timeout`. |
 | `interactive` | TTY detection | Overrides the stdout/stderr TTY check used by the [nag helper](#nag-helper). |
 | `env` | `os.environ` | Where `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI` are read. A mapping given here **replaces** the process environment for these variables (it is not merged). A variable counts as set when it is non-empty and not `0`/`false`. |
 | `dev_checks` | on if `SPONSORKIT_DEV_CHECKS` is set or `sys.flags.dev_mode` | Check once per process that the targets exist (`GET /api/v1/targets`); raises `invalid_config` on the first call that does I/O. `True`/`False` forces it. |
 | `checkout_poll_interval` | `60.0` | Seconds between checks while waiting for a checkout. |
 | `clock` | `datetime.now(utc)` | Injectable time source (cache TTL, nag, `Retry-After`). |
-| `timeout` | `10.0` | HTTP timeout in seconds. |
+| `request_timeout` | `30.0` | Timeout in seconds for every HTTP request (`0` disables it). Also applied per request to a custom `http_client`. A timeout is a network error: `get_financial_contribution` serves the stale cache, `sign_in` raises `network_error`. (`timeout` is a deprecated alias.) |
 | `http_client` | own `httpx.Client` | Reuse your own client (proxies, custom transports). Call `sk.close()` or use `with Sponsorkit(...) as sk:` to release the one Sponsorkit creates. |
 
 ### Methods
@@ -85,7 +85,7 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | `is_signed_in()` | `ais_signed_in` | Whether a session is stored. No network. |
 | `open_checkout(*, provider, amount, currency, frequency, timeout=600, cancel=None, method=None, poll_interval=None)` | `aopen_checkout` | Signs in if needed, opens the checkout page, then polls until a new or changed contribution appears. Returns `CheckoutResult("contributed", contribution)`, or `CheckoutResult("unknown")` when polling times out or `cancel` is set. `timeout` covers only the polling phase; the sign-in phase uses `sign_in_timeout` (and raises `timeout`). |
 | `checkout_url(*, provider, amount, currency, frequency)` | – | Offline, synchronous link to the checkout page (no sign-in). Great for nags and READMEs. Raises `invalid_config` for an unconfigured provider, an unknown frequency, a non-positive amount or a malformed currency. |
-| `sign_out()` | `asign_out` | Deletes the stored token and cache locally (nag state is kept). No network. |
+| `sign_out()` | `asign_out` | Deletes the stored token and cache locally (nag state is kept). No network. Raises `invalid_config` if storage can't be updated. |
 | `nag(id, *, every=10, or_every=None)` | – | A [`Nag`](#nag-helper). |
 
 `amount` is always in **minor units** (cents); `currency` is ISO 4217 (`"USD"`, `"EUR"`);
@@ -124,14 +124,14 @@ Everything raised is a `SponsorkitError` with a stable `.code`:
 
 | Code | When |
 |---|---|
-| `invalid_config` | No/malformed targets, invalid option (including `checkout_url` options), unknown mock preset, unwritable storage, or (dev check) a target that doesn't exist. |
+| `invalid_config` | No/malformed targets, invalid option (including `checkout_url` options and `request_timeout`), unknown mock preset, storage that can't be written when `sign_in` stores the session or `sign_out` clears it, or (dev check) a target that doesn't exist. |
 | `disabled` | `sign_in` / `open_checkout` while `SPONSORKIT_DISABLE` is set. |
 | `popup_blocked` | Browser SDKs only; never raised here. |
-| `access_denied`, `invalid_state`, `provider_error` | Sign-in error delivered by the sign-in page. |
+| `access_denied`, `invalid_state`, `provider_error` | Sign-in error delivered by the sign-in page. `provider_error` also when `method="loopback"` can't bind `127.0.0.1`. |
 | `invalid_code` | The API rejected the code exchange (`400 invalid_code`). |
 | `cancelled` | Sign-in was cancelled (`cancel` event, cancelled task, or no code entered at the prompt). |
 | `timeout` | Sign-in exceeded `sign_in_timeout` (300 s by default). |
-| `network_error` | Sign-in or `verify_session` could not reach the API, or it answered `5xx`, `429` or something unexpected. `e.retry_after` holds the API's `Retry-After` in seconds when it sent one, else `None`. |
+| `network_error` | Sign-in or `verify_session` could not reach the API, timed out (`request_timeout`), or it answered `5xx`, `429`, a `400` other than `invalid_code`, or something unexpected. `e.retry_after` holds the API's `Retry-After` in seconds when it sent one, else `None`. |
 | `session_invalid`, `targets_mismatch` | Only from `verify_session`. |
 
 If adding an identity finds the stored session dead (`401 session_invalid`), the stored session is
@@ -150,7 +150,16 @@ the signed-out result. `SPONSORKIT_DISABLE=1` turns everything into a no-op (`di
   stderr and asks for the code shown in the browser (valid for 10 minutes). `sign_in_timeout` and
   `cancel` apply to the prompt too (a blocked `prompt_for_code` is left running in a daemon thread).
 - **`auto`** (default) picks paste-back when `SSH_CONNECTION`/`SSH_TTY` is set or there is no
-  display, and falls back to it if the browser can't be opened.
+  display, and falls back to it if the browser can't be opened or the loopback receiver can't bind
+  `127.0.0.1`.
+
+A request to `/callback` with neither a `code` nor an `error` gets `400` and the receiver keeps
+waiting.
+
+**Stdin limitation.** The default paste-back prompt reads stdin with a blocking `readline()` that
+can't be cancelled. After a cancelled or timed-out paste-back, that read is still pending, so the
+next line the user types may go to it instead of your app. Apps that read stdin themselves should
+pass their own `prompt_for_code`.
 
 `sk.sign_in("opencollective")` while signed in with GitHub adds the second identity to the same
 session.
@@ -192,7 +201,8 @@ if fc.active():
     grant_pro()
 ```
 
-`verify_session` calls `GET /api/v1/contributions` with the token, checks that the session is bound
+`verify_session(token, targets, *, api_base_url=..., request_timeout=30.0, http_client=None)` calls
+`GET /api/v1/contributions` with the token (`request_timeout=0` disables the timeout), checks that the session is bound
 to exactly your targets, and touches no local storage. On the client side, the token is the
 `sessionToken` in the storage file described below.
 
@@ -227,9 +237,18 @@ One JSON file per target set, `<storage_dir>/<sha256(target param)>.json`:
   "nags": { "my-cli": { "runs": 3, "lastShown": null } } }
 ```
 
-Default directory: `$XDG_CONFIG_HOME/sponsorkit` (Linux), `~/Library/Application Support/sponsorkit`
-(macOS), `%APPDATA%\sponsorkit` (Windows). The directory is created `0700`, files are `0600`, and
-writes are atomic (temp file + rename). The format is shared by every Sponsorkit SDK.
+Default directory: `$XDG_CONFIG_HOME/sponsorkit` or `$HOME/.config/sponsorkit` (Linux),
+`$HOME/Library/Application Support/sponsorkit` (macOS), `%APPDATA%\sponsorkit` (Windows). Relative
+paths in these variables are ignored. If no directory can be determined (e.g. `HOME` is unset),
+state is kept in memory for the instance: the SDK never writes to the current directory and
+construction never fails. The directory is created `0700`, files are `0600`, and writes are atomic
+(temp file + rename). The format is shared by every Sponsorkit SDK.
+
+Reading never raises: a file that can't be parsed, or any malformed part of one (invalid UTF-8, a
+wrong type, an unparseable date, a token that isn't `sks_` + printable ASCII), counts as absent.
+Timestamps with any number of fractional digits are accepted. A refresh writes its cache (and any
+renewed token) back only if the stored token is still the one it used; a `401` clears only that
+token.
 
 ## Development
 
