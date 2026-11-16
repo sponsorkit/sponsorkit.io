@@ -121,7 +121,11 @@ internal sealed class FileStorage : ISponsorkitStorage
     /// The per-user default storage directory (SPEC §7.6), or <c>null</c> when none can be determined (for example
     /// <c>HOME</c> is unset): the client then keeps its state in memory and never writes to the working directory.
     /// </summary>
-    public static string? DefaultDirectory() => DefaultDirectory(Environment.GetEnvironmentVariable, Environment.GetFolderPath);
+    public static string? DefaultDirectory() =>
+        TestDefaultDirectory.Value is { } test ? test() : DefaultDirectory(Environment.GetEnvironmentVariable, Environment.GetFolderPath);
+
+    /// <summary>Tests only: replaces the default directory lookup.</summary>
+    internal static readonly AsyncLocal<Func<string?>?> TestDefaultDirectory = new();
 
     internal static string? DefaultDirectory(Func<string, string?> env, Func<Environment.SpecialFolder, string> folder)
     {
