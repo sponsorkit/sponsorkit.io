@@ -205,6 +205,15 @@ mod tests {
     }
 
     #[test]
+    fn non_ascii_stored_at_drops_cache_without_panicking() {
+        let result = serde_json::to_value(ContributionResult::empty(vec!["github:x".into()])).unwrap();
+        let v = serde_json::json!({ "v": 1, "sessionToken": "sks_x", "cache": { "result": result, "storedAt": "2026-11-16T18:00:00+0\u{e9}00" } });
+        let f = StorageFile::from_value(v);
+        assert_eq!(f.session_token.as_deref(), Some("sks_x"));
+        assert!(f.cache.is_none());
+    }
+
+    #[test]
     fn wrong_version_reads_empty() {
         let f = StorageFile::from_value(serde_json::json!({ "v": 2, "sessionToken": "sks_x" }));
         assert!(f.session_token.is_none());

@@ -67,7 +67,9 @@ public static class SponsorkitServer
             // 5xx, 429 and anything unexpected (PROTOCOL §7): the API's problem code is only informative here.
             throw new SponsorkitError(
                 SponsorkitErrorCodes.NetworkError,
-                $"Sponsorkit answered {(int)response.Status} ({response.Problem?.Code ?? "no code"}).",
+                response.Result is null && (int)response.Status >= 200 && (int)response.Status < 300
+                    ? $"Sponsorkit answered {(int)response.Status} with an unexpected response body."
+                    : $"Sponsorkit answered {(int)response.Status} ({response.Problem?.Code ?? "no code"}).",
                 response.RetryAfter,
                 null);
         }

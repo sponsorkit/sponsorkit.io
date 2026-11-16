@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import re
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -16,6 +18,15 @@ from .errors import SponsorkitError
 DEFAULT_API_BASE_URL = "https://sponsorkit.io"
 USER_AGENT = f"sponsorkit-python/{__version__}"
 DEFAULT_HTTP_TIMEOUT = 10.0
+MAX_RETRY_AFTER = 86400.0
+"""Upper bound for an honoured ``Retry-After`` (24 h); larger values are clamped."""
+
+_SESSION_TOKEN = re.compile(r"sks_[\x21-\x7e]+")
+
+
+def is_session_token(value: object) -> bool:
+    """Whether ``value`` looks like a session token: ``sks_`` then printable ASCII (header-safe)."""
+    return isinstance(value, str) and _SESSION_TOKEN.fullmatch(value) is not None
 
 
 def normalize_base_url(url: str) -> str:
@@ -41,21 +52,27 @@ def problem_code(body: Any) -> str | None:
 
 
 def parse_retry_after(value: str | None, now: datetime) -> float | None:
-    """Parse ``Retry-After`` (delta seconds or HTTP date); ``None`` when absent or invalid."""
+    """Parse ``Retry-After`` (delta seconds or HTTP date); ``None`` when absent or invalid.
+
+    Non-finite values are invalid; finite ones are clamped to ``[0, MAX_RETRY_AFTER]``.
+    """
     if not value or not value.strip():
         return None
     value = value.strip()
+    seconds: float
     try:
-        return max(0.0, float(value))
+        seconds = float(value)
     except ValueError:
-        pass
-    try:
-        when = parsedate_to_datetime(value)
-    except (TypeError, ValueError):
+        try:
+            when = parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        seconds = (when - now).total_seconds()
+    if not math.isfinite(seconds):
         return None
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=timezone.utc)
-    return max(0.0, (when - now).total_seconds())
+    return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
 def retry_after_seconds(value: str | None, now: datetime) -> float:
@@ -84,10 +101,19 @@ def iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+_FRACTION = re.compile(r"(T\d{2}:\d{2}:\d{2})[.,](\d+)")
+
+
 def parse_iso(value: str) -> datetime | None:
-    """Parse an ISO-8601 date-time (``Z`` or offset); ``None`` if invalid. Naive values are UTC."""
+    """Parse an ISO-8601 date-time (``Z`` or offset); ``None`` if invalid. Naive values are UTC.
+
+    Fractional seconds of any length are accepted (Python 3.10's ``fromisoformat`` only takes 3 or 6
+    digits, while e.g. the .NET SDK drops trailing zeros), so they are normalized to 6 digits first.
+    """
     try:
-        dt = datetime.fromisoformat(value.strip().replace("Z", "+00:00").replace("z", "+00:00"))
-    except (ValueError, AttributeError):
+        text = value.strip().replace("Z", "+00:00").replace("z", "+00:00")
+        text = _FRACTION.sub(lambda m: f"{m.group(1)}.{(m.group(2) + '000000')[:6]}", text, count=1)
+        dt = datetime.fromisoformat(text)
+    except (ValueError, AttributeError, TypeError):
         return None
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)

@@ -288,11 +288,29 @@ public sealed class SponsorkitClient
         {
             _store!.Update(update);
         }
-        catch (IOException)
+#pragma warning disable CA1031 // Custom ISponsorkitStorage backends may throw anything.
+        catch (Exception)
+#pragma warning restore CA1031
         {
         }
-        catch (UnauthorizedAccessException)
+    }
+
+    /// <summary>
+    /// Writes state that the caller asked for (sign-in, sign-out). A storage failure surfaces as
+    /// <c>invalid_config</c>, so every exception the SDK throws stays a <see cref="SponsorkitError"/> (PROTOCOL §7).
+    /// </summary>
+    private void RequiredUpdate(Action<StorageFile> update, string what)
+    {
+        try
         {
+            _store!.Update(update);
+        }
+#pragma warning disable CA1031 // Wrapped into a SponsorkitError with the original as the inner exception.
+        catch (Exception e)
+#pragma warning restore CA1031
+        {
+            var where = _storage is FileStorage fs ? $" in {fs.Directory} (check StorageDirectory)" : " (check the configured Storage)";
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"Could not {what}{where}: {e.Message}", e);
         }
     }
 
@@ -337,7 +355,7 @@ public sealed class SponsorkitClient
     /// <param name="cancellationToken">Cancels the sign-in; it then throws <c>cancelled</c>.</param>
     /// <returns>The contribution result returned with the new session.</returns>
     /// <exception cref="SponsorkitError">
-    /// <c>disabled</c>; <c>invalid_config</c>; <c>access_denied</c>, <c>invalid_state</c> or <c>provider_error</c> from the provider;
+    /// <c>disabled</c>; <c>invalid_config</c> (including when the new session could not be written to storage); <c>access_denied</c>, <c>invalid_state</c> or <c>provider_error</c> from the provider;
     /// <c>invalid_code</c> (the API rejected the code); <c>cancelled</c> (the <paramref name="cancellationToken"/> fired or no
     /// paste-back code was entered); <c>timeout</c> (not finished within <see cref="SponsorkitOptions.SignInTimeout"/>);
     /// <c>network_error</c> (the API was unreachable or answered 5xx, 429 or an unexpected response).
@@ -521,11 +539,13 @@ public sealed class SponsorkitClient
         var result = token.Result!;
         result.FromCache = false;
         var storedAt = Now();
-        _store!.Update(f =>
-        {
-            f.SessionToken = token.SessionToken;
-            f.Cache = new StorageCache { Result = result, StoredAt = storedAt };
-        });
+        RequiredUpdate(
+            f =>
+            {
+                f.SessionToken = token.SessionToken;
+                f.Cache = new StorageCache { Result = result, StoredAt = storedAt };
+            },
+            "store the session");
         return result;
     }
 
@@ -673,6 +693,7 @@ public sealed class SponsorkitClient
     /// </summary>
     /// <param name="cancellationToken">Unused; present for API symmetry.</param>
     /// <returns>A completed task.</returns>
+    /// <exception cref="SponsorkitError"><c>invalid_config</c>: the storage could not be written.</exception>
     public Task SignOutAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -691,16 +712,21 @@ public sealed class SponsorkitClient
         {
             existing = _storage!.Read(_targets.Hash);
         }
-        catch (IOException)
+#pragma warning disable CA1031 // Unreadable: still try to overwrite it with a signed-out document.
+        catch (Exception)
+#pragma warning restore CA1031
         {
             existing = "{}";
         }
         if (existing is null) return Task.CompletedTask;
-        _store!.Update(f =>
-        {
-            f.SessionToken = null;
-            f.Cache = null;
-        });
+        // StateStore.Load never throws: a corrupt document is replaced by a clean signed-out one.
+        RequiredUpdate(
+            f =>
+            {
+                f.SessionToken = null;
+                f.Cache = null;
+            },
+            "clear the stored session");
         return Task.CompletedTask;
     }
 

@@ -1,4 +1,5 @@
 /** Thin wrappers over the Sponsorkit HTTP API (PROTOCOL §3). */
+import { SponsorkitError } from "./errors";
 import type { ContributionResult, TargetInfo } from "./types";
 import { isObject } from "./util";
 
@@ -8,6 +9,40 @@ export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 /** Resolves the fetch implementation at call time (so tests can stub the global). */
 export function resolveFetch(custom?: FetchLike): FetchLike {
   return custom ?? ((input, init) => globalThis.fetch(input, init));
+}
+
+/** Default per-request timeout in seconds. */
+export const DEFAULT_REQUEST_TIMEOUT = 30;
+
+/** Validates a `requestTimeout` option (seconds; `0` disables) and returns milliseconds. */
+export function requestTimeoutMs(value: unknown): number {
+  const secs = value ?? DEFAULT_REQUEST_TIMEOUT;
+  if (typeof secs !== "number" || !Number.isFinite(secs) || secs < 0) {
+    throw new SponsorkitError("invalid_config", "requestTimeout must be a non-negative number of seconds");
+  }
+  return secs * 1000;
+}
+
+/**
+ * Wraps `fetchFn` so every request is aborted after `timeoutMs` (headers and body),
+ * in addition to the caller's own `signal`. `0` returns `fetchFn` unchanged.
+ */
+export function withTimeout(fetchFn: FetchLike, timeoutMs: number): FetchLike {
+  if (!(timeoutMs > 0)) return fetchFn;
+  return (input, init) => {
+    const ac = new AbortController();
+    const outer = init?.signal ?? undefined;
+    const onAbort = () => ac.abort(outer?.reason);
+    if (outer?.aborted) onAbort();
+    else outer?.addEventListener("abort", onAbort, { once: true });
+    const timer = setTimeout(() => {
+      outer?.removeEventListener("abort", onAbort);
+      ac.abort(new SponsorkitError("network_error", `Request timed out after ${timeoutMs / 1000} s`));
+    }, timeoutMs) as unknown as { unref?: () => void };
+    // The timer keeps covering the body read; it must not keep the process alive.
+    timer.unref?.();
+    return fetchFn(input, { ...init, signal: ac.signal });
+  };
 }
 
 /** Outcome of `GET /api/v1/contributions`. */

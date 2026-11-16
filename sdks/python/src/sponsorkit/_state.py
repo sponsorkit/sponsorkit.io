@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from ._http import is_session_token
 from .models import ContributionResult
 from .storage import FileStorage, Storage
 
@@ -92,20 +93,20 @@ class StoredState:
             return cls()
         try:
             data = json.loads(text)
-        except ValueError:
+        except (ValueError, RecursionError):
             log.warning("sponsorkit: ignoring a corrupt storage file")
             return cls()
         if not isinstance(data, dict) or data.get("v") != 1:
             return cls()
         state = cls(extra={k: v for k, v in data.items() if k not in ("v", "sessionToken", "cache", "nags")})
         token = data.get("sessionToken")
-        if isinstance(token, str) and token.startswith("sks_"):
+        if is_session_token(token):
             state.session_token = token
         cache = data.get("cache")
         if isinstance(cache, dict) and isinstance(cache.get("storedAt"), str):
             try:
                 state.cache = CacheEntry(ContributionResult.from_dict(cache["result"]), cache["storedAt"])
-            except (KeyError, TypeError, ValueError):
+            except Exception:  # any malformed entry is ignored, never raised
                 log.warning("sponsorkit: ignoring a malformed cache entry")
         nags = data.get("nags")
         if isinstance(nags, dict):
@@ -144,15 +145,26 @@ class StateStore:
         self.lock = storage_lock(storage, key)
 
     def read(self) -> StoredState:
-        return StoredState.parse(self.storage.read(self.key))
+        try:
+            text = self.storage.read(self.key)
+        except ValueError:  # e.g. UnicodeDecodeError: the file is not UTF-8
+            log.warning("sponsorkit: ignoring a corrupt storage file")
+            return StoredState()
+        return StoredState.parse(text)
 
     def exists(self) -> bool:
-        return self.storage.read(self.key) is not None
+        try:
+            return self.storage.read(self.key) is not None
+        except ValueError:  # present but undecodable
+            return True
 
-    def update(self, fn: Callable[[StoredState], None]) -> StoredState:
-        """Apply ``fn`` to the freshly read state and write it back atomically."""
+    def update(self, fn: Callable[[StoredState], bool | None]) -> StoredState:
+        """Apply ``fn`` to the freshly read state and write it back atomically.
+
+        Nothing is written when ``fn`` returns ``False``.
+        """
         with self.lock:
             state = self.read()
-            fn(state)
-            self.storage.write(self.key, state.dump())
+            if fn(state) is not False:
+                self.storage.write(self.key, state.dump())
             return state

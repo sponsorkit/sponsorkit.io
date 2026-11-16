@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -61,7 +62,10 @@ type Options struct {
 	// It takes precedence over the SPONSORKIT_MOCK environment variable.
 	Mock *Mock
 	// StorageDir is the directory for the local state file. Defaults to
-	// DefaultStorageDir(). Ignored when Storage is set.
+	// DefaultStorageDir(). Ignored when Storage is set. If DefaultStorageDir
+	// fails (for example HOME and XDG_CONFIG_HOME are both unset) and no
+	// StorageDir is given, state is kept in process memory only: nothing is
+	// written to disk, so a sign-in does not outlive the process.
 	StorageDir string
 	// Storage replaces the file storage entirely.
 	Storage Storage
@@ -149,13 +153,33 @@ var processState = struct {
 	retryUntil: map[string]time.Time{},
 }
 
+// defaultStorageDir is DefaultStorageDir; tests replace it.
+var defaultStorageDir = DefaultStorageDir
+
+// memFallback is the process-wide in-memory storage used when there is no
+// per-user config directory.
+var memFallback struct {
+	sync.Mutex
+	s *memoryStorage
+}
+
+func processMemoryStorage() *memoryStorage {
+	memFallback.Lock()
+	defer memFallback.Unlock()
+	if memFallback.s == nil {
+		memFallback.s = &memoryStorage{}
+	}
+	return memFallback.s
+}
+
 type devCheckEntry struct {
 	once sync.Once
 	err  error
 }
 
 // ResetProcessState forgets per-process memo state: the nag runs already
-// counted, the dev-check memo and the Retry-After memo. It simulates a new
+// counted, the dev-check memo, the Retry-After memo and the in-memory state
+// used when there is no per-user config directory. It simulates a new
 // process and is meant for tests.
 func ResetProcessState() {
 	processState.Lock()
@@ -163,6 +187,9 @@ func ResetProcessState() {
 	processState.nagCounted = map[string]bool{}
 	processState.devChecks = map[string]*devCheckEntry{}
 	processState.retryUntil = map[string]time.Time{}
+	memFallback.Lock()
+	memFallback.s = nil
+	memFallback.Unlock()
 }
 
 // New creates a Client. It returns an invalid_config *Error for missing or
@@ -309,13 +336,17 @@ func (c *Client) store() *store {
 		if backend == nil {
 			dir := c.storageDir
 			if dir == "" {
-				if d, err := DefaultStorageDir(); err == nil {
+				if d, err := defaultStorageDir(); err == nil {
 					dir = d
-				} else {
-					dir = ".sponsorkit"
 				}
 			}
-			backend = &DirStorage{Dir: dir}
+			if dir != "" {
+				backend = &DirStorage{Dir: dir}
+			} else {
+				// No per-user config directory (e.g. HOME unset): never fall
+				// back to a cwd-relative path. Keep state in process memory.
+				backend = processMemoryStorage()
+			}
 		}
 		c.st = newStore(backend, c.hash)
 	})
@@ -618,20 +649,28 @@ func fetchContributions(ctx context.Context, hc *http.Client, base, token string
 	return fetchResult{kind: fetchOK, result: &r, renewedToken: strings.TrimSpace(res.Header.Get("Sponsorkit-Session")), status: res.StatusCode}
 }
 
-// parseRetryAfter parses a Retry-After header (seconds or an HTTP date). The
-// boolean is false, and the duration defaultRetryAfter, when the header is
-// missing or malformed.
+// maxRetryAfter caps a parsed Retry-After so that huge values cannot overflow
+// time.Duration (which would put the back-off in the past).
+const maxRetryAfter = 24 * time.Hour
+
+// parseRetryAfter parses a Retry-After header (seconds or an HTTP date),
+// capped at maxRetryAfter. The boolean is false, and the duration
+// defaultRetryAfter, when the header is missing or malformed ("Inf" and "NaN"
+// are malformed).
 func parseRetryAfter(v string, now time.Time) (time.Duration, bool) {
 	v = strings.TrimSpace(v)
 	if v == "" {
 		return defaultRetryAfter, false
 	}
-	if n, err := strconv.ParseFloat(v, 64); err == nil && n >= 0 {
+	if n, err := strconv.ParseFloat(v, 64); err == nil && n >= 0 && !math.IsInf(n, 0) && !math.IsNaN(n) {
+		if n >= maxRetryAfter.Seconds() {
+			return maxRetryAfter, true
+		}
 		return time.Duration(n * float64(time.Second)), true
 	}
 	if t, err := http.ParseTime(v); err == nil {
 		if d := t.Sub(now); d > 0 {
-			return d, true
+			return min(d, maxRetryAfter), true
 		}
 		return 0, true
 	}

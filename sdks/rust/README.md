@@ -81,7 +81,7 @@ malformed (even when disabled), or the mock preset is unknown.
 | `dev_checks` | on when `SPONSORKIT_DEV_CHECKS` is set | Dev-time check that the targets exist (one `GET /api/v1/targets` per process, on the first async call). Rust has no implicit development signal; the option beats the variable. |
 | `checkout_poll_interval` | 60 s | How often `open_checkout` re-checks. |
 | `interactive` | stdout+stderr are terminals | Override terminal detection for the nag helper. |
-| `open_browser` | system browser | Hook `Fn(String) -> BoxFuture<io::Result<()>>`. |
+| `open_browser` | system browser | Hook `Fn(String) -> BoxFuture<io::Result<()>>`. The default launcher (`open`, `xdg-open`, `rundll32`) counts as failed only if it exits non-zero within 1.5 s; one still running is assumed to be opening the browser. The callback is accepted even while the hook is still running. |
 | `prompt_for_code` | read a line from stdin | Hook `Fn(paste_url: String) -> BoxFuture<io::Result<String>>`. |
 | `restart` | `false` | Reset per-process memo state first (same as `Sponsorkit::reset_process_state()`). |
 
@@ -159,7 +159,13 @@ match sk.sign_in(SignInOptions::default()).await {
 Cancelling `sign_in` fails with `cancelled`; cancelling `open_checkout` (while it signs in
 or while it polls) resolves `CheckoutOutcome::Unknown` instead of failing. Dropping the future (for example through
 `tokio::time::timeout` or `tokio::select!`) also stops everything, including the loopback
-listener, but yields no result.
+listener, but yields no result. The default paste-back prompt reads stdin on one
+long-lived background thread, because a blocking read cannot be interrupted: an abandoned
+prompt does not keep the runtime from shutting down, and the line typed after it goes to
+the next prompt. Use `prompt_for_code` to read the code some other way.
+
+The example below uses `tokio::signal`, which needs tokio's `signal` feature on top of the
+features listed under [Install](#install).
 
 ```rust,no_run
 # async fn run(sk: sponsorkit::Sponsorkit) -> Result<(), sponsorkit::Error> {

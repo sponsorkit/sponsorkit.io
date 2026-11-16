@@ -31,7 +31,7 @@ export interface SponsorkitOptions extends SponsorkitCoreOptions {
   appName?: string;
   /** Directory for the storage files. Default: the per-user config directory (see `defaultStorageDir()`). Ignored when `storage` is given. */
   storageDir?: string;
-  /** `auto` (default) tries loopback and falls back to paste-back when headless, over SSH, or when the browser can't be opened. */
+  /** `auto` (default) tries loopback and falls back to paste-back when headless, over SSH, when the browser can't be opened, or when the loopback receiver can't bind. */
   signInMethod?: SignInMethod;
   /** Opens a URL in a browser. Default: the system browser (`open` / `xdg-open` / `rundll32`), without a shell. */
   openBrowser?: (url: string) => void | Promise<void>;
@@ -157,9 +157,16 @@ export class Sponsorkit extends SponsorkitCore<null> {
     return `${this.apiBaseUrl}${request.path}?${q}`;
   }
 
-  /** Returns the code, or `null` to fall back to paste-back (auto mode, browser could not be opened). */
+  /** Returns the code, or `null` to fall back to paste-back (auto mode, browser could not be opened or the receiver could not bind). */
   private async loopbackFlow(request: CodeRequest, allowFallback: boolean): Promise<string | null> {
-    const receiver = await startLoopbackReceiver(request.continueUrl);
+    let receiver: Awaited<ReturnType<typeof startLoopbackReceiver>>;
+    try {
+      receiver = await startLoopbackReceiver(request.continueUrl);
+    } catch (cause) {
+      // e.g. EADDRNOTAVAIL / EACCES on 127.0.0.1 in a sandbox: paste-back still works.
+      if (allowFallback) return null;
+      throw new SponsorkitError("provider_error", "Could not start the loopback sign-in receiver on 127.0.0.1", { cause });
+    }
     try {
       const url = this.buildUrl(request, { delivery: "loopback", redirect_uri: receiver.redirectUri });
       // request.signal aborts on cancellation (`cancelled`) or signInTimeout (`timeout`).

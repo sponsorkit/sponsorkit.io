@@ -161,7 +161,9 @@ internal sealed class ApiClient
         var outcome = new ContributionsResponse { Status = res.StatusCode };
         if (res.IsSuccessStatusCode)
         {
-            outcome.Result = TryParse<ContributionResult>(body);
+            // A body that does not have the ContributionResult shape is an unexpected response (PROTOCOL §7).
+            var parsed = TryParse<ContributionResult>(body);
+            outcome.Result = ResultShape.IsValid(parsed) ? parsed : null;
             if (res.Headers.TryGetValues("Sponsorkit-Session", out var values))
             {
                 var renewed = values.FirstOrDefault(v => v.StartsWith("sks_", StringComparison.Ordinal));
@@ -222,7 +224,7 @@ internal sealed class ApiClient
                     null);
             }
             var token = TryParse<TokenResponse>(body);
-            if (token is null || token.Result is null || !token.SessionToken.StartsWith("sks_", StringComparison.Ordinal))
+            if (token is null || !ResultShape.IsValid(token.Result) || token.SessionToken is null || !token.SessionToken.StartsWith("sks_", StringComparison.Ordinal))
                 throw new SponsorkitError(SponsorkitErrorCodes.NetworkError, "Sponsorkit returned an invalid token response.");
             return token;
         }

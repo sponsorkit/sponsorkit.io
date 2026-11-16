@@ -444,7 +444,7 @@ impl Sponsorkit {
         match self.fetch_contributions(&token).await {
             Fetched::Failed => Ok(fallback(cache)),
             Fetched::RateLimited(secs) => {
-                process().retry_until.insert(param, now_ms() + (secs as i64) * 1000);
+                process().retry_until.insert(param, retry_deadline(now_ms(), secs));
                 Ok(fallback(cache))
             }
             Fetched::SessionInvalid => {
@@ -560,5 +560,29 @@ impl Sponsorkit {
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         Error::network(format!("HTTP error: {e}"), None)
+    }
+}
+
+/// The epoch-ms deadline for a `Retry-After` of `secs` seconds from `now`.
+///
+/// Saturates instead of overflowing, so an absurd header value can neither
+/// panic nor wrap into a deadline in the past.
+fn retry_deadline(now: i64, secs: u64) -> i64 {
+    now.saturating_add(i64::try_from(secs).unwrap_or(i64::MAX).saturating_mul(1000))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::retry_deadline;
+
+    #[test]
+    fn retry_deadline_saturates() {
+        assert_eq!(retry_deadline(1_000, 60), 61_000);
+        assert_eq!(retry_deadline(1_000, 0), 1_000);
+        let now = 1_763_316_000_000;
+        assert_eq!(retry_deadline(now, 9_223_372_036_854_775_807), i64::MAX);
+        assert_eq!(retry_deadline(now, u64::MAX), i64::MAX);
+        assert_eq!(retry_deadline(now, 9_300_000_000_000_000), i64::MAX);
+        assert!(retry_deadline(now, 1 << 63) > now);
     }
 }

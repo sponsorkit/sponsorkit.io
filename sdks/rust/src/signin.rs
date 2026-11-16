@@ -155,6 +155,71 @@ async fn handle_connection(mut stream: TcpStream, tx: CallbackSender, redirect_a
     let _ = sender.send(callback);
 }
 
+/// Reads lines from a blocking source on one long-lived thread.
+///
+/// A blocking read cannot be cancelled. Running it on `spawn_blocking` per
+/// prompt would leave an orphaned reader after a timeout or cancel that keeps
+/// the tokio runtime from shutting down and swallows the next line. Instead one
+/// detached thread reads a line only when asked; a prompt that is abandoned
+/// leaves its request pending, and the line it yields goes to the next prompt.
+pub(crate) struct LineReader {
+    state: tokio::sync::Mutex<LineReaderState>,
+}
+
+struct LineReaderState {
+    requests: std::sync::mpsc::Sender<()>,
+    lines: tokio::sync::mpsc::UnboundedReceiver<std::io::Result<String>>,
+    /// A line has been requested and not yet received.
+    pending: bool,
+}
+
+impl LineReader {
+    pub(crate) fn spawn<F>(mut read_line: F) -> LineReader
+    where
+        F: FnMut(&mut String) -> std::io::Result<usize> + Send + 'static,
+    {
+        let (req_tx, req_rx) = std::sync::mpsc::channel::<()>();
+        let (line_tx, line_rx) = tokio::sync::mpsc::unbounded_channel();
+        std::thread::Builder::new()
+            .name("sponsorkit-stdin".into())
+            .spawn(move || {
+                while req_rx.recv().is_ok() {
+                    let mut line = String::new();
+                    let got = read_line(&mut line).map(|_| line);
+                    if line_tx.send(got).is_err() {
+                        break;
+                    }
+                }
+            })
+            .map(|_| ())
+            .unwrap_or_else(|e| eprintln!("sponsorkit: cannot start the stdin reader: {e}"));
+        LineReader {
+            state: tokio::sync::Mutex::new(LineReaderState { requests: req_tx, lines: line_rx, pending: false }),
+        }
+    }
+
+    /// Reads one line (empty at end of input). Cancel-safe: dropping the
+    /// future loses nothing.
+    pub(crate) async fn read_line(&self) -> std::io::Result<String> {
+        let mut st = self.state.lock().await;
+        if !st.pending {
+            st.requests.send(()).map_err(|_| std::io::Error::other("the stdin reader is not running"))?;
+            st.pending = true;
+        }
+        let got = st.lines.recv().await;
+        st.pending = false;
+        got.unwrap_or_else(|| Err(std::io::Error::other("the stdin reader is not running")))
+    }
+}
+
+/// The process-wide stdin reader used by the default paste-back prompt.
+fn stdin_lines() -> &'static LineReader {
+    static READER: std::sync::OnceLock<LineReader> = std::sync::OnceLock::new();
+    // `Stdin::read_line` locks stdin only while reading and shares its buffer
+    // with the rest of the process.
+    READER.get_or_init(|| LineReader::spawn(|line| std::io::stdin().read_line(line)))
+}
+
 /// Aborts a spawned task when dropped.
 struct AbortOnDrop(tokio::task::JoinHandle<()>);
 
@@ -287,11 +352,18 @@ impl Sponsorkit {
     }
 
     pub(crate) async fn open_url(&self, url: String) -> std::io::Result<()> {
+        self.open_url_future(url).await
+    }
+
+    /// The future that opens `url`; `'static` so it can outlive the caller.
+    fn open_url_future(&self, url: String) -> crate::client::BoxFuture<std::io::Result<()>> {
         match &self.inner.open_browser {
-            Some(hook) => hook(url).await,
-            None => tokio::task::spawn_blocking(move || open_system_browser(&url))
-                .await
-                .unwrap_or_else(|e| Err(std::io::Error::other(e.to_string()))),
+            Some(hook) => hook(url),
+            None => Box::pin(async move {
+                tokio::task::spawn_blocking(move || open_system_browser(&url))
+                    .await
+                    .unwrap_or_else(|e| Err(std::io::Error::other(e.to_string())))
+            }),
         }
     }
 
@@ -341,28 +413,42 @@ impl Sponsorkit {
 
         let never = CancellationToken::new();
         let cancel = cancel.unwrap_or(&never);
-        tokio::select! {
-            opened = self.open_url(url.clone()) => {
-                if let Err(e) = opened {
-                    if fail_if_unopened {
-                        return Err(CodeError::OpenFailed(e.to_string()));
+        // Wait for the callback while the browser is being opened: a launcher
+        // (or hook) that is slow to return must not hold up a sign-in that has
+        // already completed.
+        let mut open = Some(self.open_url_future(url.clone()));
+        let mut rx = rx;
+        loop {
+            tokio::select! {
+                got = &mut rx => {
+                    // Like a real browser, the opener carries on by itself (e.g. it
+                    // follows the callback's redirect to the provider chooser).
+                    if let Some(open) = open.take() {
+                        tokio::spawn(async move {
+                            let _ = open.await;
+                        });
                     }
-                    // Loopback was requested explicitly: let the user open the page themselves.
-                    eprintln!("\nCould not open a browser ({e}). Open this URL on this machine to sign in:\n\n  {url}\n");
+                    return match got {
+                        Ok(Callback::Code(code)) => Ok(code),
+                        Ok(Callback::Error(e)) => Err(CodeError::Other(Error::new(
+                            ErrorCode::from_callback(&e),
+                            format!("Sign-in failed: {e}"),
+                        ))),
+                        Err(_) => Err(CodeError::Cancelled),
+                    };
                 }
+                opened = async { open.as_mut().expect("guarded").await }, if open.is_some() => {
+                    open = None;
+                    if let Err(e) = opened {
+                        if fail_if_unopened {
+                            return Err(CodeError::OpenFailed(e.to_string()));
+                        }
+                        // Loopback was requested explicitly: let the user open the page themselves.
+                        eprintln!("\nCould not open a browser ({e}). Open this URL on this machine to sign in:\n\n  {url}\n");
+                    }
+                }
+                _ = cancel.cancelled() => return Err(CodeError::Cancelled),
             }
-            _ = cancel.cancelled() => return Err(CodeError::Cancelled),
-        }
-        tokio::select! {
-            got = rx => match got {
-                Ok(Callback::Code(code)) => Ok(code),
-                Ok(Callback::Error(e)) => Err(CodeError::Other(Error::new(
-                    ErrorCode::from_callback(&e),
-                    format!("Sign-in failed: {e}"),
-                ))),
-                Err(_) => Err(CodeError::Cancelled),
-            },
-            _ = cancel.cancelled() => Err(CodeError::Cancelled),
         }
     }
 
@@ -380,12 +466,7 @@ impl Sponsorkit {
                 Some(hook) => hook(url.clone()).await,
                 None => {
                     eprint!("Then paste the code shown on the page here: ");
-                    tokio::task::spawn_blocking(|| {
-                        let mut line = String::new();
-                        std::io::stdin().read_line(&mut line).map(|_| line)
-                    })
-                    .await
-                    .unwrap_or_else(|e| Err(std::io::Error::other(e.to_string())))
+                    stdin_lines().read_line().await
                 }
             }
         };
@@ -482,4 +563,84 @@ enum TokenOutcome {
 /// The `Retry-After` header as whole seconds (delta-seconds form only).
 pub(crate) fn retry_after_secs(headers: &reqwest::header::HeaderMap) -> Option<u64> {
     headers.get(reqwest::header::RETRY_AFTER).and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<u64>().ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::{OpenBrowserHook, Options};
+
+    /// A line source fed from a channel, standing in for a terminal.
+    fn fake_stdin() -> (std::sync::mpsc::Sender<String>, LineReader) {
+        let (tx, rx) = std::sync::mpsc::channel::<String>();
+        let reader = LineReader::spawn(move |line| match rx.recv() {
+            Ok(l) => {
+                line.push_str(&l);
+                Ok(l.len())
+            }
+            Err(_) => Ok(0),
+        });
+        (tx, reader)
+    }
+
+    #[tokio::test]
+    async fn abandoned_prompt_leaves_the_line_for_the_next_one() {
+        let (tx, reader) = fake_stdin();
+        // The first prompt times out without input.
+        assert!(tokio::time::timeout(Duration::from_millis(100), reader.read_line()).await.is_err());
+        // The line typed afterwards is not swallowed by the abandoned prompt.
+        tx.send("code-1\n".into()).unwrap();
+        assert_eq!(reader.read_line().await.unwrap(), "code-1\n");
+        // Reads are on demand: nothing is consumed until the next prompt asks.
+        tx.send("code-2\n".into()).unwrap();
+        assert_eq!(reader.read_line().await.unwrap(), "code-2\n");
+        drop(tx);
+        assert_eq!(reader.read_line().await.unwrap(), "");
+    }
+
+    #[test]
+    fn abandoned_prompt_does_not_block_runtime_shutdown() {
+        let (_tx, reader) = fake_stdin();
+        let started = std::time::Instant::now();
+        let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap();
+        rt.block_on(async {
+            assert!(tokio::time::timeout(Duration::from_millis(50), reader.read_line()).await.is_err());
+        });
+        drop(rt);
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[tokio::test]
+    async fn loopback_does_not_wait_for_the_launcher_to_return() {
+        let dir = std::env::temp_dir().join(format!("sponsorkit-test-{}", std::process::id()));
+        // A launcher that delivers the callback and then stays in the foreground.
+        let hook: OpenBrowserHook = Arc::new(|url: String| {
+            Box::pin(async move {
+                let u = reqwest::Url::parse(&url).unwrap();
+                let redirect = u.query_pairs().find(|(k, _)| k == "redirect_uri").unwrap().1.into_owned();
+                let r = reqwest::Url::parse(&redirect).unwrap();
+                let mut s = TcpStream::connect((r.host_str().unwrap(), r.port().unwrap())).await.unwrap();
+                s.write_all(b"GET /callback?code=abc HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n").await.unwrap();
+                let mut buf = [0u8; 64];
+                let _ = s.read(&mut buf).await;
+                std::future::pending::<std::io::Result<()>>().await
+            })
+        });
+        let sk = Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            storage_dir: Some(dir.clone()),
+            sign_in_timeout: Some(Duration::from_secs(5)),
+            open_browser: Some(hook),
+            ..Default::default()
+        })
+        .unwrap();
+        let started = std::time::Instant::now();
+        let got = sk.obtain_code(StartPage::Connect, Vec::new(), SignInMethod::Loopback, None).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        match got {
+            Ok((code, _)) => assert_eq!(code, "abc"),
+            Err(_) => panic!("loopback sign-in did not complete"),
+        }
+        assert!(started.elapsed() < Duration::from_secs(4));
+    }
 }

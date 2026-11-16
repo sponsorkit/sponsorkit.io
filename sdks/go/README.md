@@ -38,9 +38,8 @@ func main() {
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "sponsor" {
-		if _, err := sk.SignIn(ctx); err != nil { // loopback, or paste-back when headless
-			log.Fatal(err)
-		}
+		// OpenCheckout signs in first when needed (loopback, or paste-back
+		// when headless), so there is no separate SignIn call here.
 		r, err := sk.OpenCheckout(ctx, sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly, Amount: 500})
 		if err != nil {
 			log.Fatal(err)
@@ -77,12 +76,12 @@ All methods are safe for concurrent use. Methods that may do I/O take a `context
 | `AppName` | – | Shown on the consent page as "says it is" (max 64 characters). |
 | `CacheTTL` | 1 h | How long results are served from the local cache. Values below 1 minute are raised to 1 minute (per-call `WithCacheTTL` is not clamped). |
 | `Mock` | – | `sponsorkit.MockPreset(name)` or `sponsorkit.MockContributions(...)`. See [Mock mode](#mock-mode-and-testing). |
-| `StorageDir` | `os.UserConfigDir()/sponsorkit` | Where the state file lives. |
+| `StorageDir` | `os.UserConfigDir()/sponsorkit` | Where the state file lives. If there is no per-user config directory (HOME and XDG_CONFIG_HOME unset), state is kept in process memory only; nothing is written to the working directory. |
 | `Storage` | `&DirStorage{Dir: StorageDir}` | Replace file storage (e.g. with a keychain-backed implementation). |
 | `APIBaseURL` | `https://sponsorkit.io` | API origin (self-hosting, tests). |
 | `HTTPClient` | 30 s timeout | HTTP client for API calls. |
-| `OpenBrowser` | `OpenSystemBrowser` | Opens a URL (`xdg-open` / `open` / `rundll32`, never a shell). |
-| `PromptForCode` | `PromptStdin` | Reads the paste-back code; receives the URL to open. |
+| `OpenBrowser` | `OpenSystemBrowser` | Opens a URL (`xdg-open` / `open` / `rundll32`, never a shell). An opener that exits non-zero within 1.5 s counts as a failure, so `SignInAuto` falls back to paste-back. |
+| `PromptForCode` | `PromptStdin` | Reads the paste-back code; receives the URL to open. `PromptStdin` reads one line without read-ahead; a read abandoned by a cancel or timeout is handed to the next prompt. |
 | `SignInMethod` | `SignInAuto` | `SignInAuto`, `SignInLoopback` or `SignInPaste`. |
 | `SignInTimeout` | 5 min | How long a loopback or paste-back sign-in may wait for the user. Exceeding it returns `timeout`. |
 | `Env` | process env | Override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS`, `CI`, `SSH_CONNECTION`, `DISPLAY`. A non-nil map **replaces** the process environment for these variables (it is not merged). A variable is set when it is non-empty and not `0`/`false`. |

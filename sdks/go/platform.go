@@ -1,7 +1,6 @@
 package sponsorkit
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -21,49 +21,138 @@ func envSet(v string) bool {
 	return v != "" && v != "0" && !strings.EqualFold(v, "false")
 }
 
+// browserExitWait is how long OpenSystemBrowser waits for the opener to exit
+// before assuming the browser is opening.
+const browserExitWait = 1500 * time.Millisecond
+
 // OpenSystemBrowser opens url in the user's default browser without a shell:
 // xdg-open on Linux and BSD, open on macOS, rundll32 on Windows. It is the
 // default Options.OpenBrowser.
-func OpenSystemBrowser(_ context.Context, url string) error {
-	var cmd *exec.Cmd
+//
+// Openers exit quickly, so it waits up to 1.5 s: an opener that exits non-zero
+// in that window (for example xdg-open with no browser available) is reported
+// as an error, which lets SignInAuto fall back to paste-back. An opener still
+// running after that is assumed to be opening the browser.
+func OpenSystemBrowser(ctx context.Context, url string) error {
+	var name string
+	var args []string
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("open", url)
+		name, args = "open", []string{url}
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+		name, args = "rundll32", []string{"url.dll,FileProtocolHandler", url}
 	default:
-		cmd = exec.Command("xdg-open", url)
+		name, args = "xdg-open", []string{url}
 	}
+	return runOpener(ctx, name, args, browserExitWait)
+}
+
+// runOpener starts name with args and waits up to wait for it to exit. A
+// start failure or a non-zero exit within wait is an error.
+func runOpener(ctx context.Context, name string, args []string, wait time.Duration) error {
+	cmd := exec.Command(name, args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = nil, nil, nil
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go func() { _ = cmd.Wait() }()
-	return nil
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		return nil
+	case <-t.C:
+		return nil // still running: assume the browser is opening
+	case <-ctx.Done():
+		return nil // the caller's wait handles cancellation
+	}
+}
+
+// lineReader reads one line at a time from r without read-ahead, so input
+// after the line stays available to the host application. At most one read is
+// in flight: a read abandoned by a cancelled prompt is handed to the next
+// prompt instead of being lost to an orphaned goroutine.
+type lineReader struct {
+	r       io.Reader
+	mu      sync.Mutex
+	pending chan lineResult
+}
+
+type lineResult struct {
+	s   string
+	err error
+}
+
+// stdinLines serves PromptStdin. It is shared by all clients in the process.
+var stdinLines = &lineReader{r: os.Stdin}
+
+// readLine reads bytes up to and including '\n', one byte at a time.
+func readLine(r io.Reader) (string, error) {
+	var b strings.Builder
+	buf := make([]byte, 1)
+	for {
+		n, err := r.Read(buf)
+		if n == 1 {
+			if buf[0] == '\n' {
+				return b.String(), nil
+			}
+			b.WriteByte(buf[0])
+		}
+		if err != nil {
+			if err == io.EOF && b.Len() > 0 {
+				return b.String(), nil
+			}
+			return b.String(), err
+		}
+	}
+}
+
+// line returns the next line, or ctx.Err() if ctx ends first. A blocking read
+// cannot be interrupted portably, so on cancellation the read stays in flight
+// and its line is returned by the next call.
+func (l *lineReader) line(ctx context.Context) (string, error) {
+	l.mu.Lock()
+	ch := l.pending
+	if ch == nil {
+		ch = make(chan lineResult, 1)
+		l.pending = ch
+		go func() {
+			s, err := readLine(l.r)
+			ch <- lineResult{s, err}
+		}()
+	}
+	l.mu.Unlock()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case res := <-ch:
+		l.mu.Lock()
+		if l.pending == ch {
+			l.pending = nil
+		}
+		l.mu.Unlock()
+		return strings.TrimSpace(res.s), res.err
+	}
 }
 
 // PromptStdin is the default Options.PromptForCode: it asks for the code on
 // stderr and reads one line from stdin. The URL has already been printed.
+//
+// It reads stdin byte by byte, so nothing after the code's line is consumed.
+// A read cannot be interrupted: if ctx ends first (cancel or SignInTimeout),
+// the read stays pending and the next line typed is taken by the next
+// PromptStdin call, not by the host application. Supply your own
+// PromptForCode if your program reads stdin after a cancelled sign-in.
 func PromptStdin(ctx context.Context, _ string) (string, error) {
 	fmt.Fprint(os.Stderr, "Sign-in code: ")
-	type line struct {
-		s   string
-		err error
-	}
-	ch := make(chan line, 1)
-	go func() {
-		s, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		if err == io.EOF && s != "" {
-			err = nil
-		}
-		ch <- line{s, err}
-	}()
-	select {
-	case <-ctx.Done():
-		return "", ctx.Err()
-	case l := <-ch:
-		return strings.TrimSpace(l.s), l.err
-	}
+	return stdinLines.line(ctx)
 }
 
 // isTerminal reports whether f is a character device (a TTY).

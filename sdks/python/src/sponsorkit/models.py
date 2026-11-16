@@ -44,6 +44,13 @@ FREQUENCIES: tuple[str, ...] = ("one_time", "monthly", "yearly")
 _PROVIDERS = ("github", "opencollective")
 
 
+def _obj(d: object, what: str) -> Mapping[str, Any]:
+    """``d`` itself when it is a JSON object; ``TypeError`` otherwise."""
+    if not isinstance(d, Mapping):
+        raise TypeError(f"{what} must be an object")
+    return d
+
+
 def _str(d: Mapping[str, Any], key: str) -> str:
     v = d[key]
     if not isinstance(v, str):
@@ -82,6 +89,7 @@ class Money:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> Money:
         """Parse the JSON form."""
+        d = _obj(d, "amount")
         value = d["value"]
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("amount value must be an integer")
@@ -104,6 +112,7 @@ class SponsorEntity:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> SponsorEntity:
         """Parse the JSON form."""
+        d = _obj(d, "sponsor")
         return cls(
             type=_enum(d, "type", ("user", "organization")),
             provider=_enum(d, "provider", _PROVIDERS),
@@ -126,6 +135,7 @@ class Tier:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> Tier:
         """Parse the JSON form."""
+        d = _obj(d, "tier")
         return cls(id=_str(d, "id"), name=_str(d, "name"))
 
     def to_dict(self) -> dict[str, Any]:
@@ -161,6 +171,7 @@ class Contribution:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> Contribution:
         """Parse the camelCase JSON form. Raises ``TypeError``/``ValueError``/``KeyError`` when malformed."""
+        d = _obj(d, "contribution")
         tier = d.get("tier")
         total = d.get("totalContributed")
         flags = d.get("flags", [])
@@ -223,6 +234,7 @@ class Identity:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> Identity:
         """Parse the JSON form."""
+        d = _obj(d, "identity")
         return cls(
             provider=_enum(d, "provider", _PROVIDERS),
             id=_str(d, "id"),
@@ -250,6 +262,7 @@ class Supporter:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> Supporter:
         """Parse the JSON form."""
+        d = _obj(d, "supporter")
         ids = d["identities"]
         if not isinstance(ids, list):
             raise TypeError("identities must be a list")
@@ -304,8 +317,7 @@ class ContributionResult:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> ContributionResult:
         """Parse the camelCase JSON form. Raises ``TypeError``/``ValueError``/``KeyError`` when malformed."""
-        if not isinstance(d, Mapping):
-            raise TypeError("result must be an object")
+        d = _obj(d, "result")
         targets = d["targets"]
         contributions = d["contributions"]
         if not isinstance(targets, list) or not all(isinstance(t, str) for t in targets):

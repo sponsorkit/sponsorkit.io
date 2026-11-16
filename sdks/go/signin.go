@@ -320,14 +320,8 @@ func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, 
 	}
 	switch {
 	case status == http.StatusOK:
-	case status == http.StatusBadRequest:
-		// invalid_code, or invalid_request when the stored session belongs to
-		// another target set: either way the API rejected the exchange.
-		msg := fmt.Sprintf("the sign-in code was rejected (HTTP %d", status)
-		if pc := problemCode(body); pc != "" {
-			msg += " " + pc
-		}
-		return nil, newError(CodeInvalidCode, msg+")", nil)
+	case status == http.StatusBadRequest && problemCode(body) == "invalid_code":
+		return nil, newError(CodeInvalidCode, "the sign-in code was rejected (HTTP 400 invalid_code)", nil)
 	case status == http.StatusTooManyRequests:
 		e := newError(CodeNetworkError, "Sponsorkit rate limited the sign-in (HTTP 429)", nil)
 		if ra, sent := parseRetryAfter(retryAfter, time.Now()); sent {
@@ -335,7 +329,17 @@ func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, 
 		}
 		return nil, e
 	default:
-		return nil, newError(CodeNetworkError, fmt.Sprintf("unexpected response from Sponsorkit during sign-in (HTTP %d)", status), nil)
+		// PROTOCOL §7: any other response (including 400 invalid_request) is
+		// an unexpected response: network_error, with Retry-After when sent.
+		msg := fmt.Sprintf("unexpected response from Sponsorkit during sign-in (HTTP %d", status)
+		if pc := problemCode(body); pc != "" {
+			msg += " " + pc
+		}
+		e := newError(CodeNetworkError, msg+")", nil)
+		if ra, sent := parseRetryAfter(retryAfter, time.Now()); sent {
+			e.RetryAfter = &ra
+		}
+		return nil, e
 	}
 	var tr tokenResponse
 	if err := json.Unmarshal(body, &tr); err != nil || tr.SessionToken == "" || tr.Result == nil {

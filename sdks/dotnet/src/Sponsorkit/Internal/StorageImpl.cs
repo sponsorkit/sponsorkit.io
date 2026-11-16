@@ -270,6 +270,10 @@ internal sealed class StateStore
         _lock = Locks.GetOrAdd(lockKey, _ => new object());
     }
 
+    /// <summary>
+    /// Reads the document. Never throws: an unreadable, unparseable or malformed document reads as empty, and
+    /// malformed parts (token, cache, nag entries) are dropped individually.
+    /// </summary>
     public StorageFile Load()
     {
         string? json;
@@ -277,27 +281,37 @@ internal sealed class StateStore
         {
             json = _storage.Read(_key);
         }
-        catch (IOException)
-        {
-            return new StorageFile();
-        }
-        catch (UnauthorizedAccessException)
+#pragma warning disable CA1031 // Storage problems never break the host app (SPEC §1); custom backends may throw anything.
+        catch (Exception)
+#pragma warning restore CA1031
         {
             return new StorageFile();
         }
         if (string.IsNullOrWhiteSpace(json)) return new StorageFile();
+        StorageFile? file;
         try
         {
-            var file = SponsorkitJson.Deserialize<StorageFile>(json!);
-            if (file is null || file.V != 1) return new StorageFile();
-            if (file.SessionToken is { } t && !t.StartsWith("sks_", StringComparison.Ordinal)) file.SessionToken = null;
-            if (file.Cache is { } c && (c.Result is null || c.StoredAt is null)) file.Cache = null;
-            return file;
+            file = SponsorkitJson.Deserialize<StorageFile>(json!);
         }
-        catch (System.Text.Json.JsonException)
+#pragma warning disable CA1031 // A corrupt or foreign-written file reads as empty.
+        catch (Exception)
+#pragma warning restore CA1031
         {
             return new StorageFile();
         }
+        if (file is null || file.V != 1) return new StorageFile();
+        if (file.SessionToken is { } t && !t.StartsWith("sks_", StringComparison.Ordinal)) file.SessionToken = null;
+        if (file.Cache is { } c && (c.StoredAt is null || !ResultShape.IsValid(c.Result))) file.Cache = null;
+        if (file.Nags is { } nags)
+        {
+            var clean = new Dictionary<string, NagState>(StringComparer.Ordinal);
+            foreach (var kv in nags)
+            {
+                if (kv.Key is not null && kv.Value is not null) clean[kv.Key] = kv.Value;
+            }
+            file.Nags = clean;
+        }
+        return file;
     }
 
     /// <summary>Applies <paramref name="update"/> to the current document and writes it atomically.</summary>

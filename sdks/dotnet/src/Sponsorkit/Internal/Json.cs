@@ -5,7 +5,11 @@ using System.Text.Json.Serialization;
 
 namespace Sponsorkit.Internal;
 
-/// <summary>Reads any ISO-8601 date-time and writes UTC with millisecond precision (<c>2026-01-01T00:00:00Z</c>).</summary>
+/// <summary>
+/// Reads any ISO-8601 date-time and writes UTC with millisecond precision (<c>2026-01-01T00:00:00Z</c>).
+/// An unparseable date string reads as <c>null</c>, so one bad stored or received date never makes the whole
+/// document unreadable; a non-string token is a <see cref="JsonException"/>.
+/// </summary>
 internal sealed class IsoDateTimeConverter : JsonConverter<DateTimeOffset?>
 {
     public override bool HandleNull => true;
@@ -13,8 +17,8 @@ internal sealed class IsoDateTimeConverter : JsonConverter<DateTimeOffset?>
     public override DateTimeOffset? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Null) return null;
-        var s = reader.GetString();
-        return s is null ? null : Iso.Parse(s);
+        if (reader.TokenType != JsonTokenType.String) throw new JsonException("Expected an ISO-8601 date string.");
+        return Iso.TryParse(reader.GetString(), out var value) ? value : null;
     }
 
     public override void Write(Utf8JsonWriter writer, DateTimeOffset? value, JsonSerializerOptions options)

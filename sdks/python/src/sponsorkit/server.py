@@ -24,6 +24,7 @@ from ._http import (
     DEFAULT_API_BASE_URL,
     DEFAULT_HTTP_TIMEOUT,
     USER_AGENT,
+    is_session_token,
     normalize_base_url,
     problem_code,
     unexpected_response,
@@ -43,8 +44,12 @@ def _prepare(token: str, targets: TargetsArg, api_base_url: str) -> tuple[str, s
     base = normalize_base_url(api_base_url)
     if not isinstance(token, str) or not token.strip():
         raise SponsorkitError("session_invalid", "No session token was given")
+    token = token.strip()
+    if not is_session_token(token):
+        # Also keeps non-ASCII input out of the Authorization header, which httpx cannot encode.
+        raise SponsorkitError("session_invalid", "The session token is malformed")
     headers = {
-        "Authorization": f"Bearer {token.strip()}",
+        "Authorization": f"Bearer {token}",
         "Accept": "application/json",
         "User-Agent": USER_AGENT,
     }
@@ -56,7 +61,7 @@ def _interpret(expected: str, response: httpx.Response) -> ContributionResult:
     body: Any
     try:
         body = response.json()
-    except ValueError:
+    except (ValueError, RecursionError):
         body = None
     if response.status_code == 401 or problem_code(body) == "session_invalid":
         raise SponsorkitError(
@@ -66,7 +71,7 @@ def _interpret(expected: str, response: httpx.Response) -> ContributionResult:
         raise unexpected_response(response, "Could not verify the session", body)
     try:
         result = ContributionResult.from_dict(body)
-    except (KeyError, TypeError, ValueError) as e:
+    except (KeyError, TypeError, ValueError, AttributeError) as e:
         raise SponsorkitError("network_error", f"Malformed API response: {e}", request_id=request_id) from e
     if ",".join(result.targets) != expected:
         raise SponsorkitError(

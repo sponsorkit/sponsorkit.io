@@ -10,7 +10,7 @@
  * ```
  */
 import { SponsorkitError } from "./errors";
-import { type FetchLike, fetchContributions, resolveFetch } from "./http";
+import { type FetchLike, fetchContributions, requestTimeoutMs, resolveFetch, withTimeout } from "./http";
 import { FinancialContribution } from "./result";
 import { targetsFrom, targetsParam } from "./targets";
 import type { TargetOptions } from "./types";
@@ -24,6 +24,8 @@ export interface VerifySessionOptions {
   fetch?: FetchLike;
   /** Aborts the request. */
   signal?: AbortSignal;
+  /** Seconds before the request is abandoned with `network_error`. Default 30; `0` disables the limit. */
+  requestTimeout?: number;
 }
 
 /**
@@ -46,8 +48,9 @@ export async function verifySession(
 ): Promise<FinancialContribution> {
   const expected = targetsParam(targetsFrom(targets));
   const baseUrl = normalizeBaseUrl(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
+  const timeoutMs = requestTimeoutMs(options.requestTimeout);
   if (typeof token !== "string" || !token.trim()) throw new SponsorkitError("session_invalid", "No session token");
-  const res = await fetchContributions(resolveFetch(options.fetch), baseUrl, token.trim(), Date.now(), options.signal);
+  const res = await fetchContributions(withTimeout(resolveFetch(options.fetch), timeoutMs), baseUrl, token.trim(), Date.now(), options.signal);
   switch (res.kind) {
     case "session_invalid":
       throw new SponsorkitError("session_invalid", "The session token is invalid or expired");

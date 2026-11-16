@@ -33,6 +33,14 @@ func TestParseRetryAfter(t *testing.T) {
 		"Mon, 16 Nov 2026 12:00:10 GMT": {10 * time.Second, true},
 		"Mon, 16 Nov 2026 11:00:00 GMT": {0, true},
 		"soon":                          {defaultRetryAfter, false},
+		// Huge or non-finite values must not overflow to a negative duration.
+		"1e12":                          {maxRetryAfter, true},
+		"99999999999":                   {maxRetryAfter, true},
+		"86401":                         {maxRetryAfter, true},
+		"Inf":                           {defaultRetryAfter, false},
+		"+Inf":                          {defaultRetryAfter, false},
+		"NaN":                           {defaultRetryAfter, false},
+		"Fri, 01 Jan 2300 00:00:00 GMT": {maxRetryAfter, true},
 	}
 	for in, w := range cases {
 		if got, sent := parseRetryAfter(in, now); got != w.d || sent != w.sent {

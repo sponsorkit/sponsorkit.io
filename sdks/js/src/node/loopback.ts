@@ -52,8 +52,11 @@ export async function startLoopbackReceiver(redirectOnCode?: string): Promise<Lo
       settle({ code });
       if (redirectOnCode) res.writeHead(302, { location: redirectOnCode }).end();
       else res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(PAGE("Signed in", "You can close this window and return to the app."));
+    } else if (!error) {
+      // Not a delivery (PROTOCOL §7: wait for `?code=` or `?error=`): keep waiting.
+      res.writeHead(400, { "content-type": "text/plain; charset=utf-8" }).end("Missing code");
     } else {
-      const e = error ?? "provider_error";
+      const e = error;
       settle({ error: e });
       res
         .writeHead(200, { "content-type": "text/html; charset=utf-8" })

@@ -21,6 +21,7 @@ from ._http import (
     DEFAULT_HTTP_TIMEOUT,
     USER_AGENT,
     build_url,
+    is_session_token,
     iso,
     normalize_base_url,
     parse_iso,
@@ -329,7 +330,7 @@ class Sponsorkit:
             return mock_result(self._targets, "signed-out")
         return mock_result(self._targets, MockData(tuple(self._mock_state.contributions)))
 
-    def _safe_update(self, fn: Callable[[StoredState], None]) -> None:
+    def _safe_update(self, fn: Callable[[StoredState], bool | None]) -> None:
         try:
             self._store.update(fn)
         except OSError as e:
@@ -375,7 +376,7 @@ class Sponsorkit:
                 for t in body.get("targets", [])
                 if isinstance(t, dict) and t.get("exists") is False
             ]
-        except (httpx.HTTPError, ValueError, AttributeError):
+        except (httpx.HTTPError, ValueError, AttributeError, TypeError, RecursionError):
             return  # offline or odd response: the check fails open
         if missing:
             raise SponsorkitError(
@@ -441,7 +442,8 @@ class Sponsorkit:
             return fallback()
 
         if res.status_code == 401:
-            self._clear_session()
+            # Only clear the token this request used: a concurrent sign-in may have replaced it.
+            self._clear_session(only_if=token)
             return self._empty()
         if res.status_code == 429:
             delay = retry_after_seconds(res.headers.get("retry-after"), now)
@@ -452,7 +454,7 @@ class Sponsorkit:
             return fallback()
         try:
             result = ContributionResult.from_dict(res.json())
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, AttributeError, RecursionError):
             return fallback()
         result = replace(result, from_cache=False)
         unavailable = result.unavailable or ()
@@ -464,30 +466,34 @@ class Sponsorkit:
                     c for c in cache.result.contributions if c.provider in unavailable and c.id not in have
                 )
                 result = replace(result, contributions=result.contributions + kept)
-        renewed = res.headers.get("sponsorkit-session")
+        header = res.headers.get("sponsorkit-session")
+        renewed = header if is_session_token(header) else None
         stored_at = iso(self._now())
 
-        def save(s: StoredState) -> None:
-            if renewed and renewed.startswith("sks_"):
+        def save(s: StoredState) -> bool:
+            # Another thread, instance or process may have signed out or replaced the session
+            # meanwhile: then this result belongs to a session that no longer exists here.
+            if s.session_token != token and (renewed is None or s.session_token != renewed):
+                return False
+            if renewed is not None:
                 s.session_token = renewed
-            elif s.session_token is None:
-                s.session_token = token
             s.cache = CacheEntry(result, stored_at)
+            return True
 
         self._safe_update(save)
         return result
 
-    def _clear_session(self) -> None:
-        def clear(s: StoredState) -> None:
-            s.session_token = None
-            s.cache = None
-
+    def _clear_session(self, only_if: str | None = None) -> None:
+        """Remove the token and cache; with ``only_if``, only while that token is still stored."""
         try:
             with self._store.lock:
                 if not self._store.exists():
                     return
                 state = self._store.read()
-                clear(state)
+                if only_if is not None and state.session_token != only_if:
+                    return
+                state.session_token = None
+                state.cache = None
                 if state.empty:
                     self._store.storage.delete(self._store.key)
                 else:
@@ -616,12 +622,12 @@ class Sponsorkit:
             request_id = res.headers.get("sponsorkit-request-id")
             try:
                 data: Any = res.json()
-            except ValueError:
+            except (ValueError, RecursionError):
                 data = None
             if res.status_code == 401 and "sessionToken" in body:
                 # PROTOCOL §7: the stored session is dead. Clear it and retry the same code once
                 # without sessionToken, which starts a fresh session with this identity.
-                self._clear_session()
+                self._clear_session(only_if=body["sessionToken"])
                 del body["sessionToken"]
                 continue
             if res.status_code == 400 and problem_code(data) == "invalid_code":
@@ -632,10 +638,10 @@ class Sponsorkit:
                 raise unexpected_response(res, "Sign-in failed", data)
             try:
                 session_token = data["sessionToken"]
-                if not isinstance(session_token, str) or not session_token.startswith("sks_"):
+                if not is_session_token(session_token):
                     raise TypeError("sessionToken")
                 result = replace(ContributionResult.from_dict(data["result"]), from_cache=False)
-            except (KeyError, TypeError, ValueError) as e:
+            except (KeyError, TypeError, ValueError, AttributeError) as e:
                 raise SponsorkitError(
                     "network_error", f"Malformed token response: {e}", request_id=request_id
                 ) from e

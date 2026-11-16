@@ -52,7 +52,13 @@ pub(crate) fn now_iso() -> String {
 }
 
 /// Parses an ISO-8601 date-time with `Z` or a `±HH:MM` offset into epoch milliseconds.
+///
+/// Returns `None` for anything malformed, including non-ASCII input (which
+/// could otherwise make the byte-indexed slicing below land inside a character).
 pub(crate) fn parse_iso(s: &str) -> Option<i64> {
+    if !s.is_ascii() {
+        return None;
+    }
     let b = s.as_bytes();
     if b.len() < 20
         || b[4] != b'-'
@@ -155,6 +161,12 @@ mod tests {
         assert_eq!(parse_iso("1970-01-01T00:00:00Z"), Some(0));
         assert_eq!(parse_iso("2000-01-01T00:00:00.000Z"), Some(946_684_800_000));
         assert!(parse_iso("nope").is_none());
+        // Non-ASCII must be rejected, never panic on a char boundary.
+        assert!(parse_iso("2026-11-16T18:00:00+0\u{e9}00").is_none());
+        assert!(parse_iso("2026-11-16T18:00:00+\u{e9}:00").is_none());
+        assert!(parse_iso("2026-11-16T18:00:00.\u{e9}Z").is_none());
+        assert!(parse_iso("2026-11-16T18:00:00\u{1F600}00").is_none());
+        assert!(parse_iso("2026-11-16T18:00:00+0\u{e9}0").is_none());
         assert!(parse_iso("2026-11-16 18:00:00Z").is_none());
     }
 

@@ -657,3 +657,208 @@ def test_mock_nag_state_is_in_memory(tmp_path: Path) -> None:
     nag.shown()
     assert nag.due(force=True) is False
     assert not (tmp_path / "store").exists()
+
+
+# ---------------------------------------------------------------- robustness regressions
+
+
+BAD_RESULT: dict[str, Any] = {**RESULT, "contributions": [1]}
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        json.dumps(BAD_RESULT),
+        json.dumps({**RESULT, "supporter": "x"}),
+        json.dumps({**RESULT, "contributions": [{**RESULT["contributions"][0], "amount": [1]}]}),
+        "[" * 100000 + "]" * 100000,
+    ],
+)
+def test_malformed_api_body_falls_back(body: str) -> None:
+    api = Api()
+    api.responses.append(httpx.Response(200, text=body, headers={"content-type": "application/json"}))
+    r = make(api, storage=signed_in_storage(stored_at=None)).get_financial_contribution()
+    assert r.signed_in and r.stale and r.contributions == ()
+
+
+def test_malformed_cache_entry_is_ignored_on_every_read() -> None:
+    storage = MemoryStorage()
+    storage.write(
+        HASH,
+        json.dumps({"v": 1, "sessionToken": "sks_x", "cache": {"result": BAD_RESULT, "storedAt": "x"}}),
+    )
+    api = Api()
+    sk = make(api, storage=storage)
+    assert sk.is_signed_in()
+    r = sk.get_financial_contribution()
+    assert r.signed_in and not r.from_cache and len(r.contributions) == 3
+    storage.write(HASH, "[" * 100000 + "]" * 100000)
+    assert not sk.is_signed_in()
+
+
+def test_mock_option_with_non_object_contribution_is_invalid_config() -> None:
+    with pytest.raises(SponsorkitError) as e:
+        make(mock={"contributions": [1]})
+    assert e.value.code == "invalid_config"
+
+
+def test_non_utf8_storage_file_is_treated_as_corrupt(tmp_path: Path) -> None:
+    (tmp_path / f"{HASH}.json").write_bytes(b'\xff\xfe{"v":1}')
+    sk = make(Api(), storage_dir=tmp_path)
+    assert not sk.is_signed_in()
+    assert not sk.get_financial_contribution().signed_in
+    assert sk.nag("n", every=1).due(force=True) is True
+    # The nag counter replaced the undecodable file with a valid one.
+    assert json.loads((tmp_path / f"{HASH}.json").read_text())["v"] == 1
+
+
+def test_non_ascii_tokens_are_never_stored_or_sent() -> None:
+    storage = MemoryStorage()
+    storage.write(HASH, json.dumps({"v": 1, "sessionToken": "sks_é"}))
+    api = Api()
+    sk = make(api, storage=storage)
+    assert not sk.is_signed_in()
+    assert not sk.get_financial_contribution().signed_in and api.calls == []
+
+    api, storage = Api(), signed_in_storage()
+    api.responses.append(
+        httpx.Response(200, json=RESULT, headers=[(b"Sponsorkit-Session", "sks_é".encode("latin-1"))])
+    )
+    sk = make(api, storage=storage)
+    sk.get_financial_contribution(cache_ttl=0)
+    assert json.loads(storage.read(HASH) or "")["sessionToken"] == "sks_test"
+    assert sk.get_financial_contribution(cache_ttl=0).signed_in
+
+
+@pytest.mark.parametrize("value", ["1e400", "inf", "nan", "300000000000", "-5"])
+def test_extreme_retry_after_never_raises(value: str) -> None:
+    api = Api()
+    api.responses.append(httpx.Response(429, headers={"Retry-After": value}))
+    sk = make(api, storage=signed_in_storage(stored_at=None))
+    r = sk.get_financial_contribution(cache_ttl=0)
+    assert r.signed_in and r.stale
+
+
+def test_retry_after_is_finite_and_clamped() -> None:
+    from sponsorkit._http import MAX_RETRY_AFTER, parse_retry_after
+
+    assert parse_retry_after("1e400", T0) is None
+    assert parse_retry_after("nan", T0) is None
+    assert parse_retry_after("300000000000", T0) == MAX_RETRY_AFTER
+    assert parse_retry_after("-5", T0) == 0.0
+    assert parse_retry_after("120", T0) == 120.0
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("2026-11-16T10:00:01.1Z", datetime(2026, 11, 16, 10, 0, 1, 100000, tzinfo=timezone.utc)),
+        ("2026-11-16T10:00:01.12Z", datetime(2026, 11, 16, 10, 0, 1, 120000, tzinfo=timezone.utc)),
+        ("2026-11-16T10:00:01.123Z", datetime(2026, 11, 16, 10, 0, 1, 123000, tzinfo=timezone.utc)),
+        ("2026-11-16T10:00:01.1234567Z", datetime(2026, 11, 16, 10, 0, 1, 123456, tzinfo=timezone.utc)),
+        ("2026-11-16T10:00:01Z", datetime(2026, 11, 16, 10, 0, 1, tzinfo=timezone.utc)),
+        ("2026-11-16T12:00:01.5+02:00", datetime(2026, 11, 16, 10, 0, 1, 500000, tzinfo=timezone.utc)),
+        ("garbage", None),
+    ],
+)
+def test_parse_iso_accepts_any_fraction_length(text: str, expected: datetime | None) -> None:
+    from sponsorkit._http import parse_iso
+
+    assert parse_iso(text) == expected
+
+
+def test_dotnet_style_stored_at_counts_as_fresh() -> None:
+    storage = MemoryStorage()
+    cache = {"result": RESULT, "storedAt": "2026-11-16T11:59:30.1Z"}
+    storage.write(HASH, json.dumps({"v": 1, "sessionToken": "sks_x", "cache": cache}))
+    api = Api()
+    r = make(api, storage=storage, clock=Clock()).get_financial_contribution()
+    assert r.from_cache and api.calls == []
+
+
+class _Gate:
+    """A MockTransport handler that blocks the request until released."""
+
+    def __init__(self, response: httpx.Response) -> None:
+        self.response = response
+        self.entered = threading.Event()
+        self.release = threading.Event()
+
+    def handler(self, request: httpx.Request) -> httpx.Response:
+        self.entered.set()
+        assert self.release.wait(10)
+        return self.response
+
+
+def _run_gated(storage: MemoryStorage, response: httpx.Response, during: Callable[[], None]) -> None:
+    gate = _Gate(response)
+    sk = Sponsorkit(
+        github="sponsorkit-conformance",
+        opencollective="sponsorkit-conformance",
+        env={},
+        storage=storage,
+        http_client=httpx.Client(transport=httpx.MockTransport(gate.handler)),
+    )
+    t = threading.Thread(target=lambda: sk.get_financial_contribution(cache_ttl=0))
+    t.start()
+    assert gate.entered.wait(10)
+    during()
+    gate.release.set()
+    t.join(10)
+
+
+def test_in_flight_refresh_does_not_undo_sign_out() -> None:
+    storage = signed_in_storage(stored_at=None, token="sks_old")
+    other = make(storage=storage)
+    _run_gated(
+        storage,
+        httpx.Response(200, json=RESULT, headers={"Sponsorkit-Session": "sks_renewed"}),
+        other.sign_out,
+    )
+    assert not other.is_signed_in()
+    assert storage.read(HASH) is None
+
+
+def test_in_flight_refresh_does_not_overwrite_a_newer_session() -> None:
+    storage = signed_in_storage(stored_at=None, token="sks_old")
+
+    def sign_in_elsewhere() -> None:
+        storage.write(HASH, json.dumps({"v": 1, "sessionToken": "sks_new"}))
+
+    _run_gated(
+        storage,
+        httpx.Response(200, json=RESULT, headers={"Sponsorkit-Session": "sks_renewed"}),
+        sign_in_elsewhere,
+    )
+    assert json.loads(storage.read(HASH) or "") == {"v": 1, "sessionToken": "sks_new"}
+
+
+def test_in_flight_401_does_not_clear_a_newer_session() -> None:
+    storage = signed_in_storage(stored_at=None, token="sks_old")
+
+    def sign_in_elsewhere() -> None:
+        storage.write(HASH, json.dumps({"v": 1, "sessionToken": "sks_new"}))
+
+    _run_gated(storage, httpx.Response(401, json={"code": "session_invalid"}), sign_in_elsewhere)
+    assert json.loads(storage.read(HASH) or "")["sessionToken"] == "sks_new"
+
+
+@pytest.mark.parametrize("token", ["sks_é", "sks_a b", "nope"])
+def test_verify_session_rejects_malformed_tokens_without_a_request(token: str) -> None:
+    api = Api()
+    with pytest.raises(SponsorkitError) as e:
+        verify_session(token, {"github": "sponsorkit-conformance"}, http_client=api.client())
+    assert e.value.code == "session_invalid"
+    assert api.calls == []
+
+
+def test_verify_session_malformed_contribution_item_is_network_error() -> None:
+    api = Api()
+    api.responses.append(httpx.Response(200, json=BAD_RESULT))
+    with pytest.raises(SponsorkitError) as e:
+        verify_session(
+            "sks_x",
+            "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+            http_client=api.client(),
+        )
+    assert e.value.code == "network_error"

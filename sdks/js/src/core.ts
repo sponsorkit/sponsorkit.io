@@ -5,7 +5,7 @@
  * sign-in flows and storage.
  */
 import { SponsorkitError } from "./errors";
-import { type FetchLike, fetchContributions, fetchTargets, problemCode, resolveFetch, retryAfterSeconds } from "./http";
+import { type FetchLike, fetchContributions, fetchTargets, problemCode, requestTimeoutMs, resolveFetch, retryAfterSeconds, withTimeout } from "./http";
 import { initialMockState, type MockState, mockCheckoutContribution, mockResult, parseMockOption } from "./mock";
 import { FinancialContribution } from "./result";
 import { type SponsorkitStorage, Store, type WebStorageLike } from "./storage";
@@ -57,6 +57,11 @@ export interface SponsorkitCoreOptions {
   clock?: () => number;
   /** Custom `fetch` implementation. Default: the global `fetch`. */
   fetch?: FetchLike;
+  /**
+   * Seconds before an API request is abandoned. `getFinancialContribution()` then serves the stale cache;
+   * the sign-in code exchange rejects with `network_error`. Default 30; `0` disables the limit.
+   */
+  requestTimeout?: number;
   /** Whether the app runs interactively, for `nag().due()`. Overrides platform detection (TTY on native). */
   interactive?: boolean;
 }
@@ -236,7 +241,7 @@ export abstract class SponsorkitCore<I = unknown> {
       throw new SponsorkitError("invalid_config", "signInTimeout must be a positive number of seconds");
     this.signInTimeoutMs = signInTimeout * 1000;
     this.now = options.clock ?? Date.now;
-    this.fetchFn = resolveFetch(options.fetch);
+    this.fetchFn = withTimeout(resolveFetch(options.fetch), requestTimeoutMs(options.requestTimeout));
     this.interactiveOverride = options.interactive;
     this.storageOption = options.storage;
     this.disabled = isEnvSet(this.env.SPONSORKIT_DISABLE);

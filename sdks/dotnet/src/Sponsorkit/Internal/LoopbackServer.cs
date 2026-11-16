@@ -30,6 +30,7 @@ internal sealed class LoopbackServer : IDisposable
     private readonly TaskCompletionSource<CallbackResult> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource _stop = new();
     private int _disposed;
+    private int _claimed;
 
     /// <param name="redirectAfterCode">When set, a successful callback answers <c>302</c> to this URL (checkout continues).</param>
     public LoopbackServer(string? redirectAfterCode = null)
@@ -140,11 +141,22 @@ internal sealed class LoopbackServer : IDisposable
             await WriteAsync(stream, "400 Bad Request", "text/plain; charset=utf-8", "Missing code", null, ct).ConfigureAwait(false);
             return;
         }
-        var first = _result.TrySetResult(new CallbackResult(string.IsNullOrEmpty(code) ? null : code, string.IsNullOrEmpty(error) ? null : error));
-        if (first && !string.IsNullOrEmpty(code) && _redirectAfterCode is not null)
-            await WriteAsync(stream, "302 Found", "text/plain; charset=utf-8", "", _redirectAfterCode, ct).ConfigureAwait(false);
-        else
-            await WriteAsync(stream, "200 OK", "text/html; charset=utf-8", string.IsNullOrEmpty(code) ? ErrorPage : ClosePage, null, ct).ConfigureAwait(false);
+        var first = Interlocked.Exchange(ref _claimed, 1) == 0;
+        var callback = new CallbackResult(string.IsNullOrEmpty(code) ? null : code, string.IsNullOrEmpty(error) ? null : error);
+        try
+        {
+            // Answer the browser before completing Result: the caller disposes the server as soon as Result
+            // completes, which would cancel this write and lose the close page or the checkout 302.
+            if (first && !string.IsNullOrEmpty(code) && _redirectAfterCode is not null)
+                await WriteAsync(stream, "302 Found", "text/plain; charset=utf-8", "", _redirectAfterCode, ct).ConfigureAwait(false);
+            else
+                await WriteAsync(stream, "200 OK", "text/html; charset=utf-8", string.IsNullOrEmpty(code) ? ErrorPage : ClosePage, null, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            // The code is delivered even if the browser went away before reading the response.
+            if (first) _result.TrySetResult(callback);
+        }
     }
 
     private static async Task WriteAsync(NetworkStream stream, string status, string contentType, string body, string? location, CancellationToken ct)

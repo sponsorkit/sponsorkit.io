@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import fullResult from "@sponsorkit/conformance/fixtures/contribution-result.json";
@@ -40,6 +41,28 @@ function fakeFetch(routes: Record<string, (req: { url: URL; init?: RequestInit }
   return { fn, calls };
 }
 
+/** A fetch that never answers until its signal aborts. */
+const hangingFetch = async (_input: string, init?: RequestInit): Promise<Response> =>
+  new Promise((_, reject) => {
+    const signal = init?.signal;
+    if (!signal) return;
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+
+/** Makes the next `listen()` on a node:http server fail like a sandboxed 127.0.0.1 (EADDRNOTAVAIL). */
+function failNextListen(): () => void {
+  const original = Server.prototype.listen;
+  Server.prototype.listen = function (this: Server) {
+    Server.prototype.listen = original;
+    const err = Object.assign(new Error("listen EADDRNOTAVAIL: address not available 127.0.0.1"), { code: "EADDRNOTAVAIL" });
+    queueMicrotask(() => this.emit("error", err));
+    return this;
+  } as typeof original;
+  return () => {
+    Server.prototype.listen = original;
+  };
+}
+
 const tokenOk = () => json({ sessionToken: "sks_new", expiresAt: "2030-01-01T00:00:00Z", result: fullResult });
 
 describe("configuration", () => {
@@ -52,6 +75,7 @@ describe("configuration", () => {
       { github: "ok", signInMethod: "carrier-pigeon" as never },
       { github: "ok", checkoutPollInterval: 0 },
       { github: "ok", cacheTtl: -1 },
+      { github: "ok", requestTimeout: -1 },
     ];
     for (const opts of bad) {
       expect(() => new Sponsorkit({ env: {}, ...opts })).toThrow(SponsorkitError);
@@ -257,6 +281,47 @@ describe("sign-in", () => {
     await expect(new Sponsorkit({ ...base, storageDir: await tempDir(), fetch: garbage.fn }).signIn()).rejects.toMatchObject({ code: "network_error" });
   });
 
+  test("a loopback bind failure falls back to paste-back in auto mode and is a SponsorkitError otherwise", async () => {
+    const { fn } = fakeFetch({ "POST /api/v1/auth/token": tokenOk });
+    const prompts: string[] = [];
+    const base = { github: "sponsorkit-conformance", opencollective: "sponsorkit-conformance", env: {}, fetch: fn, output: { write() {} } };
+    const savedEnv = { DISPLAY: process.env.DISPLAY, SSH_CONNECTION: process.env.SSH_CONNECTION, SSH_TTY: process.env.SSH_TTY };
+    process.env.DISPLAY = ":0";
+    delete process.env.SSH_CONNECTION;
+    delete process.env.SSH_TTY;
+    let restore = failNextListen();
+    try {
+      const auto = new Sponsorkit({
+        ...base,
+        storageDir: await tempDir(),
+        signInMethod: "auto",
+        openBrowser: () => {
+          throw new Error("browser must not be opened when the receiver could not bind");
+        },
+        promptForCode: (url) => {
+          prompts.push(url);
+          return "skc_1";
+        },
+      });
+      await auto.signIn();
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0]).toContain("delivery=paste");
+      restore();
+      restore = failNextListen();
+      const loopback = new Sponsorkit({ ...base, storageDir: await tempDir(), signInMethod: "loopback", openBrowser: () => {} });
+      const err = await loopback.signIn().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(SponsorkitError);
+      expect(err).toMatchObject({ code: "provider_error" });
+      expect((err as Error).cause).toMatchObject({ code: "EADDRNOTAVAIL" });
+    } finally {
+      restore();
+      for (const [k, v] of Object.entries(savedEnv)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  });
+
   test("signIn rejects an unconfigured provider", async () => {
     const sk = new Sponsorkit({ github: "octocat", env: {}, storageDir: await tempDir() });
     await expect(sk.signIn({ provider: "opencollective" })).rejects.toMatchObject({ code: "invalid_config" });
@@ -287,6 +352,15 @@ describe("loopback receiver", () => {
       .then((t) => expect(t).not.toContain("<script>"));
     expect(await e.result).toEqual({ error: "<script>" });
     await e.close();
+  });
+  test("a /callback without code or error is not a delivery: 400 and keep waiting", async () => {
+    const r = await startLoopbackReceiver();
+    expect((await fetch(r.redirectUri)).status).toBe(400);
+    expect((await fetch(`${r.redirectUri}?code=&error=`)).status).toBe(400);
+    const res = await fetch(`${r.redirectUri}?code=skc_x`);
+    expect(res.status).toBe(200);
+    expect(await r.result).toEqual({ code: "skc_x" });
+    await r.close();
   });
 });
 
@@ -354,6 +428,49 @@ describe("cache and clock", () => {
     expect(calls.filter((c) => c.path === "/api/v1/contributions")).toHaveLength(1);
   });
 
+  test("a hanging API is abandoned after requestTimeout and the stale cache is served", async () => {
+    let now = Date.parse("2026-06-01T00:00:00Z");
+    let hang = false;
+    const { fn } = fakeFetch({
+      "POST /api/v1/auth/token": tokenOk,
+      "GET /api/v1/contributions": (req) => (hang ? hangingFetch("", req.init) : json(fullResult)),
+    });
+    const sk = new Sponsorkit({
+      github: "sponsorkit-conformance",
+      opencollective: "sponsorkit-conformance",
+      storageDir: await tempDir(),
+      env: {},
+      fetch: fn,
+      clock: () => now,
+      requestTimeout: 0.05,
+      signInMethod: "paste",
+      output: { write() {} },
+      promptForCode: () => "skc_1",
+    });
+    await sk.signIn();
+    hang = true;
+    now += 7_200_000;
+    const started = Date.now();
+    const fc = await sk.getFinancialContribution();
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(fc.fromCache).toBe(true);
+    expect(fc.stale).toBe(true);
+  });
+
+  test("a hanging /auth/token rejects with network_error after requestTimeout", async () => {
+    const sk = new Sponsorkit({
+      github: "octocat",
+      storageDir: await tempDir(),
+      env: {},
+      fetch: hangingFetch,
+      requestTimeout: 0.05,
+      signInMethod: "paste",
+      output: { write() {} },
+      promptForCode: () => "skc_1",
+    });
+    await expect(sk.signIn()).rejects.toMatchObject({ code: "network_error" });
+  });
+
   test("storage files are 0600 in a 0700 directory, with no temp files", async () => {
     const dir = await tempDir();
     const s = fileStorage(dir);
@@ -394,5 +511,10 @@ describe("verifySession", () => {
     });
     const offline = fakeFetch({});
     await expect(verifySession("sks_t", { github: "x" }, { fetch: offline.fn })).rejects.toMatchObject({ code: "network_error" });
+  });
+
+  test("verifySession gives up after requestTimeout with network_error", async () => {
+    await expect(verifySession("sks_t", { github: "x" }, { fetch: hangingFetch, requestTimeout: 0.05 })).rejects.toMatchObject({ code: "network_error" });
+    await expect(verifySession("sks_t", { github: "x" }, { requestTimeout: -1 })).rejects.toMatchObject({ code: "invalid_config" });
   });
 });

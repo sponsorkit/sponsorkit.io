@@ -92,6 +92,7 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 | `checkoutPollInterval` | `60` | Seconds between checkout polls. |
 | `clock` | `Date.now` | Epoch-ms clock for cache TTL, `Retry-After` and nag timing. |
 | `fetch` | global `fetch` | Custom fetch. |
+| `requestTimeout` | `30` | Seconds before an API request is abandoned (`getFinancialContribution()` then serves the stale cache; sign-in rejects with `network_error`). `0` disables the limit. `verifySession()` takes the same option. |
 | `interactive` | TTY detection | Override the nag's stdout/stderr TTY check (browsers count as interactive). |
 
 ### Methods

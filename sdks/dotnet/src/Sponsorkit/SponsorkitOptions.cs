@@ -68,6 +68,12 @@ public sealed class SponsorkitOptions
     /// <summary>
     /// Asks the supporter for the paste-back code. It receives the URL to open. Default: reads a line from standard input.
     /// </summary>
+    /// <remarks>
+    /// A blocking console read cannot be cancelled. When the default prompt times out or is cancelled, its read stays
+    /// pending: the next line typed on standard input goes to the next Sponsorkit paste prompt, or is discarded if
+    /// none follows, so a host <c>Console.ReadLine</c> after a cancelled sign-in sees the line after it. Supply your
+    /// own prompt if your app keeps reading standard input after an abandoned sign-in.
+    /// </remarks>
     public Func<string, CancellationToken, Task<string>>? PromptForCode { get; set; }
 
     /// <summary>
