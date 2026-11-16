@@ -12,8 +12,9 @@ import (
 type VerifyOption func(*verifyConfig)
 
 type verifyConfig struct {
-	apiBaseURL string
-	httpClient *http.Client
+	apiBaseURL     string
+	httpClient     *http.Client
+	requestTimeout time.Duration
 }
 
 // WithAPIBaseURL sets the API origin VerifySession calls (self-hosting, tests).
@@ -21,6 +22,13 @@ func WithAPIBaseURL(u string) VerifyOption { return func(v *verifyConfig) { v.ap
 
 // WithHTTPClient sets the HTTP client VerifySession uses.
 func WithHTTPClient(hc *http.Client) VerifyOption { return func(v *verifyConfig) { v.httpClient = hc } }
+
+// WithRequestTimeout bounds the VerifySession request, including reading the
+// response (PROTOCOL §7.0). The default is 30 s; NoRequestTimeout (or any
+// negative value) disables it. A timeout returns network_error.
+func WithRequestTimeout(d time.Duration) VerifyOption {
+	return func(v *verifyConfig) { v.requestTimeout = d }
+}
 
 // VerifySession is the backend helper (SPEC §6.4). A frontend forwards its
 // session token (Client.SessionToken); the backend calls VerifySession, which
@@ -46,13 +54,13 @@ func VerifySession(ctx context.Context, token string, targets Targets, opts ...V
 	}
 	hc := cfg.httpClient
 	if hc == nil {
-		hc = &http.Client{Timeout: 30 * time.Second}
+		hc = &http.Client{}
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, newError(CodeSessionInvalid, "no session token", nil)
 	}
-	res := fetchContributions(ctx, hc, base, token)
+	res := fetchContributions(ctx, hc, requestTimeoutOf(cfg.requestTimeout), base, token)
 	switch res.kind {
 	case fetchSessionInvalid:
 		return nil, newError(CodeSessionInvalid, "the session token is invalid or expired", nil)

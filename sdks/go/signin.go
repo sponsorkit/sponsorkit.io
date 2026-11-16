@@ -1,13 +1,11 @@
 package sponsorkit
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -242,21 +240,38 @@ func (c *Client) loopback(ctx, sctx context.Context, r codeRequest, forced bool)
 	q.Set("delivery", "loopback")
 	q.Set("redirect_uri", "http://127.0.0.1:"+strconv.Itoa(port)+"/callback")
 	u := c.apiBaseURL + r.path + "?" + q.Encode()
-	if err := c.openBrowser(sctx, u); err != nil {
-		if !forced {
-			return "", errBrowserFailed
-		}
-		fmt.Fprintf(c.stderr, "Open this URL in your browser to continue:\n\n  %s\n\n", u)
-	}
+	// PROTOCOL §7.0: the callback is accepted while openBrowser is still
+	// running, so the opener runs concurrently with the wait.
+	opened := make(chan error, 1)
+	go func() { opened <- c.openBrowser(sctx, u) }()
 
-	select {
-	case cb := <-results:
+	finish := func(cb callback) (string, error) {
 		if cb.code != "" {
 			return cb.code, nil
 		}
 		return "", signInError(cb.err)
-	case <-sctx.Done():
-		return "", c.waitError(ctx, sctx)
+	}
+	for {
+		select {
+		case cb := <-results:
+			return finish(cb)
+		case err := <-opened:
+			opened = nil
+			if err == nil {
+				continue
+			}
+			select {
+			case cb := <-results: // the callback won the race with the failure
+				return finish(cb)
+			default:
+			}
+			if !forced {
+				return "", errBrowserFailed
+			}
+			fmt.Fprintf(c.stderr, "Open this URL in your browser to continue:\n\n  %s\n\n", u)
+		case <-sctx.Done():
+			return "", c.waitError(ctx, sctx)
+		}
 	}
 }
 
@@ -286,19 +301,13 @@ func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, 
 			payload["sessionToken"] = sessionToken
 		}
 		b, _ := json.Marshal(payload)
-		req, err := newRequest(ctx, http.MethodPost, c.apiBaseURL+"/api/v1/auth/token", bytes.NewReader(b))
+		res, err := doHTTP(ctx, c.httpClient, c.reqTimeout, http.MethodPost, c.apiBaseURL+"/api/v1/auth/token", b,
+			map[string]string{"Content-Type": "application/json"})
 		if err != nil {
 			return 0, nil, err
 		}
-		req.Header.Set("Content-Type", "application/json")
-		res, err := c.httpClient.Do(req)
-		if err != nil {
-			return 0, nil, err
-		}
-		defer res.Body.Close()
-		retryAfter = res.Header.Get("Retry-After")
-		body, err := io.ReadAll(io.LimitReader(res.Body, 4<<20))
-		return res.StatusCode, body, err
+		retryAfter = res.header.Get("Retry-After")
+		return res.status, res.body, nil
 	}
 	status, body, err := post(existing)
 	if err == nil && status == http.StatusUnauthorized && existing != "" {
@@ -351,10 +360,14 @@ func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, 
 		result.Contributions = []Contribution{}
 	}
 	storedAt := isoTime(c.now())
-	_ = st.update(func(f *storageFile) *storageFile {
+	if err := st.update(func(f *storageFile) *storageFile {
 		f.SessionToken = strPtr(tr.SessionToken)
 		f.Cache = &cacheEntry{Result: *result.clone(), StoredAt: storedAt}
 		return f
-	})
+	}); err != nil {
+		// PROTOCOL §7.0: a sign-in that cannot be persisted is a configuration
+		// problem (unwritable StorageDir or failing Storage).
+		return nil, newError(CodeInvalidConfig, "could not store the session", err)
+	}
 	return result, nil
 }
