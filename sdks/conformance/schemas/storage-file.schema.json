@@ -1,0 +1,405 @@
+{
+  "title": "Sponsorkit SDK storage file (PROTOCOL §8)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 1
+    },
+    "sessionToken": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "starts_with",
+          "pattern": "^sks_.*"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cache": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "object",
+              "properties": {
+                "signedIn": {
+                  "type": "boolean"
+                },
+                "disabled": {
+                  "type": "boolean"
+                },
+                "mock": {
+                  "type": "boolean"
+                },
+                "targets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "supporter": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "identities": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "provider": {
+                                "type": "string",
+                                "enum": [
+                                  "github",
+                                  "opencollective"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "handle": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "needsReconnect": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "provider",
+                              "id",
+                              "handle",
+                              "needsReconnect"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "identities"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "contributions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string",
+                        "enum": [
+                          "github",
+                          "opencollective"
+                        ]
+                      },
+                      "target": {
+                        "type": "string"
+                      },
+                      "sponsor": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "user",
+                              "organization"
+                            ]
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "github",
+                              "opencollective"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "handle": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "provider",
+                          "id",
+                          "handle"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "via": {
+                        "type": "string",
+                        "enum": [
+                          "direct",
+                          "organization"
+                        ]
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "recurring",
+                          "one_time"
+                        ]
+                      },
+                      "frequency": {
+                        "type": "string",
+                        "enum": [
+                          "one_time",
+                          "monthly",
+                          "yearly"
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "paused",
+                          "cancelled",
+                          "paid",
+                          "refunded",
+                          "disputed",
+                          "failed",
+                          "pending"
+                        ]
+                      },
+                      "amount": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "tier": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "flags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "via_patreon"
+                          ]
+                        }
+                      },
+                      "private": {
+                        "type": "boolean"
+                      },
+                      "startedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "endedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "lastChargedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "nextChargeAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "totalContributed": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "provider",
+                      "target",
+                      "sponsor",
+                      "via",
+                      "kind",
+                      "frequency",
+                      "status",
+                      "amount",
+                      "tier",
+                      "flags",
+                      "private",
+                      "startedAt",
+                      "endedAt",
+                      "lastChargedAt",
+                      "nextChargeAt",
+                      "totalContributed"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "fetchedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "stale": {
+                  "type": "boolean"
+                },
+                "fromCache": {
+                  "type": "boolean"
+                },
+                "unavailable": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "github",
+                      "opencollective"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "signedIn",
+                "disabled",
+                "mock",
+                "targets",
+                "supporter",
+                "contributions",
+                "fetchedAt",
+                "stale",
+                "fromCache"
+              ],
+              "additionalProperties": false
+            },
+            "storedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "result",
+            "storedAt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nags": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "runs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastShown": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "runs",
+          "lastShown"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "v"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,67 @@
+{
+  "targets": [
+    {
+      "target": "github:sponsorkit-conformance",
+      "provider": "github",
+      "account": "sponsorkit-conformance",
+      "exists": true,
+      "displayName": "Sponsorkit Conformance",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/1000001?v=4",
+      "url": "https://github.com/sponsors/sponsorkit-conformance",
+      "currency": "USD",
+      "frequencies": ["monthly", "one_time"],
+      "customAmount": false,
+      "tiers": [
+        {
+          "id": "101",
+          "name": "Coffee",
+          "amount": { "value": 500, "currency": "USD" },
+          "frequency": "monthly",
+          "url": null
+        },
+        {
+          "id": "102",
+          "name": "Lunch",
+          "amount": { "value": 1000, "currency": "USD" },
+          "frequency": "monthly",
+          "url": null
+        },
+        {
+          "id": "103",
+          "name": "Sustainer",
+          "amount": { "value": 2500, "currency": "USD" },
+          "frequency": "monthly",
+          "url": "https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=103&preview=false"
+        },
+        {
+          "id": "201",
+          "name": "One-time thank you",
+          "amount": { "value": 1000, "currency": "USD" },
+          "frequency": "one_time",
+          "url": null
+        }
+      ]
+    },
+    {
+      "target": "opencollective:sponsorkit-conformance",
+      "provider": "opencollective",
+      "account": "sponsorkit-conformance",
+      "exists": true,
+      "displayName": "Sponsorkit Conformance Collective",
+      "avatarUrl": "https://images.opencollective.com/sponsorkit-conformance/logo.png",
+      "url": "https://opencollective.com/sponsorkit-conformance",
+      "currency": "EUR",
+      "frequencies": ["one_time", "monthly", "yearly"],
+      "customAmount": true,
+      "tiers": [
+        {
+          "id": "3001",
+          "name": "Backer",
+          "amount": { "value": 500, "currency": "EUR" },
+          "frequency": "monthly",
+          "url": "https://opencollective.com/sponsorkit-conformance/contribute/backer-3001"
+        }
+      ]
+    }
+  ]
+}

@@ -1,1 +1,26 @@
-{ "name": "@sponsorkit/conformance", "version": "0.0.0", "private": true, "type": "module" }
+{
+  "name": "@sponsorkit/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Language-neutral SDK conformance kit: fake Sponsorkit API, fixtures and scenarios every SDK must pass.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scenarios.json": "./scenarios.json",
+    "./fixtures/*": "./fixtures/*"
+  },
+  "scripts": {
+    "start": "bun server.ts",
+    "generate": "bun scripts/generate.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@sponsorkit/shared": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^5.9.3"
+  }
+}

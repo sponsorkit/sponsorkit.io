@@ -1,0 +1,7 @@
+{
+  "type": "https://sponsorkit.io/problems/rate_limited",
+  "title": "Rate limited",
+  "status": 429,
+  "code": "rate_limited",
+  "detail": "At most one refresh per 60 s per session"
+}

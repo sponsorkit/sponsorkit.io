@@ -35,6 +35,14 @@
     "sdks/conformance": {
       "name": "@sponsorkit/conformance",
       "version": "0.0.0",
+      "dependencies": {
+        "@sponsorkit/shared": "workspace:*",
+        "zod": "^4.6.7",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.4",
+        "typescript": "^5.9.3",
+      },
     },
     "sdks/js": {
       "name": "@sponsorkit/sdk",

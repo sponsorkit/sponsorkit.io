@@ -1,0 +1,598 @@
+{
+  "title": "POST /__control body",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contributions": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "opencollective"
+                ]
+              },
+              "target": {
+                "type": "string"
+              },
+              "sponsor": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "organization"
+                    ]
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "github",
+                      "opencollective"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "handle": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "provider",
+                  "id",
+                  "handle"
+                ]
+              },
+              "via": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "organization"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "recurring",
+                  "one_time"
+                ]
+              },
+              "frequency": {
+                "type": "string",
+                "enum": [
+                  "one_time",
+                  "monthly",
+                  "yearly"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "paused",
+                  "cancelled",
+                  "paid",
+                  "refunded",
+                  "disputed",
+                  "failed",
+                  "pending"
+                ]
+              },
+              "amount": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                },
+                "required": [
+                  "value",
+                  "currency"
+                ]
+              },
+              "tier": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "via_patreon"
+                  ]
+                }
+              },
+              "private": {
+                "type": "boolean"
+              },
+              "startedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "endedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastChargedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nextChargeAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "totalContributed": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "value",
+                      "currency"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "provider",
+              "target",
+              "sponsor",
+              "via",
+              "kind",
+              "frequency",
+              "status",
+              "amount",
+              "tier",
+              "flags",
+              "private",
+              "startedAt",
+              "endedAt",
+              "lastChargedAt",
+              "nextChargeAt",
+              "totalContributed"
+            ]
+          }
+        ]
+      }
+    },
+    "outage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "github",
+          "opencollective"
+        ]
+      }
+    },
+    "needsReconnect": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "github",
+          "opencollective"
+        ]
+      }
+    },
+    "fail": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "default": 503,
+          "anyOf": [
+            {
+              "type": "number",
+              "const": 500
+            },
+            {
+              "type": "number",
+              "const": 502
+            },
+            {
+              "type": "number",
+              "const": 503
+            },
+            {
+              "type": "number",
+              "const": 504
+            }
+          ]
+        },
+        "endpoints": {
+          "default": [
+            "contributions"
+          ],
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "contributions",
+              "token",
+              "targets",
+              "health"
+            ]
+          }
+        },
+        "times": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "rateLimit": {
+      "type": "object",
+      "properties": {
+        "retryAfter": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "times": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "retryAfter"
+      ]
+    },
+    "sessionInvalid": {
+      "type": "boolean"
+    },
+    "renewSession": {
+      "type": "object",
+      "properties": {
+        "times": {
+          "default": 1,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "newContribution": {
+      "type": "object",
+      "properties": {
+        "contribution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "github",
+                    "opencollective"
+                  ]
+                },
+                "target": {
+                  "type": "string"
+                },
+                "sponsor": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "organization"
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "github",
+                        "opencollective"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "handle": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "provider",
+                    "id",
+                    "handle"
+                  ]
+                },
+                "via": {
+                  "type": "string",
+                  "enum": [
+                    "direct",
+                    "organization"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "recurring",
+                    "one_time"
+                  ]
+                },
+                "frequency": {
+                  "type": "string",
+                  "enum": [
+                    "one_time",
+                    "monthly",
+                    "yearly"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "paused",
+                    "cancelled",
+                    "paid",
+                    "refunded",
+                    "disputed",
+                    "failed",
+                    "pending"
+                  ]
+                },
+                "amount": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string",
+                      "pattern": "^[A-Z]{3}$"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "currency"
+                  ]
+                },
+                "tier": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "via_patreon"
+                    ]
+                  }
+                },
+                "private": {
+                  "type": "boolean"
+                },
+                "startedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "endedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "lastChargedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "nextChargeAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "totalContributed": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "currency"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "provider",
+                "target",
+                "sponsor",
+                "via",
+                "kind",
+                "frequency",
+                "status",
+                "amount",
+                "tier",
+                "flags",
+                "private",
+                "startedAt",
+                "endedAt",
+                "lastChargedAt",
+                "nextChargeAt",
+                "totalContributed"
+              ]
+            }
+          ]
+        },
+        "trigger": {
+          "default": "checkout",
+          "type": "string",
+          "enum": [
+            "checkout",
+            "immediate"
+          ]
+        },
+        "afterCalls": {
+          "default": 0,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "contribution"
+      ]
+    },
+    "connect": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "opencollective"
+          ]
+        },
+        "error": {
+          "type": "string",
+          "enum": [
+            "access_denied",
+            "invalid_state",
+            "provider_error"
+          ]
+        }
+      }
+    },
+    "checkoutChoice": {
+      "type": "string",
+      "enum": [
+        "github",
+        "opencollective"
+      ]
+    },
+    "latencyMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 60000
+    },
+    "scenario": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
