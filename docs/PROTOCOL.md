@@ -298,6 +298,32 @@ Every SDK must accept the following options, using names idiomatic to its langua
 
 Otherwise it is off. Go, Rust and .NET have no implicit signal.
 
+## 7.0 Robustness rules (all SDKs)
+
+**HTTP**
+
+- **Request timeout.** Every HTTP request has a 30 s timeout, configurable with `requestTimeout` (seconds; `0` disables it). A timeout counts as a network error: `getFinancialContribution` serves the stale cache, while `signIn` and `verifySession` throw `network_error`.
+- **Unexpected 400.** A `400` from `/auth/token` with any code other than `invalid_code` maps to `network_error`.
+- **`Retry-After`.** Values that aren't finite are ignored. Values are clamped to at most 24 h, and must never crash or overflow.
+
+**Loopback sign-in**
+
+- **Malformed callbacks.** A `GET /callback` with neither a non-empty `code` nor a non-empty `error` gets a `400` response. The receiver ignores it and keeps waiting.
+- **Bind failure.** If the receiver can't bind to `127.0.0.1`, `auto` sign-in falls back to paste-back.
+- **Browser launch.** The SDK accepts the callback while `openBrowser` is still running. A system launcher that exits non-zero counts as "opening the browser failed", which triggers the `auto` fallback. A launcher still running after about 1.5 s counts as opened.
+
+**Storage**
+
+- **Reading never throws.** A storage document that can't be parsed counts as absent. So does any malformed part of one: invalid UTF-8, an unexpected type, a bad date, a `null` list, a non-object contribution, or a token that isn't `sks_` followed by printable ASCII.
+- **Timestamps.** ISO-8601 timestamps with a fractional part of any length must be accepted.
+- **Write failures.** Failing to persist a session in `signIn`, or to clear one in `signOut`, throws `invalid_config`.
+- **Refresh races.** A refresh writes back its cache and any renewed token only if the stored token is still the one the request used. A `401` clears only that token.
+- **No config directory.** If no per-user config directory can be determined (for example, `HOME` is unset), the SDK falls back to in-memory storage. It never writes to the current working directory and never fails construction.
+
+**Paste-back**
+
+- **Stdin can't be cancelled.** The default stdin prompt can't cancel its blocking read. After a cancelled or timed-out paste-back, the next line typed may go to that pending read. Apps that read stdin themselves should supply `promptForCode`.
+
 ## 7.1 Normative SDK behaviour (pinned by the conformance kit)
 
 1. **Sign-in caches the token result.** After `/auth/token`, the SDK stores `result` as its cache, with `storedAt` set to the exchange time.
