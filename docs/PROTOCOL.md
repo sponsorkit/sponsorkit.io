@@ -24,7 +24,7 @@ This document is the contract between the Worker (`app/`), the static pages (`we
 ## 3. HTTP API (`/api/v1`)
 
 - All responses are JSON.
-- **Errors** are `application/problem+json`: `{ type, title, status, code, detail? }`. `code` is one of:
+- **Errors** are `application/problem+json`: `{ type, title, status, code, detail? }`. `type` is `https://sponsorkit.io/docs#error-contract`. `code` is one of:
   - `invalid_request`
   - `invalid_target`
   - `invalid_code`
@@ -45,6 +45,11 @@ At least one parameter is required. The response is `TargetsResponse`:
 - Malformed parameters return `400 invalid_target`.
 - The response is cacheable (`Cache-Control: public, max-age=3600`).
 - **A GitHub account without a Sponsors listing** has `exists: false`. `displayName` and `avatarUrl` are still filled when the account exists.
+- **An Open Collective account** has `exists: true` only when all of these hold:
+  - its account type can receive contributions;
+  - it is active;
+  - it is not archived.
+- **GitHub `customAmount`** is best-effort. GitHub doesn't expose the listing's "custom amounts" setting, so it is `true` only when a published tier has `isCustomAmount`.
 - **Open Collective tiers:** `FLEXIBLE`-frequency tiers and non-contribution tiers (tickets, products) are omitted. OC tiers have `url: null`.
 - **`TargetTier.id`** is the provider's opaque id. For GitHub this is the GraphQL node id.
 - **A provider that can't be reached** gives `502` with code `internal`. That response is not cached.
@@ -98,9 +103,9 @@ These are used by `/connect`, `/checkout` and `/api/oauth/:provider/start`. All 
 | `targets` | Target param (§1). Required. |
 | `challenge` | PKCE code challenge. Required for sign-in; absent for anonymous checkout links. |
 | `delivery` | `web_message` \| `redirect` \| `loopback` \| `paste` |
-| `origin` | `web_message` only: the opener's origin, e.g. `https://app.example.com`. |
+| `origin` | `web_message` only: the opener's origin, e.g. `https://app.example.com`. Must be `https`, or `http` only on `localhost`, `127.0.0.1` or `[::1]`. |
 | `redirect_uri` | `redirect`: an https URL, or an `http://localhost[:port]` / `http://127.0.0.1[:port]` URL.<br>`loopback`: exactly `http://127.0.0.1:<port>/callback` or `http://[::1]:<port>/callback`. |
-| `app_name` | Optional. Up to 64 characters. Native apps only; shown on screen as "says it is". |
+| `app_name` | Optional. 1–64 code points, with no control or format characters (Unicode Cc/Cf). Native apps only; shown on screen as "says it is". |
 | `provider` | Optional. `github` or `opencollective`. Skips the provider picker. |
 | `add` | `1` when adding an identity to an existing session. This only affects the UI copy; the merge happens at `/auth/token`. |
 
@@ -122,8 +127,13 @@ Additional rules:
 
 ### 4.3 `GET /api/oauth/:provider/start`
 
+0. **Check the request came from the consent screen.**
+   - Applies when the request carries `Sec-Fetch-Site` with a value other than `same-origin` or `same-site`, i.e. `cross-site` or `none`.
+   - In that case the Worker returns an HTML `403`. It sets no cookie and does not redirect.
+   - The page links to `/connect?<same params>`, or to `/checkout?<continue>&<sign-in params>` when `continue` is present.
+   - This guarantees the consent screen was shown. Requests without Fetch Metadata are accepted.
 1. **Validate** the params. The same rules apply as in §4.1, and the `provider` must be in the target set. Invalid params return `400` as an HTML error page.
-2. **Generate** a 32-byte `browser_nonce` and set it as a cookie: `__Host-sk_nonce=<base64url>; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`.
+2. **Generate** a 32-byte `browser_nonce` and set it as a cookie: `__Host-sk_nonce=<base64url>; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=1200`. That is the state lifetime plus 600 s of grace, so an expired state can still be reported as `invalid_state`.
 3. **Create a sealed state** (§5) containing the provider, the targets, the delivery params, `sha256(browser_nonce)`, a provider PKCE verifier, an optional `continue` value (see §4.6), and `exp = now + 600 s`.
 4. **Redirect `302`** to the provider's authorize URL with `state=<sealed>`:
    - **GitHub:** `https://github.com/login/oauth/authorize?client_id=…&redirect_uri=<origin>/api/oauth/github/callback&scope=read:user%20read:org&state=…&code_challenge=…&code_challenge_method=S256&allow_signup=false`
@@ -221,7 +231,13 @@ A provider is **eligible** if all of these hold:
   - Otherwise it is `https://github.com/sponsors/<login>`.
   - Clients never build `tier_id` themselves.
 - **Open Collective:** `https://opencollective.com/<slug>/donate`. The query string includes:
-  - `amount=<major units, e.g. 5 or 5.5>`, when `amount` is given. Major units use the currency's ISO 4217 minor-unit digits, so JPY uses 0 decimals and KWD uses 3;
+  - `amount=<major units, e.g. 5 or 5.5>`, when `amount` is given.
+    - Conversion uses **ISO 4217 minor-unit digits**, never Intl/CLDR digits.
+    - 0 digits: BIF CLP DJF GNF ISK JPY KMF KRW PYG RWF UGX UYI VND VUV XAF XOF XPF.
+    - 3 digits: BHD IQD JOD KWD LYD OMR TND.
+    - 4 digits: CLF UYW.
+    - Every other currency uses 2.
+    - The Worker reports Open Collective amounts in the same ISO minor units, converted from Open Collective's fixed ×100 storage.
   - `interval=month|year` for `monthly`/`yearly`; it is omitted for one-time;
   - `redirect=<sponsorkit origin>/checkout/thanks`.
 

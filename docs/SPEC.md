@@ -93,10 +93,12 @@ Patreon and other providers are deferred (D3). They will be added later through 
 - **State:** none.
   - Session tokens, OAuth `state` values and sign-in codes are all **sealed**: encrypted and authenticated, so nothing needs storing (§4).
   - The only server-side cache is the free Workers Cache API, used for public target metadata (§5.6).
-- **Secrets:** stored as Wrangler secrets. There are five:
+- **Secrets:** stored as Wrangler secrets. There are seven:
   - GitHub OAuth client ID and secret;
   - Open Collective OAuth client ID and secret;
-  - sealing keys, current and previous, to allow rotation.
+  - `SEALING_KEYS`: the current and previous sealing keys, to allow rotation;
+  - `PAIRWISE_KEY`: derives the pairwise supporter IDs;
+  - `GITHUB_METADATA_TOKEN`: a token with no permissions, used only to read public Sponsors listings for `/targets`.
 - **Rate limiting:**
   - The Workers Rate Limiting binding, keyed per IP and per session (a hash of the token).
   - One free WAF rule on `/api/v1/auth/*` as a backstop.
@@ -240,6 +242,8 @@ Status always comes from the order, never from membership.
    - **Open Collective:** `me { orders(filter:OUTGOING, oppositeAccount:{slug}, includeIncognito:true) }`, plus `memberOf(role:ADMIN)` for collectives the user administers, and their orders to the target.
 2. **Normalize and filter.** Results are normalized (§5.1) and filtered to the session's targets. Nothing is stored.
 3. **Partial failure.** If one provider fails, the response still returns the others. It sets `stale: true` and lists `unavailable: ["opencollective"]`. The SDK then fills in that provider's contributions from its local cache.
+   - An Open Collective target that doesn't exist yields no contributions and is **not** unavailable.
+   - A target that exists but whose query fails, for example because it's private, is unavailable.
    - An expired or revoked provider token marks that identity `needsReconnect: true`.
    - Only an invalid or expired *session* is an error (`session_invalid`).
 4. **Rate limits.** Requests are limited to one refresh per minute per session, enforced by the rate-limit binding. A refresh within the window returns `429` with `Retry-After`, and the SDK serves its cache. Provider quotas are per user token: GitHub allows 5,000/h and Open Collective 100/min, so normal use is far below them.
@@ -491,7 +495,7 @@ Rate limits (starting values):
 |---|---|
 | `/auth/*` and `/api/oauth/*` | 30/min per IP |
 | `/contributions` | 1 refresh/min per session, 60/min per IP |
-| `/targets` | 120/min per IP |
+| `/targets` | 120/min per IP; cache misses limited to 20/min per IP and 60/min in total per location. This protects the shared GitHub metadata quota. |
 
 ## 9. Operations
 
