@@ -1,6 +1,6 @@
 # Sponsorkit: product & technical specification
 
-> Status: **DRAFT v2, awaiting approval.** Nothing below is built yet.
+> Status: **DRAFT v3, awaiting approval.** Decisions D1, D2 and D5 are settled. Nothing below is built yet.
 > Last updated: 2026-11-16. v2 includes fixes from an independent review covering provider correctness, security, and developer experience.
 
 ## 1. What Sponsorkit is
@@ -78,7 +78,7 @@ Contributions come from **payment providers**. v1 supports:
 - **Web**
   - Next.js 16 (App Router, TypeScript). It serves the marketing site, docs, maintainer dashboard and the hosted supporter pages.
   - Browser traffic for the dashboard and supporter pages goes to **Next's own `/api/*` route handlers**, which proxy server-to-server to the API's internal `/web` surface. All cookies are therefore **host-only `__Host-` cookies on `sponsorkit.io`**, never `.sponsorkit.io`.
-  - Hosting is decision D2.
+  - Hosted on **Cloudflare Workers** via OpenNext (D2).
 - **Secrets**
   - Provider tokens are encrypted with AES-256-GCM. Each ciphertext stores a `key_version`, and the row ID is used as associated data (AAD).
   - Keys live in Google Secret Manager. Several keys can be active at once for rotation.
@@ -111,7 +111,7 @@ Every row marked **(m)** has a `mode` column (`live`/`test`), and every query fi
 | Table | Key columns |
 |---|---|
 | `maintainers` | `id`, `github_user_id` (unique, immutable), `github_login`, `email` |
-| `projects` | `id`, `maintainer_id`, `slug` (unique), `name`, `icon_url`, `public_key_live`, `public_key_test`, `allowed_origins text[]`, `redirect_uris text[]`, `checkout_config jsonb`, `count_org_sponsorships bool` (default false, §6.5) |
+| `projects` | `id`, `maintainer_id`, `slug` (unique), `name`, `icon_url`, `public_key_live`, `public_key_test`, `allowed_origins text[]`, `redirect_uris text[]`, `checkout_config jsonb` |
 | `secret_keys` (m) | `id`, `project_id`, `prefix`, `hash`, `name`, `last_used_at`, `revoked_at` |
 | `provider_connections` (m) | `id`, `maintainer_id`, `provider`, `external_account_id`, `handle`, `currency`, `tiers jsonb` (id, name, amount, currency, frequency, url), `access_token_enc`, `refresh_token_enc`, `expires_at`, `webhook_secret_enc`, `webhook_token_hash`, `webhook_status`, `last_full_sync_at`, `last_incremental_sync_at`, `metadata jsonb` |
 | `project_connections` | `project_id`, `connection_id` |
@@ -348,7 +348,7 @@ Membership (`memberOf`/`BACKER`) is never used for status, because it survives c
 - During supporter-token refresh, Sponsorkit records the user's org memberships and roles in `identity_memberships`:
   - GitHub: `viewer.organizations` plus `viewerCanAdminister`.
   - Open Collective: `me.memberOf(role: ADMIN)`.
-- An org's contributions are returned to a member with `via: "organization"` and `sponsor.type: "organization"`, **only if** the project enabled `count_org_sponsorships`. That setting has three values: off by default, `admins` (org admins only), or `all members`. This is decision D5.
+- An org's contributions are **always** returned to its members, marked with `via: "organization"` and `sponsor.type: "organization"` (decided in D5). The developer decides whether they count. `fc.direct()` filters them out.
 - Private org sponsorships may be invisible to non-admin members. This is documented.
 
 ## 7. HTTP API (`https://api.sponsorkit.io/v1`)
@@ -412,7 +412,7 @@ CORS on the client API allows any origin without credentials. Origins don't matt
 - `/web/*` on the API is reachable only from the Next server, authenticated with a shared service credential. It carries the maintainer's and supporter's identity from their `__Host-` cookie sessions.
 - It covers:
   - maintainer GitHub login;
-  - projects: CRUD, origins, redirect URIs, checkout config, org-sponsorship setting;
+  - projects: CRUD, origins, redirect URIs, checkout config;
   - keys: create and revoke secret keys, rotate public keys;
   - provider connections and webhook setup status;
   - supporter list and CSV export;
@@ -668,7 +668,7 @@ Token buckets are stored in Postgres per IP, per public key, per secret key and 
 | Server API | 600/min per key; email lookup 30/min |
 | Magic link | 3 per address per 15 min |
 
-Cloudflare in front of the API (D2) adds edge protection for free.
+Cloudflare (D2) can also front the API for free edge protection.
 
 ### 10.2 Inbound webhooks
 
@@ -732,16 +732,16 @@ These come from the research and could not be confirmed from documentation alone
 - Patreon: the currency of `currently_entitled_amount_cents`, and the tier `url` checkout link.
 - Stripe: the exact Accounts v1 controller parameters for Express-equivalent accounts.
 
-## 13. Open decisions
+## 13. Decisions
 
-| # | Decision | Recommendation |
+| # | Decision | Outcome |
 |---|---|---|
-| **D1** | **Stripe processing fees.** With destination charges (required for Express-style accounts), Stripe bills **the platform**, i.e. you. A "0% fee" therefore costs Sponsorkit about 3% of every Stripe payment. Subscriptions only accept a *percentage* application fee at checkout, so recovering exactly needs per-invoice adjustment. | Add a "cover processing fees" checkbox, on by default, that grosses up the amount. Sponsorkit takes an `application_fee_amount` equal to the estimated Stripe fee: set at checkout for one-time payments, and on each `invoice.created` for subscriptions. Sponsorkit then roughly breaks even. Small over- or under-recovery is accepted. |
-| **D2** | **Web hosting.** Vercel Hobby is "personal or non-commercial use" only, and a site that routes payments is likely commercial. | Use **Cloudflare Workers via OpenNext**: free, no such clause, supports Next 16, and gives free edge rate limiting. The alternative is Vercel Hobby now and Pro ($20/mo) later. |
-| **D3** | **Patreon consent scope.** We must request `identity.memberships`, so the consent screen says "read all your memberships". | Accept it. Only memberships to connected campaigns are stored; the rest are discarded in memory. |
-| **D4** | **Package names.** `@sponsorkit` npm scope, `Sponsorkit` NuGet prefix, `sponsorkit` on PyPI and crates.io. Availability is unverified. | Reserve them now. Fall back to `sponsorkit-sdk` where a name is taken. |
-| **D5** | **Org sponsorships.** Should a GitHub org's sponsorship count for its members? | Make it a per-project setting, default **off**, with `admins` and `all members` options. It is always marked `via: "organization"`. |
-| **D6** | **GitHub scope.** If `read:user` doesn't return tier amounts, we need the broad `user` scope, which includes profile write. | Use `user` only if verification shows it is required, and say so on the consent screen. |
+| **D1** | **Stripe processing fees.** With destination charges, Stripe bills the platform. | ✅ **Pass the fee through.** Sponsorkit takes an `application_fee_amount` equal to the estimated Stripe fee: set at checkout for one-time payments, and on each `invoice.created` for subscriptions. A "cover processing fees" checkbox, on by default, grosses up the supporter's amount. Sponsorkit roughly breaks even, and small over- or under-recovery is accepted. `amount` in §6.1 stays the pledge; the `fee_covered` flag marks gross-ups. |
+| **D2** | **Web hosting.** Vercel Hobby is for non-commercial use only. | ✅ **Cloudflare Workers via OpenNext** (free; also gives edge rate limiting). |
+| **D3** | **Patreon consent scope** `identity.memberships`. | Proposed: accept it. Only memberships to connected campaigns are stored. |
+| **D4** | **Package names**: `@sponsorkit` npm, `Sponsorkit` NuGet, `sponsorkit` PyPI and crates.io. | Proposed: reserve them now; fall back to `sponsorkit-sdk` where a name is taken. |
+| **D5** | **Org sponsorships.** | ✅ **Always included for org members**, marked `via: "organization"`. The developer filters (`fc.direct()`). |
+| **D6** | **GitHub scope.** `user` is needed if `read:user` doesn't return tier amounts. | Proposed: use `user` only if verification requires it, and say so on the consent screen. |
 
 ## 14. What you will need to provide to go live
 
@@ -755,6 +755,6 @@ These come from the research and could not be confirmed from documentation alone
    - Cloud Run (2 services), Cloud Scheduler, Secret Manager, Artifact Registry;
    - Workload Identity Federation for GitHub Actions.
 6. **Neon project:** pooled and direct connection strings (plus a test branch).
-7. **Web host account** (D2), and DNS for `sponsorkit.io` and `api.sponsorkit.io`.
+7. **Cloudflare account** (Workers, for the web app), and DNS for `sponsorkit.io` and `api.sponsorkit.io`.
 8. **Transactional email** for magic links, for example the Resend free tier: API key.
 9. **Registry setup:** trusted publishers on npm, NuGet, PyPI and crates.io, after the names are reserved (D4).
