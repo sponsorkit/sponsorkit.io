@@ -25,7 +25,7 @@ const (
 	minCacheTTL            = time.Minute
 	defaultPollInterval    = time.Minute
 	defaultCheckoutTimeout = 10 * time.Minute
-	loopbackTimeout        = 5 * time.Minute
+	defaultSignInTimeout   = 5 * time.Minute
 	defaultRetryAfter      = 60 * time.Second
 	maxAppNameLength       = 64
 )
@@ -77,12 +77,20 @@ type Options struct {
 	PromptForCode func(ctx context.Context, url string) (string, error)
 	// SignInMethod forces a sign-in flow. Defaults to SignInAuto.
 	SignInMethod SignInMethod
+	// SignInTimeout bounds how long SignIn (and the sign-in phase of
+	// OpenCheckout) waits for the user to finish signing in, with the loopback
+	// or the paste-back flow. Exceeding it returns a timeout *Error. Defaults to
+	// 5 minutes.
+	SignInTimeout time.Duration
 	// Env overrides the process environment for SPONSORKIT_DISABLE,
-	// SPONSORKIT_MOCK, SPONSORKIT_NO_NAG, CI and the display detection of
-	// SignInAuto. When nil, the process environment is used.
+	// SPONSORKIT_MOCK, SPONSORKIT_NO_NAG, SPONSORKIT_DEV_CHECKS, CI and the
+	// display detection of SignInAuto. When non-nil it replaces the process
+	// environment for these variables (it is not merged): a variable missing
+	// from the map counts as unset. When nil, the process environment is used.
 	Env map[string]string
 	// DevChecks forces the dev-time target existence check on or off. By
-	// default it runs for binaries built by `go run` / `go test`.
+	// default it is on only when SPONSORKIT_DEV_CHECKS is set (see Env); Go has
+	// no implicit development signal.
 	DevChecks *bool
 	// CheckoutPollInterval is how often OpenCheckout polls. Defaults to 60 s.
 	CheckoutPollInterval time.Duration
@@ -104,6 +112,7 @@ type Client struct {
 	appName       string
 	cacheTTL      time.Duration
 	pollInterval  time.Duration
+	signInTimeout time.Duration
 	disabled      bool
 	devChecks     bool
 	signInMethod  SignInMethod
@@ -118,11 +127,14 @@ type Client struct {
 	storageOpt    Storage
 	storageDir    string
 
-	mu        sync.Mutex
-	mock      *mockState
-	mockNags  *store
-	storeOnce sync.Once
-	st        *store
+	mu       sync.Mutex
+	mock     *mockState
+	mockNags *store
+	// mockCounted records the nag runs this mock instance already counted
+	// (mock nag state lives in memory, per instance: PROTOCOL §7.1 item 14).
+	mockCounted map[string]bool
+	storeOnce   sync.Once
+	st          *store
 }
 
 // processState is per-process memo state (PROTOCOL §7 "restart").
@@ -199,6 +211,14 @@ func New(opts Options) (*Client, error) {
 	default:
 		c.pollInterval = opts.CheckoutPollInterval
 	}
+	switch {
+	case opts.SignInTimeout < 0:
+		return nil, newError(CodeInvalidConfig, "SignInTimeout must not be negative", nil)
+	case opts.SignInTimeout == 0:
+		c.signInTimeout = defaultSignInTimeout
+	default:
+		c.signInTimeout = opts.SignInTimeout
+	}
 	switch opts.SignInMethod {
 	case "", SignInAuto:
 		c.signInMethod = SignInAuto
@@ -233,7 +253,7 @@ func New(opts Options) (*Client, error) {
 	if opts.DevChecks != nil {
 		c.devChecks = *opts.DevChecks
 	} else {
-		c.devChecks = defaultDevChecks()
+		c.devChecks = envSet(c.env("SPONSORKIT_DEV_CHECKS"))
 	}
 	c.disabled = envSet(c.env("SPONSORKIT_DISABLE"))
 	mock := opts.Mock
@@ -250,6 +270,7 @@ func New(opts Options) (*Client, error) {
 		if !c.disabled {
 			c.mock = state
 			c.mockNags = &store{backend: &memoryStorage{}, key: c.hash, lock: &sync.Mutex{}}
+			c.mockCounted = map[string]bool{}
 		}
 	}
 	return c, nil
@@ -550,8 +571,10 @@ type fetchResult struct {
 	result       *Result
 	renewedToken string
 	retryAfter   time.Duration
-	status       int
-	err          error
+	// retryAfterSent reports whether the API sent a usable Retry-After header.
+	retryAfterSent bool
+	status         int
+	err            error
 }
 
 func newRequest(ctx context.Context, method, u string, body io.Reader) (*http.Request, error) {
@@ -580,7 +603,8 @@ func fetchContributions(ctx context.Context, hc *http.Client, base, token string
 	case res.StatusCode == http.StatusUnauthorized:
 		return fetchResult{kind: fetchSessionInvalid, status: res.StatusCode}
 	case res.StatusCode == http.StatusTooManyRequests:
-		return fetchResult{kind: fetchRateLimited, status: res.StatusCode, retryAfter: parseRetryAfter(res.Header.Get("Retry-After"), time.Now())}
+		ra, sent := parseRetryAfter(res.Header.Get("Retry-After"), time.Now())
+		return fetchResult{kind: fetchRateLimited, status: res.StatusCode, retryAfter: ra, retryAfterSent: sent}
 	case res.StatusCode != http.StatusOK || err != nil:
 		return fetchResult{kind: fetchFailed, status: res.StatusCode, err: err}
 	}
@@ -594,21 +618,24 @@ func fetchContributions(ctx context.Context, hc *http.Client, base, token string
 	return fetchResult{kind: fetchOK, result: &r, renewedToken: strings.TrimSpace(res.Header.Get("Sponsorkit-Session")), status: res.StatusCode}
 }
 
-func parseRetryAfter(v string, now time.Time) time.Duration {
+// parseRetryAfter parses a Retry-After header (seconds or an HTTP date). The
+// boolean is false, and the duration defaultRetryAfter, when the header is
+// missing or malformed.
+func parseRetryAfter(v string, now time.Time) (time.Duration, bool) {
 	v = strings.TrimSpace(v)
 	if v == "" {
-		return defaultRetryAfter
+		return defaultRetryAfter, false
 	}
 	if n, err := strconv.ParseFloat(v, 64); err == nil && n >= 0 {
-		return time.Duration(n * float64(time.Second))
+		return time.Duration(n * float64(time.Second)), true
 	}
 	if t, err := http.ParseTime(v); err == nil {
 		if d := t.Sub(now); d > 0 {
-			return d
+			return d, true
 		}
-		return 0
+		return 0, true
 	}
-	return defaultRetryAfter
+	return defaultRetryAfter, false
 }
 
 type targetInfo struct {

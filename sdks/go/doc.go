@@ -9,7 +9,8 @@
 //	}
 //	fc, _ := sk.GetFinancialContribution(ctx)
 //	if fc.SignedIn && len(fc.Active()) == 0 {
-//		fmt.Fprintln(os.Stderr, "Support my-cli:", sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly}))
+//		link, _ := sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly})
+//		fmt.Fprintln(os.Stderr, "Support my-cli:", link)
 //	}
 //
 // # What the client does
@@ -26,19 +27,25 @@
 //
 // # Error contract
 //
-// Every error is an *Error with a Code (see ErrorCode). The client never
-// returns errors for network or server problems: GetFinancialContribution
+// Every error is an *Error with a Code (see ErrorCode; the codes are those of
+// PROTOCOL §7). GetFinancialContribution never returns errors for network or
+// server problems: it
 // serves the cache (FromCache and Stale set) or a signed-in empty result with
 // Stale set, honours Retry-After, and treats session_invalid as a sign-out.
-// With SPONSORKIT_DISABLE set there is no network or disk access at all.
+// SignIn reports them as network_error (with Error.RetryAfter when the API sent
+// Retry-After), and reports cancellation of its context.Context as cancelled
+// and Options.SignInTimeout as timeout. With SPONSORKIT_DISABLE set there is
+// no network or disk access at all.
 //
 // # Testing
 //
 // Options.Mock (MockPreset, MockContributions) or the SPONSORKIT_MOCK
 // environment variable switch to mock mode: no network, no disk, results carry
 // Mock: true. Options also exposes test hooks: APIBaseURL, StorageDir,
-// OpenBrowser, PromptForCode, SignInMethod, Env, DevChecks,
-// CheckoutPollInterval and Clock. ResetProcessState simulates a new process.
+// OpenBrowser, PromptForCode, SignInMethod, SignInTimeout, Env, DevChecks,
+// Interactive, CheckoutPollInterval and Clock. Env replaces the process
+// environment for the SPONSORKIT_* variables and CI; the dev-time target check
+// is off unless DevChecks or SPONSORKIT_DEV_CHECKS turns it on. ResetProcessState simulates a new process.
 //
 // The wire protocol is specified in docs/PROTOCOL.md of
 // https://github.com/sponsorkit/sponsorkit.io; this package passes the

@@ -76,7 +76,11 @@ func ExampleClient_Nag() {
 	}
 	nag := sk.Nag(sponsorkit.NagOptions{ID: "my-cli", Every: 10, OrEvery: 7 * 24 * time.Hour})
 	if nag.Due(ctx, func(fc *sponsorkit.Result) bool { return len(fc.Active()) == 0 }) {
-		fmt.Fprintln(os.Stderr, "Enjoying my-cli? Support it:", sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly}))
+		link, err := sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Fprintln(os.Stderr, "Enjoying my-cli? Support it:", link)
 		nag.Shown()
 	}
 }

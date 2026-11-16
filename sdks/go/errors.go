@@ -3,13 +3,15 @@ package sponsorkit
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 // ErrorCode is the machine-readable code carried by every *Error (PROTOCOL §7).
 type ErrorCode string
 
-// Error codes. Network and server problems never surface as errors from
-// GetFinancialContribution; see the package documentation for the full contract.
+// Error codes (PROTOCOL §7). Network and server problems never surface as
+// errors from GetFinancialContribution; see the package documentation for the
+// full contract.
 const (
 	// CodeInvalidConfig: missing or invalid configuration, including targets that
 	// do not exist (dev-time check) and invalid checkout options.
@@ -18,24 +20,30 @@ const (
 	CodeDisabled ErrorCode = "disabled"
 	// CodePopupBlocked is used by browser SDKs only. It is listed for completeness.
 	CodePopupBlocked ErrorCode = "popup_blocked"
-	// CodeAccessDenied: the user denied access at the provider. Also used when the
-	// sign-in is abandoned (cancelled context or the 5-minute loopback timeout).
+	// CodeAccessDenied: the user denied access at the provider.
 	CodeAccessDenied ErrorCode = "access_denied"
 	// CodeInvalidState: the sign-in state expired or was invalid.
 	CodeInvalidState ErrorCode = "invalid_state"
 	// CodeProviderError: the provider failed during sign-in.
 	CodeProviderError ErrorCode = "provider_error"
-	// CodeInvalidCode: exchanging the sign-in code failed (malformed, expired,
-	// wrong verifier, or Sponsorkit could not be reached).
+	// CodeInvalidCode: the API rejected the sign-in code exchange (400
+	// invalid_code: malformed, expired or wrong verifier).
 	CodeInvalidCode ErrorCode = "invalid_code"
+	// CodeCancelled: the sign-in was abandoned or its context.Context was
+	// cancelled. Err wraps the context error when there is one.
+	CodeCancelled ErrorCode = "cancelled"
+	// CodeTimeout: the sign-in took longer than Options.SignInTimeout (default
+	// 5 minutes).
+	CodeTimeout ErrorCode = "timeout"
+	// CodeNetworkError: Sponsorkit could not be reached, or answered 5xx, 429 or
+	// an unexpected response, during SignIn or VerifySession. RetryAfter is set
+	// when the API sent Retry-After.
+	CodeNetworkError ErrorCode = "network_error"
 	// CodeSessionInvalid: only from VerifySession. The token is invalid or expired.
 	CodeSessionInvalid ErrorCode = "session_invalid"
 	// CodeTargetsMismatch: only from VerifySession. The session belongs to a
 	// different target set.
 	CodeTargetsMismatch ErrorCode = "targets_mismatch"
-	// CodeUnavailable: only from VerifySession. Sponsorkit could not be reached,
-	// failed (5xx) or rate limited the request.
-	CodeUnavailable ErrorCode = "unavailable"
 )
 
 // Error is the only error type returned by this package. Use errors.As to
@@ -50,6 +58,10 @@ type Error struct {
 	Message string
 	// Err is the underlying cause, if any (for example context.Canceled).
 	Err error
+	// RetryAfter is how long the API asked the caller to wait (its Retry-After
+	// header) for a network_error caused by a 429 response. It is nil when the
+	// API sent no Retry-After.
+	RetryAfter *time.Duration
 }
 
 func (e *Error) Error() string {

@@ -39,7 +39,8 @@ func Force() DueOption { return func(d *dueConfig) { d.force = true } }
 //
 //	nag := sk.Nag(sponsorkit.NagOptions{ID: "my-cli", Every: 10, OrEvery: 7 * 24 * time.Hour})
 //	if nag.Due(ctx, func(r *sponsorkit.Result) bool { return len(r.Active()) == 0 }) {
-//		fmt.Fprintln(os.Stderr, "Enjoying my-cli? Support it:", sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly}))
+//		link, _ := sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly})
+//		fmt.Fprintln(os.Stderr, "Enjoying my-cli? Support it:", link)
 //		nag.Shown()
 //	}
 func (c *Client) Nag(opts NagOptions) *Nag { return &Nag{c: c, opts: opts} }
@@ -51,7 +52,8 @@ func (n *Nag) store() *store {
 	return n.c.store()
 }
 
-// Due counts this run (once per process per ID) and reports whether the nag
+// Due counts this run (once per process per ID; in mock mode once per Client,
+// in memory) and reports whether the nag
 // should be shown: predicate(result) && (runs >= Every || time since last
 // shown >= OrEvery). A nil predicate counts as true. Due is always false when
 // Sponsorkit is disabled, and, unless Force is given, when SPONSORKIT_NO_NAG
@@ -67,14 +69,21 @@ func (n *Nag) Due(ctx context.Context, predicate func(*Result) bool, opts ...Due
 		o(&d)
 	}
 	st := n.store()
-	countKey := c.hash + ":" + n.opts.ID
-	if c.IsMock() {
-		countKey = "mock:" + countKey
+	var counted bool
+	if c.mockCounted != nil {
+		// Mock mode: runs are counted per instance, in memory (PROTOCOL §7.1
+		// item 14).
+		c.mu.Lock()
+		counted = c.mockCounted[n.opts.ID]
+		c.mockCounted[n.opts.ID] = true
+		c.mu.Unlock()
+	} else {
+		countKey := c.hash + ":" + n.opts.ID
+		processState.Lock()
+		counted = processState.nagCounted[countKey]
+		processState.nagCounted[countKey] = true
+		processState.Unlock()
 	}
-	processState.Lock()
-	counted := processState.nagCounted[countKey]
-	processState.nagCounted[countKey] = true
-	processState.Unlock()
 	if !counted {
 		_ = st.update(func(f *storageFile) *storageFile {
 			if f.Nags == nil {

@@ -30,8 +30,15 @@ type SignInOptions struct {
 // returns the fresh result. It never prompts implicitly; call it from a user
 // action. Pass at most one SignInOptions.
 //
-// Errors: disabled, invalid_config, access_denied (also on cancellation or
-// the 5-minute loopback timeout), invalid_state, provider_error, invalid_code.
+// Cancel ctx to abandon the sign-in; Options.SignInTimeout (default 5
+// minutes) bounds how long it waits for the user.
+//
+// Errors: disabled, invalid_config, access_denied, invalid_state and
+// provider_error (delivered by the sign-in page), invalid_code (the API
+// rejected the code), cancelled (ctx was cancelled or the user abandoned the
+// paste-back prompt), timeout (SignInTimeout elapsed) and network_error
+// (Sponsorkit could not be reached or answered 5xx, 429 or an unexpected
+// response; see Error.RetryAfter).
 func (c *Client) SignIn(ctx context.Context, opts ...SignInOptions) (*Result, error) {
 	var o SignInOptions
 	if len(opts) > 0 {
@@ -114,18 +121,34 @@ func (c *Client) resolveMethod(m SignInMethod) SignInMethod {
 	return SignInLoopback
 }
 
-var errBrowserFailed = errors.New("could not open the browser")
+var (
+	errBrowserFailed = errors.New("could not open the browser")
+	errSignInTimeout = errors.New("sign-in timed out")
+)
 
+// obtainCode waits for the user to sign in and returns the code. The wait is
+// bounded by the client's SignInTimeout (timeout) and by ctx (cancelled).
 func (c *Client) obtainCode(ctx context.Context, r codeRequest) (string, error) {
+	sctx, cancel := context.WithTimeoutCause(ctx, c.signInTimeout, errSignInTimeout)
+	defer cancel()
 	method := c.resolveMethod(r.method)
 	if method == SignInLoopback {
-		code, err := c.loopback(ctx, r, c.effectiveMethod(r.method) == SignInLoopback)
+		code, err := c.loopback(ctx, sctx, r, c.effectiveMethod(r.method) == SignInLoopback)
 		if !errors.Is(err, errBrowserFailed) {
 			return code, err
 		}
 		// SignInAuto: fall back to paste-back.
 	}
-	return c.paste(ctx, r)
+	return c.paste(ctx, sctx, r)
+}
+
+// waitError is the error for a sign-in wait that ended because sctx is done:
+// cancelled when the caller's ctx ended, timeout otherwise.
+func (c *Client) waitError(ctx, sctx context.Context) *Error {
+	if ctx.Err() != nil {
+		return newError(CodeCancelled, "sign-in was cancelled", ctx.Err())
+	}
+	return newError(CodeTimeout, fmt.Sprintf("sign-in timed out after %s", c.signInTimeout), context.Cause(sctx))
 }
 
 func (c *Client) withAppName(q url.Values) url.Values {
@@ -143,21 +166,21 @@ func cloneValues(v url.Values) url.Values {
 	return out
 }
 
-func (c *Client) paste(ctx context.Context, r codeRequest) (string, error) {
+func (c *Client) paste(ctx, sctx context.Context, r codeRequest) (string, error) {
 	q := c.withAppName(cloneValues(r.params))
 	q.Set("delivery", "paste")
 	u := c.apiBaseURL + r.path + "?" + q.Encode()
 	fmt.Fprintf(c.stderr, "To sign in, open this URL on any device:\n\n  %s\n\nthen paste the code shown there (valid for 10 minutes).\n", u)
-	code, err := c.promptForCode(ctx, u)
+	code, err := c.promptForCode(sctx, u)
+	if sctx.Err() != nil {
+		return "", c.waitError(ctx, sctx)
+	}
 	if err != nil {
-		if ctx.Err() != nil {
-			return "", newError(CodeAccessDenied, "sign-in was cancelled", ctx.Err())
-		}
-		return "", newError(CodeAccessDenied, "no sign-in code was entered", err)
+		return "", newError(CodeCancelled, "no sign-in code was entered", err)
 	}
 	code = strings.TrimSpace(code)
 	if code == "" {
-		return "", newError(CodeInvalidCode, "no sign-in code was entered", nil)
+		return "", newError(CodeCancelled, "no sign-in code was entered", nil)
 	}
 	return code, nil
 }
@@ -173,11 +196,11 @@ const closePage = `<!doctype html><html><head><meta charset="utf-8"><title>Spons
 // loopback runs the native loopback flow (PROTOCOL §7). When forced is false,
 // a failure to open the browser returns errBrowserFailed so that the caller
 // can fall back to paste-back.
-func (c *Client) loopback(ctx context.Context, r codeRequest, forced bool) (string, error) {
+func (c *Client) loopback(ctx, sctx context.Context, r codeRequest, forced bool) (string, error) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		if forced {
-			return "", newError(CodeProviderError, "could not listen on 127.0.0.1", err)
+			return "", newError(CodeNetworkError, "could not listen on 127.0.0.1", err)
 		}
 		return "", errBrowserFailed
 	}
@@ -219,25 +242,21 @@ func (c *Client) loopback(ctx context.Context, r codeRequest, forced bool) (stri
 	q.Set("delivery", "loopback")
 	q.Set("redirect_uri", "http://127.0.0.1:"+strconv.Itoa(port)+"/callback")
 	u := c.apiBaseURL + r.path + "?" + q.Encode()
-	if err := c.openBrowser(ctx, u); err != nil {
+	if err := c.openBrowser(sctx, u); err != nil {
 		if !forced {
 			return "", errBrowserFailed
 		}
 		fmt.Fprintf(c.stderr, "Open this URL in your browser to continue:\n\n  %s\n\n", u)
 	}
 
-	timer := time.NewTimer(loopbackTimeout)
-	defer timer.Stop()
 	select {
 	case cb := <-results:
 		if cb.code != "" {
 			return cb.code, nil
 		}
 		return "", signInError(cb.err)
-	case <-ctx.Done():
-		return "", newError(CodeAccessDenied, "sign-in was cancelled", ctx.Err())
-	case <-timer.C:
-		return "", newError(CodeAccessDenied, "sign-in timed out after 5 minutes", context.DeadlineExceeded)
+	case <-sctx.Done():
+		return "", c.waitError(ctx, sctx)
 	}
 }
 
@@ -260,6 +279,7 @@ type tokenResponse struct {
 func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, error) {
 	st := c.store()
 	existing := st.read().token()
+	var retryAfter string
 	post := func(sessionToken string) (int, []byte, error) {
 		payload := map[string]string{"code": code, "codeVerifier": verifier}
 		if sessionToken != "" {
@@ -276,28 +296,50 @@ func (c *Client) exchange(ctx context.Context, code, verifier string) (*Result, 
 			return 0, nil, err
 		}
 		defer res.Body.Close()
+		retryAfter = res.Header.Get("Retry-After")
 		body, err := io.ReadAll(io.LimitReader(res.Body, 4<<20))
 		return res.StatusCode, body, err
 	}
 	status, body, err := post(existing)
 	if err == nil && status == http.StatusUnauthorized && existing != "" {
-		// The stored session is no longer valid: start a fresh one.
-		_ = st.update(func(f *storageFile) *storageFile { return &storageFile{V: 1, Nags: f.Nags} })
+		// PROTOCOL §7: the stored session is dead. Clear it and retry the same
+		// code once without sessionToken, which starts a fresh session.
+		_ = st.update(func(f *storageFile) *storageFile {
+			if f.token() != existing {
+				return nil
+			}
+			return &storageFile{V: 1, Nags: f.Nags}
+		})
 		status, body, err = post("")
 	}
 	if err != nil {
-		return nil, newError(CodeInvalidCode, "could not reach Sponsorkit to complete sign-in", err)
+		if ctx.Err() != nil {
+			return nil, newError(CodeCancelled, "sign-in was cancelled", ctx.Err())
+		}
+		return nil, newError(CodeNetworkError, "could not reach Sponsorkit to complete sign-in", err)
 	}
-	if status != http.StatusOK {
-		msg := fmt.Sprintf("sign-in code exchange failed (HTTP %d", status)
+	switch {
+	case status == http.StatusOK:
+	case status == http.StatusBadRequest:
+		// invalid_code, or invalid_request when the stored session belongs to
+		// another target set: either way the API rejected the exchange.
+		msg := fmt.Sprintf("the sign-in code was rejected (HTTP %d", status)
 		if pc := problemCode(body); pc != "" {
 			msg += " " + pc
 		}
 		return nil, newError(CodeInvalidCode, msg+")", nil)
+	case status == http.StatusTooManyRequests:
+		e := newError(CodeNetworkError, "Sponsorkit rate limited the sign-in (HTTP 429)", nil)
+		if ra, sent := parseRetryAfter(retryAfter, time.Now()); sent {
+			e.RetryAfter = &ra
+		}
+		return nil, e
+	default:
+		return nil, newError(CodeNetworkError, fmt.Sprintf("unexpected response from Sponsorkit during sign-in (HTTP %d)", status), nil)
 	}
 	var tr tokenResponse
 	if err := json.Unmarshal(body, &tr); err != nil || tr.SessionToken == "" || tr.Result == nil {
-		return nil, newError(CodeInvalidCode, "malformed sign-in response", err)
+		return nil, newError(CodeNetworkError, "malformed sign-in response from Sponsorkit", err)
 	}
 	result := tr.Result
 	result.FromCache = false

@@ -22,17 +22,21 @@ func TestEmbeddedMockPresetsAreIdentical(t *testing.T) {
 
 func TestParseRetryAfter(t *testing.T) {
 	now := time.Date(2026, 11, 16, 12, 0, 0, 0, time.UTC)
-	cases := map[string]time.Duration{
-		"":                              defaultRetryAfter,
-		"30":                            30 * time.Second,
-		"1.5":                           1500 * time.Millisecond,
-		"Mon, 16 Nov 2026 12:00:10 GMT": 10 * time.Second,
-		"Mon, 16 Nov 2026 11:00:00 GMT": 0,
-		"soon":                          defaultRetryAfter,
+	type want struct {
+		d    time.Duration
+		sent bool
 	}
-	for in, want := range cases {
-		if got := parseRetryAfter(in, now); got != want {
-			t.Errorf("parseRetryAfter(%q) = %v, want %v", in, got, want)
+	cases := map[string]want{
+		"":                              {defaultRetryAfter, false},
+		"30":                            {30 * time.Second, true},
+		"1.5":                           {1500 * time.Millisecond, true},
+		"Mon, 16 Nov 2026 12:00:10 GMT": {10 * time.Second, true},
+		"Mon, 16 Nov 2026 11:00:00 GMT": {0, true},
+		"soon":                          {defaultRetryAfter, false},
+	}
+	for in, w := range cases {
+		if got, sent := parseRetryAfter(in, now); got != w.d || sent != w.sent {
+			t.Errorf("parseRetryAfter(%q) = %v, %v, want %v, %v", in, got, sent, w.d, w.sent)
 		}
 	}
 }

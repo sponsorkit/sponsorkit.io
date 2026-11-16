@@ -16,15 +16,18 @@ type CheckoutOptions struct {
 	// Provider preselects "github" or "opencollective"; the page never
 	// silently switches to another provider.
 	Provider Provider
-	// Amount in minor units (cents). Zero means unset.
+	// Amount in minor units (cents). Zero means unset; a negative amount is
+	// invalid.
 	Amount int64
 	// Currency is an ISO 4217 code. GitHub is always USD.
 	Currency string
 	// Frequency is OneTime, Monthly or Yearly.
 	Frequency Frequency
 
-	// Timeout bounds how long OpenCheckout waits for a new contribution.
-	// Defaults to 10 minutes. Ignored by CheckoutURL.
+	// Timeout bounds how long OpenCheckout polls for a new contribution. It
+	// covers only the polling phase: a sign-in that OpenCheckout needs first is
+	// bounded by Options.SignInTimeout. Defaults to 10 minutes. Ignored by
+	// CheckoutURL.
 	Timeout time.Duration
 	// PollInterval overrides Options.CheckoutPollInterval for this call.
 	PollInterval time.Duration
@@ -77,21 +80,30 @@ func (c *Client) checkoutQuery(o CheckoutOptions) (url.Values, error) {
 }
 
 // CheckoutURL returns a link to the /checkout page without sign-in. It is
-// synchronous and offline-safe, which suits nags and READMEs; a checkout
-// started this way cannot be detected. Invalid options are left out of the URL.
-func (c *Client) CheckoutURL(opts CheckoutOptions) string {
-	q, _ := c.checkoutQuery(opts)
-	return c.apiBaseURL + "/checkout?" + q.Encode()
+// synchronous and never touches the network or disk, which suits nags and
+// READMEs; a checkout started this way cannot be detected.
+//
+// It returns an invalid_config *Error when opts names a provider that is not
+// configured, or an invalid frequency, amount or currency (PROTOCOL §7.1
+// item 16).
+func (c *Client) CheckoutURL(opts CheckoutOptions) (string, error) {
+	q, err := c.checkoutQuery(opts)
+	if err != nil {
+		return "", err
+	}
+	return c.apiBaseURL + "/checkout?" + q.Encode(), nil
 }
 
 // OpenCheckout sends the user to contribute and waits for the result
 // (SPEC §7.3): it signs in first if needed (so the new contribution can be
 // detected), opens /checkout in the browser, then polls with a zero cache TTL
-// until a new or changed contribution appears. Timeout or cancellation of ctx
-// resolves with CheckoutUnknown, not an error.
+// until a new or changed contribution appears. CheckoutOptions.Timeout bounds
+// only the polling phase; the sign-in phase is bounded by
+// Options.SignInTimeout. Cancelling ctx in either phase, or the polling
+// timeout, resolves with CheckoutUnknown, not an error.
 //
-// Errors: disabled, invalid_config, and the SignIn errors when a sign-in was
-// needed and failed.
+// Errors: disabled, invalid_config, and the SignIn errors (including timeout
+// when Options.SignInTimeout elapses) when a sign-in was needed and failed.
 func (c *Client) OpenCheckout(ctx context.Context, opts CheckoutOptions) (*CheckoutResult, error) {
 	if c.disabled {
 		return nil, newError(CodeDisabled, "Sponsorkit is disabled (SPONSORKIT_DISABLE)", nil)
@@ -123,10 +135,8 @@ func (c *Client) OpenCheckout(ctx context.Context, opts CheckoutOptions) (*Check
 	if interval <= 0 {
 		interval = c.pollInterval
 	}
-	pctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
-	if err := c.devCheck(pctx); err != nil {
+	if err := c.devCheck(ctx); err != nil {
 		return nil, err
 	}
 	checkoutURL := c.apiBaseURL + "/checkout?" + query.Encode()
@@ -136,34 +146,46 @@ func (c *Client) OpenCheckout(ctx context.Context, opts CheckoutOptions) (*Check
 		if stored.Cache != nil {
 			baseline = &stored.Cache.Result
 		} else {
-			baseline = c.refresh(pctx, 0)
+			baseline = c.refresh(ctx, 0)
 		}
-		if err := c.openBrowser(pctx, checkoutURL); err != nil {
+		if ctx.Err() != nil {
+			return &CheckoutResult{Status: CheckoutUnknown}, nil
+		}
+		if err := c.openBrowser(ctx, checkoutURL); err != nil {
 			fmt.Fprintf(c.stderr, "Open this URL in your browser to contribute:\n\n  %s\n\n", checkoutURL)
 		}
 	} else {
+		// Sign-in phase: bounded by SignInTimeout (inside obtainCode) and ctx.
 		verifier := NewCodeVerifier()
 		params := cloneValues(query)
 		params.Set("challenge", CodeChallenge(verifier))
-		code, err := c.obtainCode(pctx, codeRequest{
+		// PROTOCOL §7.1 item 17: the loopback redirect carries exactly the
+		// checkout params (targets, provider, amount, currency, frequency) and
+		// step=choose.
+		cont := cloneValues(query)
+		cont.Set("step", "choose")
+		code, err := c.obtainCode(ctx, codeRequest{
 			path:        "/checkout",
 			params:      params,
 			method:      opts.SignInMethod,
-			continueURL: checkoutURL + "&step=choose",
+			continueURL: c.apiBaseURL + "/checkout?" + cont.Encode(),
 		})
 		if err != nil {
-			if pctx.Err() != nil {
+			if ctx.Err() != nil {
 				return &CheckoutResult{Status: CheckoutUnknown}, nil
 			}
 			return nil, err
 		}
-		if baseline, err = c.exchange(pctx, code, verifier); err != nil {
-			if pctx.Err() != nil {
+		if baseline, err = c.exchange(ctx, code, verifier); err != nil {
+			if ctx.Err() != nil {
 				return &CheckoutResult{Status: CheckoutUnknown}, nil
 			}
 			return nil, err
 		}
 	}
+	// Polling phase: bounded by CheckoutOptions.Timeout and ctx.
+	pctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	return c.poll(pctx, baseline, interval), nil
 }
 

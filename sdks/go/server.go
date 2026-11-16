@@ -29,7 +29,8 @@ func WithHTTPClient(hc *http.Client) VerifyOption { return func(v *verifyConfig)
 //
 // Errors: invalid_config (malformed targets), session_invalid (rejected or
 // malformed token), targets_mismatch (the session belongs to another target
-// set) and unavailable (network error, 5xx or rate limited).
+// set) and network_error (Sponsorkit could not be reached, or answered 5xx,
+// 429 or an unexpected response; *Error.RetryAfter carries Retry-After).
 func VerifySession(ctx context.Context, token string, targets Targets, opts ...VerifyOption) (*Result, error) {
 	cfg := verifyConfig{}
 	for _, o := range opts {
@@ -56,13 +57,19 @@ func VerifySession(ctx context.Context, token string, targets Targets, opts ...V
 	case fetchSessionInvalid:
 		return nil, newError(CodeSessionInvalid, "the session token is invalid or expired", nil)
 	case fetchRateLimited:
-		return nil, newError(CodeUnavailable, fmt.Sprintf("Sponsorkit rate limited this session (retry after %s)", res.retryAfter), nil)
-	case fetchFailed:
-		msg := "Sponsorkit is unavailable"
-		if res.status != 0 {
-			msg = fmt.Sprintf("%s (HTTP %d)", msg, res.status)
+		e := newError(CodeNetworkError, "Sponsorkit rate limited this request (HTTP 429)", nil)
+		if res.retryAfterSent {
+			ra := res.retryAfter
+			e.RetryAfter = &ra
+			e.Message = fmt.Sprintf("Sponsorkit rate limited this request (HTTP 429, retry after %s)", ra)
 		}
-		return nil, newError(CodeUnavailable, msg, res.err)
+		return nil, e
+	case fetchFailed:
+		msg := "could not reach Sponsorkit"
+		if res.status != 0 {
+			msg = fmt.Sprintf("unexpected response from Sponsorkit (HTTP %d)", res.status)
+		}
+		return nil, newError(CodeNetworkError, msg, res.err)
 	}
 	actual, err := canonicalParamFromStrings(res.result.Targets)
 	if err != nil {

@@ -619,7 +619,10 @@ type harness struct {
 }
 
 type scenarioRun struct {
-	h           *harness
+	h *harness
+	// savedEnv holds the process environment overwritten by configure's
+	// processEnv, restored at the end of the scenario.
+	savedEnv    map[string]*string
 	id          string
 	storageDir  string
 	unreachable string
@@ -676,7 +679,9 @@ func withDefaults(step map[string]any) map[string]any {
 		def("apiBaseUrl", "$BASE_URL")
 		def("storageDir", "$STORAGE_DIR")
 		def("env", map[string]any{})
-		def("devChecks", false)
+		// devChecks has no default: absent means the SDK default (README §3.3).
+	case "verifySession":
+		def("apiBaseUrl", "$BASE_URL")
 	case "nagDue":
 		def("force", false)
 	case "writeStorage":
@@ -757,6 +762,9 @@ func (h *harness) newClient(args map[string]any) (*sponsorkit.Client, error) {
 	if ttl, ok := seconds(args, "cacheTtl"); ok {
 		opts.CacheTTL = ttl
 	}
+	if d, ok := seconds(args, "signInTimeout"); ok {
+		opts.SignInTimeout = d
+	}
 	switch m := args["mock"].(type) {
 	case string:
 		opts.Mock = sponsorkit.MockPreset(m)
@@ -770,9 +778,11 @@ func (h *harness) newClient(args map[string]any) (*sponsorkit.Client, error) {
 		}
 		opts.Mock = sponsorkit.MockContributions(custom.Contributions...)
 	}
-	// The scenarios assume a non-interactive test process (README §4); keep
-	// that true when the suite is run from a terminal.
-	if term(os.Stdout) && term(os.Stderr) {
+	if i, ok := args["interactive"].(bool); ok {
+		opts.Interactive = boolPtr(i)
+	} else if term(os.Stdout) && term(os.Stderr) {
+		// The scenarios assume a non-interactive test process (README §4);
+		// keep that true when the suite is run from a terminal.
 		opts.Interactive = boolPtr(false)
 	}
 	return sponsorkit.New(opts)
@@ -783,7 +793,22 @@ func term(f *os.File) bool {
 	return err == nil && st.Mode()&os.ModeCharDevice != 0
 }
 
-func checkoutOptions(args map[string]any) sponsorkit.CheckoutOptions {
+// errUnrepresentable marks a step whose arguments the Go types cannot express
+// (README §3.3: the harness treats such a step as passed).
+var errUnrepresentable = errors.New("not representable in the Go SDK's types")
+
+// checkoutOptions converts loose checkout args. ok is false when a value
+// cannot be expressed: Amount is an int64 of minor units in which 0 means
+// unset, so an explicit 0 or a fractional amount cannot be passed.
+func checkoutOptions(args map[string]any) (o sponsorkit.CheckoutOptions, ok bool) {
+	ok = true
+	if a, has := args["amount"].(float64); has && (a == 0 || a != math.Trunc(a)) {
+		ok = false
+	}
+	return checkoutOptionsOf(args), ok
+}
+
+func checkoutOptionsOf(args map[string]any) sponsorkit.CheckoutOptions {
 	o := sponsorkit.CheckoutOptions{
 		Provider:     sponsorkit.Provider(str(args, "provider")),
 		Currency:     str(args, "currency"),
@@ -818,6 +843,7 @@ func (r *scenarioRun) exec(step map[string]any, on *sponsorkit.Client) (any, err
 	case "configure":
 		r.client = nil
 		r.config = args
+		r.setProcessEnv(asMap(args["processEnv"]))
 		c, err := h.newClient(args)
 		if err != nil {
 			return nil, err
@@ -841,7 +867,13 @@ func (r *scenarioRun) exec(step map[string]any, on *sponsorkit.Client) (any, err
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.SignIn(ctx, sponsorkit.SignInOptions{
+		sctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		if after, ok := seconds(args, "cancelAfter"); ok {
+			timer := time.AfterFunc(after, cancel)
+			defer timer.Stop()
+		}
+		_, err = c.SignIn(sctx, sponsorkit.SignInOptions{
 			Provider: sponsorkit.Provider(str(args, "provider")),
 			Method:   sponsorkit.SignInMethod(str(args, "method")),
 		})
@@ -873,13 +905,21 @@ func (r *scenarioRun) exec(step map[string]any, on *sponsorkit.Client) (any, err
 			timer := time.AfterFunc(after, cancel)
 			defer timer.Stop()
 		}
-		return c.OpenCheckout(cctx, checkoutOptions(args))
+		return c.OpenCheckout(cctx, checkoutOptionsOf(args))
 	case "checkoutUrl":
 		c, err := need()
 		if err != nil {
 			return nil, err
 		}
-		return c.CheckoutURL(checkoutOptions(args)), nil
+		o, ok := checkoutOptions(args)
+		if !ok {
+			return nil, errUnrepresentable
+		}
+		u, err := c.CheckoutURL(o)
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
 	case "signOut":
 		c, err := need()
 		if err != nil {
@@ -927,7 +967,7 @@ func (r *scenarioRun) exec(step map[string]any, on *sponsorkit.Client) (any, err
 		t := asMap(args["targets"])
 		return sponsorkit.VerifySession(ctx, str(args, "token"),
 			sponsorkit.Targets{GitHub: str(t, "github"), OpenCollective: str(t, "opencollective")},
-			sponsorkit.WithAPIBaseURL(h.baseURL))
+			sponsorkit.WithAPIBaseURL(str(args, "apiBaseUrl")))
 	case "control":
 		_, err := h.ctl.call("PATCH", "/__control", args)
 		return nil, err
@@ -956,6 +996,32 @@ func (r *scenarioRun) exec(step map[string]any, on *sponsorkit.Client) (any, err
 	return nil, fmt.Errorf("unknown action %v", step["action"])
 }
 
+// setProcessEnv sets configure's processEnv in the real process environment
+// (README §3.3), remembering the previous values.
+func (r *scenarioRun) setProcessEnv(vs map[string]any) {
+	for k, v := range vs {
+		if _, saved := r.savedEnv[k]; !saved {
+			if prev, ok := os.LookupEnv(k); ok {
+				r.savedEnv[k] = &prev
+			} else {
+				r.savedEnv[k] = nil
+			}
+		}
+		_ = os.Setenv(k, fmt.Sprint(v))
+	}
+}
+
+func (r *scenarioRun) restoreProcessEnv() {
+	for k, v := range r.savedEnv {
+		if v == nil {
+			_ = os.Unsetenv(k)
+		} else {
+			_ = os.Setenv(k, *v)
+		}
+	}
+	r.savedEnv = map[string]*string{}
+}
+
 func randomSuffix() string {
 	b := make([]byte, 4)
 	_, _ = rand.Read(b)
@@ -969,7 +1035,8 @@ func fileExists(p string) bool {
 
 func (h *harness) runScenario(t *testing.T, sc map[string]any, storageRoot string) {
 	id := str(sc, "id")
-	r := &scenarioRun{h: h, id: id, storageDir: filepath.Join(storageRoot, id+"-"+randomSuffix())}
+	r := &scenarioRun{h: h, id: id, storageDir: filepath.Join(storageRoot, id+"-"+randomSuffix()), savedEnv: map[string]*string{}}
+	defer r.restoreProcessEnv()
 	must := func(_ any, err error) {
 		if err != nil {
 			t.Fatal(err)
@@ -1036,6 +1103,10 @@ func (h *harness) runScenario(t *testing.T, sc map[string]any, storageRoot strin
 			returned, thrown = r.exec(asMap(h.resolve(r, step)), nil)
 		}
 		elapsed := time.Since(started).Seconds()
+		if errors.Is(thrown, errUnrepresentable) {
+			t.Logf("%s / step %d (%v): skipped, %v", id, i+1, step["action"], thrown)
+			continue
+		}
 
 		var problems []string
 		expect := asMap(step["expect"])
@@ -1054,6 +1125,9 @@ func (h *harness) runScenario(t *testing.T, sc map[string]any, storageRoot strin
 		if expect != nil {
 			e := asMap(h.resolve(r, expect))
 			value := normalize(returned)
+			if want, ok := e["error"]; ok && thrown != nil {
+				problems = append(problems, match(normalizedError(thrown), want, "error")...)
+			}
 			if want, ok := e["returns"]; ok && thrown == nil {
 				problems = append(problems, match(value, want, "returns")...)
 			}
@@ -1162,6 +1236,17 @@ func (h *harness) runScenario(t *testing.T, sc map[string]any, storageRoot strin
 	if len(problems) > 0 {
 		t.Fatalf("%s / final expectations:\n  - %s", id, strings.Join(problems, "\n  - "))
 	}
+}
+
+// normalizedError is the thrown error as the kit's `error` expectation sees
+// it: {"code": string, "retryAfter": seconds | null}.
+func normalizedError(err error) map[string]any {
+	out := map[string]any{"code": string(sponsorkit.ErrorCodeOf(err)), "retryAfter": nil}
+	var e *sponsorkit.Error
+	if errors.As(err, &e) && e.RetryAfter != nil {
+		out["retryAfter"] = e.RetryAfter.Seconds()
+	}
+	return out
 }
 
 func withRequestDefaults(spec map[string]any) map[string]any {

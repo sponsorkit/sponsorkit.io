@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -292,7 +293,11 @@ func TestCheckoutURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := url.Parse(c.CheckoutURL(sponsorkit.CheckoutOptions{Provider: sponsorkit.OpenCollective, Amount: 1500, Currency: "eur", Frequency: sponsorkit.Yearly}))
+	raw, err := c.CheckoutURL(sponsorkit.CheckoutOptions{Provider: sponsorkit.OpenCollective, Amount: 1500, Currency: "eur", Frequency: sponsorkit.Yearly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := url.Parse(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,10 +308,18 @@ func TestCheckoutURL(t *testing.T) {
 	if u.Query().Encode() != want.Encode() {
 		t.Errorf("query %s, want %s", u.Query().Encode(), want.Encode())
 	}
-	// Invalid options are left out of the URL, and OpenCheckout rejects them.
+	// Invalid options are rejected with invalid_config by CheckoutURL and OpenCheckout.
 	c2, _ := sponsorkit.New(sponsorkit.Options{GitHub: "octocat", Mock: sponsorkit.MockPreset("none")})
-	if got := c2.CheckoutURL(sponsorkit.CheckoutOptions{Provider: sponsorkit.OpenCollective, Frequency: "weekly"}); strings.Contains(got, "provider") || strings.Contains(got, "weekly") {
-		t.Errorf("invalid options leaked into %s", got)
+	for _, o := range []sponsorkit.CheckoutOptions{
+		{Provider: sponsorkit.OpenCollective},
+		{Provider: "patreon"},
+		{Frequency: "weekly"},
+		{Amount: -500},
+		{Currency: "EURO"},
+	} {
+		if got, err := c2.CheckoutURL(o); got != "" || sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeInvalidConfig {
+			t.Errorf("CheckoutURL(%+v) = %q, %v; want invalid_config", o, got, err)
+		}
 	}
 	if _, err := c2.OpenCheckout(context.Background(), sponsorkit.CheckoutOptions{Amount: -5}); sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeInvalidConfig {
 		t.Errorf("negative amount: %v", err)
@@ -367,23 +380,73 @@ func TestVerifySessionValidation(t *testing.T) {
 	}
 	// Port 9 (discard) is not listening: the API is unreachable.
 	_, err := sponsorkit.VerifySession(ctx, "sks_x", sponsorkit.Targets{GitHub: "octocat"}, sponsorkit.WithAPIBaseURL("http://127.0.0.1:9"))
-	if sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeUnavailable {
+	var skErr *sponsorkit.Error
+	if !errors.As(err, &skErr) || skErr.Code != sponsorkit.CodeNetworkError || skErr.RetryAfter != nil {
 		t.Errorf("unreachable: %v", err)
 	}
 }
 
 func TestErrorType(t *testing.T) {
-	err := error(&sponsorkit.Error{Code: sponsorkit.CodeAccessDenied, Message: "cancelled", Err: context.Canceled})
+	err := error(&sponsorkit.Error{Code: sponsorkit.CodeCancelled, Message: "sign-in was cancelled", Err: context.Canceled})
 	if !errors.Is(err, context.Canceled) {
 		t.Error("Unwrap should expose the cause")
 	}
-	if !errors.Is(err, &sponsorkit.Error{Code: sponsorkit.CodeAccessDenied}) || errors.Is(err, &sponsorkit.Error{Code: sponsorkit.CodeDisabled}) {
+	if !errors.Is(err, &sponsorkit.Error{Code: sponsorkit.CodeCancelled}) || errors.Is(err, &sponsorkit.Error{Code: sponsorkit.CodeDisabled}) {
 		t.Error("errors.Is should compare codes")
 	}
-	if sponsorkit.ErrorCodeOf(errors.Join(errors.New("x"), err)) != sponsorkit.CodeAccessDenied {
+	if sponsorkit.ErrorCodeOf(errors.Join(errors.New("x"), err)) != sponsorkit.CodeCancelled {
 		t.Error("ErrorCodeOf should see wrapped errors")
 	}
-	if !strings.Contains(err.Error(), "access_denied") {
+	if !strings.Contains(err.Error(), "cancelled") {
 		t.Errorf("Error() = %q", err.Error())
+	}
+}
+
+func TestSignInCancelledAndTimeout(t *testing.T) {
+	block := func(ctx context.Context, _ string) (string, error) {
+		<-ctx.Done()
+		return "", ctx.Err()
+	}
+	newClient := func(timeout time.Duration) *sponsorkit.Client {
+		c, err := sponsorkit.New(sponsorkit.Options{
+			GitHub: "octocat", StorageDir: t.TempDir(), APIBaseURL: "http://127.0.0.1:9",
+			SignInMethod: sponsorkit.SignInPaste, SignInTimeout: timeout, PromptForCode: block,
+			Stderr: io.Discard, Env: map[string]string{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	_, err := newClient(50 * time.Millisecond).SignIn(context.Background())
+	if sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeTimeout {
+		t.Errorf("SignInTimeout: %v, want timeout", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	_, err = newClient(time.Minute).SignIn(ctx)
+	if sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeCancelled || !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("cancelled context: %v, want cancelled wrapping the context error", err)
+	}
+	if _, err := sponsorkit.New(sponsorkit.Options{GitHub: "octocat", SignInTimeout: -time.Second}); sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeInvalidConfig {
+		t.Errorf("negative SignInTimeout: %v", err)
+	}
+}
+
+func TestSignInNetworkError(t *testing.T) {
+	c, err := sponsorkit.New(sponsorkit.Options{
+		GitHub: "octocat", StorageDir: t.TempDir(), APIBaseURL: "http://127.0.0.1:9",
+		SignInMethod:  sponsorkit.SignInPaste,
+		PromptForCode: func(context.Context, string) (string, error) { return "skc_x", nil },
+		Stderr:        io.Discard, Env: map[string]string{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.SignIn(context.Background()); sponsorkit.ErrorCodeOf(err) != sponsorkit.CodeNetworkError {
+		t.Errorf("unreachable API: %v, want network_error", err)
+	}
+	if c.IsSignedIn() {
+		t.Error("a failed sign-in must store nothing")
 	}
 }
