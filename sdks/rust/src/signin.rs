@@ -522,11 +522,7 @@ impl Sponsorkit {
             body["sessionToken"] = json!(s);
         }
         let url = format!("{}/api/v1/auth/token", self.inner.api_base_url);
-        let res = self
-            .inner
-            .http
-            .post(url)
-            .json(&body)
+        let res = crate::client::with_timeout(self.inner.http.post(url).json(&body), self.inner.request_timeout)
             .send()
             .await
             .map_err(|e| Error::network(format!("Cannot reach Sponsorkit to finish sign-in: {e}"), None))?;
@@ -560,9 +556,21 @@ enum TokenOutcome {
     Failed(Error),
 }
 
-/// The `Retry-After` header as whole seconds (delta-seconds form only).
+/// The `Retry-After` header as whole seconds (delta-seconds form), clamped
+/// to [`crate::MAX_RETRY_AFTER`]. Anything that is not a non-negative integer
+/// (`inf`, `NaN`, `1e9`, `-5`, a date…) is ignored (PROTOCOL §7.0); an integer
+/// too large for `u64` is clamped like any other large value.
 pub(crate) fn retry_after_secs(headers: &reqwest::header::HeaderMap) -> Option<u64> {
-    headers.get(reqwest::header::RETRY_AFTER).and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<u64>().ok())
+    parse_retry_after(headers.get(reqwest::header::RETRY_AFTER)?.to_str().ok()?)
+}
+
+pub(crate) fn parse_retry_after(value: &str) -> Option<u64> {
+    let v = value.trim();
+    if v.is_empty() || !v.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let max = crate::MAX_RETRY_AFTER.as_secs();
+    Some(v.parse::<u64>().map_or(max, |n| n.min(max)))
 }
 
 #[cfg(test)]
@@ -581,6 +589,164 @@ mod tests {
             Err(_) => Ok(0),
         });
         (tx, reader)
+    }
+
+    #[test]
+    fn retry_after_is_clamped_and_non_finite_values_are_ignored() {
+        assert_eq!(parse_retry_after("120"), Some(120));
+        assert_eq!(parse_retry_after(" 0 "), Some(0));
+        assert_eq!(parse_retry_after("86400"), Some(86_400));
+        assert_eq!(parse_retry_after("86401"), Some(86_400));
+        assert_eq!(parse_retry_after("18446744073709551615"), Some(86_400));
+        assert_eq!(parse_retry_after("99999999999999999999999999999999"), Some(86_400));
+        for bad in ["", "inf", "Infinity", "NaN", "-5", "1.5", "1e9", "Wed, 21 Oct 2015 07:28:00 GMT"] {
+            assert_eq!(parse_retry_after(bad), None, "{bad}");
+        }
+    }
+
+    /// A raw HTTP server that answers every request with `response`.
+    async fn one_shot_server(status: &'static str, body: &'static str) -> String {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            while let Ok((mut s, _)) = listener.accept().await {
+                tokio::spawn(async move {
+                    let mut buf = vec![0u8; 8192];
+                    let _ = s.read(&mut buf).await;
+                    if !status.is_empty() {
+                        let response = format!(
+                            "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                            body.len()
+                        );
+                        let _ = s.write_all(response.as_bytes()).await;
+                        let _ = s.shutdown().await;
+                    } else {
+                        // Never answer.
+                        tokio::time::sleep(Duration::from_secs(60)).await;
+                    }
+                });
+            }
+        });
+        format!("http://127.0.0.1:{port}")
+    }
+
+    fn client_for(base: String, dir: &std::path::Path, request_timeout: Option<Duration>) -> Sponsorkit {
+        Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            storage_dir: Some(dir.to_path_buf()),
+            api_base_url: Some(base),
+            request_timeout,
+            env: Some(Default::default()),
+            ..Default::default()
+        })
+        .unwrap()
+    }
+
+    fn temp_dir(tag: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!("sponsorkit-signin-{tag}-{}", std::process::id()))
+    }
+
+    #[tokio::test]
+    async fn unexpected_400_from_auth_token_is_a_network_error() {
+        let base = one_shot_server("400 Bad Request", r#"{"code":"invalid_request","detail":"nope"}"#).await;
+        let dir = temp_dir("400");
+        let sk = client_for(base, &dir, None);
+        let err = sk.exchange("c", "v").await.unwrap_err();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(err.code(), ErrorCode::NetworkError, "{err}");
+    }
+
+    #[tokio::test]
+    async fn auth_token_request_times_out_as_network_error() {
+        let base = one_shot_server("", "").await;
+        let dir = temp_dir("timeout");
+        let sk = client_for(base, &dir, Some(Duration::from_millis(300)));
+        let started = std::time::Instant::now();
+        let err = sk.exchange("c", "v").await.unwrap_err();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(err.code(), ErrorCode::NetworkError, "{err}");
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[tokio::test]
+    async fn sign_in_storage_write_failure_is_invalid_config() {
+        let base = one_shot_server(
+            "200 OK",
+            r#"{"sessionToken":"sks_new","expiresAt":"2026-12-16T00:00:00Z","result":{"signedIn":true,"supporter":null,"targets":["github:octocat"],"contributions":[],"fetchedAt":null,"stale":false,"fromCache":false,"disabled":false,"mock":false}}"#,
+        )
+        .await;
+        // The storage "directory" is a regular file, so nothing can be written.
+        let file = temp_dir("blocked");
+        std::fs::write(&file, b"x").unwrap();
+        let sk = client_for(base, &file, None);
+        let err = sk.exchange("c", "v").await.unwrap_err();
+        let _ = std::fs::remove_file(&file);
+        assert_eq!(err.code(), ErrorCode::InvalidConfig, "{err}");
+    }
+
+    #[tokio::test]
+    async fn loopback_ignores_malformed_callbacks_and_keeps_waiting() {
+        let dir = temp_dir("bare");
+        let statuses = Arc::new(Mutex::new(Vec::<String>::new()));
+        let seen = statuses.clone();
+        let hook: OpenBrowserHook = Arc::new(move |url: String| {
+            let seen = seen.clone();
+            Box::pin(async move {
+                let u = reqwest::Url::parse(&url).unwrap();
+                let redirect = u.query_pairs().find(|(k, _)| k == "redirect_uri").unwrap().1.into_owned();
+                for path in ["/callback", "/callback?code=", "/callback?error=&code=", "/callback?code=good"] {
+                    let r = reqwest::get(format!("{redirect}{}", path.trim_start_matches("/callback"))).await.unwrap();
+                    seen.lock().unwrap().push(format!("{path} {}", r.status().as_u16()));
+                }
+                Ok(())
+            })
+        });
+        let sk = Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            storage_dir: Some(dir.clone()),
+            sign_in_timeout: Some(Duration::from_secs(5)),
+            open_browser: Some(hook),
+            ..Default::default()
+        })
+        .unwrap();
+        let got = sk.obtain_code(StartPage::Connect, Vec::new(), SignInMethod::Loopback, None).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        match got {
+            Ok((code, _)) => assert_eq!(code, "good"),
+            Err(_) => panic!("loopback sign-in did not complete"),
+        }
+        // Give the hook a moment to record the last status.
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let s = statuses.lock().unwrap().clone();
+        assert_eq!(&s[..3], ["/callback 400", "/callback?code= 400", "/callback?error=&code= 400"]);
+    }
+
+    #[tokio::test]
+    async fn auto_falls_back_to_paste_when_the_opener_fails() {
+        let dir = temp_dir("fallback");
+        let hook: OpenBrowserHook =
+            Arc::new(|_url: String| Box::pin(async { Err(std::io::Error::other("launcher exited with 1")) }));
+        let prompt: crate::client::PromptForCodeHook = Arc::new(|url: String| {
+            Box::pin(async move {
+                assert!(url.contains("delivery=paste"));
+                Ok("pasted".to_string())
+            })
+        });
+        let sk = Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            storage_dir: Some(dir.clone()),
+            sign_in_timeout: Some(Duration::from_secs(5)),
+            open_browser: Some(hook),
+            prompt_for_code: Some(prompt),
+            ..Default::default()
+        })
+        .unwrap();
+        let got = sk.obtain_code(StartPage::Connect, Vec::new(), SignInMethod::Auto, None).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        match got {
+            Ok((code, _)) => assert_eq!(code, "pasted"),
+            Err(_) => panic!("auto sign-in did not fall back to paste-back"),
+        }
     }
 
     #[tokio::test]

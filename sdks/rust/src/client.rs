@@ -28,6 +28,10 @@ pub const MIN_CACHE_TTL: Duration = Duration::from_secs(60);
 pub const DEFAULT_CHECKOUT_POLL_INTERVAL: Duration = Duration::from_secs(60);
 /// The default [`Options::sign_in_timeout`] (300 s).
 pub const DEFAULT_SIGN_IN_TIMEOUT: Duration = Duration::from_secs(300);
+/// The default [`Options::request_timeout`] for every HTTP request (30 s).
+pub const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+/// The longest `Retry-After` the SDK honours (24 h); longer values are clamped.
+pub const MAX_RETRY_AFTER: Duration = Duration::from_secs(86_400);
 
 pub(crate) const USER_AGENT: &str = concat!("sponsorkit-rust/", env!("CARGO_PKG_VERSION"));
 
@@ -82,9 +86,17 @@ pub struct Options {
     pub mock: Option<Mock>,
     /// Storage directory. Default: `$XDG_CONFIG_HOME/sponsorkit` (Linux),
     /// `~/Library/Application Support/sponsorkit` (macOS), `%APPDATA%\sponsorkit` (Windows).
+    /// When none of these can be determined (e.g. `HOME` is unset), the
+    /// session lives in memory for the life of the client; the SDK never
+    /// falls back to the current working directory.
     pub storage_dir: Option<PathBuf>,
     /// API origin (self-hosting, tests). Default `https://sponsorkit.io`.
     pub api_base_url: Option<String>,
+    /// Timeout for each HTTP request, including reading the body. Default
+    /// [`DEFAULT_REQUEST_TIMEOUT`] (30 s); `Some(Duration::ZERO)` disables it.
+    /// A timeout counts as a network failure: `get_financial_contribution`
+    /// serves the (stale) cache, `sign_in` fails with `network_error`.
+    pub request_timeout: Option<Duration>,
     /// Forces a sign-in method. Default [`SignInMethod::Auto`].
     pub sign_in_method: SignInMethod,
     /// How long `sign_in` (and the sign-in phase of `open_checkout`) waits for
@@ -125,6 +137,7 @@ impl fmt::Debug for Options {
             .field("mock", &self.mock)
             .field("storage_dir", &self.storage_dir)
             .field("api_base_url", &self.api_base_url)
+            .field("request_timeout", &self.request_timeout)
             .field("sign_in_method", &self.sign_in_method)
             .field("sign_in_timeout", &self.sign_in_timeout)
             .field("env", &self.env)
@@ -173,6 +186,7 @@ pub(crate) struct Inner {
     pub app_name: Option<String>,
     pub cache_ttl: Duration,
     pub api_base_url: String,
+    pub request_timeout: Duration,
     pub storage: Option<Storage>,
     pub disabled: bool,
     pub mock: Option<Mutex<MockState>>,
@@ -219,13 +233,18 @@ pub(crate) fn validate_base_url(url: Option<&str>) -> Result<String> {
     Ok(raw)
 }
 
+/// The SDK's HTTP client. It has no timeout of its own: every request gets
+/// one through [`with_timeout`], so `request_timeout: 0` can disable it.
 pub(crate) fn http_client() -> Result<reqwest::Client> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
-        .connect_timeout(Duration::from_secs(10))
-        .timeout(Duration::from_secs(30))
         .build()
         .map_err(|e| Error::environment(format!("Cannot create HTTP client: {e}")))
+}
+
+/// Applies the request timeout (headers and body); `Duration::ZERO` disables it.
+pub(crate) fn with_timeout(req: reqwest::RequestBuilder, timeout: Duration) -> reqwest::RequestBuilder {
+    if timeout.is_zero() { req } else { req.timeout(timeout) }
 }
 
 /// What a `/contributions` request produced.
@@ -240,8 +259,8 @@ impl Sponsorkit {
     /// Creates a client. Performs no I/O.
     ///
     /// Fails with `invalid_config` when there is no target, a target is
-    /// malformed (even when disabled), the mock preset is unknown, or no
-    /// storage directory can be determined.
+    /// malformed (even when disabled), or the mock preset is unknown. A
+    /// missing storage directory is not an error (see [`Options::storage_dir`]).
     pub fn new(options: Options) -> Result<Sponsorkit> {
         if options.restart {
             Sponsorkit::reset_process_state();
@@ -275,10 +294,9 @@ impl Sponsorkit {
         let storage = if disabled || mock_state.is_some() {
             None
         } else {
-            let dir = options.storage_dir.clone().or_else(default_storage_dir).ok_or_else(|| {
-                Error::invalid_config("Cannot determine a storage directory (no HOME/APPDATA); set storage_dir")
-            })?;
-            Some(Storage::new(dir, &hash))
+            // No per-user config directory: keep the session in memory
+            // rather than failing or writing to the working directory.
+            Some(resolve_storage(options.storage_dir.clone().or_else(default_storage_dir), &hash))
         };
         Ok(Sponsorkit {
             inner: Arc::new(Inner {
@@ -286,6 +304,7 @@ impl Sponsorkit {
                 app_name: options.app_name.clone().filter(|s| !s.is_empty()),
                 cache_ttl: options.cache_ttl.unwrap_or(DEFAULT_CACHE_TTL).max(MIN_CACHE_TTL),
                 api_base_url,
+                request_timeout: options.request_timeout.unwrap_or(DEFAULT_REQUEST_TIMEOUT),
                 storage,
                 disabled,
                 mock: mock_state,
@@ -376,7 +395,8 @@ impl Sponsorkit {
         let query: Vec<(&str, &str)> =
             self.inner.targets.targets().iter().map(|t| (t.provider.as_str(), t.account.as_str())).collect();
         let url = format!("{}/api/v1/targets", self.inner.api_base_url);
-        let Ok(res) = self.inner.http.get(url).query(&query).send().await else {
+        let Ok(res) = with_timeout(self.inner.http.get(url).query(&query), self.inner.request_timeout).send().await
+        else {
             return Ok(()); // offline: skip the check
         };
         if !res.status().is_success() {
@@ -448,9 +468,13 @@ impl Sponsorkit {
                 Ok(fallback(cache))
             }
             Fetched::SessionInvalid => {
+                // Clear only the token this request used: a concurrent sign-in
+                // may already have stored a new one (PROTOCOL §7.0).
                 let _ = self.storage().update(|s| {
-                    s.session_token = None;
-                    s.cache = None;
+                    if s.session_token.as_deref() == Some(token.as_str()) {
+                        s.session_token = None;
+                        s.cache = None;
+                    }
                 });
                 Ok(self.empty_result())
             }
@@ -472,8 +496,13 @@ impl Sponsorkit {
                 }
                 result.from_cache = false;
                 let stored_result = result.clone();
-                // Never fail a read because the cache cannot be written.
+                // Never fail a read because the cache cannot be written. Write
+                // back only if the stored token is still the one this request
+                // used (a concurrent sign-in or sign-out wins; PROTOCOL §7.0).
                 let _ = self.storage().update(move |s| {
+                    if s.session_token.as_deref() != Some(token.as_str()) {
+                        return;
+                    }
                     if let Some(t) = renewed {
                         s.session_token = Some(t);
                     }
@@ -486,15 +515,8 @@ impl Sponsorkit {
 
     async fn fetch_contributions(&self, token: &str) -> Fetched {
         let url = format!("{}/api/v1/contributions", self.inner.api_base_url);
-        let res = match self
-            .inner
-            .http
-            .get(url)
-            .bearer_auth(token)
-            .header(reqwest::header::ACCEPT, "application/json")
-            .send()
-            .await
-        {
+        let req = self.inner.http.get(url).bearer_auth(token).header(reqwest::header::ACCEPT, "application/json");
+        let res = match with_timeout(req, self.inner.request_timeout).send().await {
             Ok(r) => r,
             Err(_) => return Fetched::Failed,
         };
@@ -503,12 +525,7 @@ impl Sponsorkit {
             return Fetched::SessionInvalid;
         }
         if status == 429 {
-            let secs = res
-                .headers()
-                .get(reqwest::header::RETRY_AFTER)
-                .and_then(|v| v.to_str().ok())
-                .and_then(|v| v.trim().parse::<u64>().ok())
-                .unwrap_or(60);
+            let secs = crate::signin::retry_after_secs(res.headers()).unwrap_or(60);
             return Fetched::RateLimited(secs);
         }
         if !res.status().is_success() {
@@ -518,7 +535,7 @@ impl Sponsorkit {
             .headers()
             .get("sponsorkit-session")
             .and_then(|v| v.to_str().ok())
-            .filter(|v| v.starts_with("sks_"))
+            .filter(|v| crate::storage::is_session_token(v))
             .map(str::to_owned);
         match res.json::<ContributionResult>().await {
             Ok(r) => Fetched::Ok(r, renewed),
@@ -563,6 +580,14 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+/// File storage in `dir`, or in-memory storage when there is no directory.
+fn resolve_storage(dir: Option<PathBuf>, hash: &str) -> Storage {
+    match dir {
+        Some(dir) => Storage::new(dir, hash),
+        None => Storage::memory(),
+    }
+}
+
 /// The epoch-ms deadline for a `Retry-After` of `secs` seconds from `now`.
 ///
 /// Saturates instead of overflowing, so an absurd header value can neither
@@ -573,7 +598,159 @@ fn retry_deadline(now: i64, secs: u64) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::retry_deadline;
+    use super::*;
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+
+    #[test]
+    fn missing_storage_dir_uses_memory() {
+        assert!(matches!(resolve_storage(None, "h"), Storage::Memory(_)));
+        assert!(matches!(resolve_storage(Some(PathBuf::from("/x")), "h"), Storage::File { .. }));
+    }
+
+    /// A raw HTTP server that waits `delay`, then answers with `status` and `body`
+    /// (never answers when `status` is empty).
+    async fn slow_server(delay: Duration, status: &'static str, body: String) -> String {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            while let Ok((mut s, _)) = listener.accept().await {
+                let body = body.clone();
+                tokio::spawn(async move {
+                    let mut buf = vec![0u8; 8192];
+                    let _ = s.read(&mut buf).await;
+                    tokio::time::sleep(delay).await;
+                    if status.is_empty() {
+                        tokio::time::sleep(Duration::from_secs(60)).await;
+                        return;
+                    }
+                    let msg = format!(
+                        "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nSponsorkit-Session: sks_renewed\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = s.write_all(msg.as_bytes()).await;
+                    let _ = s.shutdown().await;
+                });
+            }
+        });
+        format!("http://127.0.0.1:{port}")
+    }
+
+    fn temp_dir(tag: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("sponsorkit-client-{tag}-{}", std::process::id()))
+    }
+
+    fn client(base: String, dir: &std::path::Path, request_timeout: Option<Duration>) -> Sponsorkit {
+        Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            storage_dir: Some(dir.to_path_buf()),
+            api_base_url: Some(base),
+            request_timeout,
+            env: Some(HashMap::new()),
+            ..Default::default()
+        })
+        .unwrap()
+    }
+
+    fn ok_body() -> String {
+        let mut r = ContributionResult::empty(vec!["github:octocat".into()]);
+        r.signed_in = true;
+        r.fetched_at = Some("2026-11-16T18:00:00.123456Z".into());
+        serde_json::to_string(&r).unwrap()
+    }
+
+    /// Starts a refresh with `sks_old`, swaps in `sks_new` while it is in
+    /// flight, and returns what is stored afterwards.
+    async fn race(status: &'static str, tag: &str) -> crate::storage::StorageFile {
+        Sponsorkit::reset_process_state();
+        let base = slow_server(Duration::from_millis(300), status, ok_body()).await;
+        let dir = temp_dir(tag);
+        let sk = client(base, &dir, None);
+        sk.storage().update(|s| s.session_token = Some("sks_old".into())).unwrap();
+        let sk2 = sk.clone();
+        let refresh = tokio::spawn(async move { sk2.get_financial_contribution(GetOptions::fresh()).await });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        sk.storage()
+            .update(|s| {
+                s.session_token = Some("sks_new".into());
+                s.cache = None;
+            })
+            .unwrap();
+        refresh.await.unwrap().unwrap();
+        let stored = sk.storage().read();
+        let _ = std::fs::remove_dir_all(&dir);
+        stored
+    }
+
+    #[tokio::test]
+    async fn refresh_does_not_overwrite_a_newer_token() {
+        let stored = race("200 OK", "race-ok").await;
+        assert_eq!(stored.session_token.as_deref(), Some("sks_new"));
+        assert!(stored.cache.is_none(), "the stale request's cache must not be written back");
+    }
+
+    #[tokio::test]
+    async fn refresh_401_clears_only_the_token_it_used() {
+        let stored = race("401 Unauthorized", "race-401").await;
+        assert_eq!(stored.session_token.as_deref(), Some("sks_new"));
+    }
+
+    #[tokio::test]
+    async fn refresh_writes_back_renewed_token_when_unchanged() {
+        Sponsorkit::reset_process_state();
+        let base = slow_server(Duration::ZERO, "200 OK", ok_body()).await;
+        let dir = temp_dir("renew");
+        let sk = client(base, &dir, None);
+        sk.storage().update(|s| s.session_token = Some("sks_old".into())).unwrap();
+        let r = sk.get_financial_contribution(GetOptions::fresh()).await.unwrap();
+        let stored = sk.storage().read();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(r.signed_in && !r.from_cache);
+        assert_eq!(stored.session_token.as_deref(), Some("sks_renewed"));
+        assert!(stored.cache.is_some());
+    }
+
+    #[tokio::test]
+    async fn request_timeout_serves_the_stale_cache() {
+        Sponsorkit::reset_process_state();
+        let base = slow_server(Duration::ZERO, "", String::new()).await;
+        let dir = temp_dir("timeout");
+        let sk = client(base, &dir, Some(Duration::from_millis(300)));
+        let cached: ContributionResult = serde_json::from_str(&ok_body()).unwrap();
+        sk.storage()
+            .update(|s| {
+                s.session_token = Some("sks_old".into());
+                s.cache = Some(Cache { result: cached, stored_at: "2026-01-01T00:00:00.5Z".into() });
+            })
+            .unwrap();
+        let started = std::time::Instant::now();
+        let r = sk.get_financial_contribution(GetOptions::fresh()).await.unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(started.elapsed() < Duration::from_secs(5));
+        assert!(r.from_cache && r.stale && r.signed_in);
+    }
+
+    #[test]
+    fn request_timeout_defaults_to_30_s() {
+        let dir = temp_dir("default-timeout");
+        let sk = client("http://127.0.0.1:9".into(), &dir, None);
+        assert_eq!(sk.inner.request_timeout, DEFAULT_REQUEST_TIMEOUT);
+        let sk = client("http://127.0.0.1:9".into(), &dir, Some(Duration::ZERO));
+        assert_eq!(sk.inner.request_timeout, Duration::ZERO);
+    }
+
+    #[tokio::test]
+    async fn sign_out_write_failure_is_invalid_config() {
+        let dir = temp_dir("signout");
+        std::fs::create_dir_all(&dir).unwrap();
+        let sk = client("http://127.0.0.1:9".into(), &dir, None);
+        // The storage file is a non-empty directory, so the atomic rename
+        // cannot replace it (works even as root).
+        let file = dir.join(format!("{}.json", sk.inner.hash));
+        std::fs::create_dir_all(file.join("blocker")).unwrap();
+        let err = sk.sign_out().await.unwrap_err();
+        assert_eq!(err.code(), crate::ErrorCode::InvalidConfig, "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn retry_deadline_saturates() {

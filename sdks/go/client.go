@@ -84,6 +84,10 @@ type Options struct {
 	RequestTimeout time.Duration
 
 	// OpenBrowser opens a URL for the user. Defaults to OpenSystemBrowser.
+	// It runs concurrently with the loopback wait, so it may block; its ctx
+	// ends when the sign-in fails, is cancelled or times out, but not when the
+	// sign-in succeeds (the browser may still be following a redirect). An
+	// error makes SignInAuto fall back to paste-back.
 	OpenBrowser func(ctx context.Context, url string) error
 	// PromptForCode asks the user for the paste-back sign-in code. It receives
 	// the URL the user must open. Defaults to PromptStdin.
@@ -557,7 +561,8 @@ func containsProvider(ps []Provider, p Provider) bool {
 }
 
 // SignOut deletes the session token and cache locally; there is no
-// server-side sign-out. Nag state is kept.
+// server-side sign-out. Nag state is kept. It returns invalid_config when the
+// storage cannot be written.
 func (c *Client) SignOut(_ context.Context) error {
 	if c.disabled {
 		return nil

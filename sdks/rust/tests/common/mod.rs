@@ -237,6 +237,7 @@ fn options_from(args: &Value, ctx: &Ctx) -> Result<Options, StepError> {
         api_base_url: Some(args["apiBaseUrl"].as_str().unwrap_or(&ctx.base_url).to_string()),
         sign_in_method: method(&args["signInMethod"]).unwrap_or_default(),
         sign_in_timeout: secs(&args["signInTimeout"]),
+        request_timeout: secs(&args["requestTimeout"]),
         env: Some(env),
         dev_checks: args["devChecks"].as_bool(),
         checkout_poll_interval: None,

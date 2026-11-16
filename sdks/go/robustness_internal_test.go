@@ -64,14 +64,18 @@ func TestRequestTimeoutDefaultAndDisable(t *testing.T) {
 
 func TestRequestTimeoutIsNetworkError(t *testing.T) {
 	release := make(chan struct{})
-	t.Cleanup(func() { close(release) })
 	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Drain the body so the server notices the client hanging up.
+		_, _ = io.Copy(io.Discard, r.Body)
 		select {
 		case <-release:
 		case <-r.Context().Done():
 		}
 	}))
+	// Cleanups run LIFO: unblock the handlers first, then close the server
+	// (Close waits for in-flight handlers).
 	t.Cleanup(slow.Close)
+	t.Cleanup(func() { close(release) })
 	const timeout = 150 * time.Millisecond
 
 	// SignIn: the code exchange times out.
@@ -149,10 +153,12 @@ func TestParseRetryAfterNonFiniteAndHuge(t *testing.T) {
 func TestLoopbackMalformedCallbackKeepsWaiting(t *testing.T) {
 	srv := tokenServer(t, nil)
 	var statuses []int
+	openerDone := make(chan struct{})
 	c, err := New(Options{
 		GitHub: "octocat", StorageDir: t.TempDir(), APIBaseURL: srv.URL, SignInMethod: SignInLoopback,
 		SignInTimeout: 10 * time.Second, Stderr: io.Discard, Env: map[string]string{},
 		OpenBrowser: func(ctx context.Context, u string) error {
+			defer close(openerDone)
 			pu, _ := url.Parse(u)
 			cb := pu.Query().Get("redirect_uri")
 			for _, q := range []string{"", "?code=", "?error=", "?code=&error=", "?state=x", "?code=skc_ok"} {
@@ -172,6 +178,7 @@ func TestLoopbackMalformedCallbackKeepsWaiting(t *testing.T) {
 	if _, err := c.SignIn(context.Background()); err != nil {
 		t.Fatalf("SignIn after malformed callbacks: %v", err)
 	}
+	<-openerDone // SignIn may return before the opener records the last status
 	want := []int{400, 400, 400, 400, 400, 200}
 	if len(statuses) != len(want) {
 		t.Fatalf("statuses = %v", statuses)
@@ -236,7 +243,10 @@ func TestCallbackAcceptedWhileOpenerRuns(t *testing.T) {
 			if err := deliver(u); err != nil {
 				return err
 			}
-			<-ctx.Done()
+			select { // a real launcher keeps running for a while
+			case <-ctx.Done():
+			case <-time.After(2 * time.Second):
+			}
 			return nil
 		},
 		// The opener delivers the callback, then reports a failure: the

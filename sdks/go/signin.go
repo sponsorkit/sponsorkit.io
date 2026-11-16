@@ -31,7 +31,8 @@ type SignInOptions struct {
 // Cancel ctx to abandon the sign-in; Options.SignInTimeout (default 5
 // minutes) bounds how long it waits for the user.
 //
-// Errors: disabled, invalid_config, access_denied, invalid_state and
+// Errors: disabled, invalid_config (also when the session cannot be written
+// to storage), access_denied, invalid_state and
 // provider_error (delivered by the sign-in page), invalid_code (the API
 // rejected the code), cancelled (ctx was cancelled or the user abandoned the
 // paste-back prompt), timeout (SignInTimeout elapsed) and network_error
@@ -245,11 +246,20 @@ func (c *Client) loopback(ctx, sctx context.Context, r codeRequest, forced bool)
 	u := c.apiBaseURL + r.path + "?" + q.Encode()
 	// PROTOCOL §7.0: the callback is accepted while openBrowser is still
 	// running, so the opener runs concurrently with the wait.
+	// The opener's context ends when the sign-in fails, is cancelled or times
+	// out, but not when it succeeds: the browser may still be following the
+	// callback's redirect (checkout).
+	openCtx, openCancel := context.WithCancel(context.WithoutCancel(sctx))
+	stopCancel := context.AfterFunc(sctx, openCancel)
 	opened := make(chan error, 1)
-	go func() { opened <- c.openBrowser(sctx, u) }()
+	go func() {
+		defer openCancel()
+		opened <- c.openBrowser(openCtx, u)
+	}()
 
 	finish := func(cb callback) (string, error) {
 		if cb.code != "" {
+			stopCancel()
 			return cb.code, nil
 		}
 		return "", signInError(cb.err)

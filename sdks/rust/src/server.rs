@@ -8,7 +8,7 @@
 //! # Ok(()) }
 //! ```
 
-use crate::client::{http_client, validate_base_url};
+use crate::client::{DEFAULT_REQUEST_TIMEOUT, http_client, validate_base_url, with_timeout};
 use crate::error::{Error, ErrorCode, Result};
 use crate::signin::retry_after_secs;
 use crate::targets::Targets;
@@ -21,6 +21,10 @@ pub struct VerifyOptions {
     pub api_base_url: Option<String>,
     /// HTTP client to reuse (connection pooling). Default: a new client.
     pub http_client: Option<reqwest::Client>,
+    /// Timeout for the request, including reading the body. Default
+    /// [`crate::DEFAULT_REQUEST_TIMEOUT`] (30 s); `Some(Duration::ZERO)`
+    /// disables it. Exceeding it fails with `network_error`.
+    pub request_timeout: Option<std::time::Duration>,
 }
 
 /// Verifies a session token against `https://sponsorkit.io` and returns its live result.
@@ -36,8 +40,8 @@ pub async fn verify_session(token: &str, targets: &Targets) -> Result<Contributi
 ///
 /// Errors: `invalid_config` (bad targets or `api_base_url`),
 /// `session_invalid`, `targets_mismatch`, and `network_error` when the answer
-/// could not be verified: the API is unreachable or answered 5xx, 429 or
-/// something unexpected. On 429, [`Error::retry_after`] carries the
+/// could not be verified: the API is unreachable, did not answer within the
+/// request timeout, or answered 5xx, 429 or something unexpected. On 429, [`Error::retry_after`] carries the
 /// `Retry-After` the API sent.
 pub async fn verify_session_with(token: &str, targets: &Targets, options: VerifyOptions) -> Result<ContributionResult> {
     let expected = targets.canonical()?.param();
@@ -49,10 +53,11 @@ pub async fn verify_session_with(token: &str, targets: &Targets, options: Verify
     if token.trim().is_empty() {
         return Err(Error::new(ErrorCode::SessionInvalid, "Empty session token"));
     }
-    let res = http
+    let req = http
         .get(format!("{base}/api/v1/contributions"))
         .bearer_auth(token.trim())
-        .header(reqwest::header::ACCEPT, "application/json")
+        .header(reqwest::header::ACCEPT, "application/json");
+    let res = with_timeout(req, options.request_timeout.unwrap_or(DEFAULT_REQUEST_TIMEOUT))
         .send()
         .await
         .map_err(|e| Error::network(format!("Cannot reach Sponsorkit: {e}"), None))?;
@@ -73,4 +78,38 @@ pub async fn verify_session_with(token: &str, targets: &Targets, options: Verify
         ));
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn verify_session_honours_request_timeout() {
+        // Accepts the connection and never answers.
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            let mut held = Vec::new();
+            while let Ok((s, _)) = listener.accept().await {
+                held.push(s);
+            }
+        });
+        let started = Instant::now();
+        let err = verify_session_with(
+            "sks_x",
+            &Targets::github("octocat"),
+            VerifyOptions {
+                api_base_url: Some(format!("http://127.0.0.1:{port}")),
+                request_timeout: Some(Duration::from_millis(300)),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.code(), ErrorCode::NetworkError, "{err}");
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
 }

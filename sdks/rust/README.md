@@ -73,15 +73,16 @@ malformed (even when disabled), or the mock preset is unknown.
 | `app_name` | – | Your app's name on the consent page (max 64 chars). |
 | `cache_ttl` | 1 h (min 60 s) | How long a cached result is served without calling the API. |
 | `mock` | – | `Mock::Preset(MockPreset::…)` or `Mock::Contributions(vec![…])`. Beats `SPONSORKIT_MOCK`. |
-| `storage_dir` | per-user config dir | Linux `$XDG_CONFIG_HOME/sponsorkit`, macOS `~/Library/Application Support/sponsorkit`, Windows `%APPDATA%\sponsorkit`. |
+| `storage_dir` | per-user config dir | Linux `$XDG_CONFIG_HOME/sponsorkit` (else `~/.config/sponsorkit`), macOS `~/Library/Application Support/sponsorkit`, Windows `%APPDATA%\sponsorkit`. Relative values of these variables are ignored. When no directory can be determined (e.g. `HOME` unset), the session is kept in memory for the life of the client: construction never fails for this and nothing is written to the working directory. |
 | `api_base_url` | `https://sponsorkit.io` | Origin of the API (self-hosting, tests). |
+| `request_timeout` | 30 s (`DEFAULT_REQUEST_TIMEOUT`) | Timeout for every HTTP request, body included; `Duration::ZERO` disables it. A timeout is a network failure: `get_financial_contribution` serves the stale cache, `sign_in` fails with `network_error`. |
 | `sign_in_method` | `Auto` | `Auto` (loopback, falls back to paste-back without a display, over SSH, or when the browser cannot open), `Loopback`, `Paste`. |
 | `sign_in_timeout` | 300 s | How long a loopback or paste-back sign-in may take (also the sign-in phase of `open_checkout`). Exceeding it fails with `timeout`. |
 | `env` | process environment | Override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS`, `CI`. When given, it **replaces** the process environment for these variables (not merged). |
 | `dev_checks` | on when `SPONSORKIT_DEV_CHECKS` is set | Dev-time check that the targets exist (one `GET /api/v1/targets` per process, on the first async call). Rust has no implicit development signal; the option beats the variable. |
 | `checkout_poll_interval` | 60 s | How often `open_checkout` re-checks. |
 | `interactive` | stdout+stderr are terminals | Override terminal detection for the nag helper. |
-| `open_browser` | system browser | Hook `Fn(String) -> BoxFuture<io::Result<()>>`. The default launcher (`open`, `xdg-open`, `rundll32`) counts as failed only if it exits non-zero within 1.5 s; one still running is assumed to be opening the browser. The callback is accepted even while the hook is still running. |
+| `open_browser` | system browser | Hook `Fn(String) -> BoxFuture<io::Result<()>>`. The default launcher (`open`, `xdg-open`, `rundll32`) counts as failed only if it exits non-zero within 1.5 s; one still running is assumed to be opening the browser. The callback is accepted even while the hook is still running. With `Auto`, a failed launch (or a loopback port that cannot be bound on `127.0.0.1`) falls back to paste-back. A `GET /callback` with neither a non-empty `code` nor a non-empty `error` gets `400` and the SDK keeps waiting. |
 | `prompt_for_code` | read a line from stdin | Hook `Fn(paste_url: String) -> BoxFuture<io::Result<String>>`. |
 | `restart` | `false` | Reset per-process memo state first (same as `Sponsorkit::reset_process_state()`). |
 
@@ -123,7 +124,9 @@ Each `Contribution` has `id`, `provider`, `target`, `sponsor`, `via` (`Direct`/`
 | Not signed in | Signed-out result, no network call |
 | Session invalid | Token and cache cleared, signed-out result |
 | One provider unavailable | Its cached contributions are merged in, `stale: true` |
-| Network error, 5xx, 429 | Cached result (`from_cache: true, stale: true`), or a signed-in empty result with `stale: true`. `Retry-After` is honoured for the rest of the process. **Never an error.** |
+| Network error, request timeout, 5xx, 429 | Cached result (`from_cache: true, stale: true`), or a signed-in empty result with `stale: true`. `Retry-After` (integer seconds, clamped to 24 h; other values are ignored and a 429 then backs off 60 s) is honoured for the rest of the process. **Never an error.** |
+| Sign-in or sign-out while a refresh is in flight | The refresh writes back its cache and any renewed token only if the stored token is still the one it used; a `401` clears only that token. |
+| Corrupt or malformed storage file | Read as absent (or just the malformed part dropped); reading never fails. |
 | `SPONSORKIT_DISABLE=1` | No network or disk. `disabled: true`; nags are never due; `sign_in`/`open_checkout` fail with `Disabled`. |
 
 `Error::code()` returns an `ErrorCode`; `ErrorCode::as_str()` gives the wire spelling shared
@@ -131,14 +134,14 @@ by all SDKs (PROTOCOL §7):
 
 | Code | When |
 |---|---|
-| `invalid_config` | Bad options or targets, dev-time check failed, or a local environment the SDK cannot work in (unwritable storage directory) |
+| `invalid_config` | Bad options or targets, dev-time check failed, or a local environment the SDK cannot work in: `sign_in` could not persist the session, or `sign_out` could not clear it (unwritable storage directory) |
 | `disabled` | `sign_in`/`open_checkout` while `SPONSORKIT_DISABLE` is set |
 | `popup_blocked` | Browser SDK only; listed for parity |
 | `access_denied`, `invalid_state`, `provider_error` | Delivered by the sign-in page |
 | `invalid_code` | The API rejected the code exchange (`400 invalid_code`) |
 | `cancelled` | `SignInOptions::cancel` fired, or nothing was entered at the paste-back prompt |
 | `timeout` | Sign-in exceeded `sign_in_timeout` |
-| `network_error` | `sign_in` or `verify_session` could not reach the API, or got 5xx, 429 or an unexpected answer. `Error::retry_after()` returns the API's `Retry-After`, if any |
+| `network_error` | `sign_in` or `verify_session` could not reach the API, hit `request_timeout`, or got 5xx, 429 or an unexpected answer (including a `400` from `/auth/token` with a code other than `invalid_code`). `Error::retry_after()` returns the API's `Retry-After` (clamped to 24 h), if any |
 | `session_invalid`, `targets_mismatch` | Only from `verify_session` |
 
 ```rust,no_run
@@ -162,7 +165,10 @@ or while it polls) resolves `CheckoutOutcome::Unknown` instead of failing. Dropp
 listener, but yields no result. The default paste-back prompt reads stdin on one
 long-lived background thread, because a blocking read cannot be interrupted: an abandoned
 prompt does not keep the runtime from shutting down, and the line typed after it goes to
-the next prompt. Use `prompt_for_code` to read the code some other way.
+the next prompt. **Limitation:** that pending read cannot be cancelled, so after a cancelled
+or timed-out paste-back the next line typed on stdin is consumed by the SDK's reader (and
+handed to the next paste-back prompt), not by your app. Apps that read stdin themselves
+should supply `prompt_for_code`.
 
 The example below uses `tokio::signal`, which needs tokio's `signal` feature on top of the
 features listed under [Install](#install).
@@ -240,9 +246,10 @@ match verify_session(token, &Targets::github("octocat")).await {
 # Ok(()) }
 ```
 
-`server::verify_session_with(token, &targets, VerifyOptions { api_base_url, http_client })`
-overrides the origin or reuses an HTTP client. It never touches local storage. When the
-answer cannot be verified (API unreachable, 5xx, 429) it fails with `network_error`;
+`server::verify_session_with(token, &targets, VerifyOptions { api_base_url, http_client, request_timeout })`
+overrides the origin, reuses an HTTP client or changes the 30 s request timeout
+(`Duration::ZERO` disables it). It never touches local storage. When the answer cannot be
+verified (API unreachable, timed out, 5xx, 429) it fails with `network_error`;
 on 429, `e.retry_after()` says how long to wait.
 
 ## Local storage
@@ -250,6 +257,9 @@ on 429, `e.retry_after()` says how long to wait.
 One JSON file per target set, `<targets_hash>.json` (PROTOCOL §8), shared with the other
 Sponsorkit SDKs: `{ "v": 1, "sessionToken", "cache": { "result", "storedAt" }, "nags" }`.
 Writes are atomic (temp file + rename); the directory is `0700` and files `0600` on Unix.
+Reads never fail: an unparseable file, invalid UTF-8, a wrong type, a bad timestamp, a
+`null` list, a non-object contribution or a token that is not `sks_` followed by printable
+ASCII counts as absent. Timestamps with any number of fractional-second digits are accepted.
 
 ## Development
 

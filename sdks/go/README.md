@@ -76,11 +76,12 @@ All methods are safe for concurrent use. Methods that may do I/O take a `context
 | `AppName` | – | Shown on the consent page as "says it is" (max 64 characters). |
 | `CacheTTL` | 1 h | How long results are served from the local cache. Values below 1 minute are raised to 1 minute (per-call `WithCacheTTL` is not clamped). |
 | `Mock` | – | `sponsorkit.MockPreset(name)` or `sponsorkit.MockContributions(...)`. See [Mock mode](#mock-mode-and-testing). |
-| `StorageDir` | `os.UserConfigDir()/sponsorkit` | Where the state file lives. If there is no per-user config directory (HOME and XDG_CONFIG_HOME unset), state is kept in process memory only; nothing is written to the working directory. |
+| `StorageDir` | `os.UserConfigDir()/sponsorkit` | Where the state file lives. If there is no per-user config directory (HOME and XDG_CONFIG_HOME unset, or not absolute paths), state is kept in process memory only: nothing is written to the working directory and `New` still succeeds. |
 | `Storage` | `&DirStorage{Dir: StorageDir}` | Replace file storage (e.g. with a keychain-backed implementation). |
 | `APIBaseURL` | `https://sponsorkit.io` | API origin (self-hosting, tests). |
-| `HTTPClient` | 30 s timeout | HTTP client for API calls. |
-| `OpenBrowser` | `OpenSystemBrowser` | Opens a URL (`xdg-open` / `open` / `rundll32`, never a shell). An opener that exits non-zero within 1.5 s counts as a failure, so `SignInAuto` falls back to paste-back. |
+| `HTTPClient` | `&http.Client{}` | HTTP client for API calls. `RequestTimeout` applies whichever client you pass. |
+| `RequestTimeout` | 30 s | Bounds every HTTP request, including reading the response. `sponsorkit.NoRequestTimeout` (any negative value) disables it; the zero value means the 30 s default (the protocol's `requestTimeout: 0` is `NoRequestTimeout` in Go). A timeout is a network error: `GetFinancialContribution` serves the stale cache, `SignIn` returns `network_error`. |
+| `OpenBrowser` | `OpenSystemBrowser` | Opens a URL (`xdg-open` / `open` / `rundll32`, never a shell). An opener that exits non-zero within 1.5 s counts as a failure, so `SignInAuto` falls back to paste-back; one still running after 1.5 s counts as opened. The loopback callback is accepted while `OpenBrowser` is still running. |
 | `PromptForCode` | `PromptStdin` | Reads the paste-back code; receives the URL to open. `PromptStdin` reads one line without read-ahead; a read abandoned by a cancel or timeout is handed to the next prompt. |
 | `SignInMethod` | `SignInAuto` | `SignInAuto`, `SignInLoopback` or `SignInPaste`. |
 | `SignInTimeout` | 5 min | How long a loopback or paste-back sign-in may wait for the user. Exceeding it returns `timeout`. |
@@ -125,13 +126,13 @@ Every error is a `*sponsorkit.Error` with a `Code`:
 
 | Code | When |
 |---|---|
-| `invalid_config` | Missing/malformed targets, unknown mock preset, invalid options, or a target that doesn't exist (dev-time check). |
+| `invalid_config` | Missing/malformed targets, unknown mock preset, invalid options, a target that doesn't exist (dev-time check), or `SignIn`/`SignOut` could not write the session to storage (unwritable `StorageDir`, failing `Storage`). |
 | `disabled` | `SignIn` / `OpenCheckout` with `SPONSORKIT_DISABLE` set. |
 | `access_denied`, `invalid_state`, `provider_error` | Sign-in errors delivered by the sign-in page. |
 | `invalid_code` | The API rejected the sign-in code exchange (`400 invalid_code`). |
 | `cancelled` | The sign-in `ctx` was cancelled, or the user abandoned the paste-back prompt (`errors.Is(err, context.Canceled)` still works). |
 | `timeout` | The sign-in exceeded `SignInTimeout`. |
-| `network_error` | `SignIn` or `VerifySession` could not reach Sponsorkit, or got 5xx, 429 or an unexpected response. `Error.RetryAfter` is set when the API sent `Retry-After`. |
+| `network_error` | `SignIn` or `VerifySession` could not reach Sponsorkit, timed out (`RequestTimeout`), or got 5xx, 429 or an unexpected response (including a `400` from `/auth/token` other than `invalid_code`). `Error.RetryAfter` is set when the API sent a usable `Retry-After` (non-finite values are ignored; values are capped at 24 h). Forced `SignInLoopback` also returns it when `127.0.0.1` cannot be bound (`SignInAuto` falls back to paste-back instead). |
 | `session_invalid`, `targets_mismatch` | Only from `VerifySession`. |
 
 ```go
@@ -145,7 +146,11 @@ if errors.As(err, &skErr) && skErr.Code == sponsorkit.CodeDisabled { /* … */ }
 ## Sign-in flows
 
 - **Loopback** (default with a display): listens on `127.0.0.1:<random>`, opens `https://sponsorkit.io/connect?…&delivery=loopback` in the browser and waits for the callback, up to `SignInTimeout` (5 minutes by default).
-- **Paste-back** (SSH, containers, no display, or when the browser can't be opened): prints a `…&delivery=paste` URL to stderr; the user opens it on any device and pastes the code back.
+- **Paste-back** (SSH, containers, no display, when `127.0.0.1` can't be bound, or when the browser can't be opened): prints a `…&delivery=paste` URL to stderr; the user opens it on any device and pastes the code back.
+
+A `GET /callback` without a non-empty `code` or `error` gets `400` and the loopback receiver keeps waiting.
+
+**Stdin can't be cancelled.** The default `PromptStdin` cannot interrupt its blocking read of stdin. After a paste-back sign-in is cancelled or times out, the read stays pending, so the next line the user types goes to it (and is handed to the next `PromptStdin` call), not to your program. If your program reads stdin itself, supply your own `PromptForCode`.
 
 Force one with `Options.SignInMethod` or `SignInOptions.Method`.
 
@@ -202,11 +207,13 @@ case sponsorkit.CodeNetworkError:
 }
 ```
 
-`VerifySession` calls `GET /api/v1/contributions` with the token and checks that the session's targets equal yours. It uses no local storage or cache. Options: `WithAPIBaseURL`, `WithHTTPClient`.
+`VerifySession` calls `GET /api/v1/contributions` with the token and checks that the session's targets equal yours. It uses no local storage or cache. Options: `WithAPIBaseURL`, `WithHTTPClient`, `WithRequestTimeout` (default 30 s; `sponsorkit.NoRequestTimeout` disables it; a timeout returns `network_error`).
 
 ## Local storage
 
 One file per target set, `<targets_hash>.json`, in the storage directory (PROTOCOL §8): `{ "v": 1, "sessionToken", "cache": { "result", "storedAt" }, "nags" }`. The directory is created `0700` and files `0600`. Writes go to a temporary file that is renamed into place. The format is shared by all Sponsorkit SDKs.
+
+Reading never fails: a document that can't be parsed (or has invalid UTF-8 or a `v` other than 1) reads as empty, and each malformed part reads as absent while the rest is kept: a token that isn't `sks_` followed by printable ASCII, a cache with a bad `storedAt`, a wrong type, a `null` list or a non-object contribution, and individual malformed nag entries. Timestamps with a fractional part of any length are accepted. A refresh writes back its cache and any renewed token only if the stored token is still the one it used, and a `401` clears only that token.
 
 ## Development
 
