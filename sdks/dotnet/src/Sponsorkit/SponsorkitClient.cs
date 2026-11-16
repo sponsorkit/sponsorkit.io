@@ -60,7 +60,7 @@ public sealed class SponsorkitClient
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _targets = TargetSet.FromOptions(options.GitHub, options.OpenCollective);
-        _api = new ApiClient(ApiClient.NormalizeBaseUrl(options.ApiBaseUrl), options.HttpClient);
+        _api = new ApiClient(ApiClient.NormalizeBaseUrl(options.ApiBaseUrl), options.HttpClient, ApiClient.ValidateRequestTimeout(options.RequestTimeout));
         if (!string.IsNullOrEmpty(options.AppName))
         {
             _appName = options.AppName!.Trim();
@@ -94,7 +94,9 @@ public sealed class SponsorkitClient
         }
         else
         {
-            _storage = options.Storage ?? new FileStorage(string.IsNullOrEmpty(options.StorageDirectory) ? FileStorage.DefaultDirectory() : options.StorageDirectory!);
+            // PROTOCOL §7.0: without a per-user config directory, keep state in memory (never in the working directory).
+            var directory = string.IsNullOrEmpty(options.StorageDirectory) ? FileStorage.DefaultDirectory() : options.StorageDirectory;
+            _storage = options.Storage ?? (directory is null ? new MemoryStorage() : new FileStorage(directory));
         }
         _store = new StateStore(_storage, _targets.Hash);
     }
@@ -272,8 +274,9 @@ public sealed class SponsorkitClient
         var storedAt = Now();
         SafeUpdate(f =>
         {
+            // PROTOCOL §7.0 refresh races: a concurrent sign-out or sign-in replaced the token; keep its state.
+            if (f.SessionToken != token) return;
             if (response.RenewedSessionToken is not null) f.SessionToken = response.RenewedSessionToken;
-            else if (f.SessionToken is null) f.SessionToken = token;
             f.Cache = new StorageCache { Result = result, StoredAt = storedAt };
         });
         return result;

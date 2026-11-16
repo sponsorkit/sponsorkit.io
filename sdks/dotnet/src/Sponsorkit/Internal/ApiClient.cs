@@ -75,21 +75,56 @@ internal sealed class DeadSessionException : Exception
     }
 }
 
+/// <summary>Session token shape checks (PROTOCOL §7.0: <c>sks_</c> followed by printable ASCII).</summary>
+internal static class SessionTokens
+{
+    public static bool IsWellFormed(string? token)
+    {
+        if (token is null || token.Length <= 4 || !token.StartsWith("sks_", StringComparison.Ordinal)) return false;
+        foreach (var ch in token)
+        {
+            if (ch < '!' || ch > '~') return false;
+        }
+        return true;
+    }
+}
+
 /// <summary>The PROTOCOL §3 HTTP API.</summary>
 internal sealed class ApiClient
 {
     public const string DefaultBaseUrl = "https://sponsorkit.io";
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>The default per-request timeout (PROTOCOL §7.0).</summary>
+    public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>The longest <c>Retry-After</c> delay honoured (PROTOCOL §7.0).</summary>
+    public static readonly TimeSpan MaxRetryAfter = TimeSpan.FromHours(24);
     private static readonly Lazy<HttpClient> Shared = new(() => new HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan });
     private static readonly string UserAgent = "sponsorkit-dotnet/" +
         (typeof(ApiClient).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
 
     private readonly HttpClient _http;
+    private readonly TimeSpan _requestTimeout;
 
-    public ApiClient(string baseUrl, HttpClient? http)
+    /// <param name="baseUrl">The normalized origin.</param>
+    /// <param name="http">The HTTP client, or <c>null</c> for the shared one.</param>
+    /// <param name="requestTimeout">Per-request timeout; <see cref="TimeSpan.Zero"/> or <see cref="Timeout.InfiniteTimeSpan"/> disables it.</param>
+    public ApiClient(string baseUrl, HttpClient? http, TimeSpan? requestTimeout = null)
     {
         BaseUrl = baseUrl;
         _http = http ?? Shared.Value;
+        _requestTimeout = requestTimeout ?? DefaultRequestTimeout;
+    }
+
+    /// <summary>Validates a <c>requestTimeout</c> option: <c>null</c> is the default, zero disables it, negative is invalid.</summary>
+    public static TimeSpan ValidateRequestTimeout(TimeSpan? value)
+    {
+        if (value is null) return DefaultRequestTimeout;
+        var v = value.Value;
+        if (v == System.Threading.Timeout.InfiniteTimeSpan || v == TimeSpan.Zero) return TimeSpan.Zero;
+        if (v < TimeSpan.Zero)
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, "requestTimeout must be zero (disabled) or positive");
+        return v.TotalMilliseconds > int.MaxValue ? TimeSpan.Zero : v;
     }
 
     public string BaseUrl { get; }
@@ -115,7 +150,7 @@ internal sealed class ApiClient
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(RequestTimeout);
+        if (_requestTimeout > TimeSpan.Zero) timeout.CancelAfter(_requestTimeout);
         try
         {
             return await _http.SendAsync(req, HttpCompletionOption.ResponseContentRead, timeout.Token).ConfigureAwait(false);
@@ -166,7 +201,7 @@ internal sealed class ApiClient
             outcome.Result = ResultShape.IsValid(parsed) ? parsed : null;
             if (res.Headers.TryGetValues("Sponsorkit-Session", out var values))
             {
-                var renewed = values.FirstOrDefault(v => v.StartsWith("sks_", StringComparison.Ordinal));
+                var renewed = values.FirstOrDefault(SessionTokens.IsWellFormed);
                 if (!string.IsNullOrEmpty(renewed)) outcome.RenewedSessionToken = renewed;
             }
         }
@@ -182,9 +217,18 @@ internal sealed class ApiClient
     {
         var ra = res.Headers.RetryAfter;
         if (ra is null) return null;
-        if (ra.Delta is { } d) return d;
-        if (ra.Date is { } date) return date > DateTimeOffset.UtcNow ? date - DateTimeOffset.UtcNow : TimeSpan.Zero;
-        return null;
+        TimeSpan value;
+        if (ra.Delta is { } d) value = d;
+        else if (ra.Date is { } date) value = date > DateTimeOffset.UtcNow ? date - DateTimeOffset.UtcNow : TimeSpan.Zero;
+        else return null;
+        return ClampRetryAfter(value);
+    }
+
+    /// <summary>Negative delays are ignored; delays are capped at <see cref="MaxRetryAfter"/> (PROTOCOL §7.0).</summary>
+    internal static TimeSpan? ClampRetryAfter(TimeSpan value)
+    {
+        if (value < TimeSpan.Zero) return null;
+        return value > MaxRetryAfter ? MaxRetryAfter : value;
     }
 
     /// <summary>
@@ -224,7 +268,7 @@ internal sealed class ApiClient
                     null);
             }
             var token = TryParse<TokenResponse>(body);
-            if (token is null || !ResultShape.IsValid(token.Result) || token.SessionToken is null || !token.SessionToken.StartsWith("sks_", StringComparison.Ordinal))
+            if (token is null || !ResultShape.IsValid(token.Result) || !SessionTokens.IsWellFormed(token.SessionToken))
                 throw new SponsorkitError(SponsorkitErrorCodes.NetworkError, "Sponsorkit returned an invalid token response.");
             return token;
         }

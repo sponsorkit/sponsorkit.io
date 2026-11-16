@@ -22,6 +22,12 @@ public sealed class VerifySessionOptions
 
     /// <summary>The HTTP client to use. Default: a shared internal client.</summary>
     public HttpClient? HttpClient { get; set; }
+
+    /// <summary>
+    /// The HTTP request timeout. Default 30 seconds; <see cref="TimeSpan.Zero"/> (or <see cref="Timeout.InfiniteTimeSpan"/>)
+    /// disables it. A timeout throws <c>network_error</c>; negative values throw <c>invalid_config</c>.
+    /// </summary>
+    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(30);
 }
 
 /// <summary>Backend helpers (SPEC §6.4). They use no local storage.</summary>
@@ -46,9 +52,9 @@ public static class SponsorkitServer
     {
         if (options is null) throw new ArgumentNullException(nameof(options));
         var expected = TargetSet.FromOptions(options.GitHub, options.OpenCollective);
-        var api = new ApiClient(ApiClient.NormalizeBaseUrl(options.ApiBaseUrl), options.HttpClient);
+        var api = new ApiClient(ApiClient.NormalizeBaseUrl(options.ApiBaseUrl), options.HttpClient, ApiClient.ValidateRequestTimeout(options.RequestTimeout));
         var token = sessionToken?.Trim();
-        if (string.IsNullOrEmpty(token) || !token!.StartsWith("sks_", StringComparison.Ordinal) || token.Any(char.IsWhiteSpace))
+        if (string.IsNullOrEmpty(token) || !SessionTokens.IsWellFormed(token))
             throw new SponsorkitError(SponsorkitErrorCodes.SessionInvalid, "The session token is malformed.");
 
         ContributionsResponse response;

@@ -109,6 +109,14 @@ public sealed class SponsorkitOptions
 
     /// <summary>The HTTP client to use. Default: a shared internal client.</summary>
     public HttpClient? HttpClient { get; set; }
+
+    /// <summary>
+    /// The timeout of each HTTP request to Sponsorkit. Default 30 seconds; <see cref="TimeSpan.Zero"/> (or
+    /// <see cref="Timeout.InfiniteTimeSpan"/>) disables it. A timeout counts as a network error:
+    /// <see cref="SponsorkitClient.GetFinancialContributionAsync(CancellationToken)"/> serves the stale cache and
+    /// <see cref="SponsorkitClient.SignInAsync"/> throws <c>network_error</c>. Negative values throw <c>invalid_config</c>.
+    /// </summary>
+    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(30);
 }
 
 /// <summary>Mock-mode data for <see cref="SponsorkitOptions.Mock"/> (SPEC §7.4).</summary>

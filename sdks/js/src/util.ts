@@ -78,3 +78,21 @@ export function normalizeBaseUrl(url: string): string {
 export function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
+
+/**
+ * Parses an ISO-8601 / RFC 3339 timestamp (`2026-11-16T18:00:00Z`, with an optional fractional part of
+ * any length and a `Z` or `±hh:mm` offset) into epoch milliseconds; `null` for anything else (PROTOCOL §7.0).
+ * Stricter than `Date.parse`, which accepts strings like `"1"`, and independent of how the engine treats long fractions.
+ */
+export function parseIsoTimestamp(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?([Zz]|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s, frac = "", zone = "Z"] = m;
+  const month = Number(mo);
+  const day = Number(d);
+  if (month < 1 || month > 12 || day < 1 || day > new Date(Date.UTC(Number(y), month, 0)).getUTCDate()) return null;
+  if (Number(h) > 23 || Number(mi) > 59 || Number(s) > 59) return null;
+  const ms = Date.parse(`${y}-${mo}-${d}T${h}:${mi}:${s}.${frac.padEnd(3, "0").slice(0, 3)}${zone.toUpperCase()}`);
+  return Number.isNaN(ms) ? null : ms;
+}

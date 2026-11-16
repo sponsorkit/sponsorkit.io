@@ -52,14 +52,28 @@ export type ContributionsResponse =
   | { kind: "rate_limited"; retryAfterMs: number; retryAfter: number | undefined }
   | { kind: "failed"; error?: unknown; status?: number; retryAfter?: number };
 
-/** Parses a `Retry-After` header (seconds or HTTP date) into whole seconds; `undefined` when absent or malformed. */
+/** Upper bound for `Retry-After`, in seconds (PROTOCOL §7.0: 24 h). */
+export const MAX_RETRY_AFTER = 86_400;
+
+/** A session token as stored and sent: `sks_` followed by printable ASCII (PROTOCOL §7.0). */
+export function isSessionToken(v: unknown): v is string {
+  return typeof v === "string" && /^sks_[\x21-\x7e]+$/.test(v);
+}
+
+/**
+ * Parses a `Retry-After` header (delta-seconds or HTTP date) into whole seconds, clamped to
+ * {@link MAX_RETRY_AFTER}; `undefined` when absent, malformed or not finite (PROTOCOL §7.0).
+ */
 export function retryAfterSeconds(header: string | null, now: number): number | undefined {
   if (!header) return undefined;
   const trimmed = header.trim();
-  if (/^\d+$/.test(trimmed)) return Number(trimmed);
-  const date = Date.parse(trimmed);
-  if (!Number.isNaN(date)) return Math.max(0, Math.ceil((date - now) / 1000));
-  return undefined;
+  let secs: number;
+  if (/^\d+$/.test(trimmed)) secs = Number(trimmed);
+  else if (/[a-z]/i.test(trimmed)) secs = Math.ceil((Date.parse(trimmed) - now) / 1000);
+  else return undefined;
+  // An unparseable date is ignored; huge digit strings (which parse to Infinity) and far-off dates are clamped.
+  if (Number.isNaN(secs)) return undefined;
+  return Math.min(MAX_RETRY_AFTER, Math.max(0, secs));
 }
 
 /** Parses `Retry-After` (seconds or HTTP date) into milliseconds; defaults to 60 s. */
@@ -117,7 +131,7 @@ export async function fetchContributions(
   }
   if (!isContributionResult(body)) return { kind: "failed", status: res.status };
   const renewed = res.headers.get("sponsorkit-session");
-  return { kind: "ok", result: body, renewedToken: renewed?.startsWith("sks_") ? renewed : null };
+  return { kind: "ok", result: body, renewedToken: isSessionToken(renewed) ? renewed : null };
 }
 
 /** `GET /api/v1/targets`. Returns `null` on any failure. */

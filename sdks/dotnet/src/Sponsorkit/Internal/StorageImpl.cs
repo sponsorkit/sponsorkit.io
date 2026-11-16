@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 
@@ -12,6 +13,8 @@ namespace Sponsorkit.Internal;
 /// <summary>PROTOCOL §8 file storage: <c>&lt;dir&gt;/&lt;targets_hash&gt;.json</c>, directory 0700, files 0600, atomic writes.</summary>
 internal sealed class FileStorage : ISponsorkitStorage
 {
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     public FileStorage(string directory)
     {
         Directory = Path.GetFullPath(directory);
@@ -28,7 +31,8 @@ internal sealed class FileStorage : ISponsorkitStorage
         {
             try
             {
-                return File.Exists(path) ? File.ReadAllText(path, Encoding.UTF8) : null;
+                // Strict decoding: invalid UTF-8 throws, so the document reads as absent (PROTOCOL §7.0).
+                return File.Exists(path) ? StrictUtf8.GetString(File.ReadAllBytes(path)) : null;
             }
             catch (FileNotFoundException)
             {
@@ -113,22 +117,43 @@ internal sealed class FileStorage : ISponsorkitStorage
         }
     }
 
-    /// <summary>The per-user default storage directory (SPEC §7.6).</summary>
-    public static string DefaultDirectory()
+    /// <summary>
+    /// The per-user default storage directory (SPEC §7.6), or <c>null</c> when none can be determined (for example
+    /// <c>HOME</c> is unset): the client then keeps its state in memory and never writes to the working directory.
+    /// </summary>
+    public static string? DefaultDirectory() => DefaultDirectory(Environment.GetEnvironmentVariable, Environment.GetFolderPath);
+
+    internal static string? DefaultDirectory(Func<string, string?> env, Func<Environment.SpecialFolder, string> folder)
     {
+        static string? Rooted(string? p) => !string.IsNullOrEmpty(p) && Path.IsPathRooted(p) ? p : null;
+        string? SafeFolder(Environment.SpecialFolder f)
+        {
+            try
+            {
+                return Rooted(folder(f));
+            }
+#pragma warning disable CA1031 // Construction never fails over a missing config directory (PROTOCOL §7.0).
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+                return null;
+            }
+        }
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "sponsorkit");
-        var home = Environment.GetEnvironmentVariable("HOME");
-        if (string.IsNullOrEmpty(home)) home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        {
+            var appData = SafeFolder(Environment.SpecialFolder.ApplicationData);
+            return appData is null ? null : Path.Combine(appData, "sponsorkit");
+        }
+        var home = Rooted(env("HOME")) ?? SafeFolder(Environment.SpecialFolder.UserProfile);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            return Path.Combine(home!, "Library", "Application Support", "sponsorkit");
-        var xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-        var config = !string.IsNullOrEmpty(xdg) && Path.IsPathRooted(xdg) ? xdg! : Path.Combine(home!, ".config");
-        return Path.Combine(config, "sponsorkit");
+            return home is null ? null : Path.Combine(home, "Library", "Application Support", "sponsorkit");
+        var config = Rooted(env("XDG_CONFIG_HOME")) ?? (home is null ? null : Path.Combine(home, ".config"));
+        return config is null ? null : Path.Combine(config, "sponsorkit");
     }
 }
 
-/// <summary>In-memory storage (mock mode).</summary>
+/// <summary>In-memory storage (mock mode, or no per-user config directory).</summary>
 internal sealed class MemoryStorage : ISponsorkitStorage
 {
     private readonly ConcurrentDictionary<string, string> _data = new(StringComparer.Ordinal);
@@ -287,31 +312,75 @@ internal sealed class StateStore
         {
             return new StorageFile();
         }
-        if (string.IsNullOrWhiteSpace(json)) return new StorageFile();
-        StorageFile? file;
+        if (string.IsNullOrWhiteSpace(json) || HasUnpairedSurrogate(json!)) return new StorageFile();
         try
         {
-            file = SponsorkitJson.Deserialize<StorageFile>(json!);
+            using var doc = JsonDocument.Parse(json!, new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return new StorageFile();
+            if (!root.TryGetProperty("v", out var v) || v.ValueKind != JsonValueKind.Number || !v.TryGetInt32(out var version) || version != 1)
+                return new StorageFile();
+            var file = new StorageFile();
+            if (root.TryGetProperty("sessionToken", out var t) && t.ValueKind == JsonValueKind.String && SessionTokens.IsWellFormed(t.GetString()))
+                file.SessionToken = t.GetString();
+            if (root.TryGetProperty("cache", out var c) && c.ValueKind == JsonValueKind.Object)
+            {
+                var cache = TryPart<StorageCache>(c);
+                if (cache is not null && cache.StoredAt is not null && ResultShape.IsValid(cache.Result)) file.Cache = cache;
+            }
+            if (root.TryGetProperty("nags", out var n) && n.ValueKind == JsonValueKind.Object)
+            {
+                var clean = new Dictionary<string, NagState>(StringComparer.Ordinal);
+                foreach (var prop in n.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind != JsonValueKind.Object) continue;
+                    var state = TryPart<NagState>(prop.Value);
+                    if (state is not null && state.Runs >= 0) clean[prop.Name] = state;
+                }
+                file.Nags = clean;
+            }
+            return file;
         }
-#pragma warning disable CA1031 // A corrupt or foreign-written file reads as empty.
+#pragma warning disable CA1031 // A corrupt or foreign-written document reads as empty (PROTOCOL §7.0).
         catch (Exception)
 #pragma warning restore CA1031
         {
             return new StorageFile();
         }
-        if (file is null || file.V != 1) return new StorageFile();
-        if (file.SessionToken is { } t && !t.StartsWith("sks_", StringComparison.Ordinal)) file.SessionToken = null;
-        if (file.Cache is { } c && (c.StoredAt is null || !ResultShape.IsValid(c.Result))) file.Cache = null;
-        if (file.Nags is { } nags)
+    }
+
+    /// <summary>Deserializes one part of the document; a malformed part reads as absent.</summary>
+    private static T? TryPart<T>(JsonElement element)
+        where T : class
+    {
+        try
         {
-            var clean = new Dictionary<string, NagState>(StringComparer.Ordinal);
-            foreach (var kv in nags)
-            {
-                if (kv.Key is not null && kv.Value is not null) clean[kv.Key] = kv.Value;
-            }
-            file.Nags = clean;
+            return element.Deserialize<T>(SponsorkitJson.Options);
         }
-        return file;
+#pragma warning disable CA1031 // Wrong types, overflowing numbers and the like drop only this part.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Text from a string-based backend that is not valid Unicode (the UTF-16 analogue of invalid UTF-8).</summary>
+    private static bool HasUnpairedSurrogate(string s)
+    {
+        for (var i = 0; i < s.Length; i++)
+        {
+            if (char.IsHighSurrogate(s[i]))
+            {
+                if (i + 1 >= s.Length || !char.IsLowSurrogate(s[i + 1])) return true;
+                i++;
+            }
+            else if (char.IsLowSurrogate(s[i]))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Applies <paramref name="update"/> to the current document and writes it atomically.</summary>
