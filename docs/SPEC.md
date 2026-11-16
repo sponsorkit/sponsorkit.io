@@ -1,7 +1,9 @@
 # Sponsorkit: product & technical specification
 
-> Status: **DRAFT v5, awaiting approval.** Nothing below is built yet.
+> Status: **DRAFT v6, awaiting approval.** Nothing below is built yet.
 > Last updated: 2026-11-16.
+>
+> **What changed in v6:** Patreon is deferred to a later version (D3). All open decisions are settled.
 >
 > **What changed in v5:** Stripe Connect was removed as a provider. That also removes email identities, magic links and transactional email.
 >
@@ -26,7 +28,6 @@ Contributions come from **payment providers**. v1 supports:
 |---|---|---|---|---|---|
 | GitHub Sponsors | monthly | ✅ | Tier-based (custom-amount tiers if the maintainer enabled them) | USD only | GitHub account |
 | Open Collective | monthly, yearly | ✅ | ✅ (`?amount=&interval=`) | The collective's currency | Open Collective account |
-| Patreon | monthly (the patron can switch to annual on Patreon) | ❌ (Patreon has no one-time payments) | Tier-based | The campaign's currency (tiers are priced in USD) | Patreon account |
 
 ### 1.1 Design principles
 
@@ -49,8 +50,8 @@ Contributions come from **payment providers**. v1 supports:
 | **Maintainer** | The person who builds the OSS software. Signs in to `sponsorkit.io` with **GitHub only**. |
 | **Project** | One piece of software that integrates Sponsorkit. A project has: <ul><li>a **live** and a **test** public key (`pk_live_…`, `pk_test_…`);</li><li>optional secret keys (`sk_live_…`, `sk_test_…`) for server-side verification.</li></ul> |
 | **Mode** | `live` or `test`. Every key, session, connection and checkout belongs to exactly one mode, and modes never mix. |
-| **Provider connection** | Where the maintainer receives money: a GitHub Sponsors listing (user or org), an Open Collective collective, a Patreon campaign, or the built-in **Test provider** (test mode only). A project picks which connections count. |
-| **Supporter** | An end-user of the software. One Sponsorkit person with one or more **linked identities** (GitHub, Open Collective, Patreon). |
+| **Provider connection** | Where the maintainer receives money: a GitHub Sponsors listing (user or org), an Open Collective collective, or the built-in **Test provider** (test mode only). A project picks which connections count. |
+| **Supporter** | An end-user of the software. One Sponsorkit person with one or more **linked identities** (GitHub, Open Collective). |
 | **Session** | A supporter signed in to one project, in one mode, from one app instance. The SDK holds an opaque token, `sks_…`. |
 | **Contribution** | One sponsorship, order, membership or subscription from a **sponsor entity** to a provider connection, normalized into a common shape. |
 | **Sponsor entity** | Who actually pays: a user, or an organization. A contribution reaches a supporter either **directly** or **via an organization** the supporter belongs to (§6.5). |
@@ -60,7 +61,7 @@ Contributions come from **payment providers**. v1 supports:
 1. Sign in at `sponsorkit.io` with GitHub, then click **New project** and name it.
 2. Click **Connect** next to each provider you want. Every step is optional:
    - **GitHub Sponsors:** pick your own user or an org you administer. There is no extra sign-in, because you're already signed in with GitHub.
-   - **Open Collective / Patreon:** one OAuth click. This proves you own the collective or campaign and loads your tiers.
+   - **Open Collective:** one OAuth click. This proves you own the collective and loads its tiers and currency.
 3. Copy the public key into your code. For browser apps, also add the site's origin to **Allowed origins**.
 
 There is nothing else to configure.
@@ -80,8 +81,7 @@ There is nothing else to configure.
                 └───────┬──────────────────────────┬───────────────────────────────┘
                         │ Neon serverless driver    │ fetch (on demand, cached)
                         ▼ (HTTP)                    ▼
-                  Neon Postgres (free)    GitHub GraphQL · Open Collective GraphQL ·
-                                          Patreon API v2
+                  Neon Postgres (free)    GitHub GraphQL · Open Collective GraphQL
 ```
 
 - **Runtime**
@@ -130,7 +130,7 @@ app/                     Cloudflare Worker: Hono API + static assets binding + c
     api/v1/              public API
     api/web/             dashboard + account API
     oauth/               provider OAuth flows
-    providers/           github, opencollective, patreon, test adapters
+    providers/           github, opencollective, test adapters
     db/                  Drizzle schema + migrations
   test/                  Vitest; Postgres service container; provider APIs faked with MSW
 web/                     Next.js static export (site, docs, dashboard, hosted pages) + Playwright e2e
@@ -161,7 +161,7 @@ There is **no contributions table**. Provider answers are cached per (supporter 
 | `provider_connections` (m) | `id`, `maintainer_id`, `provider`, `external_account_id`, `handle`, `currency`, `tiers jsonb` (id, name, amount, currency, frequency, url), `access_token_enc`, `refresh_token_enc`, `expires_at`, `token_status`, `metadata jsonb`, `refreshed_at` |
 | `project_connections` | `project_id`, `connection_id` |
 | `supporters` | `id`, `visibility` (`public`/`private`, default `public`) |
-| `supporter_identities` | `id`, `supporter_id`, `provider` (`github`/`opencollective`/`patreon`/`test`), `external_user_id` (immutable provider ID), `handle`, `access_token_enc`, `refresh_token_enc`, `expires_at`, `token_status`; **unique(provider, external_user_id)** |
+| `supporter_identities` | `id`, `supporter_id`, `provider` (`github`/`opencollective`/`test`), `external_user_id` (immutable provider ID), `handle`, `access_token_enc`, `refresh_token_enc`, `expires_at`, `token_status`; **unique(provider, external_user_id)** |
 | `contribution_cache` (m) | `identity_id`, `connection_id`, `contributions jsonb` (normalized §6.1 items), `fetched_at`, `error?`; **pk(identity_id, connection_id)** |
 | `sessions` (m) | `id`, `supporter_id`, `project_id`, `token_hash`, `client_kind` (`browser`/`loopback`/`device`/`checkout`), `created_at`, `last_used_at`, `expires_at` |
 | `auth_requests` (m) | `id`, `kind` (`connect`/`device`/`checkout_handoff`), `project_id`, `code_hash`, `user_code`, `pkce_challenge`, `origin`, `redirect_uri`, `browser_nonce_hash`, `supporter_id?`, `attempts`, `expires_at`, `consumed_at` |
@@ -207,7 +207,7 @@ The supporter's provider token is stored encrypted. It is what makes **on-demand
 
 ### 5.3 Linking and merging
 
-- **Linking.** In `/connect` or `/account`, a signed-in supporter can add another provider, and the new identity is attached. The page always shows "Signed in as GitHub @alice · Linked: Patreon".
+- **Linking.** In `/connect` or `/account`, a signed-in supporter can add another provider, and the new identity is attached. The page always shows "Signed in as GitHub @alice · Linked: Open Collective".
 - **Merging.** If the identity already belongs to another supporter:
   - Merging is offered **only in `/account`**, after a **fresh sign-in with both identities** within the last 5 minutes.
   - The confirmation screen shows both sides.
@@ -226,9 +226,8 @@ The supporter's provider token is stored encrypted. It is what makes **on-demand
 
 | Provider | Supporter scopes | Maintainer-connect | Token lifetime / notes |
 |---|---|---|---|
-| GitHub (one OAuth App, device flow enabled) | `read:user read:org` | No extra OAuth; uses the maintainer login (`read:user read:org`) | Tokens don't expire. Identity key is `databaseId`. *To verify:* does `read:user` return tier amounts? If not, request `user` (D6). |
+| GitHub (one OAuth App, device flow enabled) | `read:user read:org` | No extra OAuth; uses the maintainer login (`read:user read:org`) | Tokens don't expire. Identity key is `databaseId`. *To verify:* does `read:user` return tier amounts? If not, request `user` and disclose it on the consent screen (D6). |
 | Open Collective | `orders incognito` | `account` (proves admin of the collective, reads its tiers and currency) | Tokens last 90 days with no refresh. On expiry the identity becomes `token_status=expired`: results are served from cache with `stale: true`, and `/account` and the SDK result prompt a reconnect. |
-| Patreon (one v2 client) | `identity identity.memberships` | `campaigns` (campaign ID, currency, tiers) | Refresh tokens rotate, so the new one is stored on every refresh. Scopes and `fields[...]` are always listed explicitly. After a 401, Sponsorkit stops retrying until the user re-authenticates, to avoid Patreon's 4xx ban. |
 
 ## 6. Contribution data (on demand)
 
@@ -245,7 +244,7 @@ The supporter's provider token is stored encrypted. It is what makes **on-demand
   "contributions": [
     {
       "id": "con_github_…",                 // stable, derived from provider + external id
-      "provider": "github",                 // github | opencollective | patreon | test
+      "provider": "github",                 // github | opencollective | test
       "sponsor": { "type": "user", "provider": "github", "id": "583231", "handle": "alice" },
       "via": "direct",                      // direct | organization
       "kind": "recurring",                  // recurring | one_time
@@ -253,7 +252,7 @@ The supporter's provider token is stored encrypted. It is what makes **on-demand
       "status": "active",                   // §6.2
       "amount": { "value": 500, "currency": "USD" },  // minor units
       "tier": { "id": "ST_…", "name": "Coffee" },     // nullable
-      "flags": [],                          // trial | gifted | via_patreon
+      "flags": [],                          // via_patreon (GitHub sponsorship paid through Patreon)
       "startedAt": "2026-03-01T10:00:00Z",
       "endedAt": null,
       "lastChargedAt": null,                // null where the provider doesn't expose it
@@ -276,7 +275,6 @@ When the user is signed out or Sponsorkit is disabled, the result has `signedIn:
 
 - `active`
 - `paused`
-- `past_due`
 - `cancelled`
 - `paid` (a completed one-time payment)
 - `refunded`
@@ -312,14 +310,6 @@ GitHub only reports a pending cancellation through webhooks, so it shows as `act
 
 Status always comes from the order, never from membership.
 
-**Patreon**
-
-| Provider data | Status |
-|---|---|
-| `active_patron` | `active`, plus the `trial` or `gifted` flag where it applies |
-| `declined_patron` | `past_due` |
-| `former_patron` | `cancelled` |
-| `null`, or an entitled amount of 0 | not a contribution |
 
 ### 6.3 How data is fetched
 
@@ -335,16 +325,15 @@ Status always comes from the order, never from membership.
 |---|---|---|
 | GitHub | One GraphQL request: `viewer { sponsorshipsAsSponsor(activeOnly:false, maintainerLogins:[…]) }` plus aliased `organization(login){ sponsorshipsAsSponsor(maintainerLogins:[…]) }` for the viewer's orgs (`viewer.organizations`, cached for 24 h). | None. GitHub exposes no charges. Currency is USD. |
 | Open Collective | `me { orders(filter:OUTGOING, oppositeAccount:{slug}, includeIncognito:true) }`, plus the same for collectives the user administers (`memberOf(role:ADMIN)`). | None in v1. `totalContributed`, `lastChargedAt` and `nextChargeAt` come from the order. |
-| Patreon | `GET /api/oauth2/v2/identity?include=memberships&fields[member]=patron_status,currently_entitled_amount_cents,will_pay_amount_cents,campaign_lifetime_support_cents,pledge_cadence,last_charge_date,last_charge_status,next_charge_date,pledge_relationship_start,is_free_trial,is_gifted`. Memberships are matched on `relationships.campaign.data.id`. Memberships to other campaigns are discarded in memory. | None in v1. `totalContributed` is in the campaign currency. |
 | Test | Reads the simulated data set (§10.3). | Simulated |
 
-Rate limits are per token: Patreon allows 100 requests/min and Open Collective 100 requests/min per token, and GitHub allows 5,000 requests/hour. Because limits are per token and Sponsorkit refreshes at most once per identity per minute, normal use stays far below them. A shared token bucket per provider also protects the app-wide quota (Patreon: 100 requests per 2 s per client).
+Rate limits are per token: Open Collective allows 100 requests/min and GitHub 5,000 requests/hour. Sponsorkit refreshes at most once per identity per minute, so normal use stays far below them.
 
 ### 6.4 Privacy
 
 - **Visibility in maintainer-facing views.** A contribution is shown as "Private supporter" (amount, frequency and status only, no identity) when:
   - the supporter set `visibility=private`, or
-  - the provider marks it private: a GitHub `PRIVATE` sponsorship, an Open Collective incognito order, or a masked Patreon identity.
+  - the provider marks it private: a GitHub `PRIVATE` sponsorship, or an Open Collective incognito order.
 - **Pairwise supporter IDs.** Each project sees `sup_p_` + base32(HMAC(server_key, project_id ‖ supporter_id)), so unrelated projects can't correlate users.
 - **Minimal identity disclosure.**
   - `supporter.identities` lists only the identity used for this session and identities that have contributions to this project.
@@ -364,7 +353,6 @@ The supporter list is also fetched **on demand** when the maintainer opens it, u
 |---|---|
 | GitHub | `sponsorshipsAsMaintainer(includePrivate:true, activeOnly:false)` |
 | Open Collective | `account.orders(filter:INCOMING)` |
-| Patreon | campaign members |
 
 Two rules apply to the list:
 
@@ -459,12 +447,11 @@ These endpoints back the dashboard and `/account`. They authenticate with a same
 3. **Provider.** Only providers that can satisfy the choice are enabled, and each disabled one shows why:
    - **Currency:** must match exactly; there is no conversion.
      - GitHub: USD.
-     - Open Collective, Patreon: the connection's currency.
+     - Open Collective: the collective's currency.
    - **Frequency:**
      - GitHub: monthly or one-time.
-     - Patreon: monthly.
      - Open Collective: all.
-   - **Tiers (GitHub, Patreon):**
+   - **Tiers (GitHub):**
      - Pick the cheapest tier at or above the amount.
      - If there is none, pick the highest tier.
      - If the provider has no tiers, it is disabled.
@@ -474,7 +461,6 @@ These endpoints back the dashboard and `/account`. They authenticate with a same
 5. **Pay.** The supporter is redirected to the provider and pays there:
    - **Open Collective:** redirect to `opencollective.com/{slug}/donate?amount=…&interval=…&redirect=…`.
    - **GitHub:** redirect to the chosen tier on `github.com/sponsors/{login}`.
-   - **Patreon:** redirect to the tier's `url`, falling back to the campaign URL.
    - *To verify during the build:* GitHub's tier and frequency URL parameters, and whether anything gets appended to return URLs.
 6. **Return.**
    - **Back from the provider:** the session is marked `returned`, and the supporter's contributions are refreshed with `freshness=0`. A new contribution can take a few minutes to appear at the provider. The SDK may call `getFinancialContribution({ freshness: 60 })` again later.
@@ -664,7 +650,7 @@ if (await nag.due(fc => fc.active().length === 0)) {
 
 - `pk_test_` and `sk_test_` keys only see test-mode data.
 - **Open Collective** uses its staging environment when staging credentials are configured.
-- **GitHub and Patreon** have no sandboxes. For those, there is a built-in **Test provider**:
+- **GitHub** has no sandbox. For it, there is a built-in **Test provider**:
   - In the dashboard, maintainers create simulated supporters and contributions with any status, amount, frequency or organization.
   - `/connect` offers "Sign in as test supporter".
   - The conformance suite and e2e tests use the Test provider.
@@ -686,7 +672,7 @@ All of this lands in this PR as reviewable commits.
    - Web session, connect, popup, redirect, loopback, device.
    - Linking and merging, SDK sessions, pairwise IDs.
 3. **Providers**
-   - Test provider, then GitHub, Open Collective and Patreon.
+   - Test provider, then GitHub and Open Collective.
    - Each provider gets: maintainer connect, live supporter query, normalization, a dashboard list, and an MSW test suite built from the documented responses.
 4. **Checkout**
    - The hosted flow, provider eligibility, handoff codes.
@@ -720,7 +706,6 @@ All of this lands in this PR as reviewable commits.
 
 - **GitHub:** which scope returns tier amounts and private sponsorships, and the checkout URL parameters.
 - **Open Collective:** whether `includeIncognito` works with a user token.
-- **Patreon:** the currency of `currently_entitled_amount_cents`, and the tier `url` as a checkout link.
 - **Cloudflare:** whether the Rate Limiting binding is available on the free plan.
 
 ## 13. Decisions
@@ -729,20 +714,19 @@ All of this lands in this PR as reviewable commits.
 |---|---|---|
 | **D1** | Stripe processing fees | ✅ **Moot.** Stripe Connect was removed as a provider (D8). |
 | **D2** | Hosting | ✅ **Cloudflare Workers, free plan.** A single Worker serves the TypeScript API and the static site. Moving to Workers Paid ($5/mo) is a plan change only. |
-| **D3** | Patreon consent scope `identity.memberships` | Proposed: accept it. Memberships to other campaigns are never stored. |
-| **D4** | Package names: `@sponsorkit`, `Sponsorkit`, `sponsorkit` | Proposed: reserve them now. Fall back to `sponsorkit-sdk` where a name is taken. |
+| **D3** | Patreon (its shared-app consent requires reading *all* of a user's memberships) | ✅ **Deferred to a later version.** v1 ships with GitHub Sponsors and Open Collective. The provider adapter interface keeps Patreon, Polar, Ko-fi and others easy to add later. |
+| **D4** | Package names | ✅ `@sponsorkit/sdk` (npm), `Sponsorkit` (NuGet), `sponsorkit` (PyPI, crates.io), Go module `github.com/sponsorkit/sponsorkit.io/sdks/go`. Availability is checked during the build; fall back to `sponsorkit-sdk` where a name is taken. |
 | **D5** | Org sponsorships | ✅ **Always included**, marked `via: "organization"`. |
-| **D6** | GitHub `user` scope if `read:user` doesn't return amounts | Proposed: use it only if verification requires it, and disclose it. |
+| **D6** | GitHub scope | ✅ Start with `read:user read:org`. Switch to `user` only if verification shows amounts are missing, and say so on the consent screen. |
 | **D7** | Webhooks | ✅ **None.** Data is fetched on demand from providers with the supporter's token. Nothing is sent to maintainers. |
-| **D8** | Stripe Connect as a direct provider | ✅ **Removed.** Sponsorkit never processes payments. Supporters pay on GitHub Sponsors, Open Collective or Patreon. Providers such as Polar or Ko-fi can be added later through the same adapter interface. |
+| **D8** | Stripe Connect as a direct provider | ✅ **Removed.** Sponsorkit never processes payments. Supporters pay on GitHub Sponsors or Open Collective. Other providers can be added later through the same adapter interface. |
 
 ## 14. What you will need to provide to go live
 
 1. **GitHub OAuth App** (with device flow enabled): client ID and secret.
 2. **Open Collective OAuth app**, plus optionally a staging app: client ID and secret.
-3. **Patreon v2 client:** client ID and secret.
-4. **Cloudflare account** (free).
+3. **Cloudflare account** (free).
    - DNS for `sponsorkit.io` on Cloudflare.
    - An API token for GitHub Actions deploys.
-5. **Neon project:** the pooled connection string, and the direct connection string for migrations.
-6. **Package registry trusted publishers** for npm, NuGet, PyPI and crates.io, once the names are reserved (D4).
+4. **Neon project:** the pooled connection string, and the direct connection string for migrations.
+5. **Package registry trusted publishers** for npm, NuGet, PyPI and crates.io, once the names are reserved (D4).
