@@ -141,6 +141,8 @@ def _construct(config: dict[str, Any], hooks: Hooks) -> Sponsorkit:
         optional["dev_checks"] = config["devChecks"]
     if "signInTimeout" in config:
         optional["sign_in_timeout"] = config["signInTimeout"]
+    if "requestTimeout" in config:
+        optional["request_timeout"] = config["requestTimeout"]
     if "interactive" in config:
         optional["interactive"] = config["interactive"]
     return Sponsorkit(

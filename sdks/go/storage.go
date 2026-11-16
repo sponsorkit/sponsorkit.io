@@ -1,13 +1,16 @@
 package sponsorkit
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sync"
+	"unicode/utf8"
 )
 
 // Storage persists the per-target-set state (session token, cache and nag
@@ -35,6 +38,10 @@ func DefaultStorageDir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
+	}
+	if !filepath.IsAbs(base) {
+		// A relative HOME would resolve against the working directory.
+		return "", errors.New("the per-user config directory is not an absolute path")
 	}
 	return filepath.Join(base, "sponsorkit"), nil
 }
@@ -166,15 +173,105 @@ func newStore(backend Storage, key string) *store {
 	return &store{backend: backend, key: key, lock: m.(*sync.Mutex)}
 }
 
+// sessionTokenPattern is a well-formed stored session token: sks_ followed
+// by printable ASCII.
+var sessionTokenPattern = regexp.MustCompile(`^sks_[\x21-\x7e]+$`)
+
+// parseStorage parses a PROTOCOL §8 document. It never fails (PROTOCOL §7.0):
+// a document that cannot be parsed reads as empty, and each malformed part
+// (token, cache, nag entry) reads as absent while the rest is kept.
 func parseStorage(b []byte) *storageFile {
-	var f storageFile
-	if len(b) == 0 || json.Unmarshal(b, &f) != nil || f.V != 1 {
-		return &storageFile{V: 1}
+	empty := &storageFile{V: 1}
+	if len(b) == 0 || !utf8.Valid(b) {
+		return empty
 	}
-	if f.Cache != nil && f.Cache.StoredAt == "" {
-		f.Cache = nil
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(b, &raw) != nil || raw == nil {
+		return empty
 	}
-	return &f
+	var v int
+	if json.Unmarshal(raw["v"], &v) != nil || v != 1 {
+		return empty
+	}
+	f := &storageFile{V: 1}
+	var tok string
+	if json.Unmarshal(raw["sessionToken"], &tok) == nil && sessionTokenPattern.MatchString(tok) {
+		f.SessionToken = &tok
+	}
+	f.Cache = parseCache(raw["cache"])
+	f.Nags = parseNags(raw["nags"])
+	return f
+}
+
+// isJSONKind reports whether raw is a JSON value starting with open ('{' or '[').
+func isJSONKind(raw json.RawMessage, open byte) bool {
+	t := bytes.TrimLeft(raw, " \t\r\n")
+	return len(t) > 0 && t[0] == open
+}
+
+func parseCache(raw json.RawMessage) *cacheEntry {
+	if !isJSONKind(raw, '{') {
+		return nil
+	}
+	var c struct {
+		Result   json.RawMessage `json:"result"`
+		StoredAt string          `json:"storedAt"`
+	}
+	if json.Unmarshal(raw, &c) != nil || !isJSONKind(c.Result, '{') {
+		return nil
+	}
+	if _, ok := parseISOTime(c.StoredAt); !ok {
+		return nil
+	}
+	var parts map[string]json.RawMessage
+	if json.Unmarshal(c.Result, &parts) != nil ||
+		!isJSONKind(parts["targets"], '[') || !isJSONKind(parts["contributions"], '[') {
+		return nil
+	}
+	var items []json.RawMessage
+	if json.Unmarshal(parts["contributions"], &items) != nil {
+		return nil
+	}
+	for _, it := range items {
+		if !isJSONKind(it, '{') {
+			return nil
+		}
+	}
+	var r Result
+	if json.Unmarshal(c.Result, &r) != nil {
+		return nil
+	}
+	if r.Contributions == nil {
+		r.Contributions = []Contribution{}
+	}
+	return &cacheEntry{Result: r, StoredAt: c.StoredAt}
+}
+
+func parseNags(raw json.RawMessage) map[string]nagState {
+	if !isJSONKind(raw, '{') {
+		return nil
+	}
+	var entries map[string]json.RawMessage
+	if json.Unmarshal(raw, &entries) != nil {
+		return nil
+	}
+	var out map[string]nagState
+	for id, e := range entries {
+		var n nagState
+		if !isJSONKind(e, '{') || json.Unmarshal(e, &n) != nil || n.Runs < 0 {
+			continue
+		}
+		if n.LastShown != nil {
+			if _, ok := parseISOTime(*n.LastShown); !ok {
+				continue
+			}
+		}
+		if out == nil {
+			out = map[string]nagState{}
+		}
+		out[id] = n
+	}
+	return out
 }
 
 // read returns the stored document; missing or corrupt documents read as empty.

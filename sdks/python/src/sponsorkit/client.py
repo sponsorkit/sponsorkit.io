@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -26,6 +28,7 @@ from ._http import (
     normalize_base_url,
     parse_iso,
     problem_code,
+    resolve_request_timeout,
     retry_after_seconds,
     unexpected_response,
 )
@@ -74,8 +77,45 @@ def _has_display() -> bool:
     return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
-def _default_open_browser(url: str) -> bool:
+BROWSER_LAUNCH_GRACE = 1.5
+"""A system launcher still running after this many seconds counts as having opened the browser."""
+
+
+def _launch(argv: list[str], grace: float = BROWSER_LAUNCH_GRACE) -> bool:
+    """Run a browser launcher (no shell). Exit 0, or still running after ``grace`` s, counts as opened."""
     try:
+        proc = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=os.name == "posix",
+        )
+    except (OSError, ValueError):
+        return False
+    try:
+        return proc.wait(timeout=grace) == 0
+    except subprocess.TimeoutExpired:
+        return True  # still running: assume the browser is opening (PROTOCOL §7.0)
+
+
+def _launcher_argv(url: str) -> list[str] | None:
+    """The system launcher for ``url``; the URL is a single argv entry, never parsed by a shell."""
+    if sys.platform == "darwin":
+        return ["open", url]
+    if sys.platform == "win32":
+        return ["rundll32", "url.dll,FileProtocolHandler", url]
+    opener = shutil.which("xdg-open")
+    return [opener, url] if opener else None
+
+
+def _default_open_browser(url: str) -> bool:
+    if not url.startswith(("https://", "http://")):
+        return False
+    argv = None if os.environ.get("BROWSER") else _launcher_argv(url)
+    if argv is not None:
+        return _launch(argv)
+    try:  # $BROWSER set, or no system launcher found: let the webbrowser module try
         return webbrowser.open(url)
     except webbrowser.Error:
         return False
@@ -163,8 +203,10 @@ class Sponsorkit:
             ``SPONSORKIT_DEV_CHECKS`` is set or in Python development mode (``python -X dev``).
         checkout_poll_interval: Seconds between checks while waiting for a checkout (default 60).
         clock: Returns the current time; injectable for tests.
-        timeout: HTTP timeout in seconds for API calls.
+        request_timeout: Timeout in seconds for every HTTP request (default 30; ``0`` disables it).
+            Applies to a custom ``http_client`` too. A timeout counts as a network error.
         http_client: An :class:`httpx.Client` to use for API calls (proxies, custom transports).
+        timeout: Deprecated alias of ``request_timeout``.
 
     Raises:
         SponsorkitError: ``invalid_config`` for missing or malformed targets and invalid options.
@@ -190,8 +232,9 @@ class Sponsorkit:
         dev_checks: bool | None = None,
         checkout_poll_interval: float = 60.0,
         clock: Callable[[], datetime] | None = None,
-        timeout: float = DEFAULT_HTTP_TIMEOUT,
+        request_timeout: float = DEFAULT_HTTP_TIMEOUT,
         http_client: httpx.Client | None = None,
+        timeout: float | None = None,
     ) -> None:
         self._targets: tuple[Target, ...] = targets_from_options(github, opencollective)
         self._param = targets_param(self._targets)
@@ -223,7 +266,10 @@ class Sponsorkit:
         self._open_browser_hook = open_browser
         self._prompt = prompt_for_code or _default_prompt_for_code
         self._clock = clock
-        self._timeout = timeout
+        self._timeout = resolve_request_timeout(
+            request_timeout if timeout is None else timeout,
+            "request_timeout" if timeout is None else "timeout",
+        )
         self._http_client = http_client
         self._own_client: httpx.Client | None = None
         self._client_lock = threading.Lock()
@@ -248,8 +294,16 @@ class Sponsorkit:
             backend = MemoryStorage()  # mock and disabled modes never touch the disk
         elif storage is not None:
             backend = storage
+        elif storage_dir is not None:
+            backend = FileStorage(Path(storage_dir))
         else:
-            backend = FileStorage(Path(storage_dir) if storage_dir is not None else default_storage_dir())
+            directory = default_storage_dir()
+            if directory is None:
+                # PROTOCOL §7.0: no per-user config directory (e.g. HOME unset). Never use the cwd.
+                log.warning("sponsorkit: no per-user config directory; keeping state in memory")
+                backend = MemoryStorage()
+            else:
+                backend = FileStorage(directory)
         self._store = StateStore(backend, self._hash)
 
     # ------------------------------------------------------------------ basics
@@ -333,13 +387,13 @@ class Sponsorkit:
     def _safe_update(self, fn: Callable[[StoredState], bool | None]) -> None:
         try:
             self._store.update(fn)
-        except OSError as e:
+        except Exception as e:  # OSError, or whatever a custom Storage raises
             log.warning("sponsorkit: could not write local storage: %s", e)
 
     def _read(self) -> StoredState:
         try:
             return self._store.read()
-        except OSError as e:
+        except Exception as e:  # PROTOCOL §7.0: reading storage never throws
             log.warning("sponsorkit: could not read local storage: %s", e)
             return StoredState()
 
@@ -367,7 +421,7 @@ class Sponsorkit:
     def _run_dev_check(self) -> None:
         params: dict[str, str] = {t.provider: t.account for t in self._targets}
         try:
-            res = self._client().get(build_url(self._api, "/api/v1/targets", params))
+            res = self._client().get(build_url(self._api, "/api/v1/targets", params), timeout=self._timeout)
             if res.status_code != 200:
                 return
             body = res.json()
@@ -435,7 +489,9 @@ class Sponsorkit:
 
         try:
             res = self._client().get(
-                f"{self._api}/api/v1/contributions", headers={"Authorization": f"Bearer {token}"}
+                f"{self._api}/api/v1/contributions",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=self._timeout,
             )
         except httpx.HTTPError as e:
             log.info("sponsorkit: API unreachable, serving cache: %s", e)
@@ -471,9 +527,10 @@ class Sponsorkit:
         stored_at = iso(self._now())
 
         def save(s: StoredState) -> bool:
-            # Another thread, instance or process may have signed out or replaced the session
-            # meanwhile: then this result belongs to a session that no longer exists here.
-            if s.session_token != token and (renewed is None or s.session_token != renewed):
+            # PROTOCOL §7.0: write back only while the stored token is still the one this request
+            # used. Another thread, instance or process may have signed out, signed in again or
+            # renewed it meanwhile; then this result belongs to a session that is gone here.
+            if s.session_token != token:
                 return False
             if renewed is not None:
                 s.session_token = renewed
@@ -483,8 +540,12 @@ class Sponsorkit:
         self._safe_update(save)
         return result
 
-    def _clear_session(self, only_if: str | None = None) -> None:
-        """Remove the token and cache; with ``only_if``, only while that token is still stored."""
+    def _clear_session(self, only_if: str | None = None, *, strict: bool = False) -> None:
+        """Remove the token and cache; with ``only_if``, only while that token is still stored.
+
+        With ``strict`` (``sign_out``), a storage failure raises ``invalid_config``; otherwise it is
+        logged.
+        """
         try:
             with self._store.lock:
                 if not self._store.exists():
@@ -498,7 +559,13 @@ class Sponsorkit:
                     self._store.storage.delete(self._store.key)
                 else:
                     self._store.storage.write(self._store.key, state.dump())
-        except OSError as e:
+        except Exception as e:
+            if strict:
+                raise SponsorkitError(
+                    "invalid_config", f"Could not clear the stored session (check storage_dir): {e}"
+                ) from e
+            if not isinstance(e, OSError):
+                raise
             log.warning("sponsorkit: could not update local storage: %s", e)
 
     # ------------------------------------------------------------------ sign-in
@@ -541,27 +608,9 @@ class Sponsorkit:
         """
         resolved = self._resolve_method(method)
         if resolved in ("auto", "loopback"):
-            receiver = LoopbackReceiver(continue_url)
-            try:
-                q = self._with_app({**params, "delivery": "loopback", "redirect_uri": receiver.redirect_uri})
-                url = build_url(self._api, path, q)
-                if not self._open(url):
-                    if resolved == "auto":
-                        resolved = "paste"
-                    else:
-                        print(f"Open this URL in a browser to continue:\n\n  {url}\n", file=sys.stderr)
-                if resolved != "paste":
-                    outcome = receiver.wait(deadline, cancel)
-                    if outcome.kind == "code":
-                        return outcome.value
-                    if outcome.kind == "error":
-                        code = outcome.value
-                        if code not in ("access_denied", "invalid_state", "provider_error"):
-                            code = "provider_error"
-                        raise SponsorkitError(cast(Any, code), f"Sign-in failed: {outcome.value}")
-                    raise self._abandoned(outcome.kind == "cancelled")
-            finally:
-                receiver.close()
+            code = self._loopback_code(path, params, resolved == "auto", deadline, cancel, continue_url)
+            if code is not None:
+                return code
         url = build_url(self._api, path, self._with_app({**params, "delivery": "paste"}))
         print(
             f"To sign in to Sponsorkit, open this URL in a browser on any device:\n\n  {url}\n",
@@ -571,6 +620,68 @@ class Sponsorkit:
         if not code:
             raise SponsorkitError("cancelled", "No sign-in code was entered")
         return code
+
+    def _loopback_code(
+        self,
+        path: str,
+        params: dict[str, str],
+        allow_fallback: bool,
+        deadline: float,
+        cancel: threading.Event | None,
+        continue_url: str | None,
+    ) -> str | None:
+        """Loopback sign-in; ``None`` means "fall back to paste-back" (``auto`` only).
+
+        PROTOCOL §7.0: a receiver that cannot bind falls back (``auto``); the callback is accepted
+        while ``open_browser`` is still running; an opener that fails falls back (``auto``).
+        """
+        try:
+            receiver = LoopbackReceiver(continue_url)
+        except OSError as e:
+            if allow_fallback:
+                log.info("sponsorkit: loopback receiver could not bind, using paste-back: %s", e)
+                return None
+            raise SponsorkitError(
+                "provider_error", f"Could not start the loopback sign-in receiver on 127.0.0.1: {e}"
+            ) from e
+        try:
+            q = self._with_app({**params, "delivery": "loopback", "redirect_uri": receiver.redirect_uri})
+            url = build_url(self._api, path, q)
+            opened = threading.Event()
+            box: dict[str, bool] = {}
+
+            def run_opener() -> None:
+                try:
+                    box["ok"] = self._open(url)
+                finally:
+                    opened.set()
+
+            threading.Thread(target=run_opener, name="sponsorkit-open-browser", daemon=True).start()
+            opener_pending = True
+            while True:
+                outcome = receiver.outcome
+                if outcome is None and opener_pending and opened.is_set():
+                    opener_pending = False
+                    if not box.get("ok", False):
+                        if allow_fallback:
+                            return None
+                        print(f"Open this URL in a browser to continue:\n\n  {url}\n", file=sys.stderr)
+                if outcome is None:
+                    if cancel is not None and cancel.is_set():
+                        raise self._abandoned(True)
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise self._abandoned(False)
+                    receiver.wait(time.monotonic() + min(remaining, 0.05), None)
+                    continue
+                if outcome.kind == "code":
+                    return outcome.value
+                code = outcome.value
+                if code not in ("access_denied", "invalid_state", "provider_error"):
+                    code = "provider_error"
+                raise SponsorkitError(cast(Any, code), f"Sign-in failed: {outcome.value}")
+        finally:
+            receiver.close()
 
     def _abandoned(self, cancelled: bool) -> SponsorkitError:
         if cancelled:
@@ -616,7 +727,7 @@ class Sponsorkit:
             body["sessionToken"] = stored.session_token
         while True:
             try:
-                res = self._client().post(f"{self._api}/api/v1/auth/token", json=body)
+                res = self._client().post(f"{self._api}/api/v1/auth/token", json=body, timeout=self._timeout)
             except httpx.HTTPError as e:
                 raise SponsorkitError("network_error", f"Could not reach the Sponsorkit API: {e}") from e
             request_id = res.headers.get("sponsorkit-request-id")
@@ -658,7 +769,7 @@ class Sponsorkit:
 
         try:
             self._store.update(save)
-        except OSError as e:
+        except Exception as e:  # OSError, or whatever a custom Storage raises
             raise SponsorkitError(
                 "invalid_config", f"Could not store the session (check storage_dir): {e}"
             ) from e
@@ -844,13 +955,18 @@ class Sponsorkit:
     # ------------------------------------------------------------------ sign-out
 
     def sign_out(self) -> None:
-        """Delete the stored session token and cached result. Nag state is kept. No network access."""
+        """Delete the stored session token and cached result. Nag state is kept. No network access.
+
+        Raises:
+            SponsorkitError: ``invalid_config`` when the stored session cannot be cleared (for
+                example the storage directory is read-only).
+        """
         if self._disabled:
             return
         if self._mock_state is not None:
             self._mock_state = _MockState(False, [])
             return
-        self._clear_session()
+        self._clear_session(strict=True)
 
     # ------------------------------------------------------------------ nag
 

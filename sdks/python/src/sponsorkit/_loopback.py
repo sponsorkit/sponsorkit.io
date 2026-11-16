@@ -55,9 +55,7 @@ class LoopbackReceiver:
                     self._send(400, "text/plain; charset=utf-8", b"Missing code or error")
                     return
                 first = receiver._deliver(
-                    CallbackOutcome("code", code)
-                    if code
-                    else CallbackOutcome("error", error)
+                    CallbackOutcome("code", code) if code else CallbackOutcome("error", error)
                 )
                 if code and first and receiver._redirect:
                     self.send_response(302)
