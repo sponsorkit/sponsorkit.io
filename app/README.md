@@ -24,7 +24,7 @@ test/                    Vitest (Node): app.fetch with a stubbed global fetch fa
 | `bun run dev` | `wrangler dev` (copy `.dev.vars.example` to `.dev.vars` first; needs `../web/out` to exist) |
 | `bun run deploy` | `wrangler deploy` |
 
-Secrets are documented in `.dev.vars.example`. Rate-limit bindings (`RL_AUTH`, `RL_REFRESH`, `RL_IP`) are optional: a missing binding is a no-op.
+Secrets are documented in `.dev.vars.example`. Rate-limit bindings (`RL_AUTH`, `RL_REFRESH`, `RL_IP`, `RL_CONTRIB_IP`, `RL_TARGETS_MISS`, `RL_TARGETS_MISS_GLOBAL`) are optional: a missing binding is a no-op.
 
 ## Notes
 

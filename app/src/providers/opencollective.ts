@@ -43,6 +43,7 @@ fragment SkOrder on Order {
 }`;
 
 export const CONTRIBUTIONS_QUERY = `query SponsorkitContributions($slug: String!) {
+  target: account(slug: $slug, throwIfMissing: false) { id }
   me {
     id
     slug
@@ -71,6 +72,8 @@ export const TARGET_QUERY = `query SponsorkitTarget($slug: String!) {
     name
     imageUrl
     currency
+    isActive
+    isArchived
     ... on AccountWithContributions {
       tiers(limit: 100) {
         nodes { id slug name type frequency amountType amount { valueInCents currency } }
@@ -105,6 +108,8 @@ interface OcCollection<T> {
 }
 
 export interface OcContributionsData {
+  /** The target account; null when it doesn't exist (absent in older fixtures). */
+  target?: { id: string } | null;
   me: {
     id: string;
     slug: string;
@@ -123,6 +128,9 @@ export interface OcTargetData {
     name: string | null;
     imageUrl: string | null;
     currency: string | null;
+    /** "Returns whether the account accepts financial contributions." */
+    isActive?: boolean | null;
+    isArchived?: boolean | null;
     tiers?: OcCollection<{
       id: string;
       slug: string | null;
@@ -168,9 +176,30 @@ function mapFrequency(f: string | null): Frequency {
   return "one_time";
 }
 
-function toMoney(a: OcAmount | null | undefined): Money | null {
+/**
+ * ISO 4217 minor-unit digits for currencies that don't use 2 (same table as web's
+ * `currencyExponent`; PROTOCOL §6 requires ISO 4217, not CLDR display digits).
+ */
+const ISO_4217_EXPONENTS: Readonly<Record<string, number>> = {
+  BIF: 0, CLP: 0, DJF: 0, GNF: 0, ISK: 0, JPY: 0, KMF: 0, KRW: 0, PYG: 0, RWF: 0,
+  UGX: 0, UYI: 0, VND: 0, VUV: 0, XAF: 0, XOF: 0, XPF: 0,
+  BHD: 3, IQD: 3, JOD: 3, KWD: 3, LYD: 3, OMR: 3, TND: 3,
+  CLF: 4, UYW: 4,
+};
+
+export function isoExponent(currency: string): number {
+  return ISO_4217_EXPONENTS[currency] ?? 2;
+}
+
+/**
+ * OC's `valueInCents` is always major × 100, whatever the currency (OC stores ¥50 as 5000).
+ * Sponsorkit amounts are ISO 4217 minor units (SPEC §5.1), so rescale by the ISO exponent.
+ */
+export function toMoney(a: OcAmount | null | undefined): Money | null {
   if (!a || a.valueInCents == null || !a.currency || !/^[A-Z]{3}$/.test(a.currency)) return null;
-  return { value: Math.round(a.valueInCents), currency: a.currency };
+  const exp = isoExponent(a.currency);
+  const value = exp === 2 ? a.valueInCents : (a.valueInCents * 10 ** exp) / 100;
+  return { value: Math.round(value), currency: a.currency };
 }
 
 export async function normalizeOrder(
@@ -240,7 +269,10 @@ const CONTRIBUTION_TIER_TYPES = new Set(["TIER", "MEMBERSHIP", "DONATION"]);
 
 export function normalizeTargetInfo(data: OcTargetData, target: Target, ocBase = "https://opencollective.com"): TargetInfo {
   const acc = data.account;
-  const exists = !!acc && CONTRIBUTABLE.has(acc.type);
+  // An account that exists but doesn't accept contributions (a plain organization profile, an
+  // unhosted or archived collective) can't be sponsored, so it reports `exists: false` like a
+  // GitHub account without a Sponsors listing.
+  const exists = !!acc && CONTRIBUTABLE.has(acc.type) && acc.isActive === true && acc.isArchived !== true;
   const tiers: TargetTier[] = [];
   for (const t of acc?.tiers?.nodes ?? []) {
     if (!t || !CONTRIBUTION_TIER_TYPES.has(t.type) || t.frequency === "FLEXIBLE") continue;
@@ -333,6 +365,10 @@ export function opencollectiveAdapter(env: Env): ProviderAdapter {
 
     async fetchContributions(token, identity, target) {
       const body = await graphql<OcContributionsData>(token, CONTRIBUTIONS_QUERY, { slug: target.account });
+      // A target that doesn't exist (typo, deleted collective): `orders(oppositeAccount:)` throws
+      // NotFound, which nulls `me`. There can be no contributions to it, so that's an empty result,
+      // not a provider outage.
+      if (body.data && body.data.target === null) return [];
       if (body.data && body.data.me === null && !body.errors?.length) throw new ProviderAuthError("opencollective", "me is null");
       if (!body.data?.me) throw new ProviderError("opencollective", "me missing in response");
       return normalizeContributions(body.data, identity, target);

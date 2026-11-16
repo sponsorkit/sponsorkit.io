@@ -78,6 +78,11 @@ describe("common behaviour", () => {
     expect(res.headers.get("Sponsorkit-Request-Id")).toBeTruthy();
   });
 
+  it("problem types point at an existing docs anchor", async () => {
+    const body = await expectProblem(await call("/api/v1/nope"), 404, "not_found");
+    expect(body.type).toBe("https://sponsorkit.io/docs#error-contract");
+  });
+
   it("rate limits per IP with Retry-After", async () => {
     const env = makeEnv({ RL_IP: fakeLimiter(1) });
     expect((await call("/api/v1/health", {}, env)).status).toBe(200);
@@ -111,6 +116,25 @@ describe("GET /api/v1/targets", () => {
   it("returns 502 internal when a provider is down", async () => {
     fake.override.set("api.github.test", () => new Response("down", { status: 503 }));
     await expectProblem(await call("/api/v1/targets?github=octocat"), 502, "internal");
+  });
+
+  it("limits uncached lookups per IP and in total (they spend the shared metadata token)", async () => {
+    const perIp = fakeLimiter(2);
+    const global = fakeLimiter(3);
+    const env = makeEnv({ RL_TARGETS_MISS: perIp, RL_TARGETS_MISS_GLOBAL: global });
+    const from = (ip: string) => ({ headers: { "CF-Connecting-IP": ip } });
+    expect((await call("/api/v1/targets?github=user-a", from("1.1.1.1"), env)).status).toBe(200);
+    expect((await call("/api/v1/targets?github=user-b", from("1.1.1.1"), env)).status).toBe(200);
+    const blocked = await call("/api/v1/targets?github=user-c", from("1.1.1.1"), env);
+    await expectProblem(blocked, 429, "rate_limited");
+    expect(blocked.headers.get("Retry-After")).toBe("60");
+    expect(perIp.calls).toEqual(["targets-miss:1.1.1.1", "targets-miss:1.1.1.1", "targets-miss:1.1.1.1"]);
+    // Another IP still has its own budget, until the global one runs out.
+    expect((await call("/api/v1/targets?github=user-d", from("2.2.2.2"), env)).status).toBe(200);
+    await expectProblem(await call("/api/v1/targets?github=user-e", from("2.2.2.2"), env), 429, "rate_limited");
+    expect(global.calls.every((k) => k === "targets-miss")).toBe(true);
+    // Every lookup that reached a provider was allowed by both limits.
+    expect(fake.requests.filter((r) => r.body.includes("SponsorkitTarget"))).toHaveLength(3);
   });
 
   it("returns 500 internal when the metadata token is missing", async () => {
@@ -272,6 +296,16 @@ describe("GET /api/v1/contributions", () => {
     expect(again.headers.get("Retry-After")).toBe("60");
     const other = await makeSession({ ids: [{ ...GH_ID, id: "1" }] });
     expect((await getContributions(other, env)).status).toBe(200);
+  });
+
+  it("is limited per IP (SPEC §8: 60/min), separately from the per-session refresh limit", async () => {
+    const limiter = fakeLimiter(1);
+    const env = makeEnv({ RL_CONTRIB_IP: limiter });
+    const headers = (token: string) => ({ headers: { Authorization: `Bearer ${token}`, "CF-Connecting-IP": "3.3.3.3" } });
+    expect((await call("/api/v1/contributions", headers(await makeSession()), env)).status).toBe(200);
+    const other = await makeSession({ ids: [{ ...GH_ID, id: "2" }] });
+    await expectProblem(await call("/api/v1/contributions", headers(other), env), 429, "rate_limited");
+    expect(limiter.calls).toEqual(["contrib:3.3.3.3", "contrib:3.3.3.3"]);
   });
 
   it("never logs tokens", async () => {

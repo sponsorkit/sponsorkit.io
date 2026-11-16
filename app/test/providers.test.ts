@@ -13,8 +13,9 @@ import {
   normalizeContributions as normalizeOc,
   normalizeTargetInfo as normalizeOcTarget,
   opencollectiveAdapter,
+  toMoney as ocToMoney,
 } from "../src/providers/opencollective";
-import { OAuthExchangeError, ProviderAuthError, ProviderError } from "../src/providers/types";
+import { OAuthExchangeError, ProviderAuthError, ProviderError, providerFetch, readJson } from "../src/providers/types";
 import { OC_ME, ghContributions, ghTarget, ocContributions, ocTarget } from "./fixtures";
 import { installFakeProviders, makeEnv, type FakeProviders } from "./helpers";
 
@@ -177,6 +178,37 @@ describe("Open Collective normalization", () => {
     expect(normalizeOcTarget({ account: { ...ocTarget.account!, type: "INDIVIDUAL" } }, OC_TARGET).exists).toBe(false);
   });
 
+  it("reports accounts that don't accept contributions as exists:false", () => {
+    // e.g. a plain ORGANIZATION profile (isActive:false), or an archived collective.
+    for (const over of [{ type: "ORGANIZATION", isActive: false }, { isActive: false }, { isActive: null }, { isArchived: true }]) {
+      const info = normalizeOcTarget({ account: { ...ocTarget.account!, ...over } }, OC_TARGET);
+      expect(info, JSON.stringify(over)).toMatchObject({ exists: false, frequencies: [], customAmount: false, currency: null });
+    }
+    expect(normalizeOcTarget({ account: { ...ocTarget.account!, type: "ORGANIZATION", isActive: true } }, OC_TARGET).exists).toBe(true);
+  });
+
+  it("converts OC amounts (always major x 100) to ISO 4217 minor units", async () => {
+    expect(ocToMoney({ valueInCents: 1999, currency: "EUR" })).toEqual({ value: 1999, currency: "EUR" });
+    expect(ocToMoney({ valueInCents: 100000, currency: "JPY" })).toEqual({ value: 1000, currency: "JPY" });
+    expect(ocToMoney({ valueInCents: 500000, currency: "KRW" })).toEqual({ value: 5000, currency: "KRW" });
+    expect(ocToMoney({ valueInCents: 150, currency: "KWD" })).toEqual({ value: 1500, currency: "KWD" });
+
+    const jpyOrder = { ...ocContributions.me!.orders!.nodes![0]!, amount: { valueInCents: 100000, currency: "JPY" }, totalContributed: { valueInCents: 300000, currency: "JPY" } };
+    const data = { me: { ...ocContributions.me!, orders: { nodes: [jpyOrder] }, memberOf: { nodes: [] } } };
+    const [c] = await normalizeOc(data, { id: OC_ME.id, handle: "bob" }, OC_TARGET);
+    expect(c!.amount).toEqual({ value: 1000, currency: "JPY" });
+    expect(c!.totalContributed).toEqual({ value: 3000, currency: "JPY" });
+
+    const jpyTarget = {
+      account: {
+        ...ocTarget.account!,
+        currency: "JPY",
+        tiers: { nodes: [{ id: "t", slug: "t", name: "T", type: "TIER", frequency: "MONTHLY" as const, amountType: "FIXED" as const, amount: { valueInCents: 100000, currency: "JPY" } }] },
+      },
+    };
+    expect(normalizeOcTarget(jpyTarget, OC_TARGET).tiers[0]!.amount).toEqual({ value: 1000, currency: "JPY" });
+  });
+
   it("queries outgoing orders incl. incognito and administered accounts", () => {
     expect(OC_CONTRIBUTIONS_QUERY).toContain("orders(filter: OUTGOING, oppositeAccount: { slug: $slug }, includeIncognito: true");
     expect(OC_CONTRIBUTIONS_QUERY).toContain("memberOf(role: [ADMIN]");
@@ -246,6 +278,34 @@ describe("adapters over HTTP", () => {
     expect((await oc.fetchTargetInfo(OC_TARGET)).exists).toBe(true);
     expect(fake.requests.at(-1)!.headers.get("Authorization")).toBeNull();
     expect((await oc.fetchTargetInfo({ provider: "opencollective", account: "missing-collective" })).exists).toBe(false);
+  });
+
+  it("opencollective: a target that doesn't exist yields no contributions, not an outage", async () => {
+    // OC resolves `oppositeAccount` with throwIfMissing, so the NotFound error nulls `me`.
+    fake.override.set("api.oc.test", () =>
+      Response.json({ data: { target: null, me: null }, errors: [{ message: "Account Not Found", path: ["me", "orders"], extensions: { code: "NotFound" } }] }),
+    );
+    const oc = opencollectiveAdapter(makeEnv());
+    expect(await oc.fetchContributions("oc_good", { id: OC_ME.id, handle: "bob" }, { provider: "opencollective", account: "typo-collective" })).toEqual([]);
+    expect(OC_CONTRIBUTIONS_QUERY).toContain("target: account(slug: $slug, throwIfMissing: false)");
+    // Without the target lookup coming back null, a null `me` is still a provider failure.
+    fake.override.set("api.oc.test", () => Response.json({ data: { target: { id: "x" }, me: null }, errors: [{ message: "boom" }] }));
+    await expect(oc.fetchContributions("oc_good", { id: OC_ME.id, handle: "bob" }, OC_TARGET)).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it("the provider timeout also covers a body that stalls after the headers", async () => {
+    fake.override.set("api.oc.test", () => {
+      const stalled = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("{"));
+        },
+      });
+      return new Response(stalled, { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    const started = Date.now();
+    const p = providerFetch("opencollective", "https://api.oc.test/graphql/v2", { method: "POST", body: "{}" }, 100).then((res) => readJson("opencollective", res));
+    await expect(p).rejects.toMatchObject({ name: "ProviderError", message: "timeout" });
+    expect(Date.now() - started).toBeLessThan(2000);
   });
 
   it("network failures become ProviderError", async () => {

@@ -67,13 +67,35 @@ export class OAuthExchangeError extends ProviderError {
 
 export const PROVIDER_TIMEOUT_MS = 10_000;
 
-/** fetch with a timeout; network errors become ProviderError. */
+/** A promise that may lose a race: mark its rejection handled so it can't surface later. */
+function quiet<T>(p: Promise<T>): Promise<T> {
+  p.catch(() => undefined);
+  return p;
+}
+
+const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
+
+/**
+ * fetch with a timeout that covers the whole exchange: headers *and* body. The body is buffered
+ * under the same deadline, so a provider that sends headers and then stalls can't hang the
+ * request. Network errors and timeouts become ProviderError.
+ */
 export async function providerFetch(provider: Provider, url: string, init: RequestInit, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new ProviderError(provider, "timeout"));
+    }, timeoutMs);
+  });
+  deadline.catch(() => undefined); // never an unhandled rejection
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    const res = await Promise.race([quiet(fetch(url, { ...init, signal: controller.signal })), deadline]);
+    const body = NULL_BODY_STATUSES.has(res.status) ? null : await Promise.race([quiet(res.arrayBuffer()), deadline]);
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (e) {
+    if (e instanceof ProviderError) throw e;
     throw new ProviderError(provider, controller.signal.aborted ? "timeout" : "network error");
   } finally {
     clearTimeout(timer);

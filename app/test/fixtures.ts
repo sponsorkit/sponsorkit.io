@@ -172,6 +172,8 @@ export const ocTarget: OcTargetData = {
     name: "Sponsorkit",
     imageUrl: "https://images.opencollective.com/sponsorkit/logo.png",
     currency: "EUR",
+    isActive: true,
+    isArchived: false,
     tiers: {
       nodes: [
         { id: "tier_backer", slug: "backer", name: "Backer", type: "TIER", frequency: "MONTHLY", amountType: "FIXED", amount: { valueInCents: 500, currency: "EUR" } },

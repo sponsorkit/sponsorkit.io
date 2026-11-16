@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { base64urlEncode } from "../src/encoding";
 import { CodePayload, StatePayload } from "../src/payloads";
 import { NONCE_COOKIE } from "../src/routes/oauth";
@@ -37,7 +37,8 @@ describe("GET /api/oauth/:provider/start", () => {
   it("sets the nonce cookie, seals the state and redirects to GitHub", async () => {
     const { res, location, nonce, state } = await start("github", { delivery: "web_message", origin: "https://app.example.com", app_name: "demo" });
     const cookie = res.headers.getSetCookie().find((c) => c.startsWith(NONCE_COOKIE))!;
-    expect(cookie).toMatch(/; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=600$/);
+    // The cookie outlives the 600 s state so an expired flow can still be reported (PROTOCOL §4.4).
+    expect(cookie).toMatch(/; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=1200$/);
     expect(nonce).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(location.origin + location.pathname).toBe("https://github.test/login/oauth/authorize");
     expect(location.searchParams.get("redirect_uri")).toBe(`${ORIGIN}/api/oauth/github/callback`);
@@ -79,6 +80,40 @@ describe("GET /api/oauth/:provider/start", () => {
     const res = await call(startPath("github", { delivery: "paste" }), {}, makeEnv({ SEALING_KEYS: undefined }));
     expect(res.status).toBe(500);
     expect(await res.text()).not.toContain("SEALING_KEYS");
+  });
+
+  it("accepts navigations from Sponsorkit's own consent pages", async () => {
+    for (const site of ["same-origin", "same-site"]) {
+      const res = await call(startPath("github", { delivery: "paste" }), { headers: { "Sec-Fetch-Site": site, "Sec-Fetch-User": "?1" } });
+      expect(res.status, site).toBe(302);
+    }
+  });
+
+  it("refuses cross-site or direct links that skip the consent screen, linking to it instead", async () => {
+    const params = { delivery: "redirect", redirect_uri: "https://evil.example/cb", app_name: "x" };
+    for (const site of ["cross-site", "none"]) {
+      const res = await call(startPath("github", params), { headers: { "Sec-Fetch-Site": site } });
+      expect(res.status, site).toBe(403);
+      expect(res.headers.get("Content-Type")).toContain("text/html");
+      expect(res.headers.get("Location")).toBeNull();
+      expect(res.headers.get("Set-Cookie")).toBeNull();
+      const html = await res.text();
+      const href = /<a href="([^"]+)"/.exec(html)![1]!.replaceAll("&amp;", "&");
+      const u = new URL(href);
+      expect(u.origin + u.pathname).toBe(`${ORIGIN}/connect`);
+      expect(Object.fromEntries(u.searchParams)).toEqual({ targets: TARGETS, challenge: CHALLENGE, ...params });
+    }
+    // A /checkout flow goes back to /checkout with its continue value plus the sign-in params.
+    const res = await call(startPath("opencollective", { delivery: "web_message", origin: "https://app.example.com", continue: "targets=opencollective%3Asponsorkit&amount=500" }), {
+      headers: { "Sec-Fetch-Site": "cross-site" },
+    });
+    const href = /<a href="([^"]+)"/.exec(await res.text())![1]!.replaceAll("&amp;", "&");
+    const u = new URL(href);
+    expect(u.pathname).toBe("/checkout");
+    expect(u.searchParams.get("amount")).toBe("500");
+    expect(u.searchParams.get("targets")).toBe("opencollective:sponsorkit");
+    expect(u.searchParams.get("challenge")).toBe(CHALLENGE);
+    expect(u.searchParams.get("origin")).toBe("https://app.example.com");
   });
 
   it("is rate limited per IP", async () => {
@@ -204,6 +239,25 @@ describe("GET /api/oauth/:provider/callback", () => {
     const res = await callback("github", { code: "good", state }, nonce);
     expect(res.headers.get("Location")).toBe("http://127.0.0.1:9999/callback?error=invalid_state");
     expect(fake.requests).toHaveLength(0);
+  });
+
+  describe("with a real browser's cookie lifetime", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("still delivers invalid_state after the state expires (the cookie outlives it)", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      const { res, state, nonce } = await start("github", { delivery: "loopback", redirect_uri: "http://127.0.0.1:9999/callback" });
+      const cookie = res.headers.getSetCookie().find((c) => c.startsWith(NONCE_COOKIE))!;
+      const maxAge = Number(/Max-Age=(\d+)/.exec(cookie)![1]);
+      // The user comes back 11 minutes later: the state (600 s) has expired, the cookie hasn't.
+      vi.setSystemTime(Date.now() + 660_000);
+      expect(maxAge).toBeGreaterThan(660);
+      const cb = await callback("github", { code: "good", state }, nonce);
+      expect(cb.headers.get("Location")).toBe("http://127.0.0.1:9999/callback?error=invalid_state");
+      expect(fake.requests).toHaveLength(0);
+    });
   });
 
   it("shows an HTML error and delivers nothing when the nonce cookie is missing or wrong", async () => {

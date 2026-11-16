@@ -30,6 +30,12 @@ export interface Env {
   RL_AUTH?: RateLimitBinding;
   RL_REFRESH?: RateLimitBinding;
   RL_IP?: RateLimitBinding;
+  /** `/contributions` per client IP (SPEC §8: 60/min). */
+  RL_CONTRIB_IP?: RateLimitBinding;
+  /** Uncached `/targets` lookups per client IP (they spend the shared metadata token's quota). */
+  RL_TARGETS_MISS?: RateLimitBinding;
+  /** Uncached `/targets` lookups in total (single key). */
+  RL_TARGETS_MISS_GLOBAL?: RateLimitBinding;
 }
 
 export interface ProviderUrls {

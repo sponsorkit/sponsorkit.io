@@ -14,6 +14,13 @@ import { clientIp, allow } from "../ratelimit";
 import { loadSealingKeys, nowSeconds, seal, SealError, unseal } from "../seal";
 
 export const NONCE_COOKIE = "__Host-sk_nonce";
+/**
+ * The nonce cookie outlives the state by this much. Browsers drop a cookie at Max-Age, so a
+ * cookie that expired together with the state would turn every expired flow into the "another
+ * browser" page; this way an expired-but-bound state still reaches the `invalid_state` delivery
+ * (PROTOCOL §4.4).
+ */
+export const NONCE_GRACE = 600;
 const NONCE_RE = /^[A-Za-z0-9_-]{43}$/;
 
 export type DeliveryError = "access_denied" | "invalid_state" | "provider_error";
@@ -61,16 +68,57 @@ function configErrorPage(c: Context<AppEnv>, e: unknown): Response {
 
 // ---------- GET /api/oauth/:provider/start ----------
 
+/**
+ * Whether the navigation to /start came from Sponsorkit's own pages (the /connect or /checkout
+ * consent screen). Browsers that send Fetch Metadata mark a navigation from another site, or one
+ * with no initiator (pasted URL), as `cross-site` / `none`. Those skip the consent screen, which
+ * is the only place the user sees who is asking and for which targets (SPEC §5.4), and providers
+ * don't re-prompt for an app the user already authorized. Without the header (old browsers,
+ * non-browser clients) there is nothing to check.
+ */
+export function startInitiatedByConsent(req: Request): boolean {
+  const site = req.headers.get("Sec-Fetch-Site");
+  return site === null || site === "same-origin" || site === "same-site";
+}
+
+/** The consent page for these /start params: /checkout when a `continue` value is present (§4.6), else /connect. */
+export function consentUrlFor(origin: string, query: URLSearchParams): string {
+  const q = new URLSearchParams();
+  for (const key of ["targets", "challenge", "delivery", "origin", "redirect_uri", "app_name", "provider", "add"]) {
+    const v = query.get(key);
+    if (v !== null) q.set(key, v);
+  }
+  const cont = query.get("continue");
+  if (cont !== null) {
+    const merged = new URLSearchParams(cont);
+    for (const [k, v] of q) if (!merged.has(k)) merged.set(k, v);
+    return `${origin}/checkout?${merged.toString()}`;
+  }
+  return `${origin}/connect?${q.toString()}`;
+}
+
 oauth.get("/:provider/start", async (c) => {
   const provider = routeProvider(c);
   if (!provider) return htmlErrorPage(404, "Unknown provider", "This sign-in provider is not supported.", c.get("requestId"));
 
   let params;
+  const query = new URL(c.req.url).searchParams;
   try {
-    params = parseStartParams(new URL(c.req.url).searchParams, provider);
+    params = parseStartParams(query, provider);
   } catch (e) {
     if (e instanceof ParamError) return htmlErrorPage(400, "Invalid sign-in link", e.message, c.get("requestId"));
     throw e;
+  }
+
+  if (!startInitiatedByConsent(c.req.raw)) {
+    logEvent("warn", { msg: "oauth_start_without_consent", provider, site: c.req.header("Sec-Fetch-Site") ?? null, requestId: c.get("requestId") });
+    return htmlErrorPage(
+      403,
+      "Review this sign-in first",
+      "This sign-in link skipped Sponsorkit's consent screen. Continue to review who is asking and what will be checked.",
+      c.get("requestId"),
+      { href: consentUrlFor(publicOrigin(c.env, c.req.url), query), label: "Review and continue" },
+    );
   }
 
   try {
@@ -97,7 +145,7 @@ oauth.get("/:provider/start", async (c) => {
       state: await seal("state", state, keys),
       codeChallenge: await challengeFor(providerVerifier),
     });
-    return redirect(location, nonceCookie(nonce, STATE_TTL));
+    return redirect(location, nonceCookie(nonce, STATE_TTL + NONCE_GRACE));
   } catch (e) {
     if (e instanceof ConfigError) return configErrorPage(c, e);
     throw e;

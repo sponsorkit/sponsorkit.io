@@ -23,9 +23,15 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * `type` must dereference to human-readable docs (RFC 9457 §3.1.1). The site has no per-code
+ * errors page, so every problem points at the docs' error section; `code` tells them apart.
+ */
+export const PROBLEM_TYPE = "https://sponsorkit.io/docs#error-contract";
+
 export function problemBody(status: number, code: ErrorCode, detail?: string): Problem {
   const body: Problem = {
-    type: `https://sponsorkit.io/docs/errors#${code}`,
+    type: PROBLEM_TYPE,
     title: TITLES[code],
     status,
     code,

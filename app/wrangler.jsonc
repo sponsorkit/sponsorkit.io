@@ -22,10 +22,20 @@
     // /api/v1/contributions: 1 refresh / 60 s per session (hash of target set + identities).
     { "name": "RL_REFRESH", "namespace_id": "4202", "simple": { "limit": 1, "period": 60 } },
     // All /api/*: 120 requests / 60 s per client IP.
-    { "name": "RL_IP", "namespace_id": "4203", "simple": { "limit": 120, "period": 60 } }
+    { "name": "RL_IP", "namespace_id": "4203", "simple": { "limit": 120, "period": 60 } },
+    // /api/v1/contributions: 60 requests / 60 s per client IP (SPEC §8).
+    { "name": "RL_CONTRIB_IP", "namespace_id": "4204", "simple": { "limit": 60, "period": 60 } },
+    // /api/v1/targets cache misses (each one spends the shared GITHUB_METADATA_TOKEN quota of
+    // 5,000 GraphQL points/hour): 20 / 60 s per client IP ...
+    { "name": "RL_TARGETS_MISS", "namespace_id": "4205", "simple": { "limit": 20, "period": 60 } },
+    // ... and 60 / 60 s in total (one key), i.e. at most 3,600/hour per location.
+    { "name": "RL_TARGETS_MISS_GLOBAL", "namespace_id": "4206", "simple": { "limit": 60, "period": 60 } }
   ],
 
-  "observability": { "enabled": true },
+  // Invocation logs would record full request URLs, and the OAuth callback's query string
+  // carries the provider code and sealed state (SPEC §9: logs never contain codes). Only the
+  // app's own structured logs (path only) are kept.
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
 
   // Secrets (set with `wrangler secret put <NAME>`; see .dev.vars.example):
   // GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, OPENCOLLECTIVE_CLIENT_ID,

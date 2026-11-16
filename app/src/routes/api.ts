@@ -60,6 +60,12 @@ api.get("/targets", async (c) => {
     if (hit) return new Response(hit.body, hit);
   }
 
+  // Every miss costs upstream calls on shared credentials (GitHub: the single metadata token's
+  // GraphQL budget), and distinct targets always miss, so misses get their own, lower limits.
+  const ip = clientIp(c.req.raw);
+  await enforce(c.env.RL_TARGETS_MISS, `targets-miss:${ip}`);
+  await enforce(c.env.RL_TARGETS_MISS_GLOBAL, "targets-miss");
+
   let infos;
   try {
     infos = await Promise.all(targets.map((t) => getAdapter(c.env, t.provider).fetchTargetInfo(t)));
@@ -132,6 +138,7 @@ api.get("/contributions", async (c) => {
   const auth = c.req.header("Authorization") ?? "";
   const m = /^Bearer\s+(\S+)$/i.exec(auth);
   if (!m) throw new ApiError(401, "session_invalid", "Missing bearer session token");
+  await enforce(c.env.RL_CONTRIB_IP, `contrib:${clientIp(c.req.raw)}`);
   const keys = await loadSealingKeys(c.env.SEALING_KEYS);
   const now = nowSeconds();
   const session = await openSession(m[1]!, keys, now);
