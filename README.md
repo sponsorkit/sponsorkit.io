@@ -1,6 +1,6 @@
 # Sponsorkit
 
-Sponsorkit lets open source maintainers build financial contributions straight into their software. There's no account, no API key and no webhooks.
+Sponsorkit lets open source maintainers build financial contributions straight into their software. There's no account, no API key, no webhooks, and no stored user data.
 
 ```ts
 import { Sponsorkit } from "@sponsorkit/sdk";
