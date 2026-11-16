@@ -15,6 +15,10 @@ export const SDK_ERROR_CODES = [
   "access_denied",
   "invalid_state",
   "provider_error",
+  "invalid_code",
+  "cancelled",
+  "timeout",
+  "network_error",
   "session_invalid",
   "targets_mismatch",
 ] as const;
@@ -32,6 +36,10 @@ export const HOOKS = [
   "checkoutPollInterval",
   "restart",
   "posixPermissions",
+  "signInTimeout",
+  "interactive",
+  "cancellation",
+  "processEnv",
 ] as const;
 export const Hook = z.enum(HOOKS);
 
@@ -67,6 +75,11 @@ export const StepExpect = z
     returns: Matcher.optional(),
     /** The step must throw/reject with a SponsorkitError of this code. */
     throws: SdkErrorCode.optional(),
+    /**
+     * Matcher applied to the normalized thrown error `{ code, retryAfter }` (retryAfter: seconds or null).
+     * Only checked when the step threw.
+     */
+    error: Matcher.optional(),
     /** Unordered: the ids of `returns.contributions` (or of the checkout `contribution`) must equal this set. */
     contributionIds: z.array(z.string()).optional(),
     /** Requests the server received while this step ran. */
@@ -89,10 +102,22 @@ export const ConfigureArgs = z
     apiBaseUrl: z.string().default("$BASE_URL"),
     storageDir: z.string().default("$STORAGE_DIR"),
     signInMethod: z.enum(["auto", "loopback", "paste"]).optional(),
-    /** Environment variables visible to the SDK instance (and only those of SPONSORKIT_*, CI). */
+    /**
+     * The per-instance `env` override (PROTOCOL §7). It always **replaces** the process environment
+     * for SPONSORKIT_DISABLE, SPONSORKIT_MOCK, SPONSORKIT_NO_NAG, SPONSORKIT_DEV_CHECKS and CI.
+     */
     env: z.record(z.string(), z.string()).default({}),
-    /** Whether dev-time checks (target existence via /targets) run. */
-    devChecks: z.boolean().default(false),
+    /**
+     * Variables the harness sets in the real process environment before constructing the instance
+     * and keeps set until the scenario ends (then restores). Used to prove that `env` replaces them.
+     */
+    processEnv: z.record(z.string(), z.string()).optional(),
+    /** Forces dev-time checks (target existence via /targets) on or off. Absent: the SDK default (PROTOCOL §7). */
+    devChecks: z.boolean().optional(),
+    /** `signInTimeout`, seconds (production default 300). */
+    signInTimeout: z.number().positive().optional(),
+    /** Overrides the TTY detection used by the nag helper. Absent: the SDK default (TTY detection). */
+    interactive: z.boolean().optional(),
   })
   .strict();
 
@@ -135,11 +160,32 @@ const bareStep = <A extends string>(action: A) =>
 export const SimpleStep = z.discriminatedUnion("action", [
   step("configure", ConfigureArgs),
   bareStep("restart"),
-  step("signIn", z.object({ method: z.enum(["loopback", "paste"]), provider: Provider.optional() }).strict()),
+  step(
+    "signIn",
+    z
+      .object({
+        method: z.enum(["loopback", "paste"]),
+        provider: Provider.optional(),
+        /** Fire the sign-in cancellation signal this many seconds after the call starts. */
+        cancelAfter: z.number().nonnegative().optional(),
+      })
+      .strict(),
+  ),
   bareStep("isSignedIn"),
   step("getFinancialContribution", z.object({ cacheTtl: z.number().int().nonnegative().optional() }).strict().default({})),
   step("openCheckout", CheckoutArgs.extend({ method: z.enum(["loopback", "paste"]).optional() }).strict()),
-  step("checkoutUrl", CheckoutArgs.pick({ provider: true, amount: true, currency: true, frequency: true }).strict()),
+  step(
+    "checkoutUrl",
+    z
+      .object({
+        // Deliberately loose: scenarios pass invalid values to assert invalid_config.
+        provider: z.string().optional(),
+        amount: z.number().optional(),
+        currency: z.string().optional(),
+        frequency: z.string().optional(),
+      })
+      .strict(),
+  ),
   bareStep("signOut"),
   step(
     "nagDue",
@@ -154,7 +200,10 @@ export const SimpleStep = z.discriminatedUnion("action", [
       .strict(),
   ),
   step("nagShown", z.object({ id: z.string() }).strict()),
-  step("verifySession", z.object({ token: z.string(), targets: TargetOptions }).strict()),
+  step(
+    "verifySession",
+    z.object({ token: z.string(), targets: TargetOptions, apiBaseUrl: z.string().default("$BASE_URL") }).strict(),
+  ),
   step("control", ControlPatch),
   step("mintSession", MintSessionRequest),
   step("writeStorage", z.object({ path: z.string().default("$STORAGE_FILE"), json: z.unknown() }).strict()),

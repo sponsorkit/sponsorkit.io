@@ -574,8 +574,14 @@
             "invalid_state",
             "provider_error"
           ]
+        },
+        "abandon": {
+          "type": "boolean"
         }
       }
+    },
+    "rejectCodes": {
+      "type": "boolean"
     },
     "checkoutChoice": {
       "type": "string",

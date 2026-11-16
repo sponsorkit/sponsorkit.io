@@ -32,10 +32,11 @@ export interface TestHooks {
 }
 
 export interface SdkInstance {
-  signIn(args: { method: "loopback" | "paste"; provider?: string }): Promise<unknown>;
+  signIn(args: { method: "loopback" | "paste"; provider?: string; signal?: AbortSignal }): Promise<unknown>;
   isSignedIn(): boolean | Promise<boolean>;
   getFinancialContribution(args: { cacheTtl?: number }): Promise<ContributionResult>;
   openCheckout(args: CheckoutArgs & { signal?: AbortSignal }): Promise<{ status: "contributed" | "unknown"; contribution?: unknown }>;
+  /** Must throw invalid_config for an unconfigured provider or an invalid amount, currency or frequency. */
   checkoutUrl(args: { provider?: string; amount?: number; currency?: string; frequency?: string }): string;
   signOut(): Promise<void>;
   nagDue(args: NagDueArgs): Promise<boolean>;
@@ -50,6 +51,8 @@ export interface SdkAdapter {
   verifySession(token: string, targets: { github?: string; opencollective?: string }, opts: { apiBaseUrl: string }): Promise<ContributionResult>;
   /** The SponsorkitError code of a thrown value, or undefined if it is not a SponsorkitError. */
   errorCode(error: unknown): string | undefined;
+  /** The `retryAfter` (seconds) of a thrown SponsorkitError, or undefined when it carries none. */
+  errorRetryAfter?(error: unknown): number | undefined;
 }
 
 export interface RunContext {
@@ -161,6 +164,21 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
     },
   };
 
+  const savedEnv = new Map<string, string | undefined>();
+  const setProcessEnv = (vars: Record<string, string> | undefined) => {
+    for (const [k, v] of Object.entries(vars ?? {})) {
+      if (!savedEnv.has(k)) savedEnv.set(k, process.env[k]);
+      process.env[k] = v;
+    }
+  };
+  const restoreProcessEnv = () => {
+    for (const [k, v] of savedEnv) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    savedEnv.clear();
+  };
+
   let config: ConfigureArgs | null = null;
   let instance: SdkInstance | null = null;
   const exec = async (step: SimpleStep, on: SdkInstance | null = instance): Promise<unknown> => {
@@ -172,6 +190,7 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
       case "configure":
         instance = null;
         config = step.args;
+        setProcessEnv(step.args.processEnv);
         instance = await adapter.create(step.args, hooks);
         return null;
       case "restart":
@@ -180,9 +199,17 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
         await adapter.resetProcessState();
         instance = await adapter.create(config, hooks);
         return null;
-      case "signIn":
-        await need().signIn(step.args);
+      case "signIn": {
+        const { cancelAfter, ...rest } = step.args;
+        const ac = new AbortController();
+        const timer = cancelAfter !== undefined ? setTimeout(() => ac.abort(), cancelAfter * 1000) : undefined;
+        try {
+          await need().signIn({ ...rest, signal: ac.signal });
+        } finally {
+          clearTimeout(timer);
+        }
         return null;
+      }
       case "isSignedIn":
         return need().isSignedIn();
       case "getFinancialContribution":
@@ -208,7 +235,7 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
         await need().nagShown(step.args);
         return null;
       case "verifySession":
-        return adapter.verifySession(step.args.token, step.args.targets, { apiBaseUrl: ctx.baseUrl });
+        return adapter.verifySession(step.args.token, step.args.targets, { apiBaseUrl: step.args.apiBaseUrl });
       case "control":
         await control.call("PATCH", "/__control", step.args);
         return null;
@@ -230,53 +257,61 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
     }
   };
 
-  for (const [index, rawStep] of scenario.steps.entries()) {
-    const label = `step ${index + 1} (${rawStep.action})`;
-    const seq = (await control.state()).lastRequestSeq;
-    const started = performance.now();
-    let returned: unknown = null;
-    let thrown: unknown = undefined;
-    let threw = false;
-    try {
-      if (rawStep.action === "group") {
-        for (const s of rawStep.steps) returned = await exec(await resolve(s as SimpleStep));
-      } else if (rawStep.action === "parallel") {
-        if (!config) throw new Error("parallel before configure");
-        const inner = await resolve(rawStep.args.step as SimpleStep);
-        const instances = await Promise.all(Array.from({ length: rawStep.args.instances }, () => adapter.create(config!, hooks)));
-        returned = await Promise.all(instances.map((i) => exec(inner, i)));
-      } else {
-        returned = await exec(await resolve(rawStep as SimpleStep));
+  try {
+    for (const [index, rawStep] of scenario.steps.entries()) {
+      const label = `step ${index + 1} (${rawStep.action})`;
+      const seq = (await control.state()).lastRequestSeq;
+      const started = performance.now();
+      let returned: unknown = null;
+      let thrown: unknown = undefined;
+      let threw = false;
+      try {
+        if (rawStep.action === "group") {
+          for (const s of rawStep.steps) returned = await exec(await resolve(s as SimpleStep));
+        } else if (rawStep.action === "parallel") {
+          if (!config) throw new Error("parallel before configure");
+          const inner = await resolve(rawStep.args.step as SimpleStep);
+          const instances = await Promise.all(Array.from({ length: rawStep.args.instances }, () => adapter.create(config!, hooks)));
+          returned = await Promise.all(instances.map((i) => exec(inner, i)));
+        } else {
+          returned = await exec(await resolve(rawStep as SimpleStep));
+        }
+      } catch (e) {
+        threw = true;
+        thrown = e;
       }
-    } catch (e) {
-      threw = true;
-      thrown = e;
-    }
-    const seconds = (performance.now() - started) / 1000;
-    const expect = rawStep.expect;
-    const problems: string[] = [];
-    if (threw) {
-      const code = adapter.errorCode(thrown);
-      if (!expect?.throws) problems.push(`unexpected error: ${code ?? String(thrown)}`);
-      else if (code !== expect.throws) problems.push(`expected error ${expect.throws}, got ${code ?? String(thrown)}`);
-    } else if (expect?.throws) {
-      problems.push(`expected error ${expect.throws}, but the step succeeded`);
-    }
-    if (expect) {
-      const e = await resolve(expect);
-      const value = normalize(returned);
-      if (!threw && e.returns !== undefined) problems.push(...match(value, e.returns, "returns"));
-      if (!threw && e.contributionIds) {
-        const v = value as { contributions?: { id: string }[]; contribution?: { id: string } } | null;
-        const got = (v?.contributions ?? (v?.contribution ? [v.contribution] : [])).map((c) => c.id).sort();
-        const want = [...e.contributionIds].sort();
-        if (JSON.stringify(got) !== JSON.stringify(want)) problems.push(`contribution ids ${JSON.stringify(got)} !== ${JSON.stringify(want)}`);
+      const seconds = (performance.now() - started) / 1000;
+      const expect = rawStep.expect;
+      const problems: string[] = [];
+      if (threw) {
+        const code = adapter.errorCode(thrown);
+        if (!expect?.throws) problems.push(`unexpected error: ${code ?? String(thrown)}`);
+        else if (code !== expect.throws) problems.push(`expected error ${expect.throws}, got ${code ?? String(thrown)}`);
+      } else if (expect?.throws) {
+        problems.push(`expected error ${expect.throws}, but the step succeeded`);
       }
-      if (e.requests) problems.push(...matchRequests(await control.requests(seq), e.requests));
-      if (e.minSeconds !== undefined && seconds < e.minSeconds) problems.push(`took ${seconds.toFixed(2)} s, expected >= ${e.minSeconds}`);
-      if (e.maxSeconds !== undefined && seconds > e.maxSeconds) problems.push(`took ${seconds.toFixed(2)} s, expected <= ${e.maxSeconds}`);
+      if (expect) {
+        const e = await resolve(expect);
+        const value = normalize(returned);
+        if (!threw && e.returns !== undefined) problems.push(...match(value, e.returns, "returns"));
+        if (threw && e.error !== undefined) {
+          const retryAfter = adapter.errorRetryAfter?.(thrown);
+          problems.push(...match({ code: adapter.errorCode(thrown) ?? null, retryAfter: retryAfter ?? null }, e.error, "error"));
+        }
+        if (!threw && e.contributionIds) {
+          const v = value as { contributions?: { id: string }[]; contribution?: { id: string } } | null;
+          const got = (v?.contributions ?? (v?.contribution ? [v.contribution] : [])).map((c) => c.id).sort();
+          const want = [...e.contributionIds].sort();
+          if (JSON.stringify(got) !== JSON.stringify(want)) problems.push(`contribution ids ${JSON.stringify(got)} !== ${JSON.stringify(want)}`);
+        }
+        if (e.requests) problems.push(...matchRequests(await control.requests(seq), e.requests));
+        if (e.minSeconds !== undefined && seconds < e.minSeconds) problems.push(`took ${seconds.toFixed(2)} s, expected >= ${e.minSeconds}`);
+        if (e.maxSeconds !== undefined && seconds > e.maxSeconds) problems.push(`took ${seconds.toFixed(2)} s, expected <= ${e.maxSeconds}`);
+      }
+      if (problems.length) throw new ScenarioFailure(scenario.id, label, problems);
     }
-    if (problems.length) throw new ScenarioFailure(scenario.id, label, problems);
+  } finally {
+    restoreProcessEnv();
   }
 
   const final = scenario.expect;

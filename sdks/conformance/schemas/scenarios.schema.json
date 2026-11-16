@@ -96,7 +96,11 @@
                 "devChecks",
                 "checkoutPollInterval",
                 "restart",
-                "posixPermissions"
+                "posixPermissions",
+                "signInTimeout",
+                "interactive",
+                "cancellation",
+                "processEnv"
               ]
             }
           },
@@ -675,8 +679,14 @@
                       "invalid_state",
                       "provider_error"
                     ]
+                  },
+                  "abandon": {
+                    "type": "boolean"
                   }
                 }
+              },
+              "rejectCodes": {
+                "type": "boolean"
               },
               "checkoutChoice": {
                 "type": "string",
@@ -976,8 +986,23 @@
                                 "type": "string"
                               }
                             },
+                            "processEnv": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            },
                             "devChecks": {
-                              "default": false,
+                              "type": "boolean"
+                            },
+                            "signInTimeout": {
+                              "type": "number",
+                              "exclusiveMinimum": 0
+                            },
+                            "interactive": {
                               "type": "boolean"
                             }
                           },
@@ -999,10 +1024,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1111,10 +1141,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1222,6 +1257,10 @@
                                 "github",
                                 "opencollective"
                               ]
+                            },
+                            "cancelAfter": {
+                              "type": "number",
+                              "minimum": 0
                             }
                           },
                           "required": [
@@ -1245,10 +1284,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1357,10 +1401,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1480,10 +1529,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1639,10 +1693,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1739,27 +1798,16 @@
                           "type": "object",
                           "properties": {
                             "provider": {
-                              "type": "string",
-                              "enum": [
-                                "github",
-                                "opencollective"
-                              ]
+                              "type": "string"
                             },
                             "amount": {
-                              "type": "integer",
-                              "exclusiveMinimum": 0,
-                              "maximum": 9007199254740991
+                              "type": "number"
                             },
                             "currency": {
                               "type": "string"
                             },
                             "frequency": {
-                              "type": "string",
-                              "enum": [
-                                "one_time",
-                                "monthly",
-                                "yearly"
-                              ]
+                              "type": "string"
                             }
                           },
                           "additionalProperties": false
@@ -1780,10 +1828,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -1892,10 +1945,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -2037,10 +2095,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -2161,10 +2224,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -2274,6 +2342,10 @@
                                 }
                               },
                               "additionalProperties": false
+                            },
+                            "apiBaseUrl": {
+                              "default": "$BASE_URL",
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -2298,10 +2370,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -3022,12 +3099,21 @@
                                         "invalid_state",
                                         "provider_error"
                                       ]
+                                    },
+                                    "abandon": {
+                                      "type": "boolean"
                                     }
                                   }
                                 },
                                 {
                                   "type": "null"
                                 }
+                              ]
+                            },
+                            "rejectCodes": {
+                              "type": [
+                                "boolean",
+                                "null"
                               ]
                             },
                             "checkoutChoice": {
@@ -3075,10 +3161,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -3212,10 +3303,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -3338,10 +3434,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -3463,10 +3564,15 @@
                                 "access_denied",
                                 "invalid_state",
                                 "provider_error",
+                                "invalid_code",
+                                "cancelled",
+                                "timeout",
+                                "network_error",
                                 "session_invalid",
                                 "targets_mismatch"
                               ]
                             },
+                            "error": {},
                             "contributionIds": {
                               "type": "array",
                               "items": {
@@ -3847,8 +3953,23 @@
                                         "type": "string"
                                       }
                                     },
+                                    "processEnv": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      }
+                                    },
                                     "devChecks": {
-                                      "default": false,
+                                      "type": "boolean"
+                                    },
+                                    "signInTimeout": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "interactive": {
                                       "type": "boolean"
                                     }
                                   },
@@ -3870,10 +3991,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -3982,10 +4108,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4093,6 +4224,10 @@
                                         "github",
                                         "opencollective"
                                       ]
+                                    },
+                                    "cancelAfter": {
+                                      "type": "number",
+                                      "minimum": 0
                                     }
                                   },
                                   "required": [
@@ -4116,10 +4251,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4228,10 +4368,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4351,10 +4496,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4510,10 +4660,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4610,27 +4765,16 @@
                                   "type": "object",
                                   "properties": {
                                     "provider": {
-                                      "type": "string",
-                                      "enum": [
-                                        "github",
-                                        "opencollective"
-                                      ]
+                                      "type": "string"
                                     },
                                     "amount": {
-                                      "type": "integer",
-                                      "exclusiveMinimum": 0,
-                                      "maximum": 9007199254740991
+                                      "type": "number"
                                     },
                                     "currency": {
                                       "type": "string"
                                     },
                                     "frequency": {
-                                      "type": "string",
-                                      "enum": [
-                                        "one_time",
-                                        "monthly",
-                                        "yearly"
-                                      ]
+                                      "type": "string"
                                     }
                                   },
                                   "additionalProperties": false
@@ -4651,10 +4795,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4763,10 +4912,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -4908,10 +5062,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -5032,10 +5191,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -5145,6 +5309,10 @@
                                         }
                                       },
                                       "additionalProperties": false
+                                    },
+                                    "apiBaseUrl": {
+                                      "default": "$BASE_URL",
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
@@ -5169,10 +5337,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -5893,12 +6066,21 @@
                                                 "invalid_state",
                                                 "provider_error"
                                               ]
+                                            },
+                                            "abandon": {
+                                              "type": "boolean"
                                             }
                                           }
                                         },
                                         {
                                           "type": "null"
                                         }
+                                      ]
+                                    },
+                                    "rejectCodes": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
                                       ]
                                     },
                                     "checkoutChoice": {
@@ -5946,10 +6128,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -6083,10 +6270,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -6209,10 +6401,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -6334,10 +6531,15 @@
                                         "access_denied",
                                         "invalid_state",
                                         "provider_error",
+                                        "invalid_code",
+                                        "cancelled",
+                                        "timeout",
+                                        "network_error",
                                         "session_invalid",
                                         "targets_mismatch"
                                       ]
                                     },
+                                    "error": {},
                                     "contributionIds": {
                                       "type": "array",
                                       "items": {
@@ -6448,10 +6650,15 @@
                             "access_denied",
                             "invalid_state",
                             "provider_error",
+                            "invalid_code",
+                            "cancelled",
+                            "timeout",
+                            "network_error",
                             "session_invalid",
                             "targets_mismatch"
                           ]
                         },
+                        "error": {},
                         "contributionIds": {
                           "type": "array",
                           "items": {
@@ -6825,8 +7032,23 @@
                                       "type": "string"
                                     }
                                   },
+                                  "processEnv": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    }
+                                  },
                                   "devChecks": {
-                                    "default": false,
+                                    "type": "boolean"
+                                  },
+                                  "signInTimeout": {
+                                    "type": "number",
+                                    "exclusiveMinimum": 0
+                                  },
+                                  "interactive": {
                                     "type": "boolean"
                                   }
                                 },
@@ -6848,10 +7070,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -6960,10 +7187,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7071,6 +7303,10 @@
                                       "github",
                                       "opencollective"
                                     ]
+                                  },
+                                  "cancelAfter": {
+                                    "type": "number",
+                                    "minimum": 0
                                   }
                                 },
                                 "required": [
@@ -7094,10 +7330,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7206,10 +7447,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7329,10 +7575,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7488,10 +7739,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7588,27 +7844,16 @@
                                 "type": "object",
                                 "properties": {
                                   "provider": {
-                                    "type": "string",
-                                    "enum": [
-                                      "github",
-                                      "opencollective"
-                                    ]
+                                    "type": "string"
                                   },
                                   "amount": {
-                                    "type": "integer",
-                                    "exclusiveMinimum": 0,
-                                    "maximum": 9007199254740991
+                                    "type": "number"
                                   },
                                   "currency": {
                                     "type": "string"
                                   },
                                   "frequency": {
-                                    "type": "string",
-                                    "enum": [
-                                      "one_time",
-                                      "monthly",
-                                      "yearly"
-                                    ]
+                                    "type": "string"
                                   }
                                 },
                                 "additionalProperties": false
@@ -7629,10 +7874,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7741,10 +7991,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -7886,10 +8141,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -8010,10 +8270,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -8123,6 +8388,10 @@
                                       }
                                     },
                                     "additionalProperties": false
+                                  },
+                                  "apiBaseUrl": {
+                                    "default": "$BASE_URL",
+                                    "type": "string"
                                   }
                                 },
                                 "required": [
@@ -8147,10 +8416,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -8871,12 +9145,21 @@
                                               "invalid_state",
                                               "provider_error"
                                             ]
+                                          },
+                                          "abandon": {
+                                            "type": "boolean"
                                           }
                                         }
                                       },
                                       {
                                         "type": "null"
                                       }
+                                    ]
+                                  },
+                                  "rejectCodes": {
+                                    "type": [
+                                      "boolean",
+                                      "null"
                                     ]
                                   },
                                   "checkoutChoice": {
@@ -8924,10 +9207,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -9061,10 +9349,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -9187,10 +9480,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -9312,10 +9610,15 @@
                                       "access_denied",
                                       "invalid_state",
                                       "provider_error",
+                                      "invalid_code",
+                                      "cancelled",
+                                      "timeout",
+                                      "network_error",
                                       "session_invalid",
                                       "targets_mismatch"
                                     ]
                                   },
+                                  "error": {},
                                   "contributionIds": {
                                     "type": "array",
                                     "items": {
@@ -9420,10 +9723,15 @@
                             "access_denied",
                             "invalid_state",
                             "provider_error",
+                            "invalid_code",
+                            "cancelled",
+                            "timeout",
+                            "network_error",
                             "session_invalid",
                             "targets_mismatch"
                           ]
                         },
+                        "error": {},
                         "contributionIds": {
                           "type": "array",
                           "items": {

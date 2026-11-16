@@ -474,6 +474,7 @@ export class FakeSponsorkit {
       throw new HttpProblem(400, "invalid_request", z.prettifyError(parsed.error));
     }
     const { code, codeVerifier, sessionToken } = parsed.data;
+    if (this.behaviour.rejectCodes) throw new HttpProblem(400, "invalid_code", "Code rejected (conformance scenario)");
 
     const record = this.codes.get(code);
     if (!record) throw new HttpProblem(400, "invalid_code", "Unknown, malformed or tampered code");
@@ -620,6 +621,8 @@ export class FakeSponsorkit {
   private connect(url: URL, via: "connect" | "checkout", continueQuery?: string): Response {
     const p = this.signInParams(url);
     if (!p.ok) return p.response;
+    if (this.behaviour.connect?.abandon)
+      return html(200, "Sign in to Sponsorkit", "<p>Waiting for the provider. (Conformance: this sign-in is never completed.)</p>");
     const error = this.behaviour.connect?.error;
     if (error) return this.deliver(p, { error }, continueQuery);
     const ttl = p.delivery === "paste" ? PASTE_CODE_TTL_SECONDS : CODE_TTL_SECONDS;

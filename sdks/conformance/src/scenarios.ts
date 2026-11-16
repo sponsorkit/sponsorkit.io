@@ -33,6 +33,8 @@ const VERIFIER = { $regex: "^[A-Za-z0-9._~-]{43,128}$" };
 const CHALLENGE = { $regex: "^[A-Za-z0-9_-]{43}$" };
 const LOOPBACK_URI = { $regex: "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]{1,5}/callback$" };
 const ABSENT = { $absent: true };
+/** A well-formed token the fake server never issued: it answers 401 session_invalid for it. */
+const DEAD_SESSION_TOKEN = "sks_conformance-dead-session-token";
 
 const signedOutResult = (targets = DEFAULT_TARGET_STRINGS, extra: Partial<ContributionResult> = {}) => ({
   $exact: {
@@ -85,10 +87,10 @@ const connectCall = (query: Record<string, unknown> = {}, count = 1): Call => ({
   },
 });
 
-const tokenCall = (body: Record<string, unknown> = {}, count = 1): Call => ({
+const tokenCall = (body: Record<string, unknown> = {}, count: number | { min?: number; max?: number } = 1): Call => ({
   method: "POST",
   path: "/api/v1/auth/token",
-  count,
+  ...(typeof count === "number" ? { count } : count),
   headers: { "content-type": { $regex: "^application/json" } },
   body: { code: { $regex: "^skc_" }, codeVerifier: VERIFIER, sessionToken: ABSENT, ...body },
 });
@@ -230,6 +232,86 @@ const config: Scenario[] = [
     },
   },
   {
+    id: "config-dev-checks-env",
+    title: "SPONSORKIT_DEV_CHECKS turns the dev-time existence check on",
+    description:
+      "Without the devChecks option, the check is on when SPONSORKIT_DEV_CHECKS is set (PROTOCOL §7, devChecks default). The first async call looks the target up once and throws invalid_config because it does not exist.",
+    category: "config",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §7.1"],
+    requires: ["env", "devChecks"],
+    steps: [
+      {
+        action: "group",
+        steps: [
+          { action: "configure", args: { github: MISSING_GITHUB_ACCOUNT, appName: APP_NAME, env: { SPONSORKIT_DEV_CHECKS: "1" } } },
+          { action: "getFinancialContribution", args: {} },
+        ],
+        expect: {
+          throws: "invalid_config",
+          requests: {
+            exact: true,
+            includeTargetsLookups: true,
+            calls: [{ method: "GET", path: "/api/v1/targets", count: 1, query: { $exact: { github: MISSING_GITHUB_ACCOUNT } } }],
+          },
+        },
+      },
+    ],
+    expect: { files: [noStorageDir] },
+  },
+  {
+    id: "config-dev-checks-default-off",
+    title: "Dev-time checks are off by default and the devChecks option wins over the environment",
+    description:
+      "With env {} (and no implicit development signal in the harness process), no /targets lookup happens, even for a target that does not exist. SPONSORKIT_DEV_CHECKS=0 counts as unset, and devChecks: false beats SPONSORKIT_DEV_CHECKS=1.",
+    category: "config",
+    specRefs: ["PROTOCOL §7"],
+    requires: ["env", "devChecks"],
+    steps: [
+      { action: "configure", args: { github: MISSING_GITHUB_ACCOUNT, appName: APP_NAME, env: {} } },
+      get({ returns: signedOutResult([`github:${MISSING_GITHUB_ACCOUNT}`]), requests: noneAtAll }),
+      { action: "configure", args: { github: MISSING_GITHUB_ACCOUNT, appName: APP_NAME, env: { SPONSORKIT_DEV_CHECKS: "0" } } },
+      get({ returns: signedOutResult([`github:${MISSING_GITHUB_ACCOUNT}`]), requests: noneAtAll }),
+      { action: "configure", args: { github: MISSING_GITHUB_ACCOUNT, appName: APP_NAME, env: { SPONSORKIT_DEV_CHECKS: "1" }, devChecks: false } },
+      get({ returns: signedOutResult([`github:${MISSING_GITHUB_ACCOUNT}`]), requests: noneAtAll }),
+    ],
+    expect: { files: [noStorageDir], requests: noneAtAll },
+  },
+  {
+    id: "config-env-replaces-process-env",
+    title: "The env override replaces the process environment",
+    description:
+      "The harness sets SPONSORKIT_DISABLE=1, SPONSORKIT_MOCK=org and CI=true in the real process environment. An instance constructed with env {} sees none of them: it is neither disabled nor mocked, and a non-forced nag in an interactive terminal is due.",
+    category: "config",
+    specRefs: ["PROTOCOL §7"],
+    requires: ["env", "processEnv", "interactive"],
+    steps: [
+      configure({ processEnv: { SPONSORKIT_DISABLE: "1", SPONSORKIT_MOCK: "org", CI: "true" }, env: {}, interactive: true }),
+      get({ returns: signedOutResult(), requests: noneAtAll }),
+      { action: "nagDue", args: { id: "conformance", every: 1, predicate: "always", force: false }, expect: { returns: true, requests: none } },
+    ],
+    expect: { requests: noneAtAll },
+  },
+  {
+    id: "config-cache-ttl-minimum",
+    title: "A constructor cacheTtl below 60 is raised to 60",
+    description:
+      "configure({ cacheTtl: 1 }) behaves like cacheTtl 60: two seconds after sign-in the token result is still served from the cache. A per-call cacheTtl is not clamped: cacheTtl: 1 per call refreshes.",
+    category: "cache",
+    specRefs: ["PROTOCOL §7.1"],
+    requires: ["openBrowser", "signInMethod"],
+    steps: [
+      configure({ cacheTtl: 1 }),
+      signInLoopback(),
+      { action: "wait", args: { seconds: 2.2 } },
+      get({ returns: { signedIn: true, fromCache: true }, contributionIds: [GH_DIRECT, GH_ORG], requests: none }),
+      {
+        action: "getFinancialContribution",
+        args: { cacheTtl: 1 },
+        expect: { returns: { signedIn: true, fromCache: false }, contributionIds: [GH_DIRECT, GH_ORG], requests: { calls: [contributionsCall(1)] } },
+      },
+    ],
+  },
+  {
     id: "disabled-env",
     title: "SPONSORKIT_DISABLE=1 turns the SDK into a no-op",
     description:
@@ -364,6 +446,26 @@ const mock: Scenario[] = [
   },
 ];
 
+mock.push({
+  id: "mock-nag-in-memory",
+  title: "Mock mode keeps nag state in memory",
+  description:
+    "Mock mode touches neither the network nor the disk (PROTOCOL §7.1 item 14). Nag runs are counted in memory, per SDK instance: due() and shown() work within the instance, no storage file or directory is created, and a restart starts counting from zero (on disk, runs would have reached 2).",
+  category: "mock",
+  specRefs: ["PROTOCOL §7.1", "SPEC §7.4", "SPEC §7.5"],
+  requires: ["restart"],
+  steps: [
+    configure({ mock: "none" }),
+    { action: "nagDue", args: { id: "mock-a", every: 1, predicate: "noActive", force: true }, expect: { returns: true } },
+    { action: "nagShown", args: { id: "mock-a" } },
+    { action: "nagDue", args: { id: "mock-a", every: 1, predicate: "noActive", force: true }, expect: { returns: false }, note: "shown() reset runs to 0; this run was already counted." },
+    { action: "nagDue", args: { id: "mock-b", every: 2, predicate: "noActive", force: true }, expect: { returns: false } },
+    restart,
+    { action: "nagDue", args: { id: "mock-b", every: 2, predicate: "noActive", force: true }, expect: { returns: false }, note: "A fresh instance starts from runs 0, so runs is 1 here." },
+  ],
+  expect: { files: [noStorageDir], requests: noneAtAll },
+});
+
 const signIn: Scenario[] = [
   {
     id: "signed-out",
@@ -436,6 +538,63 @@ const signIn: Scenario[] = [
     expect: { files: [{ path: "$STORAGE_FILE", exists: "optional", json: { sessionToken: ABSENT } }] },
   },
   {
+    id: "sign-in-cancelled",
+    title: "Cancelling sign-in throws cancelled",
+    description:
+      "The user never finishes sign-in (the fake's /connect delivers nothing). The cancellation signal fires after 1 s; signIn() rejects with cancelled, does not call /auth/token and stores nothing.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7"],
+    requires: ["openBrowser", "signInMethod", "cancellation"],
+    server: { connect: { abandon: true } },
+    steps: [
+      configure(),
+      { action: "signIn", args: { method: "loopback", cancelAfter: 1 }, expect: { throws: "cancelled", minSeconds: 0.5, maxSeconds: 10, requests: { exact: true, calls: [connectCall()] } } },
+      isSignedIn(false),
+    ],
+    expect: { files: [{ path: "$STORAGE_FILE", exists: "optional", json: { sessionToken: ABSENT } }] },
+  },
+  {
+    id: "sign-in-timeout",
+    title: "Sign-in that exceeds signInTimeout throws timeout",
+    description: "With signInTimeout: 2 and a sign-in the user never finishes, signIn() rejects with timeout after about 2 s and stores nothing.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7"],
+    requires: ["openBrowser", "signInMethod", "signInTimeout"],
+    server: { connect: { abandon: true } },
+    steps: [
+      configure({ signInTimeout: 2 }),
+      { action: "signIn", args: { method: "loopback" }, expect: { throws: "timeout", minSeconds: 1.5, maxSeconds: 10, requests: { exact: true, calls: [connectCall()] } } },
+      isSignedIn(false),
+    ],
+    expect: { files: [{ path: "$STORAGE_FILE", exists: "optional", json: { sessionToken: ABSENT } }] },
+  },
+  {
+    id: "sign-in-token-server-error",
+    title: "A 5xx from /auth/token throws network_error",
+    description: "The code is delivered but POST /api/v1/auth/token answers 503. signIn() rejects with network_error and stores no token.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §3.2"],
+    requires: ["openBrowser", "signInMethod"],
+    server: { fail: { status: 503, endpoints: ["token"] } },
+    steps: [
+      configure(),
+      signInLoopback({ throws: "network_error", requests: { exact: true, calls: [connectCall(), tokenCall({}, { min: 1, max: 3 })] }, maxSeconds: 30 }),
+      isSignedIn(false),
+    ],
+    expect: { files: [{ path: "$STORAGE_FILE", exists: "optional", json: { sessionToken: ABSENT } }] },
+  },
+  {
+    id: "sign-in-invalid-code",
+    title: "A rejected code exchange throws invalid_code",
+    description: "POST /api/v1/auth/token answers 400 invalid_code. signIn() rejects with invalid_code and stores no token.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §3.2"],
+    requires: ["openBrowser", "signInMethod"],
+    server: { rejectCodes: true },
+    steps: [configure(), signInLoopback({ throws: "invalid_code", requests: { exact: true, calls: [connectCall(), tokenCall()] }, maxSeconds: 10 }), isSignedIn(false)],
+    expect: { files: [{ path: "$STORAGE_FILE", exists: "optional", json: { sessionToken: ABSENT } }] },
+  },
+  {
     id: "sign-in-add-identity",
     title: "Adding a second identity",
     description:
@@ -461,6 +620,33 @@ const signIn: Scenario[] = [
       refresh({ contributionIds: [GH_DIRECT, GH_ORG, OC_MONTHLY], requests: { calls: [contributionsCall(1, "$SESSION_TOKEN_2")] } }),
     ],
     expect: { files: [storageFile({ v: 1, sessionToken: "$SESSION_TOKEN_2" })] },
+  },
+  {
+    id: "sign-in-add-identity-dead-session",
+    title: "Adding an identity to a dead session starts a new session",
+    description:
+      "The stored session token is no longer valid. signIn({ provider: \"opencollective\" }) opens /connect with add=1 and sends the stored sessionToken; /auth/token answers 401 session_invalid. The SDK clears the stored session and retries the same code once without sessionToken, which succeeds with only the new identity.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §3.2"],
+    requires: ["openBrowser", "signInMethod"],
+    steps: [
+      { action: "writeStorage", args: { json: { v: 1, sessionToken: DEAD_SESSION_TOKEN } } },
+      configure(),
+      isSignedIn(true),
+      {
+        action: "signIn",
+        args: { method: "loopback", provider: "opencollective" },
+        expect: {
+          requests: {
+            exact: true,
+            calls: [connectCall({ provider: "opencollective", add: "1" }), tokenCall({ sessionToken: DEAD_SESSION_TOKEN }), tokenCall({ sessionToken: ABSENT })],
+          },
+        },
+      },
+      isSignedIn(true),
+      get({ returns: { signedIn: true, supporter: { identities: [OC_IDENTITY] } }, contributionIds: [OC_MONTHLY], requests: none }),
+    ],
+    expect: { files: [storageFile({ v: 1, sessionToken: "$SESSION_TOKEN_1", cache: { result: { signedIn: true } } })] },
   },
   {
     id: "sign-out",
@@ -846,7 +1032,7 @@ const checkout: Scenario[] = [
     description: "The cancellation signal (AbortSignal / CancellationToken / context / ...) fires after 1.5 s; openCheckout stops polling and resolves { status: \"unknown\" } without throwing.",
     category: "checkout",
     specRefs: ["SPEC §7.3"],
-    requires: ["openBrowser", "signInMethod", "checkoutPollInterval"],
+    requires: ["openBrowser", "signInMethod", "checkoutPollInterval", "cancellation"],
     steps: [
       configure(),
       signInLoopback(),
@@ -862,9 +1048,9 @@ const checkout: Scenario[] = [
     id: "checkout-signs-in-first",
     title: "Checkout while signed out signs in first (loopback)",
     description:
-      "openCheckout() while signed out opens /checkout with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <apiBaseUrl>/checkout?<checkout params>&step=choose; the SDK exchanges the code, then polls until the new contribution appears.",
+      "openCheckout() while signed out opens /checkout with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <apiBaseUrl>/checkout carrying exactly targets, the checkout options that were set (provider, amount, currency, frequency) and step=choose (PROTOCOL §7.1 item 17); the SDK exchanges the code, then polls until the new contribution appears.",
     category: "checkout",
-    specRefs: ["SPEC §7.3", "PROTOCOL §4.6", "PROTOCOL §7"],
+    specRefs: ["SPEC §7.3", "PROTOCOL §4.6", "PROTOCOL §7", "PROTOCOL §7.1"],
     requires: ["openBrowser", "signInMethod", "checkoutPollInterval"],
     server: { newContribution: { contribution: "github-checkout-new", trigger: "checkout", afterCalls: 0 } },
     steps: [
@@ -888,7 +1074,7 @@ const checkout: Scenario[] = [
                 method: "GET",
                 path: "/checkout",
                 count: 1,
-                query: { targets: DEFAULT_TARGETS_PARAM, provider: "github", amount: "1000", frequency: "monthly", step: "choose", challenge: ABSENT, redirect_uri: ABSENT },
+                query: { $exact: { targets: DEFAULT_TARGETS_PARAM, provider: "github", amount: "1000", frequency: "monthly", step: "choose" } },
               },
               tokenCall(),
               providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"),
@@ -928,6 +1114,25 @@ const checkout: Scenario[] = [
       },
     ],
     expect: { requests: noneAtAll, files: [{ path: "$STORAGE_FILE", exists: false }] },
+  },
+  {
+    id: "checkout-url-invalid",
+    title: "checkoutUrl() rejects invalid options with invalid_config",
+    description:
+      "An unconfigured provider, an invalid frequency, a non-positive amount or a malformed currency throws invalid_config (PROTOCOL §7.1 item 16; Go returns the error). No network, no disk. A harness whose SDK types cannot express a value (e.g. a frequency enum) treats that step as passed.",
+    category: "checkout",
+    specRefs: ["PROTOCOL §7.1", "SPEC §7.3"],
+    steps: [
+      { action: "configure", args: { github: DEFAULT_TARGETS.github, appName: APP_NAME } },
+      { action: "checkoutUrl", args: { provider: "opencollective" }, expect: { throws: "invalid_config" }, note: "opencollective is not configured." },
+      configure(),
+      { action: "checkoutUrl", args: { frequency: "weekly" }, expect: { throws: "invalid_config" } },
+      { action: "checkoutUrl", args: { amount: 0 }, expect: { throws: "invalid_config" } },
+      { action: "checkoutUrl", args: { amount: -500 }, expect: { throws: "invalid_config" } },
+      { action: "checkoutUrl", args: { currency: "EURO" }, expect: { throws: "invalid_config" } },
+      { action: "checkoutUrl", args: { provider: "patreon" }, expect: { throws: "invalid_config" } },
+    ],
+    expect: { requests: noneAtAll, files: [noStorageDir] },
   },
 ];
 
@@ -982,19 +1187,38 @@ const nag: Scenario[] = [
   {
     id: "nag-suppressed",
     title: "CI and SPONSORKIT_NO_NAG suppress nags unless forced",
-    description: "Without force, due() is false when CI or SPONSORKIT_NO_NAG is set (and whenever stdout/stderr is not a TTY, as in test runners). force: true overrides these checks.",
+    description:
+      "Without force, due() is false when CI or SPONSORKIT_NO_NAG is set, and when the terminal is not interactive (interactive: false, set explicitly so the scenario is deterministic in a TTY). force: true overrides these checks.",
     category: "nag",
-    specRefs: ["SPEC §7.5"],
-    requires: ["env"],
+    specRefs: ["SPEC §7.5", "PROTOCOL §7"],
+    requires: ["env", "interactive"],
     steps: [
-      configure({ env: { CI: "true" } }),
+      configure({ env: { CI: "true" }, interactive: false }),
       nagDue(false, { every: 1, force: false }),
-      configure({ env: { SPONSORKIT_NO_NAG: "1" } }),
+      configure({ env: { SPONSORKIT_NO_NAG: "1" }, interactive: false }),
       nagDue(false, { every: 1, force: false }),
-      configure({ env: {} }),
-      { ...nagDue(false, { every: 1, force: false }), note: "The test process's stdout/stderr are not TTYs." },
-      configure({ env: { CI: "true" } }),
+      configure({ env: {}, interactive: false }),
+      { ...nagDue(false, { every: 1, force: false }), note: "Not interactive." },
+      configure({ env: { CI: "true" }, interactive: false }),
       nagDue(true, { every: 1, force: true }),
+    ],
+    expect: { requests: none },
+  },
+  {
+    id: "nag-interactive",
+    title: "The interactive option overrides TTY detection",
+    description:
+      "With interactive: true and an empty env, a non-forced nag is due even though the test process has no TTY. CI and SPONSORKIT_NO_NAG still suppress it.",
+    category: "nag",
+    specRefs: ["SPEC §7.5", "PROTOCOL §7"],
+    requires: ["env", "interactive"],
+    steps: [
+      configure({ env: {}, interactive: true }),
+      nagDue(true, { every: 1, force: false }),
+      configure({ env: { CI: "true" }, interactive: true }),
+      nagDue(false, { every: 1, force: false }),
+      configure({ env: { SPONSORKIT_NO_NAG: "1" }, interactive: true }),
+      nagDue(false, { every: 1, force: false }),
     ],
     expect: { requests: none },
   },
@@ -1119,6 +1343,55 @@ const serverHelper: Scenario[] = [
       mintGithubSession(),
       { action: "verifySession", args: { token: "$MINTED_SESSION_TOKEN", targets: { ...DEFAULT_TARGETS } }, expect: { throws: "session_invalid" } },
       { action: "verifySession", args: { token: "sks_not-a-real-token", targets: { ...DEFAULT_TARGETS } }, expect: { throws: "session_invalid" } },
+    ],
+    expect: { files: [noStorageDir] },
+  },
+  {
+    id: "verify-session-unreachable",
+    title: "verifySession throws network_error when the API is unreachable",
+    description: "Connection refused: verifySession throws network_error without retryAfter. It touches no storage.",
+    category: "server-helper",
+    specRefs: ["PROTOCOL §7", "SPEC §6.4"],
+    steps: [
+      {
+        action: "verifySession",
+        args: { token: DEAD_SESSION_TOKEN, targets: { ...DEFAULT_TARGETS }, apiBaseUrl: "$UNREACHABLE_BASE_URL" },
+        expect: { throws: "network_error", error: { code: "network_error", retryAfter: { $absent: true } }, maxSeconds: 30, requests: noneAtAll },
+      },
+    ],
+    expect: { files: [noStorageDir] },
+  },
+  {
+    id: "verify-session-rate-limited",
+    title: "verifySession throws network_error with retryAfter on 429",
+    description: "/contributions answers 429 rate_limited with Retry-After: 30. verifySession throws network_error carrying retryAfter: 30.",
+    category: "server-helper",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §3.3"],
+    server: { rateLimit: { retryAfter: 30 } },
+    steps: [
+      mintGithubSession(),
+      {
+        action: "verifySession",
+        args: { token: "$MINTED_SESSION_TOKEN", targets: { ...DEFAULT_TARGETS } },
+        expect: { throws: "network_error", error: { code: "network_error", retryAfter: 30 }, requests: { calls: [contributionsCall(1, "$MINTED_SESSION_TOKEN")] } },
+      },
+    ],
+    expect: { files: [noStorageDir] },
+  },
+  {
+    id: "verify-session-server-error",
+    title: "verifySession throws network_error on 5xx",
+    description: "/contributions answers 503. verifySession throws network_error (no retryAfter); it does not throw session_invalid.",
+    category: "server-helper",
+    specRefs: ["PROTOCOL §7"],
+    server: { fail: { status: 503, endpoints: ["contributions"] } },
+    steps: [
+      mintGithubSession(),
+      {
+        action: "verifySession",
+        args: { token: "$MINTED_SESSION_TOKEN", targets: { ...DEFAULT_TARGETS } },
+        expect: { throws: "network_error", error: { code: "network_error", retryAfter: { $absent: true } }, requests: { calls: [contributionsCall({ min: 1, max: 3 }, "$MINTED_SESSION_TOKEN")] } },
+      },
     ],
     expect: { files: [noStorageDir] },
   },

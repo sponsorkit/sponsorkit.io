@@ -59,8 +59,15 @@ export const ControlOptions = z
       .object({
         provider: Provider.optional(),
         error: DeliveredError.optional(),
+        /**
+         * The user never finishes: `/connect` (and the sign-in half of `/checkout`) answers `200` HTML
+         * and delivers neither a code nor an error. Used for sign-in timeout and cancellation scenarios.
+         */
+        abandon: z.boolean().optional(),
       })
       .optional(),
+    /** `POST /api/v1/auth/token` answers `400 invalid_code` for every code, as if it had expired or the verifier did not match. */
+    rejectCodes: z.boolean().optional(),
     /** `/checkout` chooser: when several providers are eligible and none was requested, auto-pick this one instead of rendering the chooser page. */
     checkoutChoice: Provider.optional(),
     /** Delay every `/api/v1/*` response by this many milliseconds. */
@@ -84,6 +91,7 @@ export const ControlPatch = z
     renewSession: ControlOptions.shape.renewSession.unwrap().nullable().optional(),
     newContribution: ControlOptions.shape.newContribution.unwrap().nullable().optional(),
     connect: ControlOptions.shape.connect.unwrap().nullable().optional(),
+    rejectCodes: ControlOptions.shape.rejectCodes.unwrap().nullable().optional(),
     checkoutChoice: ControlOptions.shape.checkoutChoice.unwrap().nullable().optional(),
     latencyMs: ControlOptions.shape.latencyMs.unwrap().nullable().optional(),
   })

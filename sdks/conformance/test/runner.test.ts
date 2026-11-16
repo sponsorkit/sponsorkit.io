@@ -40,6 +40,9 @@ test.each([
   ["signed-out", '"returns":false', '"returns":true', /returns/],
   ["disabled-env", '"throws":"disabled"', '"throws":"invalid_config"', /expected error invalid_config/],
   ["checkout-timeout", '"minSeconds":2.5', '"minSeconds":20', /took/],
+  ["sign-in-timeout", '"throws":"timeout"', '"throws":"cancelled"', /expected error cancelled/],
+  ["verify-session-rate-limited", '"code":"network_error","retryAfter":30}', '"code":"network_error","retryAfter":31}', /error/],
+  ["mock-nag-in-memory", 'runs is 1 here.","expect":{"returns":false}', 'runs is 1 here.","expect":{"returns":true}', /returns/],
 ])("corrupted %s is rejected", async (id, from, to, message) => {
   const err = await run(corrupt(id, from, to)).catch((e) => e);
   expect(err).toBeInstanceOf(ScenarioFailure);

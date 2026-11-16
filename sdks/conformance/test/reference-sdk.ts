@@ -22,11 +22,26 @@ import type { CheckoutArgs, ConfigureArgs, NagDueArgs, SdkAdapter, SdkInstance, 
 import { StorageFile } from "../src/storage-schema";
 
 export class SponsorkitError extends Error {
-  constructor(readonly code: string, message = code) {
+  constructor(
+    readonly code: string,
+    message = code,
+    readonly retryAfter?: number,
+  ) {
     super(message);
     this.name = "SponsorkitError";
   }
 }
+
+/** PROTOCOL §7: an unreachable API, 5xx, 429 or an unexpected response during signIn/verifySession. */
+async function networkError(res: Response | null): Promise<SponsorkitError> {
+  if (!res) return new SponsorkitError("network_error", "The API could not be reached");
+  const ra = res.headers.get("retry-after");
+  const retryAfter = ra !== null && /^\d+$/.test(ra) ? Number(ra) : undefined;
+  await res.arrayBuffer().catch(() => undefined);
+  return new SponsorkitError("network_error", `HTTP ${res.status}`, retryAfter);
+}
+
+const VALID_FREQUENCIES = ["one_time", "monthly", "yearly"];
 
 const isSet = (v: string | undefined) => v !== undefined && v !== "" && v !== "0" && v.toLowerCase() !== "false";
 
@@ -53,6 +68,9 @@ class ReferenceSdk implements SdkInstance {
   private readonly mock: MockPresetName | { contributions: Contribution[] } | null;
   private readonly cacheTtl: number;
   private mockState: { signedIn: boolean; contributions: Contribution[] } | null = null;
+  /** Mock mode keeps nag state in memory, per instance (PROTOCOL §7.1 item 14). */
+  private readonly mockNags = new Map<string, { runs: number; lastShown: string | null }>();
+  private readonly devChecks: boolean;
   private hash!: string;
 
   constructor(
@@ -75,7 +93,8 @@ class ReferenceSdk implements SdkInstance {
       const r = mockResult(this.targets, this.mock);
       this.mockState = { signedIn: r.signedIn, contributions: r.contributions };
     }
-    this.cacheTtl = cfg.cacheTtl ?? 3600;
+    this.cacheTtl = Math.max(60, cfg.cacheTtl ?? 3600);
+    this.devChecks = cfg.devChecks ?? isSet(cfg.env.SPONSORKIT_DEV_CHECKS);
   }
 
   async init(): Promise<this> {
@@ -108,7 +127,7 @@ class ReferenceSdk implements SdkInstance {
   }
 
   private async devCheck(): Promise<void> {
-    if (!this.cfg.devChecks || this.disabled || this.mock) return;
+    if (!this.devChecks || this.disabled || this.mock) return;
     let p = processState.devChecks.get(this.param);
     if (!p) {
       p = (async () => {
@@ -196,7 +215,7 @@ class ReferenceSdk implements SdkInstance {
     return result;
   }
 
-  private async loopback(build: (redirectUri: string) => string, onCode?: string): Promise<string> {
+  private async loopback(build: (redirectUri: string) => string, signal: AbortSignal | undefined, onCode?: string): Promise<string> {
     let resolveCode!: (v: { code?: string; error?: string }) => void;
     const got = new Promise<{ code?: string; error?: string }>((r) => (resolveCode = r));
     const server = Bun.serve({
@@ -214,12 +233,19 @@ class ReferenceSdk implements SdkInstance {
     });
     try {
       const url = build(`http://127.0.0.1:${server.port}/callback`);
-      const timeout = setTimeout(() => resolveCode({ error: "timeout" }), 5 * 60_000);
-      await this.hooks.openBrowser(url);
-      const r = await got;
-      clearTimeout(timeout);
-      if (r.error || !r.code) throw new SponsorkitError(r.error ?? "provider_error");
-      return r.code;
+      const timeout = setTimeout(() => resolveCode({ error: "timeout" }), (this.cfg.signInTimeout ?? 300) * 1000);
+      const abort = () => resolveCode({ error: "cancelled" });
+      if (signal?.aborted) abort();
+      signal?.addEventListener("abort", abort, { once: true });
+      try {
+        await this.hooks.openBrowser(url);
+        const r = await got;
+        if (r.error || !r.code) throw new SponsorkitError(r.error ?? "provider_error");
+        return r.code;
+      } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener("abort", abort);
+      }
     } finally {
       await server.stop(true);
     }
@@ -227,16 +253,33 @@ class ReferenceSdk implements SdkInstance {
 
   private async exchange(code: string, verifier: string): Promise<ContributionResult> {
     const stored = await this.read();
-    const res = await fetch(`${this.cfg.apiBaseUrl}/api/v1/auth/token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, codeVerifier: verifier, ...(stored.sessionToken ? { sessionToken: stored.sessionToken } : {}) }),
-    });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { code?: string };
-      throw new SponsorkitError(body.code ?? "internal");
+    const post = async (sessionToken: string | null | undefined): Promise<Response> => {
+      try {
+        return await fetch(`${this.cfg.apiBaseUrl}/api/v1/auth/token`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code, codeVerifier: verifier, ...(sessionToken ? { sessionToken } : {}) }),
+        });
+      } catch {
+        throw await networkError(null);
+      }
+    };
+    let res = await post(stored.sessionToken);
+    if (res.status === 401 && stored.sessionToken) {
+      // Adding an identity to a dead session: clear it and retry once without sessionToken (PROTOCOL §7).
+      await res.arrayBuffer();
+      await this.write((s) => ({ v: 1, nags: s.nags }));
+      res = await post(null);
     }
-    const t = TokenResponse.parse(await res.json());
+    if (res.status === 400) {
+      const body = (await res.json().catch(() => ({}))) as { code?: string };
+      if (body.code === "invalid_code") throw new SponsorkitError("invalid_code");
+      throw new SponsorkitError("network_error", `400 ${body.code ?? ""}`);
+    }
+    if (!res.ok) throw await networkError(res);
+    const parsed = TokenResponse.safeParse(await res.json().catch(() => null));
+    if (!parsed.success) throw await networkError(null);
+    const t = parsed.data;
     await this.write((s) => ({ ...s, sessionToken: t.sessionToken, cache: { result: t.result, storedAt: new Date().toISOString() } }));
     return t.result;
   }
@@ -247,7 +290,7 @@ class ReferenceSdk implements SdkInstance {
     return q;
   }
 
-  async signIn({ method, provider }: { method: "loopback" | "paste"; provider?: string }): Promise<unknown> {
+  async signIn({ method, provider, signal }: { method: "loopback" | "paste"; provider?: string; signal?: AbortSignal }): Promise<unknown> {
     if (this.disabled) throw new SponsorkitError("disabled");
     if (this.mockState) {
       if (!this.mockState.signedIn) this.mockState = { signedIn: true, contributions: [] };
@@ -264,7 +307,7 @@ class ReferenceSdk implements SdkInstance {
       code = await this.loopback((redirectUri) => {
         const q = this.connectParams(challenge, { delivery: "loopback", redirect_uri: redirectUri, ...extra });
         return `${this.cfg.apiBaseUrl}/connect?${q}`;
-      });
+      }, signal);
     } else {
       const url = `${this.cfg.apiBaseUrl}/connect?${this.connectParams(challenge, { delivery: "paste", ...extra })}`;
       code = (await this.hooks.promptForCode(url)).trim();
@@ -282,6 +325,13 @@ class ReferenceSdk implements SdkInstance {
   }
 
   checkoutUrl(args: { provider?: string; amount?: number; currency?: string; frequency?: string }): string {
+    if (args.provider !== undefined && !this.targets.some((t) => t.provider === args.provider))
+      throw new SponsorkitError("invalid_config", `Provider ${args.provider} is not configured`);
+    if (args.amount !== undefined && !(Number.isInteger(args.amount) && args.amount > 0))
+      throw new SponsorkitError("invalid_config", "amount must be a positive integer in minor units");
+    if (args.currency !== undefined && !/^[A-Z]{3}$/.test(args.currency)) throw new SponsorkitError("invalid_config", "currency must be ISO 4217");
+    if (args.frequency !== undefined && !VALID_FREQUENCIES.includes(args.frequency))
+      throw new SponsorkitError("invalid_config", "frequency must be one_time, monthly or yearly");
     return `${this.cfg.apiBaseUrl}/checkout?${this.checkoutQuery(args)}`;
   }
 
@@ -293,6 +343,7 @@ class ReferenceSdk implements SdkInstance {
       return { status: "contributed" as const, contribution: c };
     }
     await this.devCheck();
+    this.checkoutUrl(args);
     const query = this.checkoutQuery(args);
     let baseline: ContributionResult;
     if (await this.isSignedIn()) {
@@ -301,14 +352,24 @@ class ReferenceSdk implements SdkInstance {
     } else {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
       const challenge = await pkceChallenge(verifier);
-      const code = await this.loopback((redirectUri) => {
+      let code: string;
+      try {
+        code = await this.loopback(
+          (redirectUri) => {
         const q = new URLSearchParams(query);
         q.set("challenge", challenge);
         q.set("delivery", "loopback");
         q.set("redirect_uri", redirectUri);
         if (this.cfg.appName) q.set("app_name", this.cfg.appName);
         return `${this.cfg.apiBaseUrl}/checkout?${q}`;
-      }, `${this.cfg.apiBaseUrl}/checkout?${query}&step=choose`);
+          },
+          args.signal,
+          `${this.cfg.apiBaseUrl}/checkout?${query}&step=choose`,
+        );
+      } catch (e) {
+        if (e instanceof SponsorkitError && e.code === "cancelled") return { status: "unknown" as const };
+        throw e;
+      }
       baseline = await this.exchange(code, verifier);
     }
     const before = new Map(baseline.contributions.map((c) => [c.id, JSON.stringify(c)]));
@@ -338,26 +399,37 @@ class ReferenceSdk implements SdkInstance {
     await this.write((s) => ({ v: 1, nags: s.nags }));
   }
 
+  private async nagState(id: string) {
+    if (this.mockState) return this.mockNags.get(id) ?? { runs: 0, lastShown: null };
+    return (await this.read()).nags?.[id] ?? { runs: 0, lastShown: null };
+  }
+
+  private async setNagState(id: string, update: (prev: { runs: number; lastShown: string | null }) => { runs: number; lastShown: string | null }) {
+    if (this.mockState) {
+      this.mockNags.set(id, update(this.mockNags.get(id) ?? { runs: 0, lastShown: null }));
+      return;
+    }
+    await this.write((s) => ({ ...s, nags: { ...s.nags, [id]: update(s.nags?.[id] ?? { runs: 0, lastShown: null }) } }));
+  }
+
   async nagDue(args: NagDueArgs): Promise<boolean> {
     if (this.disabled) return false;
-    const key = `${this.hash}:${args.id}`;
+    const key = `${this.mockState ? "mock" : this.hash}:${args.id}`;
     if (!processState.nagCounted.has(key)) {
       processState.nagCounted.add(key);
-      await this.write((s) => {
-        const prev = s.nags?.[args.id] ?? { runs: 0, lastShown: null };
-        return { ...s, nags: { ...s.nags, [args.id]: { ...prev, runs: prev.runs + 1 } } };
-      });
+      await this.setNagState(args.id, (prev) => ({ ...prev, runs: prev.runs + 1 }));
     }
     if (!args.force) {
       const env = this.cfg.env;
       if (isSet(env.SPONSORKIT_NO_NAG) || isSet(env.CI)) return false;
-      if (!process.stdout.isTTY || !process.stderr.isTTY) return false;
+      const interactive = this.cfg.interactive ?? (!!process.stdout.isTTY && !!process.stderr.isTTY);
+      if (!interactive) return false;
     }
     const fc = await this.getFinancialContribution();
     const pred =
       args.predicate === "always" ? true : args.predicate === "never" ? false : fc.contributions.filter((c) => c.status === "active").length === 0;
     if (!pred) return false;
-    const state = (await this.read()).nags?.[args.id] ?? { runs: 0, lastShown: null };
+    const state = await this.nagState(args.id);
     if (state.runs >= args.every) return true;
     if (args.orEvery && state.lastShown) return Date.now() - Date.parse(state.lastShown) >= parseDuration(args.orEvery);
     return false;
@@ -365,7 +437,7 @@ class ReferenceSdk implements SdkInstance {
 
   async nagShown({ id }: { id: string }): Promise<void> {
     if (this.disabled) return;
-    await this.write((s) => ({ ...s, nags: { ...s.nags, [id]: { runs: 0, lastShown: new Date().toISOString() } } }));
+    await this.setNagState(id, () => ({ runs: 0, lastShown: new Date().toISOString() }));
   }
 }
 
@@ -385,15 +457,25 @@ export const referenceAdapter: SdkAdapter = {
     } catch (e) {
       throw new SponsorkitError("invalid_config", String(e));
     }
-    const res = await fetch(`${apiBaseUrl}/api/v1/contributions`, { headers: { authorization: `Bearer ${token}` } });
+    let res: Response;
+    try {
+      res = await fetch(`${apiBaseUrl}/api/v1/contributions`, { headers: { authorization: `Bearer ${token}` } });
+    } catch {
+      throw await networkError(null);
+    }
     if (res.status === 401) throw new SponsorkitError("session_invalid");
-    if (!res.ok) throw new SponsorkitError("internal", `HTTP ${res.status}`);
-    const result = ContributionResult.parse(await res.json());
+    if (!res.ok) throw await networkError(res);
+    const parsed = ContributionResult.safeParse(await res.json().catch(() => null));
+    if (!parsed.success) throw await networkError(null);
+    const result = parsed.data;
     if (result.targets.join(",") !== expected) throw new SponsorkitError("targets_mismatch");
     return result;
   },
   errorCode(error) {
     return error instanceof SponsorkitError ? error.code : undefined;
+  },
+  errorRetryAfter(error) {
+    return error instanceof SponsorkitError ? error.retryAfter : undefined;
   },
 };
 

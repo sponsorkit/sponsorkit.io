@@ -628,12 +628,21 @@
                 "invalid_state",
                 "provider_error"
               ]
+            },
+            "abandon": {
+              "type": "boolean"
             }
           }
         },
         {
           "type": "null"
         }
+      ]
+    },
+    "rejectCodes": {
+      "type": [
+        "boolean",
+        "null"
       ]
     },
     "checkoutChoice": {

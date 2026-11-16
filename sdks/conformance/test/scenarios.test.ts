@@ -73,3 +73,27 @@ test("every SPEC §7.9 area is covered", () => {
   ];
   for (const id of required) expect(ids.has(id)).toBe(true);
 });
+
+test("every behaviour pinned by PROTOCOL §7 / §7.1 items 13-17 is covered", () => {
+  const ids = new Set(file.scenarios.map((s) => s.id));
+  const required = [
+    "sign-in-cancelled",
+    "sign-in-timeout",
+    "sign-in-token-server-error",
+    "sign-in-invalid-code",
+    "sign-in-add-identity-dead-session",
+    "verify-session-unreachable",
+    "verify-session-rate-limited",
+    "verify-session-server-error",
+    "mock-nag-in-memory",
+    "checkout-url-invalid",
+    "checkout-signs-in-first",
+    "config-dev-checks-env",
+    "config-dev-checks-default-off",
+    "config-cache-ttl-minimum",
+    "config-env-replaces-process-env",
+    "nag-interactive",
+    "nag-suppressed",
+  ];
+  for (const id of required) expect(ids.has(id)).toBe(true);
+});
