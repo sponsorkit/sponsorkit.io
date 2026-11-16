@@ -5,6 +5,9 @@
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
 
+  // Production hostname. Requires the sponsorkit.io zone on the Cloudflare account.
+  "routes": [{ "pattern": "sponsorkit.io", "custom_domain": true }],
+
   // Static Next.js export (web/). Assets are served without invoking the Worker,
   // except for /api/* which always runs the Worker first.
   "assets": {

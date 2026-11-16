@@ -1,6 +1,6 @@
 # Sponsorkit: product & technical specification
 
-> Status: **DRAFT v8, awaiting approval.** Nothing below is built yet.
+> Status: **v8, implemented.** See §11 for what still has to be verified against the live providers.
 > Last updated: 2026-11-16.
 >
 > **What changed in v8:** Sponsorkit is now a **single stateless Worker with no database**.
@@ -120,12 +120,11 @@ If Sponsorkit outgrows the free plan, Workers Paid costs $5/mo. Switching is a p
 ```
 app/                     Cloudflare Worker: Hono API, OAuth, sealing, static assets binding
   src/{api,oauth,seal,providers/{github,opencollective}}
-  test/                  Vitest (workers pool); provider APIs faked with MSW
+  test/                  Vitest (Node); provider fetch stubbed with fixtures built from the documented schemas
 web/                     Next.js static export (landing, docs, /connect, /checkout) + Playwright e2e
-packages/shared/         Zod schemas & types (app, web, JS SDK); generates OpenAPI
+packages/shared/         Zod schemas & types (app, web, JS SDK)
 sdks/{js,dotnet,python,go,rust}/
 sdks/conformance/        fake API + fixtures + scenarios every SDK must pass
-openapi/sponsorkit.v1.yaml
 docs/                    this spec
 .github/workflows/       CI, Worker deploy, trusted publishing
 ```
@@ -427,10 +426,10 @@ if (await nag.due(fc => fc.active().length === 0)) {
   - Linux: `$XDG_CONFIG_HOME/sponsorkit`;
   - macOS: `~/Library/Application Support/sponsorkit`;
   - Windows: `%APPDATA%\sponsorkit`.
-- **Permissions.** Directories `0700`, files `0600`; on Windows, an ACL limited to the user.
+- **Permissions.** Directories `0700`, files `0600`. On Windows the default user-profile ACL applies.
 - **Keys.** The token, cache and nag state are keyed by `targets_hash`.
 - **Writes** are atomic: write a temp file, then rename it.
-- **Keychain.** The token can optionally be stored in the OS keychain.
+- **Pluggable storage.** Storage can be replaced, for example with a keychain-backed store. v1 has no built-in keychain.
 - **Token renewal.** A renewed token from `Sponsorkit-Session` replaces the stored one.
 - **Sign-out.** `signOut()` and `session_invalid` clear both the token and the cache.
 
@@ -446,7 +445,7 @@ if (await nag.due(fc => fc.active().length === 0)) {
 | | JS/TS | .NET | Python | Go | Rust |
 |---|---|---|---|---|---|
 | Package | `@sponsorkit/sdk` | `Sponsorkit` | `sponsorkit` | `github.com/sponsorkit/sponsorkit.io/sdks/go` | `sponsorkit` |
-| Get | `getFinancialContribution()` | `GetFinancialContributionAsync(ct)` | `get_financial_contribution()` / `aget_…` | `GetFinancialContribution(ctx)` | `get_financial_contribution().await` |
+| Get | `getFinancialContribution()` | `GetFinancialContributionAsync(ct)` | `get_financial_contribution()` / `aget_…` | `GetFinancialContribution(ctx)` | `get_financial_contribution(GetOptions::default()).await?` |
 | Sign in | popup, redirect, loopback, paste | loopback, paste | loopback, paste | loopback, paste | loopback, paste |
 | UI elements | ✅ | – | – | – | – |
 | Checkout, nag, cache, mock, error contract, `verifySession` | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -512,9 +511,9 @@ Rate limits (starting values):
 
 All of this lands in this PR as reviewable commits:
 
-1. **Foundation.** Bun workspaces; the Hono Worker; sealing (with tests for tampering, expiry and key rotation); Zod schemas and OpenAPI; rate limiting; Vitest.
+1. **Foundation.** Bun workspaces; the Hono Worker; sealing (with tests for tampering, expiry and key rotation); Zod schemas; rate limiting; Vitest. `docs/PROTOCOL.md` is the wire contract; no OpenAPI document is generated in v1.
 2. **Auth.** Connect via popup, redirect, loopback and paste-back; second identity; pairwise IDs.
-3. **Providers.** GitHub and Open Collective adapters, each covering target metadata, the live supporter query and normalization. MSW test suites built from documented responses.
+3. **Providers.** GitHub and Open Collective adapters, each covering target metadata, the live supporter query and normalization. Test suites with provider fetches stubbed using fixtures built from the documented responses.
 4. **Checkout.** The `/checkout` page, provider eligibility and redirects.
 5. **Web.** Landing page, docs, `/connect` and `/checkout`. Playwright end-to-end tests with providers faked.
 6. **SDKs.** JS/TS as the reference, then .NET, Python, Go and Rust, plus the conformance suite.
@@ -539,11 +538,16 @@ All of this lands in this PR as reviewable commits:
 - **No dashboard, analytics or verified app identity.**
 - **Checkout can't confirm payment.** It may report `unknown` even when the supporter paid.
 
-**To verify during the build:**
+**Verifications.** Everything was built and tested against the documented schemas and stubbed provider responses. These items still need a live check with real OAuth apps before launch:
 
-- **GitHub:** the scope needed for tier amounts and private sponsorships; the tier and frequency URL parameters; whether the nested `organizations { sponsorshipsAsSponsor }` query works; reading tiers with an app credential.
-- **Open Collective:** whether `includeIncognito` works with a user token.
-- **Cloudflare:** whether the Rate Limiting binding is available on the free plan.
+| # | Item | Status | If it's wrong |
+|---|---|---|---|
+| a | GitHub `read:user read:org` returns `tier` amounts and the user's PRIVATE sponsorships | **Unverified (live)** | Switch to the `user` scope (D6). Until then the amount falls back to `0 USD`. |
+| b | GitHub `?tier_id=<databaseId>` deep link preselects the tier (the databaseId is decoded from the node id) | **Unverified (live)** | `/checkout` already falls back to `github.com/sponsors/<login>`. |
+| c | Nested `viewer.organizations { sponsorshipsAsSponsor }` query | **Verified against the public GraphQL schema**; not checked live | Use per-org aliases. |
+| d | `GITHUB_METADATA_TOKEN` (no-permission token) can read public `sponsorsListing.tiers` | **Unverified (live)** | Use a classic token with no scopes. |
+| e | Open Collective `includeIncognito: true` with a user OAuth token, and PKCE support | **Unverified (live)** (PKCE inferred from the OC server source) | Incognito orders are missing for that user. |
+| f | Workers Rate Limiting binding on the free plan | **Unverified** | The code no-ops without the binding. Add a WAF rule. |
 
 ## 12. Decisions
 
@@ -567,7 +571,23 @@ All of this lands in this PR as reviewable commits:
 
 ## 13. What you need to provide to go live
 
-1. A **GitHub OAuth App**: client ID and secret.
-2. An **Open Collective OAuth app**: client ID and secret.
-3. A free **Cloudflare account**: `sponsorkit.io` DNS on Cloudflare, plus an API token for deploys.
-4. **Trusted publishers** on npm, NuGet, PyPI and crates.io.
+1. A **GitHub OAuth App** with its callback URL set to `https://sponsorkit.io/api/oauth/github/callback`: client ID and secret.
+2. An **Open Collective OAuth app** with its callback URL set to `https://sponsorkit.io/api/oauth/opencollective/callback`: client ID and secret.
+3. A free **Cloudflare account** with:
+   - `sponsorkit.io` as a zone, used by the `custom_domain` route in `app/wrangler.jsonc`;
+   - an API token that can edit Workers, plus your account ID.
+4. **Worker secrets**, set with `wrangler secret put` (see `app/.dev.vars.example` for formats and key generation):
+   - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+   - `OPENCOLLECTIVE_CLIENT_ID`, `OPENCOLLECTIVE_CLIENT_SECRET`
+   - `SEALING_KEYS`, `PAIRWISE_KEY`
+   - `GITHUB_METADATA_TOKEN`
+5. **GitHub repository settings for deploys:**
+   - secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`;
+   - the variable `DEPLOY_ENABLED=true`;
+   - a `production` environment.
+6. **Package registries:**
+   - Reserve the names: `@sponsorkit/sdk` on npm, `Sponsorkit` on NuGet, and `sponsorkit` on PyPI and crates.io.
+   - Configure trusted publishing for `.github/workflows/release.yml` (environment `release`). NuGet also needs the repository variable `NUGET_USER`.
+   - Release an SDK by pushing a tag `sdks/<sdk>/v<version>` that matches the version in its manifest.
+7. A **LICENSE decision.** The package manifests declare MIT, and `sdks/go` and `sdks/rust` include MIT license files, but there is no root `LICENSE` yet.
+8. The **live verifications** in §11.

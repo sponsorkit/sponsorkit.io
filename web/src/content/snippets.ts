@@ -83,7 +83,9 @@ else if (!fc.Active().Any(c => c.Amount.Currency == "USD" && c.Amount.Value >= 5
     lang: "python",
     file: "app.py",
     runtime: "Python 3.10+. Depends on httpx.",
-    code: `from sponsorkit import Sponsorkit
+    code: `import sys
+
+from sponsorkit import Sponsorkit
 
 sk = Sponsorkit(github="mathiaslorenzen", opencollective="sponsorkit", app_name="my-cli")
 
