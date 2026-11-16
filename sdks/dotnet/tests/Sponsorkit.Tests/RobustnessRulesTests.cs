@@ -245,27 +245,17 @@ public sealed class RobustnessRulesTests : IDisposable
         var o = Options(new Storage(), new Handler((_, _) => Task.FromResult(Json(HttpStatusCode.OK, TokenBody))));
         o.SignInMethod = SignInMethod.Auto;
         o.SignInTimeout = TimeSpan.FromSeconds(20);
-        var opener = new TaskCompletionSource<bool>();
         o.OpenBrowser = async (url, ct) =>
         {
             var redirect = Uri.UnescapeDataString(url.Substring(url.IndexOf("redirect_uri=", StringComparison.Ordinal) + "redirect_uri=".Length).Split('&')[0]);
             var port = new Uri(redirect).Port;
             _ = Task.Run(() => Get(port, "/callback?code=skc_code"));
-            try
-            {
-                await Task.Delay(Timeout.Infinite, ct); // An opener that never returns.
-            }
-            finally
-            {
-                opener.TrySetResult(true);
-            }
+            await Task.Delay(Timeout.Infinite, ct); // An opener that never returns.
         };
         var sk = new SponsorkitClient(o);
         var result = await sk.SignInAsync().WaitAsync(TimeSpan.FromSeconds(15));
         Assert.True(result.SignedIn);
         Assert.True(sk.IsSignedIn());
-        // The still-running opener is told to stop.
-        Assert.True(await opener.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
@@ -278,7 +268,7 @@ public sealed class RobustnessRulesTests : IDisposable
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         var clock = Stopwatch.StartNew();
         await Platform.OpenSystemBrowser("https://example.com/", CancellationToken.None, path);
-        Assert.InRange(clock.Elapsed.TotalSeconds, 1.3, 5.0);
+        Assert.InRange(clock.Elapsed.TotalSeconds, 1.3, 2.8);
     }
 
     // ------------------------------------------------------------------ storage

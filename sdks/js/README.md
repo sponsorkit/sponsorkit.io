@@ -62,8 +62,15 @@ if (await nag.due((fc) => fc.active().length === 0)) {
 
 Native sign-in (`signInMethod: "auto"`, the default) listens on `http://127.0.0.1:<random>/callback` and
 opens the system browser (`open`, `xdg-open` or `rundll32`, never through a shell). It uses paste-back
-instead when `SSH_CONNECTION` is set, when there is no display, or when the browser can't be opened:
-it prints a URL to stderr and reads the code from stdin.
+instead when `SSH_CONNECTION` is set, when there is no display, when the browser can't be opened (the
+launcher fails to start or exits non-zero; one still running after about 1.5 s counts as opened), or when the
+receiver can't bind to `127.0.0.1`: it prints a URL to stderr and reads the code from stdin. The callback is
+accepted even while your `openBrowser` is still running. A `/callback` request without a non-empty `code` or
+`error` gets a `400` and the receiver keeps waiting.
+
+> **Paste-back and stdin.** The default stdin prompt can't cancel its blocking read. After a cancelled or
+> timed-out paste-back (`signal`, `signInTimeout`), the next line typed may still go to that pending read
+> instead of your app. If your app reads stdin itself, pass `promptForCode`.
 
 ## API reference
 
@@ -79,11 +86,11 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 | `cacheTtl` | `3600` | Seconds a cached result is served without calling the API (minimum 60). |
 | `mock` | – | Mock mode: a preset name or `{ contributions }` (see below). |
 | `storage` | platform | A `SponsorkitStorage` (`{ read(hash), write(hash, json) }`) or a Web Storage object. |
-| `storageDir` (node) | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit`, `~/Library/Application Support/sponsorkit`, `%APPDATA%\sponsorkit`. |
+| `storageDir` (node) | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit` (else `$HOME/.config/sponsorkit`), `$HOME/Library/Application Support/sponsorkit`, `%APPDATA%\sponsorkit`. If none can be determined (e.g. `HOME` is unset), state is kept in memory for the process; the SDK never writes to the current directory. |
 | `apiBaseUrl` | `https://sponsorkit.io` | Origin of a self-hosted Sponsorkit or a test server. |
 | `signInMethod` (node) | `"auto"` | `"auto" \| "loopback" \| "paste"`. |
 | `openBrowser(url)` (node) | system browser | Replace how URLs are opened. |
-| `promptForCode(url)` (node) | stdin | Replace how the paste-back code is read. Receives the URL to open. |
+| `promptForCode(url)` (node) | stdin | Replace how the paste-back code is read. Receives the URL to open. Pass it if your app reads stdin itself (see the paste-back note above). |
 | `returnTo` (browser) | – | Redirect fallback when the popup is blocked. |
 | `openWindow(url)` (browser) | `window.open` | Replace how the popup is opened (must be synchronous). |
 | `env` | `process.env` | Per-instance environment for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`. When given, it **replaces** the process environment for these variables (it is not merged). |
@@ -92,7 +99,7 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 | `checkoutPollInterval` | `60` | Seconds between checkout polls. |
 | `clock` | `Date.now` | Epoch-ms clock for cache TTL, `Retry-After` and nag timing. |
 | `fetch` | global `fetch` | Custom fetch. |
-| `requestTimeout` | `30` | Seconds before an API request is abandoned (`getFinancialContribution()` then serves the stale cache; sign-in rejects with `network_error`). `0` disables the limit. `verifySession()` takes the same option. |
+| `requestTimeout` | `30` | Seconds before an API request (headers and body) is abandoned: `getFinancialContribution()` then serves the stale cache, `signIn()` and `verifySession()` reject with `network_error`. `0` disables the limit. `verifySession()` takes the same option. |
 | `interactive` | TTY detection | Override the nag's stdout/stderr TTY check (browsers count as interactive). |
 
 ### Methods
@@ -112,14 +119,15 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 
   Error contract: signed out → signed-out result without a request; `session_invalid` → token and cache are
   cleared and the signed-out result is returned; network errors, 5xx and 429 → the cache with
-  `fromCache: true, stale: true` (or a signed-in empty `stale` result), honouring `Retry-After`; a partial
+  `fromCache: true, stale: true` (or a signed-in empty `stale` result), honouring `Retry-After` (values that
+  aren't a number of seconds or an HTTP date are ignored, and it is capped at 24 h); a partial
   provider outage → that provider's contributions are filled in from the cache with `stale: true`.
 - **`signIn({ provider?, signal? })`** → `Promise<FinancialContribution>`. While signed in, signing in with
   the other provider adds that identity to the session. Rejects with `disabled`, `invalid_config`
-  (unconfigured `provider`), `popup_blocked`, `access_denied`, `invalid_state`, `provider_error`,
+  (unconfigured `provider`, or the session couldn't be written to storage), `popup_blocked`, `access_denied`, `invalid_state`, `provider_error`,
   `invalid_code`, `cancelled` (the user closed the popup, entered no code, or `signal` aborted), `timeout`
-  (`signInTimeout` passed) or `network_error` (the API couldn't be reached or failed; `retryAfter` is set
-  when it sent `Retry-After`). If the stored session turned out to be dead while adding an identity, the
+  (`signInTimeout` passed) or `network_error` (the API couldn't be reached, timed out (`requestTimeout`) or
+  failed, including a `400` with a code other than `invalid_code`; `retryAfter` is set when it sent `Retry-After`). If the stored session turned out to be dead while adding an identity, the
   SDK clears it and retries the code once without it. The node entry also accepts `method`.
 - **`isSignedIn()`** → `Promise<boolean>` (local only).
 - **`getSessionToken()`** → `Promise<string | null>`: the `sks_…` token to forward to your backend (see Backend verification).
@@ -133,7 +141,8 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
   `/checkout` link without sign-in, for nags and READMEs. Throws `invalid_config` for an unconfigured
   provider, a frequency other than `one_time`/`monthly`/`yearly`, a non-positive or non-integer amount, or
   a currency that isn't a 3-letter ISO 4217 code.
-- **`signOut()`** → deletes the token and cache locally (nag state is kept).
+- **`signOut()`** → deletes the token and cache locally (nag state is kept). Rejects with `invalid_config` if
+  the storage can't be written.
 - **`nag({ id, every, orEvery? })`** → `{ due(predicate?, { force? }), shown() }` (see below).
 - **`Sponsorkit.resetProcessState()`** / **`resetProcessState()`**: forget per-process memo state (tests).
 
@@ -144,14 +153,14 @@ as `SPONSORKIT_ERROR_CODES`):
 
 | Code | When |
 |---|---|
-| `invalid_config` | Missing/malformed targets or options; a target that doesn't exist (dev-time check). |
+| `invalid_config` | Missing/malformed targets or options; a target that doesn't exist (dev-time check); `signIn()` couldn't save the session or `signOut()` couldn't clear it (storage not writable). |
 | `disabled` | `signIn()` / `openCheckout()` while `SPONSORKIT_DISABLE` is set. |
 | `popup_blocked` | Browser only, without `returnTo`. |
 | `access_denied`, `invalid_state`, `provider_error` | The provider or Sponsorkit reported a sign-in error. |
 | `invalid_code` | The API rejected the sign-in code exchange (`400 invalid_code`). |
 | `cancelled` | Sign-in was abandoned or cancelled: popup closed, no code entered, or `signal` aborted. |
 | `timeout` | Sign-in exceeded `signInTimeout`. |
-| `network_error` | `signIn()` or `verifySession()` couldn't reach the API, or got 5xx, 429 or an unexpected response. `e.retryAfter` holds the seconds from `Retry-After` when the API sent one. |
+| `network_error` | `signIn()` or `verifySession()` couldn't reach the API, timed out (`requestTimeout`), or got 5xx, 429 or an unexpected response (including a `400` from `/auth/token` with a code other than `invalid_code`). `e.retryAfter` holds the seconds from `Retry-After` when the API sent one (at most 86400). |
 | `session_invalid`, `targets_mismatch` | `verifySession()` only. |
 
 `getFinancialContribution()` never throws these network errors; it serves the cache or a `stale` result.
@@ -249,9 +258,9 @@ app.post("/api/premium", async (req, res) => {
 });
 ```
 
-`verifySession(token, targets, { apiBaseUrl?, fetch?, signal? })` touches no storage and works in
+`verifySession(token, targets, { apiBaseUrl?, fetch?, signal?, requestTimeout? = 30 })` touches no storage and works in
 Workers. It throws `session_invalid`, `targets_mismatch` (the token was issued for other targets),
-`invalid_config` (malformed `targets`) or `network_error` (unreachable, 5xx, 429 or an unexpected
+`invalid_config` (malformed `targets` or `requestTimeout`) or `network_error` (unreachable, timed out, 5xx, 429 or an unexpected
 response; `retryAfter` holds the seconds from `Retry-After` when the API sent one, e.g. on 429).
 
 ## Storage
@@ -260,6 +269,14 @@ One JSON document per target set, keyed by `targets_hash` (SHA-256 of the canoni
 `<storageDir>/<targets_hash>.json` on native (directory `0700`, file `0600`, written atomically via a
 temp file and rename), `localStorage["sponsorkit:<targets_hash>"]` in browsers. It holds the session
 token, the cached result and nag state, in the same format every Sponsorkit SDK uses.
+
+Reading never throws: a document that can't be parsed (including invalid UTF-8) counts as absent, and so
+does any malformed part of it (a token that isn't `sks_` + printable ASCII, a cache with unexpected types,
+a `null` list, a non-object contribution or a bad date, a malformed nag entry). Timestamps are ISO-8601
+with a fractional part of any length. A refresh writes its cache and any renewed token back only if the
+stored token is still the one it used, and a `401` clears only that token, so concurrent processes don't
+clobber each other's sign-in. Background writes (cache, nag counters) that fail are ignored; `signIn()` and
+`signOut()` reject with `invalid_config` instead.
 
 ## Development
 

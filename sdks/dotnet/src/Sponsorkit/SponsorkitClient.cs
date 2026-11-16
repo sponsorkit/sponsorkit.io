@@ -471,8 +471,7 @@ public sealed class SponsorkitClient
         var url = PageUrl(page, full);
 
         // PROTOCOL §7.0: the callback is accepted while the browser opener is still running.
-        using var openCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var open = OpenBrowserAsync(url, openCts.Token);
+        var open = OpenBrowserAsync(url, cancellationToken);
         var waiter = Task.Delay(Timeout.Infinite, cancellationToken);
         var done = await Task.WhenAny(server.Result, open, waiter).ConfigureAwait(false);
         if (done == open && !server.Result.IsCompleted)
@@ -494,7 +493,7 @@ public sealed class SponsorkitClient
         }
         if (!open.IsCompleted)
         {
-            openCts.Cancel();
+            // Not cancelled: the opener (for example a test browser following the checkout 302) may still be busy.
             _ = open.ContinueWith(t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         }
         if (done != server.Result) cancellationToken.ThrowIfCancellationRequested();

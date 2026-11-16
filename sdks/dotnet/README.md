@@ -67,12 +67,12 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 | `AppName` | `null` | Shown on the consent page as "says it is". 1–64 characters. |
 | `CacheTtl` | 1 hour | How long results are served from the local cache. Values below 60 s are raised to 60 s. A per-call TTL may be any value ≥ 0. |
 | `Mock` | `null` | Mock mode (see below). |
-| `StorageDirectory` | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit`, `~/Library/Application Support/sponsorkit` or `%APPDATA%\sponsorkit`. |
+| `StorageDirectory` | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit`, `~/Library/Application Support/sponsorkit` or `%APPDATA%\sponsorkit`. If no per-user config directory can be determined (for example `HOME` is unset), state is kept in memory for the life of the client. The SDK never writes to the working directory and construction never fails over it. |
 | `Storage` | `null` | A custom `ISponsorkitStorage` backend, for example a keychain. |
 | `ApiBaseUrl` | `https://sponsorkit.io` | For self-hosting and tests. |
-| `SignInMethod` | `Auto` | `Auto` uses loopback, and falls back to paste-back over SSH, without a display, or when the browser cannot open. `Loopback` and `Paste` force one flow. |
-| `OpenBrowser` | system browser | `Func<string, CancellationToken, Task>`. |
-| `PromptForCode` | reads stdin | `Func<string url, CancellationToken, Task<string>>`, used by paste-back sign-in. An empty answer throws `cancelled`. |
+| `SignInMethod` | `Auto` | `Auto` uses loopback, and falls back to paste-back over SSH, without a display, when `127.0.0.1` can't be bound, or when the browser cannot open. `Loopback` and `Paste` force one flow (a forced `Loopback` that can't bind throws `network_error`). |
+| `OpenBrowser` | system browser | `Func<string, CancellationToken, Task>`. Throwing counts as "the browser could not open". The callback is accepted while it is still running. The system launcher (`open`/`xdg-open`) counts as failed when it exits non-zero, and as opened when it is still running after about 1.5 s. |
+| `PromptForCode` | reads stdin | `Func<string url, CancellationToken, Task<string>>`, used by paste-back sign-in. An empty answer throws `cancelled`. See [the stdin limitation](#paste-back-and-stdin). |
 | `SignInTimeout` | 5 minutes | How long to wait for a loopback or paste-back sign-in before throwing `timeout`. |
 | `Interactive` | TTY detection | Overrides the stdout/stderr terminal check used by the nag helper. |
 | `Environment` | process env | Replaces the process environment for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI` for this instance. It is not merged: a variable missing from the dictionary counts as unset. |
@@ -80,6 +80,7 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 | `CheckoutPollInterval` | 60 s | How often `OpenCheckoutAsync` polls. |
 | `Clock` | `DateTimeOffset.UtcNow` | Injectable time for cache-expiry and nag tests. |
 | `HttpClient` | shared client | Bring your own `HttpClient`. |
+| `RequestTimeout` | 30 s | Timeout of each HTTP request. `TimeSpan.Zero` disables it; negative values throw `invalid_config`. A timeout is a network error: `GetFinancialContributionAsync` serves the stale cache, `SignInAsync` throws `network_error`. `VerifySessionOptions.RequestTimeout` does the same for `VerifySessionAsync`. |
 
 ### `ContributionResult`
 
@@ -102,14 +103,14 @@ Every exception is a `SponsorkitError` with a stable `Code` (`SponsorkitErrorCod
 
 | Code | When |
 |---|---|
-| `invalid_config` | Bad configuration, invalid `CheckoutUrl` options, an unknown mock preset, or (dev-time) a target that doesn't exist. |
+| `invalid_config` | Bad configuration (including a negative `RequestTimeout`), invalid `CheckoutUrl` options, an unknown mock preset, (dev-time) a target that doesn't exist, or a storage write failure in `SignInAsync` (persisting the session) or `SignOutAsync` (clearing it). |
 | `disabled` | `SignInAsync` or `OpenCheckoutAsync` while `SPONSORKIT_DISABLE` is set. |
 | `popup_blocked` | Browser only; never thrown by the .NET SDK. |
 | `access_denied`, `invalid_state`, `provider_error` | The provider sign-in failed (delivered to the loopback callback). |
-| `invalid_code` | The API rejected the code exchange (`400 invalid_code`). |
+| `invalid_code` | The API rejected the code exchange (`400 invalid_code`). Any other `400` from `/auth/token` is `network_error`. |
 | `cancelled` | Sign-in was cancelled through its `CancellationToken`, or no paste-back code was entered. |
 | `timeout` | Sign-in did not finish within `SignInTimeout` (default 5 minutes). |
-| `network_error` | During sign-in or `VerifySessionAsync`, Sponsorkit could not be reached or answered 5xx, 429 or an unexpected response. `RetryAfter` carries the API's `Retry-After` delay when it sent one. |
+| `network_error` | During sign-in or `VerifySessionAsync`, Sponsorkit could not be reached, timed out (`RequestTimeout`), or answered 5xx, 429, a `400` other than `invalid_code`, or an unexpected response. `RetryAfter` carries the API's `Retry-After` delay when it sent one; values that aren't valid are ignored and delays are capped at 24 hours. |
 | `session_invalid`, `targets_mismatch` | Only from `SponsorkitServer.VerifySessionAsync`. |
 
 `GetFinancialContributionAsync` does not throw for network errors, 5xx responses or rate limits:
@@ -137,6 +138,15 @@ The session token, the cache and the nag counters are stored in `<StorageDirecto
 - The directory is `0700` and the files are `0600`.
 - Writes are atomic.
 - The file format is shared with the other Sponsorkit SDKs.
+- Reading never throws. An unparseable document (including invalid UTF-8) reads as absent, and so does any malformed part of one (an unexpected type, a bad date, a `null` list, a token that isn't `sks_` plus printable ASCII), without losing the rest.
+- A background refresh writes back its cache and any renewed token only if the stored token is still the one it used, and a `401` clears only that token, so a concurrent sign-in or sign-out is never undone.
+
+### Paste-back and stdin
+
+The default paste-back prompt reads a line from standard input. A blocking console read can't be cancelled, so after a
+cancelled or timed-out paste-back sign-in the read stays pending: the next line typed goes to the next Sponsorkit paste
+prompt, or is discarded if none follows. If your app reads standard input itself after an abandoned sign-in, supply
+`PromptForCode`.
 
 ## Nag helper
 
