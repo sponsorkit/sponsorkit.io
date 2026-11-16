@@ -1,1 +1,29 @@
-{ "name": "@sponsorkit/web", "version": "0.0.0", "private": true, "type": "module" }
+{
+  "name": "@sponsorkit/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "serve": "node scripts/serve.mjs",
+    "test": "vitest run",
+    "test:e2e": "next build && playwright test --trace off",
+    "typecheck": "next typegen && tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@sponsorkit/shared": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.2.0",
+    "shiki": "^4.6.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
