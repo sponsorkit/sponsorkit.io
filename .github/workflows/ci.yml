@@ -55,7 +55,7 @@ jobs:
         with:
           node-version: 22
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck && bun run build && bun run test
+      - run: bun run typecheck && bun run lint && bun run test && bun run test:dist
         working-directory: sdks/js
 
   sdk-dotnet:
@@ -91,42 +91,54 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -e '.[dev]'
           .venv/bin/ruff check .
-          .venv/bin/mypy src
+          .venv/bin/mypy
           .venv/bin/pytest
 
   sdk-go:
-    name: SDK (Go)
+    name: SDK (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.23", "1.25"]
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: ${{ matrix.go }}
       - name: Test
         working-directory: sdks/go
         run: |
           test -z "$(gofmt -l .)"
           go vet ./...
-          go test ./...
+          go test -race ./...
 
   sdk-rust:
-    name: SDK (Rust)
+    name: SDK (Rust ${{ matrix.toolchain }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, "1.85"]
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
-      - name: Test
+      - name: Lint
+        if: matrix.toolchain == 'stable'
         working-directory: sdks/rust
         run: |
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
-          cargo test
+      - name: Test
+        working-directory: sdks/rust
+        run: cargo test
 
   deploy:
     name: Deploy to Cloudflare
