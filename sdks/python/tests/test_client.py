@@ -284,6 +284,7 @@ def test_default_storage_dir_respects_xdg(tmp_path: Path, monkeypatch: pytest.Mo
         pytest.skip("XDG only applies on Linux/BSD")
     assert default_storage_dir({"XDG_CONFIG_HOME": str(tmp_path)}) == tmp_path / "sponsorkit"
     assert default_storage_dir({"HOME": str(tmp_path)}) == tmp_path / ".config" / "sponsorkit"
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
     assert default_storage_dir() == tmp_path / ".config" / "sponsorkit"
 
