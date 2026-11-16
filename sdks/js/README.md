@@ -86,12 +86,13 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 | `promptForCode(url)` (node) | stdin | Replace how the paste-back code is read. Receives the URL to open. |
 | `returnTo` (browser) | – | Redirect fallback when the popup is blocked. |
 | `openWindow(url)` (browser) | `window.open` | Replace how the popup is opened (must be synchronous). |
-| `env` | `process.env` | Per-instance environment for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `CI`. |
-| `devChecks` | `NODE_ENV === "development"` | Check once per process that the targets exist (`GET /api/v1/targets`); throws `invalid_config` on the first async call if not. |
+| `env` | `process.env` | Per-instance environment for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`. When given, it **replaces** the process environment for these variables (it is not merged). |
+| `devChecks` | see note | Check once per process that the targets exist (`GET /api/v1/targets`); throws `invalid_config` on the first async call if not. Default: on when `SPONSORKIT_DEV_CHECKS` is set, or when `process.env.NODE_ENV === "development"`; off otherwise. |
+| `signInTimeout` | `300` | Seconds to wait for a popup, loopback or paste-back sign-in before rejecting with `timeout`. |
 | `checkoutPollInterval` | `60` | Seconds between checkout polls. |
 | `clock` | `Date.now` | Epoch-ms clock for cache TTL, `Retry-After` and nag timing. |
 | `fetch` | global `fetch` | Custom fetch. |
-| `interactive` | TTY detection | Override the nag's TTY check. |
+| `interactive` | TTY detection | Override the nag's stdout/stderr TTY check (browsers count as interactive). |
 
 ### Methods
 
@@ -113,34 +114,46 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
   `fromCache: true, stale: true` (or a signed-in empty `stale` result), honouring `Retry-After`; a partial
   provider outage → that provider's contributions are filled in from the cache with `stale: true`.
 - **`signIn({ provider?, signal? })`** → `Promise<FinancialContribution>`. While signed in, signing in with
-  the other provider adds that identity to the session. Rejects with `disabled`, `popup_blocked`,
-  `access_denied` (also when the user closes the popup, the 5-minute loopback timeout passes or `signal`
-  aborts), `invalid_state`, `provider_error` or `invalid_code`. The node entry also accepts `method`.
+  the other provider adds that identity to the session. Rejects with `disabled`, `invalid_config`
+  (unconfigured `provider`), `popup_blocked`, `access_denied`, `invalid_state`, `provider_error`,
+  `invalid_code`, `cancelled` (the user closed the popup, entered no code, or `signal` aborted), `timeout`
+  (`signInTimeout` passed) or `network_error` (the API couldn't be reached or failed; `retryAfter` is set
+  when it sent `Retry-After`). If the stored session turned out to be dead while adding an identity, the
+  SDK clears it and retries the code once without it. The node entry also accepts `method`.
 - **`isSignedIn()`** → `Promise<boolean>` (local only).
 - **`getSessionToken()`** → `Promise<string | null>`: the `sks_…` token to forward to your backend (see Backend verification).
 - **`openCheckout({ provider?, amount?, currency?, frequency?, timeout? = 600, signal? })`** →
   `Promise<{ status: "contributed", contribution } | { status: "unknown" }>`. Signs in first if needed
   (in the same popup / browser tab), opens `/checkout`, then polls with `cacheTtl: 0` until a new or
-  changed contribution appears. Timeout and cancellation resolve `{ status: "unknown" }`. `amount` is in
-  minor units (cents).
+  changed contribution appears. `timeout` counts from when polling starts; the sign-in phase is bounded by
+  `signInTimeout` (and rejects with `timeout` when that passes). Polling timeout and `signal`
+  cancellation (in either phase) resolve `{ status: "unknown" }`. `amount` is in minor units (cents).
 - **`checkoutUrl({ provider?, amount?, currency?, frequency? })`** → `string`. Synchronous and offline: a
-  `/checkout` link without sign-in, for nags and READMEs.
+  `/checkout` link without sign-in, for nags and READMEs. Throws `invalid_config` for an unconfigured
+  provider, a frequency other than `one_time`/`monthly`/`yearly`, a non-positive or non-integer amount, or
+  a currency that isn't a 3-letter ISO 4217 code.
 - **`signOut()`** → deletes the token and cache locally (nag state is kept).
 - **`nag({ id, every, orEvery? })`** → `{ due(predicate?, { force? }), shown() }` (see below).
 - **`Sponsorkit.resetProcessState()`** / **`resetProcessState()`**: forget per-process memo state (tests).
 
 ### Errors
 
-Everything thrown is a `SponsorkitError` with a `code`:
+Everything thrown is a `SponsorkitError` with a `code` (the same set in every Sponsorkit SDK, also exported
+as `SPONSORKIT_ERROR_CODES`):
 
 | Code | When |
 |---|---|
 | `invalid_config` | Missing/malformed targets or options; a target that doesn't exist (dev-time check). |
 | `disabled` | `signIn()` / `openCheckout()` while `SPONSORKIT_DISABLE` is set. |
 | `popup_blocked` | Browser only, without `returnTo`. |
-| `access_denied`, `invalid_state`, `provider_error` | Sign-in failed or was abandoned. |
-| `invalid_code` | The sign-in code could not be exchanged. |
-| `session_invalid`, `targets_mismatch`, `unavailable` | `verifySession()` only. |
+| `access_denied`, `invalid_state`, `provider_error` | The provider or Sponsorkit reported a sign-in error. |
+| `invalid_code` | The API rejected the sign-in code exchange (`400 invalid_code`). |
+| `cancelled` | Sign-in was abandoned or cancelled: popup closed, no code entered, or `signal` aborted. |
+| `timeout` | Sign-in exceeded `signInTimeout`. |
+| `network_error` | `signIn()` or `verifySession()` couldn't reach the API, or got 5xx, 429 or an unexpected response. `e.retryAfter` holds the seconds from `Retry-After` when the API sent one. |
+| `session_invalid`, `targets_mismatch` | `verifySession()` only. |
+
+`getFinancialContribution()` never throws these network errors; it serves the cache or a `stale` result.
 
 ## Nag helper
 
@@ -155,7 +168,8 @@ if (await nag.due((fc) => fc.active().length === 0)) {
 - The run counter goes up once per process per `id`, on the first `due()` call, even when the predicate is false.
 - `due()` returns `predicate(fc) && (runs >= every || since(lastShown) >= orEvery)`. Before the first `shown()`, the `orEvery` clause is false.
 - `due()` is always false when `SPONSORKIT_DISABLE`, `SPONSORKIT_NO_NAG` or `CI` is set, or stdout/stderr is
-  not a TTY, unless you pass `{ force: true }` (which never overrides `SPONSORKIT_DISABLE`).
+  not a TTY (override with the `interactive` option), unless you pass `{ force: true }` (which never
+  overrides `SPONSORKIT_DISABLE`).
 - The nag never signs anyone in.
 
 ## Mock mode and testing
@@ -166,7 +180,8 @@ new Sponsorkit({ github: "octocat", mock: "active-monthly" });
 new Sponsorkit({ github: "octocat", mock: { contributions: [/* Contribution objects */] } });
 ```
 
-Or set `SPONSORKIT_MOCK=active-monthly`. Mock mode does no network or disk access and returns `mock: true`.
+Or set `SPONSORKIT_MOCK=active-monthly`. Mock mode does no network or disk access and returns `mock: true`;
+nag state lives in memory, per instance.
 `signIn()` and `openCheckout()` resolve immediately; `openCheckout()` simulates a new contribution.
 The `mock` option beats `SPONSORKIT_MOCK`; `SPONSORKIT_DISABLE=1` beats both.
 
@@ -177,7 +192,10 @@ Environment variables (set = non-empty and not `0`/`false`):
 | `SPONSORKIT_DISABLE` | No network or disk access; `disabled: true` results; `signIn`/`openCheckout` reject with `disabled`. |
 | `SPONSORKIT_MOCK` | Mock preset name. |
 | `SPONSORKIT_NO_NAG` | `nag().due()` returns false. |
+| `SPONSORKIT_DEV_CHECKS` | Turns the dev-time target existence check on (unless `devChecks: false`). |
 | `CI` | `nag().due()` returns false. |
+
+The `env` option replaces the process environment for all of these.
 
 For integration tests, point `apiBaseUrl` at the conformance fake server
 (`bun sdks/conformance/server.ts`), pass a temporary `storageDir`, and replace `openBrowser` /
@@ -224,7 +242,7 @@ app.post("/api/premium", async (req, res) => {
     const fc = await verifySession(req.get("x-sponsorkit-session") ?? "", { github: "octocat" });
     res.json({ premium: fc.active().length > 0 });
   } catch (e) {
-    if (e instanceof SponsorkitError && e.code === "unavailable") return res.status(503).end();
+    if (e instanceof SponsorkitError && e.code === "network_error") return res.status(503).end();
     res.status(401).end(); // session_invalid or targets_mismatch
   }
 });
@@ -232,7 +250,8 @@ app.post("/api/premium", async (req, res) => {
 
 `verifySession(token, targets, { apiBaseUrl?, fetch?, signal? })` touches no storage and works in
 Workers. It throws `session_invalid`, `targets_mismatch` (the token was issued for other targets),
-`invalid_config` (malformed `targets`) or `unavailable` (with `retryAfter` seconds when rate limited).
+`invalid_config` (malformed `targets`) or `network_error` (unreachable, 5xx, 429 or an unexpected
+response; `retryAfter` holds the seconds from `Retry-After` when the API sent one, e.g. on 429).
 
 ## Storage
 

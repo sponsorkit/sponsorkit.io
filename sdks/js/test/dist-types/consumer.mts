@@ -16,5 +16,6 @@ new BrowserSponsorkit({ github: "octocat", returnTo: "https://app.example" }).si
 const v = await verifySession("sks_", { github: "octocat" });
 const e = null as unknown as SponsorkitError;
 const code: "invalid_config" | string = e.code;
+const retryAfter: number | undefined = e.retryAfter;
 defineElements();
-void [plain, n, due, v, code, SponsorkitButtonElement];
+void [plain, n, due, v, code, retryAfter, SponsorkitButtonElement];

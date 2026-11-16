@@ -34,7 +34,8 @@ export interface VerifySessionOptions {
  * - `invalid_config`: `targets` is missing or malformed;
  * - `session_invalid`: the token is missing, malformed, expired or rejected;
  * - `targets_mismatch`: the session was issued for a different target set;
- * - `unavailable`: Sponsorkit could not be reached, failed or rate limited the request (see `retryAfter`).
+ * - `network_error`: Sponsorkit could not be reached, answered 5xx or 429, or sent an unexpected response.
+ *   `retryAfter` holds the seconds from `Retry-After` when the API sent one (e.g. on 429).
  *
  * @param targets `{ github?, opencollective? }`, a canonical target param, or a list of target strings.
  */
@@ -51,9 +52,12 @@ export async function verifySession(
     case "session_invalid":
       throw new SponsorkitError("session_invalid", "The session token is invalid or expired");
     case "rate_limited":
-      throw Object.assign(new SponsorkitError("unavailable", "Sponsorkit rate limited this session"), { retryAfter: res.retryAfterMs / 1000 });
+      throw new SponsorkitError("network_error", "Sponsorkit rate limited this session", { retryAfter: res.retryAfter });
     case "failed":
-      throw new SponsorkitError("unavailable", `Sponsorkit is unavailable${res.status ? ` (HTTP ${res.status})` : ""}`, { cause: res.error });
+      throw new SponsorkitError("network_error", `Sponsorkit could not be reached${res.status ? ` (HTTP ${res.status})` : ""}`, {
+        cause: res.error,
+        retryAfter: res.retryAfter,
+      });
   }
   let actual: string;
   try {
@@ -65,7 +69,7 @@ export async function verifySession(
   return new FinancialContribution({ ...res.result, fromCache: false });
 }
 
-export { isSponsorkitError, SponsorkitError, type SponsorkitErrorCode } from "./errors";
+export { isSponsorkitError, SPONSORKIT_ERROR_CODES, SponsorkitError, type SponsorkitErrorCode } from "./errors";
 export type { FetchLike } from "./http";
 export { FinancialContribution } from "./result";
 export * from "./types";

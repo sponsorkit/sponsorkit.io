@@ -107,13 +107,24 @@ describe("popup sign-in (delivery=web_message)", () => {
     await expect(pending).rejects.toMatchObject({ code: "access_denied" });
   });
 
-  test("closing the popup rejects with access_denied", async () => {
+  test("closing the popup rejects with cancelled", async () => {
     const { Sponsorkit } = await sdk();
     const env = setup();
     const pending = new Sponsorkit(env.options).signIn();
     await tick(10);
     env.popups[0]!.closed = true;
-    await expect(pending).rejects.toMatchObject({ code: "access_denied" });
+    await expect(pending).rejects.toMatchObject({ code: "cancelled" });
+  });
+
+  test("aborting the signal rejects with cancelled; signInTimeout rejects with timeout", async () => {
+    const { Sponsorkit } = await sdk();
+    const env = setup();
+    const ac = new AbortController();
+    const pending = new Sponsorkit(env.options).signIn({ signal: ac.signal });
+    await tick(10);
+    ac.abort();
+    await expect(pending).rejects.toMatchObject({ code: "cancelled" });
+    await expect(new Sponsorkit({ ...env.options, signInTimeout: 0.05 }).signIn()).rejects.toMatchObject({ code: "timeout" });
   });
 
   test("a blocked popup rejects with popup_blocked", async () => {

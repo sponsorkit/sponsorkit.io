@@ -6,6 +6,7 @@ export {
   DEFAULT_CACHE_TTL,
   DEFAULT_CHECKOUT_POLL_INTERVAL,
   DEFAULT_CHECKOUT_TIMEOUT,
+  DEFAULT_SIGN_IN_TIMEOUT,
   type Nag,
   type NagDueOptions,
   type NagOptions,
@@ -16,7 +17,7 @@ export {
   SponsorkitCore,
   type SponsorkitCoreOptions,
 } from "./core";
-export { isSponsorkitError, SponsorkitError, type SponsorkitErrorCode } from "./errors";
+export { isSponsorkitError, SPONSORKIT_ERROR_CODES, SponsorkitError, type SponsorkitErrorCode } from "./errors";
 export type { FetchLike } from "./http";
 export { MOCK_PRESETS } from "./mock";
 export { FinancialContribution } from "./result";

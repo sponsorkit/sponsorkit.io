@@ -5,7 +5,7 @@
  * sign-in flows and storage.
  */
 import { SponsorkitError } from "./errors";
-import { type FetchLike, fetchContributions, fetchTargets, problemCode, resolveFetch } from "./http";
+import { type FetchLike, fetchContributions, fetchTargets, problemCode, resolveFetch, retryAfterSeconds } from "./http";
 import { initialMockState, type MockState, mockCheckoutContribution, mockResult, parseMockOption } from "./mock";
 import { FinancialContribution } from "./result";
 import { type SponsorkitStorage, Store, type WebStorageLike } from "./storage";
@@ -20,8 +20,10 @@ export const DEFAULT_CACHE_TTL = 3600;
 export const MIN_CACHE_TTL = 60;
 /** Default checkout poll interval in seconds. */
 export const DEFAULT_CHECKOUT_POLL_INTERVAL = 60;
-/** Default checkout timeout in seconds. */
+/** Default checkout timeout in seconds (polling phase only). */
 export const DEFAULT_CHECKOUT_TIMEOUT = 600;
+/** Default `signInTimeout` in seconds. */
+export const DEFAULT_SIGN_IN_TIMEOUT = 300;
 
 /** Options shared by every `Sponsorkit` flavour. */
 export interface SponsorkitCoreOptions {
@@ -37,17 +39,25 @@ export interface SponsorkitCoreOptions {
   storage?: SponsorkitStorage | WebStorageLike;
   /** API origin, for self-hosting and tests. Default `https://sponsorkit.io`. */
   apiBaseUrl?: string;
-  /** Environment used for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG` and `CI`. Default: the process environment. */
+  /**
+   * Environment used for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`.
+   * When given, it **replaces** the process environment for these variables (it is not merged). Default: the process environment.
+   */
   env?: Env;
-  /** Forces the dev-time target existence check on or off. Default: on when `process.env.NODE_ENV` is `development` (bundlers inline it), off otherwise. */
+  /**
+   * Forces the dev-time target existence check on or off. Default: on when `SPONSORKIT_DEV_CHECKS` is set
+   * (in `env`) or `process.env.NODE_ENV` is `development` (bundlers inline it), off otherwise.
+   */
   devChecks?: boolean;
+  /** Seconds to wait for a sign-in (popup, loopback or paste-back) before rejecting with `timeout`. Default 300. */
+  signInTimeout?: number;
   /** Seconds between checkout polls. Default 60. */
   checkoutPollInterval?: number;
   /** Clock in epoch milliseconds, used for cache TTL, `Retry-After` and nag timing. Default `Date.now`. */
   clock?: () => number;
   /** Custom `fetch` implementation. Default: the global `fetch`. */
   fetch?: FetchLike;
-  /** Whether the app runs interactively, for `nag().due()`. Default: platform detection (TTY on native). */
+  /** Whether the app runs interactively, for `nag().due()`. Overrides platform detection (TTY on native). */
   interactive?: boolean;
 }
 
@@ -55,15 +65,15 @@ export interface SponsorkitCoreOptions {
 export interface SignInOptions {
   /** Skip the provider picker. Signing in with a second provider adds that identity to the session. */
   provider?: Provider;
-  /** Cancels the sign-in; `signIn()` then rejects with `access_denied`. */
+  /** Cancels the sign-in; `signIn()` then rejects with `cancelled`. */
   signal?: AbortSignal;
 }
 
 /** Options for `openCheckout()`. */
 export interface OpenCheckoutOptions extends CheckoutOptions {
-  /** Seconds to wait for a new contribution. Default 600. */
+  /** Seconds to wait for a new contribution, counted from when polling starts (sign-in uses `signInTimeout`). Default 600. */
   timeout?: number;
-  /** Cancels waiting; `openCheckout()` then resolves `{ status: "unknown" }`. */
+  /** Cancels sign-in or waiting; `openCheckout()` then resolves `{ status: "unknown" }`. */
   signal?: AbortSignal;
   /** Seconds between polls; overrides the `checkoutPollInterval` option. */
   pollInterval?: number;
@@ -110,6 +120,7 @@ export interface CodeRequest {
   verifier: string;
   /** For checkout: where the browser continues after sign-in. */
   continueUrl?: string;
+  /** Aborted on cancellation or `signInTimeout`; its `reason` is the `SponsorkitError` to reject with (see {@link abortError}). */
   signal: AbortSignal;
   /** Platform-specific method override passed by the caller (native: `loopback` / `paste`). */
   method?: string;
@@ -134,22 +145,29 @@ export function resetProcessState(): void {
 
 const FREQUENCIES: readonly Frequency[] = ["one_time", "monthly", "yearly"];
 
-function abortError(): SponsorkitError {
-  return new SponsorkitError("access_denied", "Sign-in was cancelled");
+/**
+ * The error a sign-in rejects with once `signal` aborted: `cancelled` or `timeout`
+ * (the signal's reason when it is a {@link SponsorkitError}).
+ */
+export function abortError(signal: AbortSignal): SponsorkitError {
+  return signal.reason instanceof SponsorkitError ? signal.reason : new SponsorkitError("cancelled", "Sign-in was cancelled");
 }
 
-/** Combines an optional user signal with a deadline into one signal. */
-function combineSignals(signal: AbortSignal | undefined, timeoutMs: number | null): { signal: AbortSignal; dispose(): void } {
+/**
+ * Combines an optional user signal with a deadline into one signal whose reason
+ * is a `cancelled` (user signal) or `timeout` (deadline) {@link SponsorkitError}.
+ */
+function combineSignals(signal: AbortSignal | undefined, timeoutMs: number | null, what: string): { signal: AbortSignal; dispose(): void } {
   const ac = new AbortController();
-  const abort = () => ac.abort();
-  if (signal?.aborted) ac.abort();
-  signal?.addEventListener("abort", abort, { once: true });
-  const timer = timeoutMs === null ? undefined : setTimeout(abort, Math.max(0, timeoutMs));
+  const cancel = () => ac.abort(new SponsorkitError("cancelled", `${what} was cancelled`));
+  if (signal?.aborted) cancel();
+  signal?.addEventListener("abort", cancel, { once: true });
+  const timer = timeoutMs === null ? undefined : setTimeout(() => ac.abort(new SponsorkitError("timeout", `${what} timed out`)), Math.max(0, timeoutMs));
   return {
     signal: ac.signal,
     dispose() {
       clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
+      signal?.removeEventListener("abort", cancel);
     },
   };
 }
@@ -189,12 +207,14 @@ export abstract class SponsorkitCore<I = unknown> {
   protected readonly cacheTtl: number;
   protected readonly devChecks: boolean;
   protected readonly pollInterval: number;
+  protected readonly signInTimeoutMs: number;
   protected readonly now: () => number;
   protected readonly fetchFn: FetchLike;
   protected readonly interactiveOverride: boolean | undefined;
   private readonly storageOption: SponsorkitStorage | WebStorageLike | undefined;
   private mockState: MockState | null = null;
   private readonly mockNags: Record<string, NagState> = {};
+  private readonly mockNagCounted = new Set<string>();
   private storeInstance: Store | null = null;
   private hashPromise: Promise<string> | null = null;
 
@@ -211,6 +231,10 @@ export abstract class SponsorkitCore<I = unknown> {
     const interval = options.checkoutPollInterval ?? DEFAULT_CHECKOUT_POLL_INTERVAL;
     if (typeof interval !== "number" || !(interval > 0)) throw new SponsorkitError("invalid_config", "checkoutPollInterval must be positive");
     this.pollInterval = interval;
+    const signInTimeout = options.signInTimeout ?? DEFAULT_SIGN_IN_TIMEOUT;
+    if (typeof signInTimeout !== "number" || !(signInTimeout > 0))
+      throw new SponsorkitError("invalid_config", "signInTimeout must be a positive number of seconds");
+    this.signInTimeoutMs = signInTimeout * 1000;
     this.now = options.clock ?? Date.now;
     this.fetchFn = resolveFetch(options.fetch);
     this.interactiveOverride = options.interactive;
@@ -220,7 +244,8 @@ export abstract class SponsorkitCore<I = unknown> {
     const mock = parseMockOption(options.mock ?? envMock);
     if (mock && !this.disabled) this.mockState = initialMockState(this.targetList, mock);
     this.isMock = this.mockState !== null;
-    this.devChecks = options.devChecks ?? buildMode() === "development";
+    // PROTOCOL §7 devChecks default: SPONSORKIT_DEV_CHECKS, else only the JS signal NODE_ENV=development.
+    this.devChecks = options.devChecks ?? (isEnvSet(this.env.SPONSORKIT_DEV_CHECKS) || buildMode() === "development");
   }
 
   // ---------------------------------------------------------------- platform hooks
@@ -283,8 +308,9 @@ export abstract class SponsorkitCore<I = unknown> {
 
   /**
    * Signs the user in (or adds a second identity when already signed in) and
-   * returns the fresh result. Rejects with `disabled`, `popup_blocked`,
-   * `access_denied`, `invalid_state`, `provider_error` or `invalid_code`.
+   * returns the fresh result. Rejects with `disabled`, `invalid_config`, `popup_blocked`,
+   * `access_denied`, `invalid_state`, `provider_error`, `invalid_code`, `cancelled`
+   * (`signal` aborted, popup closed), `timeout` (`signInTimeout`) or `network_error`.
    */
   async signIn(options: SignInOptions = {}): Promise<FinancialContribution> {
     if (this.disabled) throw new SponsorkitError("disabled", "Sponsorkit is disabled (SPONSORKIT_DISABLE)");
@@ -296,7 +322,7 @@ export abstract class SponsorkitCore<I = unknown> {
       return new FinancialContribution(mockResult(this.targetList, this.mockState));
     }
     const interaction = this.beginInteraction("signIn");
-    const { signal, dispose } = combineSignals(options.signal, null);
+    const { signal, dispose } = combineSignals(options.signal, this.signInTimeoutMs, "Sign-in");
     try {
       await this.devCheck();
       await this.prepare();
@@ -307,11 +333,11 @@ export abstract class SponsorkitCore<I = unknown> {
       if (signedIn) params.set("add", "1");
       const method = (options as { method?: string }).method;
       const code = await this.obtainCode(interaction, { path: "/connect", params, verifier, signal, method });
-      if (signal.aborted) throw abortError();
+      if (signal.aborted) throw abortError(signal);
       return new FinancialContribution(await this.exchange(code, verifier));
     } catch (e) {
       this.endInteraction(interaction);
-      if (signal.aborted && !(e instanceof SponsorkitError)) throw abortError();
+      if (signal.aborted && !(e instanceof SponsorkitError)) throw abortError(signal);
       throw e;
     } finally {
       dispose();
@@ -327,16 +353,22 @@ export abstract class SponsorkitCore<I = unknown> {
   async openCheckout(options: OpenCheckoutOptions = {}): Promise<CheckoutResult> {
     if (this.disabled) throw new SponsorkitError("disabled", "Sponsorkit is disabled (SPONSORKIT_DISABLE)");
     const query = this.checkoutQuery(options);
+    const timeout = options.timeout ?? DEFAULT_CHECKOUT_TIMEOUT;
+    if (typeof timeout !== "number" || !(timeout >= 0)) throw new SponsorkitError("invalid_config", "timeout must be a number of seconds");
     if (this.mockState) {
       const c = mockCheckoutContribution(this.targetList, options);
       this.mockState = { signedIn: true, contributions: [...this.mockState.contributions.filter((x) => x.id !== c.id), c] };
       return { status: "contributed", contribution: c };
     }
     const interaction = this.beginInteraction("checkout");
-    const timeout = options.timeout ?? DEFAULT_CHECKOUT_TIMEOUT;
     const interval = (options.pollInterval ?? this.pollInterval) * 1000;
-    const deadline = Date.now() + timeout * 1000;
-    const { signal, dispose } = combineSignals(options.signal, timeout * 1000);
+    let disposePolling = () => {};
+    // PROTOCOL §7.1 item 15: `timeout` covers only the polling phase.
+    const startPolling = () => {
+      const polling = combineSignals(options.signal, timeout * 1000, "Checkout");
+      disposePolling = polling.dispose;
+      return { signal: polling.signal, deadline: Date.now() + timeout * 1000 };
+    };
     try {
       await this.devCheck();
       await this.prepare();
@@ -344,37 +376,46 @@ export abstract class SponsorkitCore<I = unknown> {
       let baseline: ContributionResult;
       if (stored.sessionToken) {
         baseline = stored.cache?.result ?? (await this.refresh(0));
-        await this.showCheckout(interaction, `${this.apiBaseUrl}/checkout?${query}`, signal);
       } else {
-        const verifier = createCodeVerifier();
-        const params = new URLSearchParams(query);
-        params.set("challenge", await codeChallenge(verifier));
-        let code: string;
+        // Sign-in phase: bounded by signInTimeout; cancellation resolves "unknown", a sign-in timeout throws `timeout`.
+        const signIn = combineSignals(options.signal, this.signInTimeoutMs, "Sign-in");
         try {
-          code = await this.obtainCode(interaction, {
-            path: "/checkout",
-            params,
-            verifier,
-            signal,
-            method: (options as { method?: string }).method,
-            continueUrl: `${this.apiBaseUrl}/checkout?${query}&step=choose`,
-          });
-        } catch (e) {
-          if (signal.aborted) {
-            this.endInteraction(interaction);
-            return { status: "unknown" };
+          const verifier = createCodeVerifier();
+          const params = new URLSearchParams(query);
+          params.set("challenge", await codeChallenge(verifier));
+          let code: string;
+          try {
+            code = await this.obtainCode(interaction, {
+              path: "/checkout",
+              params,
+              verifier,
+              signal: signIn.signal,
+              method: (options as { method?: string }).method,
+              continueUrl: `${this.apiBaseUrl}/checkout?${query}&step=choose`,
+            });
+            if (signIn.signal.aborted) throw abortError(signIn.signal);
+          } catch (e) {
+            const err = signIn.signal.aborted ? abortError(signIn.signal) : e;
+            if (err instanceof SponsorkitError && err.code === "cancelled" && options.signal?.aborted) {
+              this.endInteraction(interaction);
+              return { status: "unknown" };
+            }
+            throw err;
           }
-          throw e;
+          baseline = await this.exchange(code, verifier);
+        } finally {
+          signIn.dispose();
         }
-        baseline = await this.exchange(code, verifier);
       }
+      const { signal, deadline } = startPolling();
+      if (stored.sessionToken) await this.showCheckout(interaction, `${this.apiBaseUrl}/checkout?${query}`, signal);
       await this.beforePolling(interaction, signal);
       return await this.pollForContribution(baseline, deadline, interval, signal);
     } catch (e) {
       this.endInteraction(interaction);
       throw e;
     } finally {
-      dispose();
+      disposePolling();
     }
   }
 
@@ -383,6 +424,7 @@ export abstract class SponsorkitCore<I = unknown> {
    * Suits nags, READMEs and "Sponsor" links. Checkout started this way can't be detected.
    */
   checkoutUrl(options: CheckoutOptions = {}): string {
+    // Throws invalid_config for an unconfigured provider or an invalid amount, currency or frequency (PROTOCOL §7.1 item 16).
     return `${this.apiBaseUrl}/checkout?${this.checkoutQuery(options)}`;
   }
 
@@ -536,7 +578,10 @@ export abstract class SponsorkitCore<I = unknown> {
     return result;
   }
 
-  /** `POST /api/v1/auth/token`; stores the token and caches the result (PROTOCOL §7.1). */
+  /**
+   * `POST /api/v1/auth/token`; stores the token and caches the result (PROTOCOL §7.1).
+   * Throws `invalid_code` for `400 invalid_code` and `network_error` for anything else that isn't a success.
+   */
   protected async exchange(code: string, verifier: string): Promise<ContributionResult> {
     const stored = await this.readStorage();
     const post = async (sessionToken: string | undefined) => {
@@ -547,28 +592,30 @@ export abstract class SponsorkitCore<I = unknown> {
           body: JSON.stringify({ code, codeVerifier: verifier, ...(sessionToken ? { sessionToken } : {}) }),
         });
       } catch (cause) {
-        throw new SponsorkitError("invalid_code", "Could not reach Sponsorkit to complete sign-in", { cause });
+        throw new SponsorkitError("network_error", "Could not reach Sponsorkit to complete sign-in", { cause });
       }
     };
     let res = await post(stored.sessionToken ?? undefined);
     if (res.status === 401 && stored.sessionToken) {
-      // The stored session is no longer valid: start a fresh one with the new identity.
+      // PROTOCOL §7: adding an identity to a dead session clears it and retries the (reusable) code once without it.
       await res.body?.cancel().catch(() => undefined);
       await this.updateStorage((s) => ({ v: 1, nags: s.nags }));
       res = await post(undefined);
     }
     if (!res.ok) {
+      const retryAfter = retryAfterSeconds(res.headers.get("retry-after"), this.now());
       const pc = await problemCode(res);
-      throw new SponsorkitError("invalid_code", `Sign-in code exchange failed (HTTP ${res.status}${pc ? ` ${pc}` : ""})`);
+      if (res.status === 400 && pc === "invalid_code") throw new SponsorkitError("invalid_code", "Sponsorkit rejected the sign-in code");
+      throw new SponsorkitError("network_error", `Sign-in code exchange failed (HTTP ${res.status}${pc ? ` ${pc}` : ""})`, { retryAfter });
     }
     let body: unknown;
     try {
       body = await res.json();
     } catch (cause) {
-      throw new SponsorkitError("invalid_code", "Malformed sign-in response", { cause });
+      throw new SponsorkitError("network_error", "Malformed sign-in response", { cause });
     }
     if (!isObject(body) || typeof body.sessionToken !== "string" || !isObject(body.result)) {
-      throw new SponsorkitError("invalid_code", "Malformed sign-in response");
+      throw new SponsorkitError("network_error", "Malformed sign-in response");
     }
     const sessionToken = body.sessionToken;
     const result = { ...(body.result as unknown as ContributionResult), fromCache: false };
@@ -626,8 +673,9 @@ export abstract class SponsorkitCore<I = unknown> {
     const hash = await this.hash();
     const countKey = `${hash}:${id}`;
     if (this.mockState) {
-      if (!processState.nagCounted.has(`mock:${countKey}`)) {
-        processState.nagCounted.add(`mock:${countKey}`);
+      // PROTOCOL §7.1 item 14: mock nag state lives in memory, per instance.
+      if (!this.mockNagCounted.has(id)) {
+        this.mockNagCounted.add(id);
         const prev = this.mockNags[id] ?? { runs: 0, lastShown: null };
         this.mockNags[id] = { ...prev, runs: prev.runs + 1 };
       }

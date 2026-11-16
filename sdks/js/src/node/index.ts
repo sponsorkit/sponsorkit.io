@@ -12,7 +12,7 @@
  * ```
  */
 import { createInterface } from "node:readline";
-import { type CodeRequest, type OpenCheckoutOptions, type SignInOptions, SponsorkitCore, type SponsorkitCoreOptions } from "../core";
+import { abortError, type CodeRequest, type OpenCheckoutOptions, type SignInOptions, SponsorkitCore, type SponsorkitCoreOptions } from "../core";
 import { SponsorkitError } from "../errors";
 import type { FinancialContribution } from "../result";
 import type { SponsorkitStorage } from "../storage";
@@ -39,8 +39,6 @@ export interface SponsorkitOptions extends SponsorkitCoreOptions {
   promptForCode?: (url: string) => string | Promise<string>;
   /** Where to print messages for the user. Default: `process.stderr`. */
   output?: { write(text: string): unknown };
-  /** Loopback sign-in timeout in seconds. Default 300. */
-  signInTimeout?: number;
 }
 
 /** Native `signIn()` options. */
@@ -68,11 +66,11 @@ function stdinPrompt(output: { write(text: string): unknown }, signal: AbortSign
       rl.close();
       fn();
     };
-    const onAbort = () => finish(() => reject(new SponsorkitError("access_denied", "Sign-in was cancelled")));
+    const onAbort = () => finish(() => reject(abortError(signal)));
     signal.addEventListener("abort", onAbort, { once: true });
     output.write("Paste the code here: ");
     rl.once("line", (line) => finish(() => resolve(line)));
-    rl.once("close", () => finish(() => reject(new SponsorkitError("access_denied", "No sign-in code was entered"))));
+    rl.once("close", () => finish(() => reject(new SponsorkitError("cancelled", "No sign-in code was entered"))));
   });
 }
 
@@ -95,7 +93,6 @@ export class Sponsorkit extends SponsorkitCore<null> {
   private readonly openBrowserFn: (url: string) => void | Promise<void>;
   private readonly promptFn: ((url: string) => string | Promise<string>) | undefined;
   private readonly output: { write(text: string): unknown };
-  private readonly signInTimeoutMs: number;
 
   /** Throws `SponsorkitError{code: "invalid_config"}` for missing or malformed targets and options. */
   constructor(options: SponsorkitOptions) {
@@ -111,7 +108,6 @@ export class Sponsorkit extends SponsorkitCore<null> {
     this.openBrowserFn = options.openBrowser ?? openSystemBrowser;
     this.promptFn = options.promptForCode;
     this.output = options.output ?? process.stderr;
-    this.signInTimeoutMs = (options.signInTimeout ?? 300) * 1000;
   }
 
   /** Signs in (see the base class); `method` forces the delivery method for this call. */
@@ -164,19 +160,10 @@ export class Sponsorkit extends SponsorkitCore<null> {
   /** Returns the code, or `null` to fall back to paste-back (auto mode, browser could not be opened). */
   private async loopbackFlow(request: CodeRequest, allowFallback: boolean): Promise<string | null> {
     const receiver = await startLoopbackReceiver(request.continueUrl);
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let onAbort: (() => void) | undefined;
     try {
       const url = this.buildUrl(request, { delivery: "loopback", redirect_uri: receiver.redirectUri });
-      const outcome = Promise.race([
-        receiver.result,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new SponsorkitError("access_denied", "Sign-in timed out")), this.signInTimeoutMs);
-          onAbort = () => reject(new SponsorkitError("access_denied", "Sign-in was cancelled"));
-          if (request.signal.aborted) onAbort();
-          else request.signal.addEventListener("abort", onAbort, { once: true });
-        }),
-      ]);
+      // request.signal aborts on cancellation (`cancelled`) or signInTimeout (`timeout`).
+      const outcome = raceAbort(receiver.result, request.signal);
       outcome.catch(() => undefined);
       try {
         await this.openBrowserFn(url);
@@ -188,8 +175,6 @@ export class Sponsorkit extends SponsorkitCore<null> {
       if ("error" in r) throw new SponsorkitError(signInErrorCode(r.error), `Sign-in failed: ${r.error}`);
       return r.code;
     } finally {
-      clearTimeout(timer);
-      if (onAbort) request.signal.removeEventListener("abort", onAbort);
       void receiver.close();
     }
   }
@@ -197,8 +182,8 @@ export class Sponsorkit extends SponsorkitCore<null> {
   private async pasteFlow(request: CodeRequest): Promise<string> {
     const url = this.buildUrl(request, { delivery: "paste" });
     this.output.write(`To sign in, open this URL in a browser on any device:\n\n  ${url}\n\nThen paste the code shown on the page (valid for 10 minutes).\n`);
-    const code = (await (this.promptFn ? this.promptFn(url) : stdinPrompt(this.output, request.signal))).trim();
-    if (!code) throw new SponsorkitError("invalid_code", "No sign-in code was entered");
+    const code = (await raceAbort(Promise.resolve(this.promptFn ? this.promptFn(url) : stdinPrompt(this.output, request.signal)), request.signal)).trim();
+    if (!code) throw new SponsorkitError("cancelled", "No sign-in code was entered");
     return code;
   }
 
@@ -209,6 +194,25 @@ export class Sponsorkit extends SponsorkitCore<null> {
       this.output.write(`Open this URL in your browser to contribute:\n\n  ${url}\n\n`);
     }
   }
+}
+
+/** Settles like `promise`, or rejects with {@link abortError} once `signal` aborts. */
+function raceAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(abortError(signal));
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(abortError(signal));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (v) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(v);
+      },
+      (e) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(e);
+      },
+    );
+  });
 }
 
 function signInErrorCode(error: string): "access_denied" | "invalid_state" | "provider_error" {

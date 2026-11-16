@@ -14,18 +14,23 @@ export function resolveFetch(custom?: FetchLike): FetchLike {
 export type ContributionsResponse =
   | { kind: "ok"; result: ContributionResult; renewedToken: string | null }
   | { kind: "session_invalid" }
-  | { kind: "rate_limited"; retryAfterMs: number }
-  | { kind: "failed"; error?: unknown; status?: number };
+  | { kind: "rate_limited"; retryAfterMs: number; retryAfter: number | undefined }
+  | { kind: "failed"; error?: unknown; status?: number; retryAfter?: number };
+
+/** Parses a `Retry-After` header (seconds or HTTP date) into whole seconds; `undefined` when absent or malformed. */
+export function retryAfterSeconds(header: string | null, now: number): number | undefined {
+  if (!header) return undefined;
+  const trimmed = header.trim();
+  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  const date = Date.parse(trimmed);
+  if (!Number.isNaN(date)) return Math.max(0, Math.ceil((date - now) / 1000));
+  return undefined;
+}
 
 /** Parses `Retry-After` (seconds or HTTP date) into milliseconds; defaults to 60 s. */
 export function parseRetryAfter(header: string | null, now: number): number {
-  if (header) {
-    const secs = Number(header);
-    if (Number.isFinite(secs) && secs >= 0) return secs * 1000;
-    const date = Date.parse(header);
-    if (!Number.isNaN(date)) return Math.max(0, date - now);
-  }
-  return 60_000;
+  const secs = retryAfterSeconds(header, now);
+  return secs === undefined ? 60_000 : secs * 1000;
 }
 
 /** Minimal structural check of a ContributionResult. */
@@ -62,11 +67,12 @@ export async function fetchContributions(
   }
   if (res.status === 429) {
     await res.body?.cancel().catch(() => undefined);
-    return { kind: "rate_limited", retryAfterMs: parseRetryAfter(res.headers.get("retry-after"), now) };
+    const header = res.headers.get("retry-after");
+    return { kind: "rate_limited", retryAfterMs: parseRetryAfter(header, now), retryAfter: retryAfterSeconds(header, now) };
   }
   if (!res.ok) {
     await res.body?.cancel().catch(() => undefined);
-    return { kind: "failed", status: res.status };
+    return { kind: "failed", status: res.status, retryAfter: retryAfterSeconds(res.headers.get("retry-after"), now) };
   }
   let body: unknown;
   try {

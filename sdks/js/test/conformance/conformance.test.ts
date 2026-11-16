@@ -2,6 +2,9 @@
  * The Sponsorkit conformance kit (sdks/conformance), run against the Node entry
  * point. One test per scenario id in scenarios.json, sequentially, against one
  * fake server process.
+ *
+ * The devChecks default is under test (config-dev-checks-default-off), so run this
+ * without NODE_ENV=development (bun test sets NODE_ENV=test) and without SPONSORKIT_DEV_CHECKS.
  */
 import { afterAll, beforeAll, describe, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";

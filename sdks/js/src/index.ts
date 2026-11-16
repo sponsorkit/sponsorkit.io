@@ -11,7 +11,7 @@
  * button.onclick = () => sk.openCheckout({ frequency: "monthly", amount: 500 });
  * ```
  */
-import { type CodeRequest, SponsorkitCore, type SponsorkitCoreOptions } from "./core";
+import { abortError, type CodeRequest, SponsorkitCore, type SponsorkitCoreOptions } from "./core";
 import { SponsorkitError } from "./errors";
 import { hasLocalStorage, localStorageAdapter, memoryStorage, type SponsorkitStorage } from "./storage";
 import { isObject } from "./util";
@@ -174,7 +174,7 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
       };
       const onAbort = () => {
         cleanup();
-        reject(new SponsorkitError("access_denied", "Sign-in was cancelled"));
+        reject(abortError(request.signal));
       };
       w.addEventListener("message", onMessage);
       request.signal.addEventListener("abort", onAbort, { once: true });
@@ -182,7 +182,7 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
       timer = setInterval(() => {
         if (popup.closed) {
           cleanup();
-          reject(new SponsorkitError("access_denied", "The sign-in window was closed"));
+          reject(new SponsorkitError("cancelled", "The sign-in window was closed"));
         }
       }, POPUP_POLL_MS);
       try {

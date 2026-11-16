@@ -66,6 +66,37 @@ describe("configuration", () => {
     expect(() => sk.checkoutUrl({ provider: "opencollective" })).toThrow(/No opencollective target/);
     expect(() => sk.checkoutUrl({ amount: 1.5 })).toThrow(SponsorkitError);
     expect(() => sk.checkoutUrl({ frequency: "weekly" as never })).toThrow(SponsorkitError);
+    for (const bad of [{ amount: 0 }, { amount: -500 }, { currency: "EURO" }, { provider: "patreon" as never }]) {
+      expect(() => sk.checkoutUrl(bad)).toThrow(expect.objectContaining({ code: "invalid_config" }));
+    }
+  });
+
+  test("devChecks default follows SPONSORKIT_DEV_CHECKS in the env override", async () => {
+    const calls: string[] = [];
+    const fetch = async (url: string) => {
+      calls.push(new URL(url).pathname);
+      return json({ targets: [{ target: "github:octocat", exists: false }] });
+    };
+    const on = new Sponsorkit({ github: "octocat", env: { SPONSORKIT_DEV_CHECKS: "1" }, storageDir: await tempDir(), fetch });
+    await expect(on.getFinancialContribution()).rejects.toMatchObject({ code: "invalid_config" });
+    resetProcessState();
+    for (const opts of [{ env: {} }, { env: { SPONSORKIT_DEV_CHECKS: "false" } }, { env: { SPONSORKIT_DEV_CHECKS: "1" }, devChecks: false }]) {
+      const off = new Sponsorkit({ github: "octocat", storageDir: await tempDir(), fetch, ...opts });
+      expect((await off.getFinancialContribution()).signedIn).toBe(false);
+    }
+    expect(calls).toEqual(["/api/v1/targets"]);
+  });
+
+  test("the env override replaces the process environment", async () => {
+    const saved = process.env.SPONSORKIT_DISABLE;
+    process.env.SPONSORKIT_DISABLE = "1";
+    try {
+      expect(new Sponsorkit({ github: "octocat", env: {} }).disabled).toBe(false);
+      expect(new Sponsorkit({ github: "octocat" }).disabled).toBe(true);
+    } finally {
+      if (saved === undefined) delete process.env.SPONSORKIT_DISABLE;
+      else process.env.SPONSORKIT_DISABLE = saved;
+    }
   });
 
   test("default storage directory per platform", () => {
@@ -181,7 +212,49 @@ describe("sign-in", () => {
       openBrowser: () => {},
     });
     setTimeout(() => ac.abort(), 50);
-    await expect(sk.signIn({ signal: ac.signal })).rejects.toMatchObject({ code: "access_denied" });
+    await expect(sk.signIn({ signal: ac.signal })).rejects.toMatchObject({ code: "cancelled" });
+  });
+
+  test("sign-in that exceeds signInTimeout rejects with timeout (loopback and paste)", async () => {
+    const base = { github: "octocat", storageDir: await tempDir(), env: {}, output: { write() {} }, signInTimeout: 0.05 };
+    const loopback = new Sponsorkit({ ...base, signInMethod: "loopback", openBrowser: () => {} });
+    await expect(loopback.signIn()).rejects.toMatchObject({ code: "timeout" });
+    const paste = new Sponsorkit({ ...base, signInMethod: "paste", promptForCode: () => new Promise<string>(() => {}) });
+    await expect(paste.signIn()).rejects.toMatchObject({ code: "timeout" });
+    expect(await paste.isSignedIn()).toBe(false);
+    expect(() => new Sponsorkit({ ...base, signInTimeout: 0 })).toThrow(SponsorkitError);
+  });
+
+  test("an empty paste-back code rejects with cancelled", async () => {
+    const sk = new Sponsorkit({
+      github: "octocat",
+      storageDir: await tempDir(),
+      env: {},
+      signInMethod: "paste",
+      output: { write() {} },
+      promptForCode: () => " ",
+    });
+    await expect(sk.signIn()).rejects.toMatchObject({ code: "cancelled" });
+  });
+
+  test("an unreachable or failing /auth/token rejects with network_error", async () => {
+    const base = { github: "octocat", env: {}, signInMethod: "paste" as const, output: { write() {} }, promptForCode: () => "skc_1" };
+    const offline = fakeFetch({});
+    await expect(new Sponsorkit({ ...base, storageDir: await tempDir(), fetch: offline.fn }).signIn()).rejects.toMatchObject({
+      code: "network_error",
+      retryAfter: undefined,
+    });
+    const limited = fakeFetch({ "POST /api/v1/auth/token": () => new Response("", { status: 429, headers: { "retry-after": "12" } }) });
+    await expect(new Sponsorkit({ ...base, storageDir: await tempDir(), fetch: limited.fn }).signIn()).rejects.toMatchObject({
+      code: "network_error",
+      retryAfter: 12,
+    });
+    const down = fakeFetch({ "POST /api/v1/auth/token": () => new Response("", { status: 503 }) });
+    const sk = new Sponsorkit({ ...base, storageDir: await tempDir(), fetch: down.fn });
+    await expect(sk.signIn()).rejects.toMatchObject({ code: "network_error" });
+    expect(await sk.isSignedIn()).toBe(false);
+    const garbage = fakeFetch({ "POST /api/v1/auth/token": () => json({ nope: true }) });
+    await expect(new Sponsorkit({ ...base, storageDir: await tempDir(), fetch: garbage.fn }).signIn()).rejects.toMatchObject({ code: "network_error" });
   });
 
   test("signIn rejects an unconfigured provider", async () => {
@@ -214,6 +287,43 @@ describe("loopback receiver", () => {
       .then((t) => expect(t).not.toContain("<script>"));
     expect(await e.result).toEqual({ error: "<script>" });
     await e.close();
+  });
+});
+
+describe("checkout", () => {
+  test("timeout covers only the polling phase; sign-in uses signInTimeout", async () => {
+    const { fn, calls } = fakeFetch({
+      "POST /api/v1/auth/token": tokenOk,
+      "GET /api/v1/contributions": () => json(fullResult),
+    });
+    const sk = new Sponsorkit({
+      github: "sponsorkit-conformance",
+      opencollective: "sponsorkit-conformance",
+      storageDir: await tempDir(),
+      env: {},
+      fetch: fn,
+      signInMethod: "paste",
+      output: { write() {} },
+      promptForCode: () => new Promise((r) => setTimeout(() => r("skc_1"), 150)),
+    });
+    expect(await sk.openCheckout({ timeout: 0.1, pollInterval: 0.02 })).toEqual({ status: "unknown" });
+    expect(calls.filter((c) => c.path === "/api/v1/contributions").length).toBeGreaterThan(1);
+  });
+
+  test("cancelling during the sign-in phase resolves unknown; a sign-in timeout throws timeout", async () => {
+    const base = {
+      github: "octocat",
+      env: {},
+      signInMethod: "paste" as const,
+      output: { write() {} },
+      promptForCode: () => new Promise<string>(() => {}),
+    };
+    const ac = new AbortController();
+    setTimeout(() => ac.abort(), 30);
+    expect(await new Sponsorkit({ ...base, storageDir: await tempDir() }).openCheckout({ signal: ac.signal })).toEqual({ status: "unknown" });
+    await expect(new Sponsorkit({ ...base, storageDir: await tempDir(), signInTimeout: 0.05 }).openCheckout()).rejects.toMatchObject({
+      code: "timeout",
+    });
   });
 });
 
@@ -265,7 +375,7 @@ describe("nag", () => {
 });
 
 describe("verifySession", () => {
-  test("accepts target params in any form and reports outages as unavailable", async () => {
+  test("accepts target params in any form and reports outages as network_error", async () => {
     const ok = fakeFetch({ "GET /api/v1/contributions": () => json(fullResult) });
     const fc = await verifySession("sks_t", "opencollective:sponsorkit-conformance,github:sponsorkit-conformance", { fetch: ok.fn });
     expect(fc.active().length).toBeGreaterThan(0);
@@ -274,10 +384,15 @@ describe("verifySession", () => {
     await expect(verifySession("", { github: "x" }, { fetch: ok.fn })).rejects.toMatchObject({ code: "session_invalid" });
     await expect(verifySession("sks_t", { github: "-x" }, { fetch: ok.fn })).rejects.toMatchObject({ code: "invalid_config" });
     const down = fakeFetch({ "GET /api/v1/contributions": () => new Response("", { status: 503 }) });
-    await expect(verifySession("sks_t", { github: "x" }, { fetch: down.fn })).rejects.toMatchObject({ code: "unavailable" });
+    await expect(verifySession("sks_t", { github: "x" }, { fetch: down.fn })).rejects.toMatchObject({ code: "network_error", retryAfter: undefined });
     const limited = fakeFetch({ "GET /api/v1/contributions": () => new Response("", { status: 429, headers: { "retry-after": "30" } }) });
-    await expect(verifySession("sks_t", { github: "x" }, { fetch: limited.fn })).rejects.toMatchObject({ code: "unavailable", retryAfter: 30 });
+    await expect(verifySession("sks_t", { github: "x" }, { fetch: limited.fn })).rejects.toMatchObject({ code: "network_error", retryAfter: 30 });
+    const limitedNoHeader = fakeFetch({ "GET /api/v1/contributions": () => new Response("", { status: 429 }) });
+    await expect(verifySession("sks_t", { github: "x" }, { fetch: limitedNoHeader.fn })).rejects.toMatchObject({
+      code: "network_error",
+      retryAfter: undefined,
+    });
     const offline = fakeFetch({});
-    await expect(verifySession("sks_t", { github: "x" }, { fetch: offline.fn })).rejects.toMatchObject({ code: "unavailable" });
+    await expect(verifySession("sks_t", { github: "x" }, { fetch: offline.fn })).rejects.toMatchObject({ code: "network_error" });
   });
 });

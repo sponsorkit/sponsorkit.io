@@ -58,6 +58,17 @@ describe("mock presets (SPEC §7.4)", () => {
     expect((await sk.getFinancialContribution()).contributions).toEqual([]);
   });
 
+  test("mock nag state lives in memory, per instance", async () => {
+    const sk = new Sponsorkit({ github: "octocat", mock: "none", env: {}, storageDir: "/nonexistent/sponsorkit-mock" });
+    const nag = sk.nag({ id: "n", every: 1 });
+    expect(await nag.due(undefined, { force: true })).toBe(true);
+    await nag.shown();
+    expect(await nag.due(undefined, { force: true })).toBe(false);
+    const fresh = new Sponsorkit({ github: "octocat", mock: "none", env: {}, storageDir: "/nonexistent/sponsorkit-mock" });
+    expect(await fresh.nag({ id: "n", every: 2 }).due(undefined, { force: true })).toBe(false);
+    expect(await fresh.nag({ id: "n", every: 1 }).due(undefined, { force: true })).toBe(true);
+  });
+
   test("SPONSORKIT_MOCK env and precedence", async () => {
     expect((await new Sponsorkit({ github: "octocat", env: { SPONSORKIT_MOCK: "one-time" } }).getFinancialContribution()).oneTime()).toHaveLength(1);
     expect(() => new Sponsorkit({ github: "octocat", env: { SPONSORKIT_MOCK: "nope" } })).toThrow(/Unknown mock preset/);
