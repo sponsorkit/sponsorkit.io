@@ -1,0 +1,252 @@
+# Sponsorkit wire protocol (normative)
+
+This document is the contract between the Worker (`app/`), the static pages (`web/`), the conformance fake server (`sdks/conformance/`) and every SDK.
+
+- `docs/SPEC.md` explains *why*. This file defines *exactly what goes over the wire*.
+- TypeScript schemas live in `packages/shared/src`. Every other language mirrors them.
+- Base URL: `https://sponsorkit.io`. SDKs accept an `apiBaseUrl` override, which is the origin only. All paths below are relative to that origin.
+
+## 1. Targets
+
+- A target is `github:<login>` or `opencollective:<slug>`. The account is **lowercased** and trimmed.
+  - GitHub login: `^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){0,38}$`.
+  - Open Collective slug: `^[a-z0-9][a-z0-9-]{0,254}$`.
+- A **target set** is one or more targets, with at most one per provider in v1. It is deduplicated and sorted by its string form, using byte-wise ASCII comparison.
+- **Target param:** the canonical set joined with `,`. Example: `github:mathiaslorenzen,opencollective:sponsorkit`. It is used in every URL as `targets=`, URL-encoded as normal.
+- **targets_hash:** lowercase hex SHA-256 of the UTF-8 target param. It is used for SDK storage keys.
+
+## 2. PKCE
+
+- `code_verifier` is 43–128 characters from `[A-Za-z0-9-._~]`. SDKs generate 32 random bytes and encode them as base64url without padding, which gives 43 characters.
+- `code_challenge` is `base64url(sha256(ascii(code_verifier)))`, without padding. The method is always S256 and is implied.
+
+## 3. HTTP API (`/api/v1`)
+
+- All responses are JSON.
+- **Errors** are `application/problem+json`: `{ type, title, status, code, detail? }`. `code` is one of:
+  - `invalid_request`
+  - `invalid_target`
+  - `invalid_code`
+  - `session_invalid`
+  - `rate_limited`
+  - `not_found`
+  - `internal`
+- **Request ID:** every response carries `Sponsorkit-Request-Id`.
+- **`429` responses** carry `Retry-After`, in seconds.
+- **CORS:** `Access-Control-Allow-Origin: *`, with no credentials. The allowed headers are `Authorization` and `Content-Type`. The exposed headers are `Sponsorkit-Session`, `Sponsorkit-Request-Id` and `Retry-After`.
+
+### 3.1 `GET /api/v1/targets?github=<login>&opencollective=<slug>`
+
+At least one parameter is required. The response is `TargetsResponse`:
+
+- `{ targets: TargetInfo[] }`, in canonical order.
+- A target that doesn't exist is still returned, with `exists: false`.
+- Malformed parameters return `400 invalid_target`.
+- The response is cacheable (`Cache-Control: public, max-age=3600`).
+
+### 3.2 `POST /api/v1/auth/token`
+
+**Request body:** `{ code, codeVerifier, sessionToken? }`.
+
+**Response `200`:** `{ sessionToken, expiresAt, result }`.
+
+- `result` is the same `ContributionResult` that `/contributions` would return, fetched live. This lets the SDK show something immediately.
+
+**Errors:**
+
+| Status | Code | When |
+|---|---|---|
+| `400` | `invalid_code` | The code is malformed, expired, tampered with, or the verifier doesn't match. |
+| `400` | `invalid_request` | The `sessionToken` has a different target set from the code. |
+| `401` | `session_invalid` | The `sessionToken` is invalid. |
+
+**Adding an identity:** when `sessionToken` is given, the new identity is added to that session's identities. An identity for the same provider is replaced. The response contains a new session token holding both.
+
+### 3.3 `GET /api/v1/contributions`
+
+- **Request:** send `Authorization: Bearer sks_…`.
+- **Response `200`:** a `ContributionResult` with `signedIn: true`, `disabled: false`, `mock: false` and `fromCache: false`.
+- **Partial results:** if some providers failed, the result has `stale: true` and lists them in `unavailable`. The contributions of those providers are omitted. The SDK fills them in from its cache, using `contribution.provider`.
+- **Session renewal:** the response may carry `Sponsorkit-Session: sks_…`. When it does, the SDK must replace the token it has stored.
+- **Errors:**
+  - `401 session_invalid`: the token is missing, malformed, tampered with, expired or sealed with an unknown key.
+  - `429 rate_limited`: more than 1 refresh per 60 s per session. Comes with `Retry-After`.
+
+### 3.4 `GET /api/v1/health`
+
+Returns `{ ok: true, providers: { github: "ok" | "degraded", opencollective: "ok" | "degraded" } }`.
+
+## 4. Browser pages & OAuth endpoints
+
+### 4.1 Common query parameters
+
+These are used by `/connect`, `/checkout` and `/api/oauth/:provider/start`. All are lowercase snake_case.
+
+| Param | Meaning |
+|---|---|
+| `targets` | Target param (§1). Required. |
+| `challenge` | PKCE code challenge. Required for sign-in; absent for anonymous checkout links. |
+| `delivery` | `web_message` \| `redirect` \| `loopback` \| `paste` |
+| `origin` | `web_message` only: the opener's origin, e.g. `https://app.example.com`. |
+| `redirect_uri` | `redirect`: an https URL, or an `http://localhost[:port]` / `http://127.0.0.1[:port]` URL.<br>`loopback`: exactly `http://127.0.0.1:<port>/callback` or `http://[::1]:<port>/callback`. |
+| `app_name` | Optional. Up to 64 characters. Native apps only; shown on screen as "says it is". |
+| `provider` | Optional. `github` or `opencollective`. Skips the provider picker. |
+| `add` | `1` when adding an identity to an existing session. This only affects the UI copy; the merge happens at `/auth/token`. |
+
+### 4.2 `/connect` (static page)
+
+1. The page validates the params. If they are invalid, it shows an error.
+2. It loads `GET /api/v1/targets` and shows the consent screen. The screen includes:
+   - each target's avatar and name;
+   - who is asking: the `origin` for `web_message`, the host of `redirect_uri` for `redirect`, or `app_name` labelled "says it is" for `loopback` and `paste`;
+   - the consent text from SPEC §5.4;
+   - one button per provider that is present in the target set.
+3. A provider button navigates to `/api/oauth/<provider>/start?<same params>`.
+
+### 4.3 `GET /api/oauth/:provider/start`
+
+1. **Validate** the params. The same rules apply as in §4.1, and the `provider` must be in the target set. Invalid params return `400` as an HTML error page.
+2. **Generate** a 32-byte `browser_nonce` and set it as a cookie: `__Host-sk_nonce=<base64url>; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`.
+3. **Create a sealed state** (§5) containing the provider, the targets, the delivery params, `sha256(browser_nonce)`, a provider PKCE verifier, an optional `continue` value (see §4.6), and `exp = now + 600 s`.
+4. **Redirect `302`** to the provider's authorize URL with `state=<sealed>`:
+   - **GitHub:** `https://github.com/login/oauth/authorize?client_id=…&redirect_uri=<origin>/api/oauth/github/callback&scope=read:user%20read:org&state=…&code_challenge=…&code_challenge_method=S256&allow_signup=false`
+   - **Open Collective:** `https://opencollective.com/oauth/authorize?client_id=…&response_type=code&redirect_uri=<origin>/api/oauth/opencollective/callback&scope=orders%20incognito&state=…&code_challenge=…&code_challenge_method=S256`
+
+### 4.4 `GET /api/oauth/:provider/callback?code=…&state=…`
+
+1. **Check the state.** Unseal it, check that it hasn't expired, and check that `sha256(cookie nonce)` matches the value in the state. Then clear the cookie.
+2. **Get the provider token.** Exchange the provider code (with the provider PKCE verifier) for an access token, then fetch the identity:
+   - **GitHub:** `viewer { databaseId login }`.
+   - **Open Collective:** `me { id slug }`. The token expiry is `now + expires_in`.
+3. **Create a sealed sign-in code** (§5): `skc_…`.
+4. **Deliver it** with a `302` to:
+
+| Delivery | Location |
+|---|---|
+| `web_message` | `/connect/done#code=<skc>&origin=<urlencoded origin>[&continue=<urlencoded continue>]` |
+| `redirect` | `<redirect_uri>` with the query parameter `sponsorkit_code=<skc>` appended |
+| `loopback` | `<redirect_uri>?code=<skc>` |
+| `paste` | `/connect/done#paste=<skc>[&continue=…]` |
+
+**Failures:**
+
+- **The user denied access at the provider** (`error=access_denied`), or the state is invalid. The Worker delivers an error the same way it would deliver a code:
+  - `web_message`: `/connect/done#error=<code>&origin=…`
+  - `redirect`: `sponsorkit_error=<code>`
+  - `loopback`: `?error=<code>`
+  - `paste`: `/connect/done#error=<code>`
+
+  `<code>` is one of `access_denied`, `invalid_state` or `provider_error`.
+- **The nonce cookie doesn't match the state.** The Worker shows an HTML error page and delivers nothing.
+
+### 4.5 `/connect/done` (static page)
+
+The page reads `location.hash` first and then removes it with `history.replaceState`.
+
+- **`code` with `origin`.** Calls `window.opener.postMessage({ type: "sponsorkit:code", code }, origin)`.
+  - If there is no `continue`, it closes itself after about 300 ms. If it can't close, it shows "You can close this window."
+  - If `continue` is present, it navigates to `/checkout?<continue>&step=choose`.
+- **`paste`.** Shows the code in a monospace box with a copy button, plus the text "Paste this into the app (valid for 10 minutes)".
+  - If `continue` is present, it also shows a **Continue to checkout** link to `/checkout?<continue>&step=choose`.
+- **`error`.** If `origin` is set and there is an opener, it posts `{ type: "sponsorkit:error", error }` to that origin. In every case it shows a message.
+
+### 4.6 `/checkout` (static page)
+
+**Parameters:**
+
+| Group | Params |
+|---|---|
+| From §4.1 | `targets`, `challenge?`, `delivery?`, `origin?`, `redirect_uri?`, `app_name?` |
+| Checkout options | `amount?` (minor units, integer), `currency?` (ISO 4217), `frequency?` (`one_time` \| `monthly` \| `yearly`), `provider?` |
+| Control | `step?` (`choose`) |
+
+**Flow:**
+
+1. **Sign in first, if needed.** If `challenge` is present and `step` is not `choose`, the page needs a sign-in first. It does what `/connect` does: show consent, then start provider OAuth with all its own params. It passes `continue=<urlencoded checkout query string without challenge, delivery, origin, redirect_uri>` to `/api/oauth/:provider/start`, so that after sign-in the user comes back to `/checkout?<continue>&step=choose`.
+   - With `loopback` delivery, the SDK's loopback server responds to `/callback` with a `302` to `<base>/checkout?<checkout params>&step=choose`.
+2. **Choose a provider.** The page loads `/api/v1/targets` and computes eligibility using the rules in §6. If exactly one provider is eligible, or `provider` is given and eligible, it redirects there immediately. Otherwise it shows the chooser, with a reason for each disabled option.
+3. **Before redirecting,** the page posts `{ type: "sponsorkit:checkout_redirected", provider }` to the opener when `origin` is known and an opener exists. The SDK doesn't depend on this message.
+4. **Without `challenge`** (an anonymous link from `checkoutUrl()`), the page skips sign-in and goes straight to step 2.
+
+## 5. Sealed values
+
+- **Format:** `<prefix><base64url(keyId(1 byte) ‖ nonce(12) ‖ AES-256-GCM ciphertext+tag)>`.
+- **AAD:** the UTF-8 string `sponsorkit:<kind>:v1`, where `<kind>` is one of `state`, `code` or `session`.
+- **Prefixes:** `sks_` for sessions, `skc_` for codes. The state has no prefix.
+- **Plaintext:** compact JSON. Fields:
+  - `state`: `{ p, t, d, o?, r?, a?, c, n, v, k?, x }`, meaning provider, targets param, delivery, origin, redirect_uri, app_name, challenge, nonce hash, provider PKCE verifier, `continue`, and expiry in unix seconds.
+  - **Code:** `{ i: Identity+token, t, c, d, o?, r?, x }`. Expires after 60 s, or after 600 s when the delivery is `paste`.
+  - **Session:** `{ v: 1, t, ids: [{ p, id, h, tok, tx? }], iat, x }`. Expires `iat + 180 days`.
+- **Unsealing:** fails closed on any error, and the caller gets `invalid_code` or `session_invalid`.
+- **Renewal:** if `now - iat > 7 days`, `/contributions` re-seals the session with a fresh `iat` and `x` under the current key, and returns it in `Sponsorkit-Session`.
+- **Keys:** `SEALING_KEYS` holds a JSON array `[{ id, key }]`, where `key` is 32 bytes encoded as base64url. The first entry is current, and the others are accepted for unsealing only.
+
+## 6. Checkout eligibility (identical in `/checkout` and SDK docs)
+
+**Inputs:** `amount?`, `currency?`, `frequency?`, and the `TargetInfo` of each target.
+
+A provider is **eligible** if all of these hold:
+
+1. **Target:** `exists` is true.
+2. **Frequency:** if `frequency` is given, it is in `TargetInfo.frequencies`.
+   - GitHub: `["monthly", "one_time"]`.
+   - Open Collective: `["one_time", "monthly", "yearly"]`.
+3. **Currency:** if `currency` is given, it equals `TargetInfo.currency`. GitHub is always `USD`.
+4. **Tiers (GitHub only):** at least one tier matches the frequency, or `monthly` when no frequency is given.
+
+**Redirect URL:**
+
+- **GitHub:** pick the cheapest tier with `amount.value >= amount` for the frequency, or else the highest tier.
+  - The URL is the tier's `url` if present.
+  - Otherwise it is `https://github.com/sponsors/<login>/sponsorships?tier_id=<id>`, where `id` is the tier's numeric databaseId.
+  - Without any tiers, the URL is `https://github.com/sponsors/<login>`.
+- **Open Collective:** `https://opencollective.com/<slug>/donate`. The query string includes:
+  - `amount=<major units, e.g. 5 or 5.5>`, when `amount` is given;
+  - `interval=month|year` for `monthly`/`yearly`; it is omitted for one-time;
+  - `redirect=<sponsorkit origin>/checkout/thanks`.
+
+## 7. SDK behaviour hooks (required for testability)
+
+Every SDK must accept the following options, using names idiomatic to its language:
+
+| Option | Default | Used by |
+|---|---|---|
+| `apiBaseUrl` | `https://sponsorkit.io` | All calls. The conformance server runs on `http://127.0.0.1:<port>`. |
+| `openBrowser(url)` | Opens the system browser (native) or `window.open` (browser) | The tests replace it with an HTTP GET that follows redirects. |
+| `promptForCode()` | Reads a line from stdin | Paste-back sign-in. The tests return a fixed code. |
+| `storageDir` / `storage` | Per-user config directory or `localStorage` | The tests use a temporary directory. |
+| `clock` | Not required | If present, it must be injectable for nag and cache-TTL tests. Otherwise the tests use small TTLs. |
+| `signInMethod` | `auto` | `"auto" \| "loopback" \| "paste"`, which forces a sign-in flow. |
+
+**Native loopback sign-in:**
+
+1. Bind `127.0.0.1:0`.
+2. Build `/connect?targets…&challenge…&delivery=loopback&redirect_uri=http://127.0.0.1:<port>/callback[&app_name]`.
+3. Call `openBrowser`.
+4. Wait for `GET /callback?code=…` or `?error=…`. Respond with a small HTML page saying "You can close this window", or with a `302` to `/checkout…` during checkout.
+5. Exchange the code at `/auth/token`.
+6. Time out after 5 minutes, or earlier if the caller cancels.
+
+**Paste-back sign-in:** print the `/connect…&delivery=paste` URL to stderr, call `promptForCode()`, then exchange the code.
+
+## 8. SDK local storage format
+
+The storage directory contains one JSON file per target set, named `<targets_hash>.json`:
+
+```json
+{ "v": 1, "sessionToken": "sks_…", "cache": { "result": { …ContributionResult… }, "storedAt": "ISO-8601" }, "nags": { "<id>": { "runs": 3, "lastShown": "ISO-8601" | null } } }
+```
+
+- **Writes** go to `<file>.<random>.tmp` first, which is then renamed over the target file.
+- **Permissions:**
+  - The directory is created with mode `0700` and files with `0600`.
+  - On Windows, the default user profile ACL applies.
+- **Browser:** uses the `localStorage` key `sponsorkit:<targets_hash>`, holding the same JSON.
+
+## 9. Conformance fake server
+
+The fake server is run with `bun sdks/conformance/server.ts [--port N]`. It prints `LISTENING <port>` on stdout once it is ready.
+
+- **API:** implements §3 and the `/connect` and `/checkout` redirects needed for non-interactive tests.
+- **Scenario control:** `POST /__control` with `{ scenario, … }` sets the behaviour. `GET /__control/requests` returns a log of requests received.
+- **Scenarios and expected results:** listed in `sdks/conformance/scenarios.json`. Each SDK implements one test per scenario in its own test framework.
