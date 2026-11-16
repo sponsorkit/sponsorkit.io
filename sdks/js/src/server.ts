@@ -1,0 +1,71 @@
+/**
+ * `@sponsorkit/sdk/server`: backend verification (SPEC §6.4). Works in Node,
+ * Bun, Deno, Cloudflare Workers and browsers; touches no storage.
+ *
+ * @example
+ * ```ts
+ * import { verifySession } from "@sponsorkit/sdk/server";
+ * const fc = await verifySession(tokenFromFrontend, { github: "octocat" });
+ * if (fc.active().length > 0) unlockPremium();
+ * ```
+ */
+import { SponsorkitError } from "./errors";
+import { type FetchLike, fetchContributions, resolveFetch } from "./http";
+import { FinancialContribution } from "./result";
+import { targetsFrom, targetsParam } from "./targets";
+import type { TargetOptions } from "./types";
+import { DEFAULT_API_BASE_URL, normalizeBaseUrl } from "./util";
+
+/** Options for {@link verifySession}. */
+export interface VerifySessionOptions {
+  /** API origin. Default `https://sponsorkit.io`. */
+  apiBaseUrl?: string;
+  /** Custom `fetch`. */
+  fetch?: FetchLike;
+  /** Aborts the request. */
+  signal?: AbortSignal;
+}
+
+/**
+ * Verifies a supporter's session token (`sks_…`) forwarded by your frontend and
+ * returns their live contributions for `targets`.
+ *
+ * Throws `SponsorkitError` with code:
+ * - `invalid_config`: `targets` is missing or malformed;
+ * - `session_invalid`: the token is missing, malformed, expired or rejected;
+ * - `targets_mismatch`: the session was issued for a different target set;
+ * - `unavailable`: Sponsorkit could not be reached, failed or rate limited the request (see `retryAfter`).
+ *
+ * @param targets `{ github?, opencollective? }`, a canonical target param, or a list of target strings.
+ */
+export async function verifySession(
+  token: string,
+  targets: TargetOptions | string | readonly string[],
+  options: VerifySessionOptions = {},
+): Promise<FinancialContribution> {
+  const expected = targetsParam(targetsFrom(targets));
+  const baseUrl = normalizeBaseUrl(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
+  if (typeof token !== "string" || !token.trim()) throw new SponsorkitError("session_invalid", "No session token");
+  const res = await fetchContributions(resolveFetch(options.fetch), baseUrl, token.trim(), Date.now(), options.signal);
+  switch (res.kind) {
+    case "session_invalid":
+      throw new SponsorkitError("session_invalid", "The session token is invalid or expired");
+    case "rate_limited":
+      throw Object.assign(new SponsorkitError("unavailable", "Sponsorkit rate limited this session"), { retryAfter: res.retryAfterMs / 1000 });
+    case "failed":
+      throw new SponsorkitError("unavailable", `Sponsorkit is unavailable${res.status ? ` (HTTP ${res.status})` : ""}`, { cause: res.error });
+  }
+  let actual: string;
+  try {
+    actual = targetsParam(targetsFrom(res.result.targets));
+  } catch {
+    throw new SponsorkitError("targets_mismatch", "The session's targets are malformed");
+  }
+  if (actual !== expected) throw new SponsorkitError("targets_mismatch", `The session is for ${actual}, expected ${expected}`);
+  return new FinancialContribution({ ...res.result, fromCache: false });
+}
+
+export { isSponsorkitError, SponsorkitError, type SponsorkitErrorCode } from "./errors";
+export type { FetchLike } from "./http";
+export { FinancialContribution } from "./result";
+export * from "./types";

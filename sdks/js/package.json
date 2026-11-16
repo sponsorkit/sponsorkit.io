@@ -1,1 +1,106 @@
-{ "name": "@sponsorkit/sdk", "version": "0.0.0", "private": true, "type": "module" }
+{
+  "name": "@sponsorkit/sdk",
+  "version": "0.1.0",
+  "description": "Sponsorkit SDK: check GitHub Sponsors and Open Collective contributions and open checkout from your app. Zero dependencies; browsers, Node, Bun, Deno and Workers.",
+  "license": "MIT",
+  "homepage": "https://sponsorkit.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sponsorkit/sponsorkit.io.git",
+    "directory": "sdks/js"
+  },
+  "bugs": "https://github.com/sponsorkit/sponsorkit.io/issues",
+  "keywords": [
+    "sponsorkit",
+    "github-sponsors",
+    "opencollective",
+    "sponsorship",
+    "donations",
+    "nag",
+    "open-source"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./dist/elements.js",
+    "./dist/elements.cjs"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./node": {
+      "import": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "require": {
+        "types": "./dist/node.d.cts",
+        "default": "./dist/node.cjs"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
+    },
+    "./elements": {
+      "import": {
+        "types": "./dist/elements.d.ts",
+        "default": "./dist/elements.js"
+      },
+      "require": {
+        "types": "./dist/elements.d.cts",
+        "default": "./dist/elements.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun run test:unit && bun run test:dom && bun run test:conformance",
+    "test:unit": "bun test ./test/unit",
+    "test:dom": "bun test ./test/dom",
+    "test:conformance": "bun test ./test/conformance",
+    "test:dist": "bun run build && node test/dist-smoke.mjs && node test/dist-smoke.cjs && tsc -p test/dist-types && SPONSORKIT_TEST_DIST=1 bun test ./test/conformance",
+    "typecheck": "tsc --noEmit -p .",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "prepublishOnly": "bun run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@happy-dom/global-registrator": "^21.0.4",
+    "@sponsorkit/conformance": "workspace:*",
+    "@sponsorkit/shared": "workspace:*",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.6",
+    "happy-dom": "^21.0.4",
+    "tsup": "^9.0.0",
+    "typescript": "^5.9.3"
+  }
+}
