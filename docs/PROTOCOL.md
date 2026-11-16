@@ -10,6 +10,7 @@ This document is the contract between the Worker (`app/`), the static pages (`we
 
 - A target is `github:<login>` or `opencollective:<slug>`. The account is **lowercased** and trimmed.
   - GitHub login: `^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){0,38}$`.
+    - RE2-compatible equivalent: `^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$`, and the login must not contain `--`.
   - Open Collective slug: `^[a-z0-9][a-z0-9-]{0,254}$`.
 - A **target set** is one or more targets, with at most one per provider in v1. It is deduplicated and sorted by its string form, using byte-wise ASCII comparison.
 - **Target param:** the canonical set joined with `,`. Example: `github:mathiaslorenzen,opencollective:sponsorkit`. It is used in every URL as `targets=`, URL-encoded as normal.
@@ -235,9 +236,11 @@ Every SDK must accept the following options, using names idiomatic to its langua
 | `promptForCode()` | Reads a line from stdin | Paste-back sign-in. The tests return a fixed code. |
 | `storageDir` / `storage` | Per-user config directory or `localStorage` | The tests use a temporary directory. |
 | `clock` | Not required | If present, it must be injectable for nag and cache-TTL tests. Otherwise the tests use small TTLs. |
+| `signInTimeout` | 300 s | Maximum time to wait for a loopback or paste sign-in, or a popup sign-in. Exceeding it throws `timeout`. |
+| `interactive` | TTY detection | Overrides the stdout/stderr TTY check used by the nag helper. Tests set it to `false`. |
 | `signInMethod` | `auto` | `"auto" \| "loopback" \| "paste"`, which forces a sign-in flow. |
-| `env` | Process environment | A per-instance override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG` and `CI`. A variable counts as **set** when it is non-empty and not `0` or `false` (case-insensitive). |
-| `devChecks` | Build-mode detection | Forces the dev-time `/targets` existence check on or off. |
+| `env` | Process environment | A per-instance override for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`. When an override is provided, it **replaces** the process environment for these variables; it is not merged. A variable counts as **set** when it is non-empty and not `0` or `false` (case-insensitive). |
+| `devChecks` | See note below | Forces the dev-time `/targets` existence check on or off. |
 | `checkoutPollInterval` | 60 s | The interval at which checkout polls for a new contribution. |
 | `restart` | n/a | A way to reset per-process memo state: nag runs already counted, the dev-check memo, and the `Retry-After` memo. A fresh SDK instance with a `restart: true` option, or a static reset function, both satisfy this. |
 
@@ -251,8 +254,15 @@ Every SDK must accept the following options, using names idiomatic to its langua
 | `disabled` | Sponsorkit is disabled |
 | `popup_blocked` | Browser only |
 | `access_denied`, `invalid_state`, `provider_error` | Sign-in errors delivered to the callback; `signIn` rejects with these |
-| `invalid_code` | Code exchange failed |
+| `invalid_code` | The API rejected the code exchange (`400 invalid_code`) |
+| `cancelled` | Sign-in was abandoned or cancelled: the popup was closed, or an `AbortSignal`, `CancellationToken`, `context.Context` or future-drop cancelled it |
+| `timeout` | Sign-in exceeded `signInTimeout` (default 300 s) |
+| `network_error` | The API couldn't be reached, or returned 5xx, 429 or an unexpected response, during `signIn` or `verifySession`. Carries `retryAfter` in seconds when the API sent `Retry-After`. |
 | `session_invalid`, `targets_mismatch` | Only from `verifySession` |
+
+`getFinancialContribution` never throws these errors (SPEC §7.2).
+
+**Adding an identity with a dead session.** If `/auth/token` answers `401 session_invalid` while the SDK is adding an identity to a stored session, the SDK clears the stored session and retries the exchange once without `sessionToken`. A code can be reused within its lifetime, which makes the retry possible.
 
 **Native loopback sign-in:**
 
@@ -264,6 +274,13 @@ Every SDK must accept the following options, using names idiomatic to its langua
 6. Time out after 5 minutes, or earlier if the caller cancels.
 
 **Paste-back sign-in:** print the `/connect…&delivery=paste` URL to stderr, call `promptForCode()`, then exchange the code.
+
+**`devChecks` default.** The check is on when `SPONSORKIT_DEV_CHECKS` is set. Otherwise only these language-specific development signals turn it on:
+
+- JS: `process.env.NODE_ENV === "development"`.
+- Python: `sys.flags.dev_mode`.
+
+Otherwise it is off. Go, Rust and .NET have no implicit signal.
 
 ## 7.1 Normative SDK behaviour (pinned by the conformance kit)
 
@@ -288,6 +305,13 @@ Every SDK must accept the following options, using names idiomatic to its langua
     - Malformed targets throw `invalid_config` even when disabled.
     - The dev-time existence check happens on the first async call, never in the constructor.
 11. **`verifySession`** compares canonical target params and touches no storage.
+13. **`cacheTtl`.**
+    - A constructor value below 60 is raised to 60.
+    - A per-call `cacheTtl` may be any value ≥ 0. `0` forces a request, unless a `Retry-After` is in force.
+14. **Mock mode** touches neither the network nor the disk. Nag state lives in memory, per SDK instance.
+15. **`openCheckout`'s `timeout`** covers only the polling phase. Sign-in uses `signInTimeout`. Cancellation applies to both phases.
+16. **`checkoutUrl`** throws `invalid_config` for options that name an unconfigured provider or an invalid frequency, amount or currency. In Go it returns `(string, error)`. It never touches network or disk.
+17. **Loopback redirect after a checkout sign-in.** The redirect carries exactly `targets`, plus `provider`, `amount`, `currency` and `frequency` when set, plus `step=choose`.
 12. **Mock presets and their expansion rules** are defined by `sdks/conformance/fixtures/mock-presets.json` (reference implementation: `src/mock-presets.ts`). Every SDK embeds them identically.
 
 ## 8. SDK local storage format
