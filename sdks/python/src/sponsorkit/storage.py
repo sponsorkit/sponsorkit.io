@@ -44,21 +44,39 @@ class Storage(Protocol):
         ...
 
 
-def default_storage_dir(env: Mapping[str, str] | None = None) -> Path:
+def _abs(value: str | None) -> Path | None:
+    """``value`` as a path when it is a non-empty absolute path (relative ones would land in the cwd)."""
+    if not value:
+        return None
+    p = Path(value)
+    return p if p.is_absolute() else None
+
+
+def default_storage_dir(env: Mapping[str, str] | None = None) -> Path | None:
     r"""Return the per-user config directory used when no ``storage_dir`` is given.
 
-    * Linux and other POSIX: ``$XDG_CONFIG_HOME/sponsorkit`` (default ``~/.config/sponsorkit``)
-    * macOS: ``~/Library/Application Support/sponsorkit``
-    * Windows: ``%APPDATA%\\sponsorkit``
+    * Linux and other POSIX: ``$XDG_CONFIG_HOME/sponsorkit`` (default ``$HOME/.config/sponsorkit``)
+    * macOS: ``$HOME/Library/Application Support/sponsorkit``
+    * Windows: ``%APPDATA%\sponsorkit`` (default ``%USERPROFILE%\AppData\Roaming\sponsorkit``)
+
+    Returns ``None`` when no such directory can be determined (for example ``HOME`` is unset or
+    relative). The client then keeps its state in memory; it never falls back to the current
+    working directory (PROTOCOL §7.0).
     """
     e = os.environ if env is None else env
     if sys.platform == "win32":
-        base = e.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-        return Path(base) / "sponsorkit"
+        appdata = _abs(e.get("APPDATA"))
+        if appdata is not None:
+            return appdata / "sponsorkit"
+        profile = _abs(e.get("USERPROFILE"))
+        return profile / "AppData" / "Roaming" / "sponsorkit" if profile is not None else None
+    home = _abs(e.get("HOME"))
     if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / "sponsorkit"
-    xdg = e.get("XDG_CONFIG_HOME")
-    return Path(xdg if xdg else Path.home() / ".config") / "sponsorkit"
+        return home / "Library" / "Application Support" / "sponsorkit" if home is not None else None
+    xdg = _abs(e.get("XDG_CONFIG_HOME"))
+    if xdg is not None:
+        return xdg / "sponsorkit"
+    return home / ".config" / "sponsorkit" if home is not None else None
 
 
 class FileStorage:

@@ -26,6 +26,9 @@ class CallbackOutcome:
 class LoopbackReceiver:
     """Listens on ``127.0.0.1:<random>`` for ``GET /callback?code=…`` or ``?error=…``.
 
+    A callback with neither a non-empty ``code`` nor a non-empty ``error`` gets ``400`` and is
+    otherwise ignored. Construction raises :class:`OSError` when the receiver cannot bind.
+
     ``redirect_after_code``: when set, a successful callback answers ``302`` to that URL (checkout
     continues in the same browser tab) instead of the "You can close this window" page.
     """
@@ -46,10 +49,15 @@ class LoopbackReceiver:
                 q = parse_qs(parts.query)
                 code = (q.get("code") or [""])[0]
                 error = (q.get("error") or [""])[0]
+                if not code and not error:
+                    # PROTOCOL §7.0: neither a code nor an error (e.g. a stray or prefetch request).
+                    # Answer 400 and keep waiting for the real callback.
+                    self._send(400, "text/plain; charset=utf-8", b"Missing code or error")
+                    return
                 first = receiver._deliver(
                     CallbackOutcome("code", code)
                     if code
-                    else CallbackOutcome("error", error or "provider_error")
+                    else CallbackOutcome("error", error)
                 )
                 if code and first and receiver._redirect:
                     self.send_response(302)
@@ -94,6 +102,12 @@ class LoopbackReceiver:
             self._outcome = outcome
             self._done.set()
             return True
+
+    @property
+    def outcome(self) -> CallbackOutcome | None:
+        """The callback received so far, if any (non-blocking)."""
+        with self._lock:
+            return self._outcome
 
     def wait(self, deadline: float, cancel: threading.Event | None) -> CallbackOutcome:
         """Block until a callback arrives, ``deadline`` (monotonic) passes, or ``cancel`` is set."""

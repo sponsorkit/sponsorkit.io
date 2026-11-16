@@ -27,6 +27,7 @@ from ._http import (
     is_session_token,
     normalize_base_url,
     problem_code,
+    resolve_request_timeout,
     unexpected_response,
 )
 from .errors import SponsorkitError
@@ -87,26 +88,33 @@ def verify_session(
     targets: TargetsArg,
     *,
     api_base_url: str = DEFAULT_API_BASE_URL,
-    timeout: float = DEFAULT_HTTP_TIMEOUT,
+    request_timeout: float = DEFAULT_HTTP_TIMEOUT,
     http_client: httpx.Client | None = None,
+    timeout: float | None = None,
 ) -> ContributionResult:
     """Verify a session token and return the supporter's live contributions.
 
     Calls ``GET /api/v1/contributions`` with the token and checks that the session's target set equals
     ``targets`` (after normalization). Touches no local storage.
 
+    ``request_timeout`` bounds the HTTP request in seconds (default 30, ``0`` disables it); it also
+    applies when ``http_client`` is given. A timeout raises ``network_error``. ``timeout`` is a
+    deprecated alias of ``request_timeout``.
+
     Raises:
         SponsorkitError: ``session_invalid`` (rejected or malformed token), ``targets_mismatch``
-            (bound to other targets), ``invalid_config`` (bad ``targets``) or ``network_error``
+            (bound to other targets), ``invalid_config`` (bad ``targets`` or ``request_timeout``) or
+            ``network_error``
             (API unreachable, ``5xx``, ``429`` or an unexpected response; ``retry_after`` carries
             the API's ``Retry-After`` in seconds when it sent one).
     """
     expected, url, headers = _prepare(token, targets, api_base_url)
+    limit = resolve_request_timeout(request_timeout if timeout is None else timeout)
     try:
         if http_client is not None:
-            response = http_client.get(url, headers=headers, timeout=timeout)
+            response = http_client.get(url, headers=headers, timeout=limit)
         else:
-            with httpx.Client(timeout=timeout) as client:
+            with httpx.Client(timeout=limit) as client:
                 response = client.get(url, headers=headers)
     except httpx.HTTPError as e:
         raise SponsorkitError("network_error", f"Could not reach the Sponsorkit API: {e}") from e
@@ -118,16 +126,18 @@ async def averify_session(
     targets: TargetsArg,
     *,
     api_base_url: str = DEFAULT_API_BASE_URL,
-    timeout: float = DEFAULT_HTTP_TIMEOUT,
+    request_timeout: float = DEFAULT_HTTP_TIMEOUT,
     http_client: httpx.AsyncClient | None = None,
+    timeout: float | None = None,
 ) -> ContributionResult:
     """Async variant of :func:`verify_session` (uses :class:`httpx.AsyncClient`)."""
     expected, url, headers = _prepare(token, targets, api_base_url)
+    limit = resolve_request_timeout(request_timeout if timeout is None else timeout)
     try:
         if http_client is not None:
-            response = await http_client.get(url, headers=headers, timeout=timeout)
+            response = await http_client.get(url, headers=headers, timeout=limit)
         else:
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(timeout=limit) as client:
                 response = await client.get(url, headers=headers)
     except httpx.HTTPError as e:
         raise SponsorkitError("network_error", f"Could not reach the Sponsorkit API: {e}") from e

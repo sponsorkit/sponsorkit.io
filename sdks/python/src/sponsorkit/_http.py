@@ -17,7 +17,8 @@ from .errors import SponsorkitError
 
 DEFAULT_API_BASE_URL = "https://sponsorkit.io"
 USER_AGENT = f"sponsorkit-python/{__version__}"
-DEFAULT_HTTP_TIMEOUT = 10.0
+DEFAULT_HTTP_TIMEOUT = 30.0
+"""Default per-request timeout in seconds (PROTOCOL §7.0); ``request_timeout=0`` disables it."""
 MAX_RETRY_AFTER = 86400.0
 """Upper bound for an honoured ``Retry-After`` (24 h); larger values are clamped."""
 
@@ -27,6 +28,21 @@ _SESSION_TOKEN = re.compile(r"sks_[\x21-\x7e]+")
 def is_session_token(value: object) -> bool:
     """Whether ``value`` looks like a session token: ``sks_`` then printable ASCII (header-safe)."""
     return isinstance(value, str) and _SESSION_TOKEN.fullmatch(value) is not None
+
+
+def resolve_request_timeout(value: object, name: str = "request_timeout") -> float | None:
+    """Validate a ``request_timeout`` (seconds, finite, ``>= 0``) and return the httpx timeout.
+
+    ``0`` disables the timeout (``None`` for httpx).
+    """
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise SponsorkitError("invalid_config", f"{name} must be a non-negative number of seconds")
+    return None if value == 0 else float(value)
 
 
 def normalize_base_url(url: str) -> str:

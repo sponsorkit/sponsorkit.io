@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from ._http import is_session_token
+from ._http import is_session_token, parse_iso
 from .models import ContributionResult
 from .storage import FileStorage, Storage
 
@@ -88,14 +88,23 @@ class StoredState:
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def parse(cls, text: str | None) -> StoredState:
-        if not text:
+    def parse(cls, text: object) -> StoredState:
+        """Parse a storage document. Never raises: anything malformed counts as absent (PROTOCOL §7.0)."""
+        if not text or not isinstance(text, str):
             return cls()
         try:
             data = json.loads(text)
         except (ValueError, RecursionError):
             log.warning("sponsorkit: ignoring a corrupt storage file")
             return cls()
+        try:
+            return cls._from_document(data)
+        except Exception:  # defensive: reading storage must never throw
+            log.warning("sponsorkit: ignoring a malformed storage file")
+            return cls()
+
+    @classmethod
+    def _from_document(cls, data: Any) -> StoredState:
         if not isinstance(data, dict) or data.get("v") != 1:
             return cls()
         state = cls(extra={k: v for k, v in data.items() if k not in ("v", "sessionToken", "cache", "nags")})
@@ -103,9 +112,10 @@ class StoredState:
         if is_session_token(token):
             state.session_token = token
         cache = data.get("cache")
-        if isinstance(cache, dict) and isinstance(cache.get("storedAt"), str):
+        stored_at = cache.get("storedAt") if isinstance(cache, dict) else None
+        if isinstance(cache, dict) and isinstance(stored_at, str) and parse_iso(stored_at) is not None:
             try:
-                state.cache = CacheEntry(ContributionResult.from_dict(cache["result"]), cache["storedAt"])
+                state.cache = CacheEntry(ContributionResult.from_dict(cache["result"]), stored_at)
             except Exception:  # any malformed entry is ignored, never raised
                 log.warning("sponsorkit: ignoring a malformed cache entry")
         nags = data.get("nags")
@@ -117,7 +127,7 @@ class StoredState:
                 last = n.get("lastShown")
                 state.nags[nag_id] = {
                     "runs": runs if isinstance(runs, int) and not isinstance(runs, bool) and runs >= 0 else 0,
-                    "lastShown": last if isinstance(last, str) else None,
+                    "lastShown": last if isinstance(last, str) and parse_iso(last) is not None else None,
                 }
         return state
 
@@ -147,7 +157,7 @@ class StateStore:
     def read(self) -> StoredState:
         try:
             text = self.storage.read(self.key)
-        except ValueError:  # e.g. UnicodeDecodeError: the file is not UTF-8
+        except (ValueError, TypeError):  # e.g. UnicodeDecodeError: the file is not UTF-8
             log.warning("sponsorkit: ignoring a corrupt storage file")
             return StoredState()
         return StoredState.parse(text)
@@ -155,7 +165,7 @@ class StateStore:
     def exists(self) -> bool:
         try:
             return self.storage.read(self.key) is not None
-        except ValueError:  # present but undecodable
+        except (ValueError, TypeError):  # present but undecodable
             return True
 
     def update(self, fn: Callable[[StoredState], bool | None]) -> StoredState:
