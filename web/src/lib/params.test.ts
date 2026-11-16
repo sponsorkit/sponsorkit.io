@@ -27,6 +27,15 @@ describe("validators", () => {
     expect(isValidOrigin("*")).toBe(false);
     expect(isValidOrigin("null")).toBe(false);
   });
+  it("allows plain-http origins only on loopback hosts, like the Worker", () => {
+    expect(isValidOrigin("http://127.0.0.1:3000")).toBe(true);
+    expect(isValidOrigin("http://[::1]:3000")).toBe(true);
+    expect(isValidOrigin("http://app.example.com")).toBe(false);
+    expect(isValidOrigin("http://192.168.1.5:5173")).toBe(false);
+    const base = { targets: "github:octocat", challenge: CHALLENGE, delivery: "web_message" };
+    expect(parseConnectParams(qs({ ...base, origin: "http://app.example.com" })).ok).toBe(false);
+    expect(parseConnectParams(qs({ ...base, origin: "http://localhost:5173" })).ok).toBe(true);
+  });
   it("redirect URIs", () => {
     expect(isValidRedirectUri("https://app.example.com/after?x=1")).toBe(true);
     expect(isValidRedirectUri("http://localhost:3000/cb")).toBe(true);
@@ -98,6 +107,12 @@ describe("parseConnectParams (PROTOCOL §4.1)", () => {
     expect(parseConnectParams(qs({ ...base, app_name: "x".repeat(64) })).ok).toBe(true);
     expect(parseConnectParams(qs({ ...base, app_name: "x".repeat(65) })).ok).toBe(false);
     expect(parseConnectParams(qs({ ...base, app_name: "evil‮ppa" })).ok).toBe(false);
+    // Any format character (\p{Cf}) is rejected, as at /start.
+    expect(parseConnectParams(qs({ ...base, app_name: "my\u200bcli" })).ok).toBe(false);
+    expect(parseConnectParams(qs({ ...base, app_name: "my\ufeffcli" })).ok).toBe(false);
+    // Length is counted in code points, as at /start.
+    expect(parseConnectParams(qs({ ...base, app_name: "\u{1F600}".repeat(64) })).ok).toBe(true);
+    expect(parseConnectParams(qs({ ...base, app_name: "\u{1F600}".repeat(65) })).ok).toBe(false);
     const r = parseConnectParams(qs(base));
     expect(r.ok && requesterOf(r.value)).toEqual({ kind: "native", appName: null, delivery: "paste" });
   });

@@ -18,10 +18,11 @@ export const github: TargetInfo = {
   currency: "USD",
   frequencies: ["monthly", "one_time"],
   customAmount: false,
+  // `url` is built by the Worker from the decoded databaseId (PROTOCOL §6); clients never build it.
   tiers: [
-    { id: "101", name: "Coffee", amount: { value: 500, currency: "USD" }, frequency: "monthly", url: null },
-    { id: "102", name: "Lunch", amount: { value: 2500, currency: "USD" }, frequency: "monthly", url: null },
-    { id: "201", name: "Thanks", amount: { value: 1000, currency: "USD" }, frequency: "one_time", url: null },
+    { id: "101", name: "Coffee", amount: { value: 500, currency: "USD" }, frequency: "monthly", url: "https://github.com/sponsors/octocat/sponsorships?tier_id=101" },
+    { id: "102", name: "Lunch", amount: { value: 2500, currency: "USD" }, frequency: "monthly", url: "https://github.com/sponsors/octocat/sponsorships?tier_id=102" },
+    { id: "201", name: "Thanks", amount: { value: 1000, currency: "USD" }, frequency: "one_time", url: "https://github.com/sponsors/octocat/sponsorships?tier_id=201" },
   ],
 };
 

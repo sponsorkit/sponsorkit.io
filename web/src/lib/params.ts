@@ -59,13 +59,21 @@ const LOOPBACK_V4 = /^http:\/\/127\.0\.0\.1:(\d{1,5})\/callback$/;
 const LOOPBACK_V6 = /^http:\/\/\[::1\]:(\d{1,5})\/callback$/;
 const CURRENCY = /^[A-Za-z]{3}$/;
 const AMOUNT = /^[0-9]{1,12}$/;
-/** C0/C1 control characters and bidi overrides that could be used to spoof the "says it is" label. */
-// eslint-disable-next-line no-control-regex
-const UNSAFE_LABEL_CHARS = /[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/;
+/**
+ * Control (Cc) and format (Cf) characters, including bidi overrides and zero-width characters,
+ * that could be used to spoof the "says it is" label. Same rule as the Worker's `/start` check.
+ */
+const UNSAFE_LABEL_CHARS = /[\p{Cc}\p{Cf}]/u;
+/** Hosts on which a plain-http `web_message` origin is allowed (local development), as in the Worker. */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 export const APP_NAME_MAX = 64;
 export const AMOUNT_MAX = 100_000_000_00; // 100M major units; anything above is certainly a mistake.
 
-/** `true` if `value` is a serialized http(s) origin, e.g. `https://app.example.com` or `http://localhost:5173`. */
+/**
+ * `true` if `value` is a serialized origin: https anywhere, or http on a loopback host
+ * (`localhost`, `127.0.0.1`, `[::1]`), e.g. `https://app.example.com` or `http://localhost:5173`.
+ * Matches the Worker's `/api/oauth/:provider/start` validation (PROTOCOL §4.1, §4.3).
+ */
 export function isValidOrigin(value: string): boolean {
   let url: URL;
   try {
@@ -73,8 +81,9 @@ export function isValidOrigin(value: string): boolean {
   } catch {
     return false;
   }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-  return url.origin === value;
+  if (url.origin !== value) return false;
+  if (url.protocol === "https:") return true;
+  return url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname);
 }
 
 /** `redirect` delivery: an https URL, or http on localhost / 127.0.0.1 (PROTOCOL §4.1). */
@@ -133,7 +142,8 @@ function parseAppName(sp: URLSearchParams, errors: string[]): string | undefined
   if (raw === null) return undefined;
   const v = raw.trim();
   if (v === "") return undefined;
-  if (v.length > APP_NAME_MAX) {
+  // Count code points, not UTF-16 units, like the Worker.
+  if ([...v].length > APP_NAME_MAX) {
     errors.push(`The app name is longer than ${APP_NAME_MAX} characters.`);
     return undefined;
   }
@@ -169,7 +179,7 @@ function parseSignInParts(
   if (delivery === "web_message") {
     const o = sp.get("origin") ?? "";
     if (o === "") errors.push("The link is missing the origin of the app that opened it.");
-    else if (!isValidOrigin(o)) errors.push("The app origin in this link is malformed.");
+    else if (!isValidOrigin(o)) errors.push("The app origin in this link must be an https origin (or http on localhost).");
     else origin = o;
   } else if (delivery === "redirect") {
     const r = sp.get("redirect_uri") ?? "";

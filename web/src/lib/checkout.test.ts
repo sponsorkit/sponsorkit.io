@@ -18,6 +18,11 @@ function tier(id: string, value: number, frequency: TargetTier["frequency"], url
   return { id, name: `Tier ${id}`, amount: { value, currency: "USD" }, frequency, url };
 }
 
+/** A tier as the Worker returns it when it could decode the databaseId: with a `tier_id` url. */
+function wtier(id: string, value: number, frequency: TargetTier["frequency"]): TargetTier {
+  return tier(id, value, frequency, `https://github.com/sponsors/octocat/sponsorships?tier_id=${id}`);
+}
+
 function gh(over: Partial<TargetInfo> = {}): TargetInfo {
   return {
     target: "github:octocat",
@@ -30,7 +35,7 @@ function gh(over: Partial<TargetInfo> = {}): TargetInfo {
     currency: "USD",
     frequencies: ["monthly", "one_time"],
     customAmount: false,
-    tiers: [tier("100", 500, "monthly"), tier("101", 1000, "monthly"), tier("102", 2500, "monthly"), tier("200", 1000, "one_time")],
+    tiers: [wtier("100", 500, "monthly"), wtier("101", 1000, "monthly"), wtier("102", 2500, "monthly"), wtier("200", 1000, "one_time")],
     ...over,
   };
 }
@@ -115,10 +120,14 @@ describe("githubCheckoutUrl", () => {
     const t = [tier("100", 500, "monthly", "https://github.com/sponsors/octocat/sponsorships?tier_id=100&x=1")];
     expect(githubCheckoutUrl(gh({ tiers: t }), {})).toBe("https://github.com/sponsors/octocat/sponsorships?tier_id=100&x=1");
   });
-  it("builds a tier_id link from the numeric id", () => {
+  it("never builds a tier_id link itself, even from a numeric id (PROTOCOL §6)", () => {
+    const tiers = [tier("100", 500, "monthly"), tier("101", 1000, "monthly")];
+    expect(githubCheckoutUrl(gh({ tiers }), { amount: 800 })).toBe("https://github.com/sponsors/octocat");
+  });
+  it("uses the selected tier's Worker-built url", () => {
     expect(githubCheckoutUrl(gh(), { amount: 800 })).toBe("https://github.com/sponsors/octocat/sponsorships?tier_id=101");
   });
-  it("falls back to the sponsors page without tiers or with a non-numeric id", () => {
+  it("falls back to the sponsors page without tiers or with a null url", () => {
     expect(githubCheckoutUrl(gh({ tiers: [] }), {})).toBe("https://github.com/sponsors/octocat");
     expect(githubCheckoutUrl(gh({ tiers: [tier("ST_kwDO", 500, "monthly")] }), {})).toBe("https://github.com/sponsors/octocat");
   });
@@ -142,6 +151,10 @@ describe("Open Collective URL", () => {
     const url = openCollectiveCheckoutUrl(oc(), {}, ORIGIN);
     expect(url).toBe(`https://opencollective.com/sponsorkit/donate?redirect=${encodeURIComponent(`${ORIGIN}/checkout/thanks`)}`);
   });
+  it("uses ISO 4217 minor units where CLDR disagrees", () => {
+    expect(new URL(openCollectiveCheckoutUrl(oc({ currency: "HUF" }), { amount: 150000 }, ORIGIN)).searchParams.get("amount")).toBe("1500");
+    expect(new URL(openCollectiveCheckoutUrl(oc({ currency: "IQD" }), { amount: 1500 }, ORIGIN)).searchParams.get("amount")).toBe("1.5");
+  });
   it("respects zero-decimal currencies", () => {
     const url = new URL(openCollectiveCheckoutUrl(oc({ currency: "JPY" }), { amount: 1000 }, ORIGIN));
     expect(url.searchParams.get("amount")).toBe("1000");
@@ -156,6 +169,12 @@ describe("toMajorUnits", () => {
     [5, "USD", "0.05"],
     [1000, "JPY", "1000"],
     [1234, "KWD", "1.234"],
+    // ISO 4217, not CLDR display digits (which say 0 for these).
+    [150000, "HUF", "1500"],
+    [1500050, "IDR", "15000.5"],
+    [1500, "IQD", "1.5"],
+    [123456, "COP", "1234.56"],
+    [12345, "CLF", "1.2345"],
   ])("%i %s → %s", (minor, cur, expected) => {
     expect(toMajorUnits(minor, cur)).toBe(expected);
   });

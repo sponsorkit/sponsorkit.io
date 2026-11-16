@@ -23,24 +23,26 @@ export const languages = [
     lang: "ts",
     file: "app.ts",
     runtime: "Node 20+, Bun, Deno and evergreen browsers. No runtime dependencies.",
-    code: `import { Sponsorkit } from "@sponsorkit/sdk";
+    code: `// CLIs and desktop apps (Node, Bun, Deno). In browsers, import from "@sponsorkit/sdk"
+// instead: sign-in uses a popup there, and appName isn't needed.
+import { Sponsorkit } from "@sponsorkit/sdk/node";
 
 const sk = new Sponsorkit({
   github: "mathiaslorenzen",        // at least one target
   opencollective: "sponsorkit",
-  appName: "my-cli",                // shown on the consent page (native apps)
+  appName: "my-cli",                // shown on the consent page as "says it is"
 });
 
 // Never throws because of the network; see "Error contract".
 const fc = await sk.getFinancialContribution();
 
 if (!fc.signedIn) {
-  await sk.signIn();                // popup in browsers, loopback or paste-back elsewhere
+  await sk.signIn();                // loopback, or paste-back over SSH
 } else if (!fc.active().some(c => c.amount.currency === "USD" && c.amount.value >= 500)) {
-  showAd();
+  console.error(\`Enjoying my-cli? \${sk.checkoutUrl({ frequency: "monthly" })}\`);
 }
 
-// From a click handler in the browser:
+// \`my-cli sponsor\`: opens the checkout in the browser and waits for the contribution.
 const result = await sk.openCheckout({ frequency: "monthly", amount: 500 });
 if (result.status === "contributed") thankUser(result.contribution);`,
   },
@@ -61,15 +63,16 @@ var sk = new SponsorkitClient(new SponsorkitOptions
     AppName = "my-cli",
 });
 
-var fc = await sk.GetFinancialContributionAsync(cancellationToken);
+var fc = await sk.GetFinancialContributionAsync();
 
 if (!fc.SignedIn)
 {
-    await sk.SignInAsync(cancellationToken);      // loopback, or paste-back over SSH
+    await sk.SignInAsync();                       // loopback, or paste-back over SSH
 }
 else if (!fc.Active().Any(c => c.Amount.Currency == "USD" && c.Amount.Value >= 500))
 {
-    Console.Error.WriteLine($"Enjoying my-cli? {sk.CheckoutUrl(frequency: Frequency.Monthly)}");
+    var url = sk.CheckoutUrl(new CheckoutUrlOptions { Frequency = Frequencies.Monthly });
+    Console.Error.WriteLine($"Enjoying my-cli? {url}");
 }`,
   },
   {
@@ -110,12 +113,15 @@ if err != nil {
 	log.Fatal(err) // invalid configuration only
 }
 
-fc := sk.GetFinancialContribution(ctx) // never fails because of the network
+fc, _ := sk.GetFinancialContribution(ctx) // network failures never return an error
 
 if !fc.SignedIn {
-	_ = sk.SignIn(ctx) // loopback, or paste-back over SSH
+	if _, err := sk.SignIn(ctx); err != nil { // loopback, or paste-back over SSH
+		log.Print(err)
+	}
 } else if len(fc.Active()) == 0 {
-	fmt.Fprintln(os.Stderr, "Enjoying my-cli? "+sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly}))
+	link, _ := sk.CheckoutURL(sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly})
+	fmt.Fprintln(os.Stderr, "Enjoying my-cli?", link)
 }`,
   },
   {
@@ -126,7 +132,7 @@ if !fc.SignedIn {
     lang: "rust",
     file: "main.rs",
     runtime: "MSRV 1.85. Uses reqwest (rustls), serde and tokio.",
-    code: `use sponsorkit::{Options, Sponsorkit};
+    code: `use sponsorkit::{CheckoutOptions, GetOptions, Options, SignInOptions, Sponsorkit};
 
 let sk = Sponsorkit::new(Options {
     github: Some("mathiaslorenzen".into()),
@@ -135,12 +141,13 @@ let sk = Sponsorkit::new(Options {
     ..Default::default()
 })?; // errors only on invalid configuration
 
-let fc = sk.get_financial_contribution().await; // never fails because of the network
+// Network failures never return an error.
+let fc = sk.get_financial_contribution(GetOptions::default()).await?;
 
 if !fc.signed_in {
-    sk.sign_in().await?; // loopback, or paste-back over SSH
+    sk.sign_in(SignInOptions::default()).await?; // loopback, or paste-back over SSH
 } else if fc.active().is_empty() {
-    eprintln!("Enjoying my-cli? {}", sk.checkout_url(Default::default()));
+    eprintln!("Enjoying my-cli? {}", sk.checkout_url(&CheckoutOptions::default())?);
 }`,
   },
 ] as const;
@@ -232,15 +239,18 @@ if (fc.active().length > 0) unlockPremium(fc.supporter.id); // pairwise, stable 
 export const verifyCurl = `curl https://sponsorkit.io/api/v1/contributions \\
   -H "Authorization: Bearer sks_…"`;
 
-export const selfHostSnippet = `# Worker secrets (Cloudflare)
+export const selfHostSnippet = `# From the repository root: build the static pages (→ web/out).
+bun run --filter @sponsorkit/web build
+
+# Worker secrets and deploy run from app/, where the config lives (app/wrangler.jsonc).
+cd app
 wrangler secret put GITHUB_CLIENT_ID
 wrangler secret put GITHUB_CLIENT_SECRET
 wrangler secret put OPENCOLLECTIVE_CLIENT_ID
 wrangler secret put OPENCOLLECTIVE_CLIENT_SECRET
+wrangler secret put GITHUB_METADATA_TOKEN   # fine-grained PAT, no permissions: reads public Sponsors tiers
 wrangler secret put SEALING_KEYS      # [{"id":1,"key":"<32 bytes, base64url>"}]
 wrangler secret put PAIRWISE_KEY      # HMAC key for pairwise supporter ids
-
-bun run --filter @sponsorkit/web build   # static pages → web/out
 wrangler deploy`;
 
 export const selfHostClient = `new Sponsorkit({ github: "your-login", apiBaseUrl: "https://sponsors.example.com" });`;

@@ -119,20 +119,26 @@ export function githubCheckoutUrl(info: TargetInfo, opts: CheckoutOptions): stri
   const base = `https://github.com/sponsors/${login}`;
   const tier = selectGitHubTier(info, opts);
   if (!tier) return base;
-  if (tier.url) return tier.url;
-  // tier_id is the tier's numeric databaseId; a non-numeric id can't be deep-linked.
-  if (/^[0-9]+$/.test(tier.id)) return `${base}/sponsorships?tier_id=${tier.id}`;
-  return base;
+  // Only the Worker builds `?tier_id=` links (from a decoded databaseId); `tier.id` is an opaque
+  // node id, so clients never build one themselves (PROTOCOL §6).
+  return tier.url ?? base;
 }
 
-/** Number of minor-unit digits for an ISO 4217 currency (USD → 2, JPY → 0). Falls back to 2. */
+/**
+ * ISO 4217 minor-unit digits for currencies that don't use 2. Deliberately a static table:
+ * `Intl`'s `maximumFractionDigits` follows CLDR display rules, which differ from ISO 4217 for
+ * e.g. HUF, IDR, COP, PKR (ISO 2) and IQD (ISO 3), and PROTOCOL §6 requires ISO 4217.
+ */
+const ISO_4217_EXPONENTS: Readonly<Record<string, number>> = {
+  BIF: 0, CLP: 0, DJF: 0, GNF: 0, ISK: 0, JPY: 0, KMF: 0, KRW: 0, PYG: 0, RWF: 0,
+  UGX: 0, UYI: 0, VND: 0, VUV: 0, XAF: 0, XOF: 0, XPF: 0,
+  BHD: 3, IQD: 3, JOD: 3, KWD: 3, LYD: 3, OMR: 3, TND: 3,
+  CLF: 4, UYW: 4,
+};
+
+/** Number of ISO 4217 minor-unit digits for a currency (USD → 2, JPY → 0, KWD → 3). Falls back to 2. */
 export function currencyExponent(currency: string): number {
-  try {
-    const digits = new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits;
-    return typeof digits === "number" ? digits : 2;
-  } catch {
-    return 2;
-  }
+  return ISO_4217_EXPONENTS[currency.toUpperCase()] ?? 2;
 }
 
 /** Minor units → major-unit string without trailing zeros: 500 → "5", 550 → "5.5", 1999 → "19.99". */

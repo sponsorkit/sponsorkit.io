@@ -167,7 +167,7 @@ export default function DocsPage() {
             [".NET", <code key="p">Sponsorkit</code>, <code key="g">GetFinancialContributionAsync(ct)</code>, "loopback, paste"],
             ["Python", <code key="p">sponsorkit</code>, <code key="g">get_financial_contribution()</code>, "loopback, paste"],
             ["Go", <code key="p">github.com/sponsorkit/sponsorkit.io/sdks/go</code>, <code key="g">GetFinancialContribution(ctx)</code>, "loopback, paste"],
-            ["Rust", <code key="p">sponsorkit</code>, <code key="g">get_financial_contribution().await</code>, "loopback, paste"],
+            ["Rust", <code key="p">sponsorkit</code>, <code key="g">get_financial_contribution(GetOptions::default()).await?</code>, "loopback, paste"],
           ]}
         />
         {languages.map((l) => (
@@ -349,7 +349,9 @@ export default function DocsPage() {
         <H3 id="self-hosting">Self-hosting</H3>
         <p>
           Sponsorkit is one stateless Cloudflare Worker (Hono, so it also runs on Node and Bun) plus these static pages. There’s no
-          database, cron or migration. You need a GitHub OAuth App, an Open Collective OAuth app, and a sealing key.
+          database, cron or migration. You need a GitHub OAuth App, an Open Collective OAuth app, a sealing key, a pairwise-id key,
+          and a GitHub fine-grained token with no permissions (<code>GITHUB_METADATA_TOKEN</code>), which reads public Sponsors
+          tiers for the consent and checkout pages.
         </p>
         <Code code={selfHostSnippet} lang="bash" title="Deploy" />
         <Code code={selfHostClient} lang="ts" title="Point the SDK at it" />
