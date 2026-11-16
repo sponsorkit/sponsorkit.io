@@ -1,0 +1,35 @@
+[package]
+name = "sponsorkit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Build GitHub Sponsors and Open Collective contributions into your Rust app or CLI: check what the current user contributes, open a checkout, nag politely."
+license = "MIT"
+repository = "https://github.com/sponsorkit/sponsorkit.io"
+homepage = "https://sponsorkit.io"
+documentation = "https://docs.rs/sponsorkit"
+readme = "README.md"
+keywords = ["sponsors", "github-sponsors", "opencollective", "donations", "funding"]
+categories = ["api-bindings", "command-line-interface"]
+include = ["src/**/*", "README.md", "LICENSE", "Cargo.toml"]
+
+[dependencies]
+base64 = "0.22"
+getrandom = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1.38", features = ["net", "time", "io-util", "sync", "rt", "macros"] }
+tokio-util = { version = "0.7", default-features = false }
+
+[dev-dependencies]
+regex = "1"
+tokio = { version = "1.38", features = ["full"] }
+
+[lints.rust]
+missing_docs = "warn"
+# `deny` rather than `forbid` so the conformance harness can set process
+# environment variables (`configure.processEnv`); the library itself has
+# `#![forbid(unsafe_code)]`.
+unsafe_code = "deny"

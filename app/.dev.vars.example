@@ -1,0 +1,33 @@
+# Copy to app/.dev.vars for `wrangler dev`. In production set each with `wrangler secret put <NAME>`.
+# Never commit real values.
+
+# GitHub OAuth App (callback URL: <origin>/api/oauth/github/callback)
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Open Collective OAuth app (callback URL: <origin>/api/oauth/opencollective/callback)
+OPENCOLLECTIVE_CLIENT_ID=
+OPENCOLLECTIVE_CLIENT_SECRET=
+
+# Sealing keys for state, sign-in codes and session tokens (AES-256-GCM).
+# JSON array of { id, key }: id is an integer 0-255, key is 32 random bytes as base64url.
+# The FIRST entry seals; all entries unseal (rotation: add new key first, drop old after 180 days).
+# Generate a key: node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+SEALING_KEYS=[{"id":1,"key":"<32 bytes base64url>"}]
+
+# HMAC key for pairwise supporter ids (any high-entropy string, used as UTF-8 bytes).
+# Changing it changes every supporter.id.
+PAIRWISE_KEY=
+
+# GitHub token used ONLY to read public Sponsors listings for GET /api/v1/targets
+# (a fine-grained PAT with no permissions is enough). Never used for supporter data.
+GITHUB_METADATA_TOKEN=
+
+# Optional: public origin used to build OAuth callback URLs (defaults to the request origin).
+# PUBLIC_ORIGIN=https://sponsorkit.io
+
+# Optional provider base URL overrides (tests / self-hosting):
+# GITHUB_OAUTH_BASE=https://github.com
+# GITHUB_API_BASE=https://api.github.com
+# OPENCOLLECTIVE_BASE=https://opencollective.com
+# OPENCOLLECTIVE_API_BASE=https://api.opencollective.com

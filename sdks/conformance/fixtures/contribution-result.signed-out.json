@@ -1,0 +1,14 @@
+{
+  "signedIn": false,
+  "disabled": false,
+  "mock": false,
+  "targets": [
+    "github:sponsorkit-conformance",
+    "opencollective:sponsorkit-conformance"
+  ],
+  "supporter": null,
+  "contributions": [],
+  "fetchedAt": null,
+  "stale": false,
+  "fromCache": false
+}

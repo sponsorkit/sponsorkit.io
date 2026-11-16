@@ -1,0 +1,7 @@
+{
+  "type": "https://sponsorkit.io/problems/session_invalid",
+  "title": "Session invalid",
+  "status": 401,
+  "code": "session_invalid",
+  "detail": "Unknown, malformed or expired session token"
+}

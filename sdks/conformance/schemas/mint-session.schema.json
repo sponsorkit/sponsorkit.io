@@ -1,0 +1,27 @@
+{
+  "title": "POST /__control/sessions body",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "targets": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identities": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "github",
+          "opencollective"
+        ]
+      }
+    }
+  },
+  "required": [
+    "targets",
+    "identities"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,117 @@
+{
+  "$comment": "Test vectors every SDK should check its implementation against (PROTOCOL §1, §2; Contribution.id rule).",
+  "targetSets": [
+    {
+      "input": {
+        "github": "sponsorkit-conformance",
+        "opencollective": "sponsorkit-conformance"
+      },
+      "param": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+      "targetsHash": "3363d36356e472dab64ce744efd4e8bad412dd7f152bfd357ba96aa97180ac0e"
+    },
+    {
+      "input": {
+        "github": "sponsorkit-conformance"
+      },
+      "param": "github:sponsorkit-conformance",
+      "targetsHash": "d3831f8e6aefc8e048f18374a230b28dd9e05310c396cdab5b75b6dcce9228f9"
+    },
+    {
+      "input": {
+        "opencollective": "sponsorkit-conformance"
+      },
+      "param": "opencollective:sponsorkit-conformance",
+      "targetsHash": "b3a1f2a710d246c99ad49a46b99ea0f07c74af96d13bd1713e673d130514c737"
+    },
+    {
+      "input": {
+        "github": "  MathiasLorenzen ",
+        "opencollective": "Sponsorkit"
+      },
+      "param": "github:mathiaslorenzen,opencollective:sponsorkit",
+      "targetsHash": "5f3b6380b3ff1b60d6228b454f7d16ece349009780b0ede3c0e8db8fc3ea95f0"
+    },
+    {
+      "input": {
+        "github": "octocat"
+      },
+      "param": "github:octocat",
+      "targetsHash": "0309e87b72e9ebbb324075c26f58478bf2aca6c8cbc26bae3bb2bc74080640f9"
+    }
+  ],
+  "invalidTargets": [
+    {
+      "provider": "github",
+      "account": "-bad-"
+    },
+    {
+      "provider": "github",
+      "account": "bad-"
+    },
+    {
+      "provider": "github",
+      "account": "has--double"
+    },
+    {
+      "provider": "github",
+      "account": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "provider": "github",
+      "account": ""
+    },
+    {
+      "provider": "opencollective",
+      "account": "bad slug!"
+    },
+    {
+      "provider": "opencollective",
+      "account": "-leading-hyphen"
+    },
+    {
+      "provider": "patreon",
+      "account": "someone"
+    }
+  ],
+  "pkce": [
+    {
+      "codeVerifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+    },
+    {
+      "codeVerifier": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "codeChallenge": "DwBzhbb51LfusnSGBa_hqYSgo7-j8BTQnip4TOnlzRo"
+    },
+    {
+      "codeVerifier": "conformance~verifier.with-all_allowed-chars0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJ",
+      "codeChallenge": "rInyIpRD0ta8BTG5apmVJDBJ7m3gV3uuha_jVuvNvYA"
+    }
+  ],
+  "contributionIds": [
+    {
+      "provider": "github",
+      "externalId": "gh-sponsorship-1001",
+      "id": "con_github_md3xP94JRrHj9QVsU16tuK"
+    },
+    {
+      "provider": "github",
+      "externalId": "gh-sponsorship-1002",
+      "id": "con_github_HTRhsr74qaWXC6EPhLcswE"
+    },
+    {
+      "provider": "opencollective",
+      "externalId": "oc-order-2001",
+      "id": "con_opencollective_KQkcFH0OgBfztO7uSkkmUz"
+    },
+    {
+      "provider": "github",
+      "externalId": "gh-sponsorship-1003",
+      "id": "con_github_H85XMnrEy1jyETE-045vIt"
+    },
+    {
+      "provider": "github",
+      "externalId": "gh-sponsorship-1004",
+      "id": "con_github_8_CX7Q1bLnWgSevbNBXcVp"
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "$comment": "SPEC §7.4 mock presets. Every SDK embeds this data byte-for-byte equivalent and expands it with the rules below. src/mock-presets.ts is the reference implementation; scenarios.json pins the expanded results.",
+  "version": 1,
+  "rules": [
+    "Let T be the first target of the configured target set in canonical order (PROTOCOL §1). In every template, replace the exact string \"{provider}\" with T.provider and \"{target}\" with T's string form (e.g. github:octocat), including inside longer strings such as ids.",
+    "The result is { signedIn, disabled: false, mock: true, targets: <canonical target strings>, supporter, contributions, fetchedAt: null, stale: false, fromCache: false } with no `unavailable` key.",
+    "supporter is the expanded `supporter` template when signedIn is true, otherwise null. contributions are the expanded preset contributions, in order.",
+    "Custom mock data ({ contributions: [...] }) yields signedIn: true, the expanded supporter template and exactly the given contributions (not rewritten).",
+    "Mock mode performs no network and no disk access. State changes below live in memory, per SDK instance.",
+    "signIn() resolves immediately; afterwards the instance is signed in. If it was signed out (preset signed-out, or after signOut), its contributions become [].",
+    "signOut() resolves immediately; afterwards getFinancialContribution() returns the signed-out shape (signedIn: false, supporter: null, contributions: []) with mock: true.",
+    "openCheckout(opts) resolves immediately with { status: \"contributed\", contribution } where contribution is the expanded `checkout` template with: provider and target from opts.provider when it names a configured provider (else T); amount = { value: opts.amount ?? 500, currency: opts.currency ?? \"USD\" }; frequency = opts.frequency ?? \"monthly\"; kind = \"one_time\" when frequency is one_time else \"recurring\"; status = \"paid\" when frequency is one_time else \"active\". The instance becomes signed in and the contribution is appended to its contributions (replacing an existing one with the same id).",
+    "Precedence: SPONSORKIT_DISABLE=1 beats mock (result is the disabled shape with mock: false). The `mock` constructor option beats the SPONSORKIT_MOCK environment variable. An unknown preset name throws SponsorkitError{code: \"invalid_config\"}."
+  ],
+  "supporter": {
+    "id": "sup_mock",
+    "identities": [{ "provider": "{provider}", "id": "0", "handle": "mock-user", "needsReconnect": false }]
+  },
+  "presets": {
+    "signed-out": { "signedIn": false, "contributions": [] },
+    "none": { "signedIn": true, "contributions": [] },
+    "active-monthly": {
+      "signedIn": true,
+      "contributions": [
+        {
+          "id": "con_{provider}_mock_active_monthly",
+          "provider": "{provider}",
+          "target": "{target}",
+          "sponsor": { "type": "user", "provider": "{provider}", "id": "0", "handle": "mock-user" },
+          "via": "direct",
+          "kind": "recurring",
+          "frequency": "monthly",
+          "status": "active",
+          "amount": { "value": 500, "currency": "USD" },
+          "tier": null,
+          "flags": [],
+          "private": false,
+          "startedAt": "2026-01-01T00:00:00Z",
+          "endedAt": null,
+          "lastChargedAt": null,
+          "nextChargeAt": null,
+          "totalContributed": null
+        }
+      ]
+    },
+    "one-time": {
+      "signedIn": true,
+      "contributions": [
+        {
+          "id": "con_{provider}_mock_one_time",
+          "provider": "{provider}",
+          "target": "{target}",
+          "sponsor": { "type": "user", "provider": "{provider}", "id": "0", "handle": "mock-user" },
+          "via": "direct",
+          "kind": "one_time",
+          "frequency": "one_time",
+          "status": "paid",
+          "amount": { "value": 2500, "currency": "USD" },
+          "tier": null,
+          "flags": [],
+          "private": false,
+          "startedAt": "2026-01-01T00:00:00Z",
+          "endedAt": null,
+          "lastChargedAt": null,
+          "nextChargeAt": null,
+          "totalContributed": null
+        }
+      ]
+    },
+    "cancelled": {
+      "signedIn": true,
+      "contributions": [
+        {
+          "id": "con_{provider}_mock_cancelled",
+          "provider": "{provider}",
+          "target": "{target}",
+          "sponsor": { "type": "user", "provider": "{provider}", "id": "0", "handle": "mock-user" },
+          "via": "direct",
+          "kind": "recurring",
+          "frequency": "monthly",
+          "status": "cancelled",
+          "amount": { "value": 500, "currency": "USD" },
+          "tier": null,
+          "flags": [],
+          "private": false,
+          "startedAt": "2026-01-01T00:00:00Z",
+          "endedAt": "2026-02-01T00:00:00Z",
+          "lastChargedAt": null,
+          "nextChargeAt": null,
+          "totalContributed": null
+        }
+      ]
+    },
+    "org": {
+      "signedIn": true,
+      "contributions": [
+        {
+          "id": "con_{provider}_mock_org",
+          "provider": "{provider}",
+          "target": "{target}",
+          "sponsor": { "type": "organization", "provider": "{provider}", "id": "1", "handle": "mock-org" },
+          "via": "organization",
+          "kind": "recurring",
+          "frequency": "monthly",
+          "status": "active",
+          "amount": { "value": 1000, "currency": "USD" },
+          "tier": null,
+          "flags": [],
+          "private": false,
+          "startedAt": "2026-01-01T00:00:00Z",
+          "endedAt": null,
+          "lastChargedAt": null,
+          "nextChargeAt": null,
+          "totalContributed": null
+        }
+      ]
+    }
+  },
+  "checkout": {
+    "id": "con_{provider}_mock_checkout",
+    "provider": "{provider}",
+    "target": "{target}",
+    "sponsor": { "type": "user", "provider": "{provider}", "id": "0", "handle": "mock-user" },
+    "via": "direct",
+    "kind": "recurring",
+    "frequency": "monthly",
+    "status": "active",
+    "amount": { "value": 500, "currency": "USD" },
+    "tier": null,
+    "flags": [],
+    "private": false,
+    "startedAt": "2026-01-01T00:00:00Z",
+    "endedAt": null,
+    "lastChargedAt": null,
+    "nextChargeAt": null,
+    "totalContributed": null
+  }
+}
