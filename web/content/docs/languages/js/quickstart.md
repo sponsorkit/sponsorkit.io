@@ -9,8 +9,14 @@ Two small, complete programs: a web page and a command-line tool. Both use the s
 point differs. Replace `octocat` and `my-collective` with the accounts you receive contributions on (one of the
 two is enough).
 
-```bash
-npm install @sponsorkit/sdk
+`@sponsorkit/sdk` isn't on npm yet, so build it from the repository and install the tarball (building needs
+[Bun](https://bun.sh)); [Install](index.md#install) explains this and lists the registry commands to use after the
+first release:
+
+```bash title="Terminal"
+git clone https://github.com/sponsorkit/sponsorkit.io.git
+(cd sponsorkit.io && bun install && bun run --cwd sdks/js build && cd sdks/js && npm pack)
+npm install ./sponsorkit.io/sdks/js/sponsorkit-sdk-0.1.0.tgz
 ```
 
 ## A web app

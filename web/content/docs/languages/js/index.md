@@ -23,6 +23,25 @@ for CommonJS) and work with `moduleResolution` set to `bundler`, `node16` or `no
 
 ## Install
 
+:::warning[Not on npm yet]
+`@sponsorkit/sdk` hasn't been published to npm yet, and the name may not be reserved, so a package someone else
+publishes under it would not be this project. Until the first release is announced, build the SDK from the
+repository and install the tarball. Building needs [Bun](https://bun.sh).
+:::
+
+```bash title="Terminal"
+git clone https://github.com/sponsorkit/sponsorkit.io.git
+(cd sponsorkit.io && bun install && bun run --cwd sdks/js build && cd sdks/js && npm pack)
+npm install ./sponsorkit.io/sdks/js/sponsorkit-sdk-0.1.0.tgz
+```
+
+pnpm, Yarn and Bun accept the same tarball path. [Build from source](../../install/from-source.md#javascript)
+explains the recipe.
+
+### After the first release {#after-the-first-release}
+
+Once `@sponsorkit/sdk` is on npm, install it with your package manager instead. These commands fail today.
+
 ::::tabs{group="pm"}
 :::tab[npm]
 ```bash
@@ -64,11 +83,6 @@ For a page without a build step, load the ES module from an npm CDN such as esm.
 Pin a version (`@sponsorkit/sdk@0.1.0`) in production.
 :::
 ::::
-
-:::note[Pre-release]
-If your package manager can't find `@sponsorkit/sdk`, it hasn't been published to npm yet. See
-[build from source](../../install/from-source.md) to use it straight from the repository.
-:::
 
 ## Pick an entry point
 

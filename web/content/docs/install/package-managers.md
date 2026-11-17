@@ -20,6 +20,8 @@ the registry commands on this page.
 One package, `@sponsorkit/sdk`, with no runtime dependencies. It ships ESM and CommonJS builds and its own
 TypeScript types, so there is no `@types` package to add.
 
+**After the first release.** Until then, [build from source](from-source.md#javascript).
+
 :::tabs{group="pm"}
 ```bash tab="npm" key="npm"
 npm install @sponsorkit/sdk
@@ -58,7 +60,7 @@ network, environment, file and subprocess permissions. Deno can also import it w
 ### Browsers without a bundler {#cdn}
 
 The browser entry points only import their own files, so a CDN that mirrors npm can serve them as native ES
-modules. Pin an exact version in the URL:
+modules. Pin an exact version in the URL. CDNs only serve published versions, so these work after the first npm release:
 
 :::tabs{group="cdn"}
 ```html tab="esm.sh" key="esm-sh"
@@ -101,6 +103,8 @@ versions; until the first npm release, bundle a local build instead.
 The `Sponsorkit` NuGet package targets `netstandard2.0` and `net8.0`. On .NET 8 and later it has no dependencies;
 the `netstandard2.0` build depends on `System.Text.Json`.
 
+**After the first release.** Until then, [build from source](from-source.md#dotnet).
+
 :::tabs{group="nuget"}
 ```bash tab=".NET CLI" key="dotnet-cli"
 dotnet add package Sponsorkit
@@ -135,6 +139,8 @@ Everything lives in the `Sponsorkit` namespace; the client class is `SponsorkitC
 
 The `sponsorkit` distribution supports Python 3.10 and later and depends only on `httpx`. It ships type hints
 (`py.typed`).
+
+**After the first release.** Until then, [install from Git](from-source.md#python).
 
 :::tabs{group="pypi"}
 ```bash tab="pip" key="pip"
@@ -181,6 +187,8 @@ named `sdks/go/vX.Y.Z`; see [versions & pinning](versions.md#go).
 ## Rust {#rust}
 
 The `sponsorkit` crate needs Rust 1.85 or later (it uses the 2024 edition) and a Tokio runtime.
+
+**After the first release.** Until then, [depend on the Git repository](from-source.md#rust).
 
 :::tabs{group="cargo"}
 ```bash tab="cargo add" key="cargo-add"

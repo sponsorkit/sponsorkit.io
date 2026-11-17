@@ -9,8 +9,11 @@ This page builds `my-cli`, a small command-line tool with four commands: `status
 `sponsor`. Replace `octocat` and `my-collective` with the accounts you receive contributions on (one of the two
 is enough).
 
+`sponsorkit` isn't on PyPI yet, so install it from the Git repository; [Install](index.md#install) has the uv
+and Poetry commands, and the registry commands to use after the first release:
+
 ```bash title="Terminal"
-python -m pip install sponsorkit
+python -m pip install "sponsorkit @ git+https://github.com/sponsorkit/sponsorkit.io@main#subdirectory=sdks/python"
 ```
 
 ## The program

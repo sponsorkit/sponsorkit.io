@@ -86,9 +86,22 @@ There are two sign-in flows. By default (`signInMethod: "auto"`) the SDK chooses
 3. After consent, the page shows a code with a copy button. It's valid for 10 minutes.
 4. The person pastes it into the terminal, and the SDK exchanges it.
 
-`auto` picks paste-back up front over SSH (when `SSH_CONNECTION` is set) and on Linux and other Unix systems
-without a display (neither `DISPLAY` nor `WAYLAND_DISPLAY` is set). It also falls back to paste-back when the browser can't be opened or the local port can't be bound. A code from
-either flow is useless without the verifier that only your process holds, so it doesn't matter who sees it.
+`auto` picks paste-back up front when it detects an SSH session or a machine without a display. The SDKs
+differ slightly in what they check:
+
+| SDK | SSH session | No display (neither `DISPLAY` nor `WAYLAND_DISPLAY` is set) |
+|---|---|---|
+| JavaScript (Node, Bun, Deno) | `SSH_CONNECTION` or `SSH_TTY` | Checked on Linux only |
+| .NET | `SSH_CONNECTION` | Checked on every OS except Windows and macOS (Linux, BSD, …) |
+| Python | `SSH_CONNECTION` or `SSH_TTY` | Checked on every OS except Windows, macOS and Cygwin |
+| Go | `SSH_CONNECTION` | Checked on every OS except Windows and macOS |
+| Rust | `SSH_CONNECTION` or `SSH_TTY` | Checked on every OS except Windows and macOS |
+
+In .NET, Python and Rust, passing your own `openBrowser` skips this detection entirely; in Go it skips only the
+display check, and in JavaScript it skips neither. Where the up-front check doesn't apply, for example on a
+headless FreeBSD machine with the JavaScript SDK, `auto` still falls back to paste-back when the browser can't
+be opened or the local port can't be bound. A code from either flow is useless without the verifier that only
+your process holds, so it doesn't matter who sees it.
 
 To force a flow, set `signInMethod` (`SignInMethod` in .NET and Go, `sign_in_method` in Python and Rust) to
 `"loopback"` or `"paste"`, or pass a method to a single sign-in call.

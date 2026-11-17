@@ -64,7 +64,7 @@ the two.
 Works in Node 20+, Bun and Deno. The file is plain JavaScript and also valid TypeScript.
 
 ```js title="my-cli.mjs"
-import { Sponsorkit } from "@sponsorkit/sdk/node";
+import { Sponsorkit, SponsorkitError } from "@sponsorkit/sdk/node";
 
 const sk = new Sponsorkit({
   github: "octocat",               // your GitHub Sponsors login
@@ -74,22 +74,35 @@ const sk = new Sponsorkit({
 
 const command = process.argv[2];
 
-if (command === "login") {
-  // Opens the browser (or prints a link over SSH) and waits for the supporter.
-  const fc = await sk.signIn();
-  console.log(`Signed in. Active contributions: ${fc.active().length}`);
-} else if (command === "sponsor") {
-  // Signs in if needed, opens the checkout, then waits for the new contribution.
-  const result = await sk.openCheckout({ frequency: "monthly", amount: 500 });
-  console.log(result.status === "contributed" ? "Thank you!" : "No new contribution detected yet.");
-} else {
-  // Never throws because of the network: it serves the local cache instead.
-  const fc = await sk.getFinancialContribution();
-  const supporter = fc.active().some((c) => c.amount.currency === "USD" && c.amount.value >= 500);
-  if (!supporter) {
-    console.error(`Enjoying my-cli? Support it: ${sk.checkoutUrl({ frequency: "monthly" })}`);
-    if (!fc.signedIn) console.error("Already a sponsor? Run `my-cli login`.");
+try {
+  if (command === "login") {
+    // Opens the browser (or prints a link over SSH) and waits for the supporter.
+    const fc = await sk.signIn();
+    console.log(`Signed in. Active contributions: ${fc.active().length}`);
+  } else if (command === "sponsor") {
+    // Signs in if needed, opens the checkout, then waits for the new contribution.
+    const result = await sk.openCheckout({ frequency: "monthly", amount: 500 });
+    console.log(result.status === "contributed" ? "Thank you!" : "No new contribution detected yet.");
+  } else {
+    // Never throws because of the network: it serves the local cache instead.
+    const fc = await sk.getFinancialContribution();
+    const supporter = fc.active().some((c) => c.amount.currency === "USD" && c.amount.value >= 500);
+    if (!supporter) {
+      console.error(`Enjoying my-cli? Support it: ${sk.checkoutUrl({ frequency: "monthly" })}`);
+      if (!fc.signedIn) console.error("Already a sponsor? Run `my-cli login`.");
+    }
   }
+} catch (e) {
+  // Sign-in (in `login`, or in `sponsor` when signed out) didn't complete.
+  if (!(e instanceof SponsorkitError)) throw e;
+  if (e.code === "cancelled" || e.code === "timeout") {
+    console.error("Sign-in was cancelled or timed out.");
+  } else if (e.code === "network_error") {
+    console.error(`Sponsorkit is unreachable; try again in ${e.retryAfter ?? 60} s.`);
+  } else {
+    console.error(`Sponsorkit error (${e.code}): ${e.message}`); // access_denied, invalid_code, disabled, ...
+  }
+  process.exitCode = 1;
 }
 ```
 
@@ -118,29 +131,49 @@ var sk = new SponsorkitClient(new SponsorkitOptions
 
 var command = args.Length > 0 ? args[0] : null;
 
-if (command == "login")
+try
 {
-    // Opens the browser (or prints a link over SSH) and waits for the supporter.
-    var fc = await sk.SignInAsync();
-    Console.WriteLine($"Signed in. Active contributions: {fc.Active().Count}");
-}
-else if (command == "sponsor")
-{
-    // Signs in if needed, opens the checkout, then waits for the new contribution.
-    var result = await sk.OpenCheckoutAsync(new CheckoutOptions { Frequency = Frequencies.Monthly, Amount = 500 });
-    Console.WriteLine(result.Status == CheckoutStatus.Contributed ? "Thank you!" : "No new contribution detected yet.");
-}
-else
-{
-    // Never throws because of the network: it serves the local cache instead.
-    var fc = await sk.GetFinancialContributionAsync();
-    var supporter = fc.Active().Any(c => c.Amount.Currency == "USD" && c.Amount.Value >= 500);
-    if (!supporter)
+    if (command == "login")
     {
-        Console.Error.WriteLine($"Enjoying my-cli? Support it: {sk.CheckoutUrl(new CheckoutUrlOptions { Frequency = Frequencies.Monthly })}");
-        if (!fc.SignedIn) Console.Error.WriteLine("Already a sponsor? Run `my-cli login`.");
+        // Opens the browser (or prints a link over SSH) and waits for the supporter.
+        var fc = await sk.SignInAsync();
+        Console.WriteLine($"Signed in. Active contributions: {fc.Active().Count}");
+    }
+    else if (command == "sponsor")
+    {
+        // Signs in if needed, opens the checkout, then waits for the new contribution.
+        var result = await sk.OpenCheckoutAsync(new CheckoutOptions { Frequency = Frequencies.Monthly, Amount = 500 });
+        Console.WriteLine(result.Status == CheckoutStatus.Contributed ? "Thank you!" : "No new contribution detected yet.");
+    }
+    else
+    {
+        // Never throws because of the network: it serves the local cache instead.
+        var fc = await sk.GetFinancialContributionAsync();
+        var supporter = fc.Active().Any(c => c.Amount.Currency == "USD" && c.Amount.Value >= 500);
+        if (!supporter)
+        {
+            Console.Error.WriteLine($"Enjoying my-cli? Support it: {sk.CheckoutUrl(new CheckoutUrlOptions { Frequency = Frequencies.Monthly })}");
+            if (!fc.SignedIn) Console.Error.WriteLine("Already a sponsor? Run `my-cli login`.");
+        }
     }
 }
+// Sign-in (in `login`, or in `sponsor` when signed out) didn't complete.
+catch (SponsorkitError e) when (e.Code is SponsorkitErrorCodes.Cancelled or SponsorkitErrorCodes.Timeout)
+{
+    Console.Error.WriteLine("Sign-in was cancelled or timed out.");
+    return 1;
+}
+catch (SponsorkitError e) when (e.Code == SponsorkitErrorCodes.NetworkError)
+{
+    Console.Error.WriteLine($"Sponsorkit is unreachable; try again in {e.RetryAfter?.TotalSeconds ?? 60} s.");
+    return 1;
+}
+catch (SponsorkitError e) // access_denied, invalid_code, disabled, ...
+{
+    Console.Error.WriteLine($"Sponsorkit error ({e.Code}): {e.Message}");
+    return 1;
+}
+return 0;
 ```
 
 ```bash title="Terminal"
@@ -155,7 +188,7 @@ Every blocking method also has an async twin with an `a` prefix, such as `await 
 ```python title="my_cli.py"
 import sys
 
-from sponsorkit import Sponsorkit
+from sponsorkit import Sponsorkit, SponsorkitError
 
 sk = Sponsorkit(
     github="octocat",  # your GitHub Sponsors login
@@ -165,22 +198,32 @@ sk = Sponsorkit(
 
 command = sys.argv[1] if len(sys.argv) > 1 else None
 
-if command == "login":
-    # Opens the browser (or prints a link over SSH) and waits for the supporter.
-    fc = sk.sign_in()
-    print(f"Signed in. Active contributions: {len(fc.active())}")
-elif command == "sponsor":
-    # Signs in if needed, opens the checkout, then waits for the new contribution.
-    result = sk.open_checkout(frequency="monthly", amount=500)
-    print("Thank you!" if result.status == "contributed" else "No new contribution detected yet.")
-else:
-    # Never raises because of the network: it serves the local cache instead.
-    fc = sk.get_financial_contribution()
-    supporter = any(c.amount.currency == "USD" and c.amount.value >= 500 for c in fc.active())
-    if not supporter:
-        print(f"Enjoying my-cli? Support it: {sk.checkout_url(frequency='monthly')}", file=sys.stderr)
-        if not fc.signed_in:
-            print("Already a sponsor? Run `my-cli login`.", file=sys.stderr)
+try:
+    if command == "login":
+        # Opens the browser (or prints a link over SSH) and waits for the supporter.
+        fc = sk.sign_in()
+        print(f"Signed in. Active contributions: {len(fc.active())}")
+    elif command == "sponsor":
+        # Signs in if needed, opens the checkout, then waits for the new contribution.
+        result = sk.open_checkout(frequency="monthly", amount=500)
+        print("Thank you!" if result.status == "contributed" else "No new contribution detected yet.")
+    else:
+        # Never raises because of the network: it serves the local cache instead.
+        fc = sk.get_financial_contribution()
+        supporter = any(c.amount.currency == "USD" and c.amount.value >= 500 for c in fc.active())
+        if not supporter:
+            print(f"Enjoying my-cli? Support it: {sk.checkout_url(frequency='monthly')}", file=sys.stderr)
+            if not fc.signed_in:
+                print("Already a sponsor? Run `my-cli login`.", file=sys.stderr)
+except SponsorkitError as e:
+    # Sign-in (in `login`, or in `sponsor` when signed out) didn't complete.
+    if e.code in ("cancelled", "timeout"):
+        print("Sign-in was cancelled or timed out.", file=sys.stderr)
+    elif e.code == "network_error":
+        print(f"Sponsorkit is unreachable; try again in {e.retry_after or 60:.0f} s.", file=sys.stderr)
+    else:  # access_denied, invalid_code, disabled, ...
+        print(f"Sponsorkit error ({e.code}): {e}", file=sys.stderr)
+    sys.exit(1)
 ```
 
 ```bash title="Terminal"
@@ -195,9 +238,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	sponsorkit "github.com/sponsorkit/sponsorkit.io/sdks/go"
 )
@@ -223,14 +268,14 @@ func main() {
 		// Opens the browser (or prints a link over SSH) and waits for the supporter.
 		fc, err := sk.SignIn(ctx)
 		if err != nil {
-			log.Fatal(err)
+			signInFailed(err) // prints why and exits
 		}
 		fmt.Println("Signed in. Active contributions:", len(fc.Active()))
 	case "sponsor":
 		// Signs in if needed, opens the checkout, then waits for the new contribution.
 		res, err := sk.OpenCheckout(ctx, sponsorkit.CheckoutOptions{Frequency: sponsorkit.Monthly, Amount: 500})
 		if err != nil {
-			log.Fatal(err)
+			signInFailed(err) // prints why and exits
 		}
 		if res.Status == sponsorkit.CheckoutContributed {
 			fmt.Println("Thank you!")
@@ -258,6 +303,26 @@ func main() {
 		}
 	}
 }
+
+// signInFailed explains why sign-in (in login, or in sponsor when signed out) didn't complete, then exits.
+func signInFailed(err error) {
+	var e *sponsorkit.Error
+	switch {
+	case !errors.As(err, &e):
+		log.Fatal(err)
+	case e.Code == sponsorkit.CodeCancelled || e.Code == sponsorkit.CodeTimeout:
+		fmt.Fprintln(os.Stderr, "Sign-in was cancelled or timed out.")
+	case e.Code == sponsorkit.CodeNetworkError:
+		wait := time.Minute
+		if e.RetryAfter != nil {
+			wait = *e.RetryAfter
+		}
+		fmt.Fprintf(os.Stderr, "Sponsorkit is unreachable; try again in %s.\n", wait)
+	default:
+		fmt.Fprintln(os.Stderr, err) // access_denied, invalid_code, disabled, ...
+	}
+	os.Exit(1)
+}
 ```
 
 ```bash title="Terminal"
@@ -270,7 +335,7 @@ go run . login
 The SDK is async and runs on Tokio, which is why the install step added `tokio` with the `macros` feature.
 
 ```rust title="src/main.rs"
-use sponsorkit::{CheckoutOptions, CheckoutOutcome, Frequency, GetOptions, Options, SignInOptions, Sponsorkit};
+use sponsorkit::{CheckoutOptions, CheckoutOutcome, ErrorCode, Frequency, GetOptions, Options, SignInOptions, Sponsorkit};
 
 #[tokio::main]
 async fn main() -> Result<(), sponsorkit::Error> {
@@ -284,15 +349,18 @@ async fn main() -> Result<(), sponsorkit::Error> {
     match std::env::args().nth(1).as_deref() {
         Some("login") => {
             // Opens the browser (or prints a link over SSH) and waits for the supporter.
-            let fc = sk.sign_in(SignInOptions::default()).await?;
-            println!("Signed in. Active contributions: {}", fc.active().len());
+            match sk.sign_in(SignInOptions::default()).await {
+                Ok(fc) => println!("Signed in. Active contributions: {}", fc.active().len()),
+                Err(e) => sign_in_failed(e),
+            }
         }
         Some("sponsor") => {
             // Signs in if needed, opens the checkout, then waits for the new contribution.
             let options = CheckoutOptions { frequency: Some(Frequency::Monthly), amount: Some(500), ..Default::default() };
-            match sk.open_checkout(options).await? {
-                CheckoutOutcome::Contributed { .. } => println!("Thank you!"),
-                CheckoutOutcome::Unknown => println!("No new contribution detected yet."),
+            match sk.open_checkout(options).await {
+                Ok(CheckoutOutcome::Contributed { .. }) => println!("Thank you!"),
+                Ok(CheckoutOutcome::Unknown) => println!("No new contribution detected yet."),
+                Err(e) => sign_in_failed(e),
             }
         }
         _ => {
@@ -309,6 +377,19 @@ async fn main() -> Result<(), sponsorkit::Error> {
         }
     }
     Ok(())
+}
+
+/// Explains why sign-in (in `login`, or in `sponsor` when signed out) didn't complete, then exits.
+fn sign_in_failed(e: sponsorkit::Error) -> ! {
+    match e.code() {
+        ErrorCode::Cancelled | ErrorCode::Timeout => eprintln!("Sign-in was cancelled or timed out."),
+        ErrorCode::NetworkError => {
+            let wait = e.retry_after().map_or(60, |d| d.as_secs());
+            eprintln!("Sponsorkit is unreachable; try again in {wait} s.");
+        }
+        _ => eprintln!("{e}"), // access_denied, invalid_code, disabled, ...
+    }
+    std::process::exit(1)
 }
 ```
 
@@ -344,6 +425,10 @@ preset and shows how to pass your own contributions in tests.
 - **One sign-in.** `login` showed a consent screen that names your accounts and `my-cli` (labelled "says it is",
   because a native app can't prove its name). The session token is stored in the user's config directory; see
   [Sign-in & sessions](../concepts/sessions.md).
+- **Sign-in can fail.** `login` and `sponsor` (when signed out) raise an error if the supporter
+  closes the window, enters no code, declines, takes longer than `signInTimeout` (5 minutes), or the API is
+  unreachable; the program reports it and exits with status 1. The plain check only fails on a bad
+  configuration. See the [error contract](../concepts/error-contract.md).
 - **Cheap checks.** Later runs are answered from the local cache for an hour; see
   [Caching & freshness](../concepts/caching.md).
 - **Your rule.** "At least $5 a month on GitHub" is just one example. The result has every contribution's

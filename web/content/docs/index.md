@@ -10,6 +10,16 @@ order: 0
 Sponsorkit tells your software whether the current user supports you on GitHub Sponsors or Open Collective,
 and helps them start. You write the rule; Sponsorkit reports the facts.
 
+:::warning[Project status: pre-release]
+- **The SDKs aren't published yet.** `@sponsorkit/sdk`, `Sponsorkit` and `sponsorkit` are not on npm, NuGet,
+  PyPI or crates.io, and some of those names aren't reserved yet, so don't install them from a registry.
+  [Install from source](install/from-source.md) until the first release is announced. (The Go module is
+  fetched straight from GitHub.)
+- **The hosted service isn't deployed yet.** Real sign-ins, checks and checkout links that point at
+  `sponsorkit.io` don't work today. Use [mock mode](guides/mock-mode.md), which needs no network, or
+  [host the service yourself](reference-http/self-hosting.md) with your own OAuth apps.
+:::
+
 ## Start here
 
 - [Getting started](getting-started/index.md): the four steps of an integration.

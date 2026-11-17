@@ -17,6 +17,43 @@ a web backend check a supporter's session.
 
 ## Install
 
+:::warning[Not on PyPI yet]
+`sponsorkit` hasn't been published to PyPI yet, and the name may not be reserved, so a package someone else
+publishes under it would not be this project. Until the first release is announced, install it straight from
+the Git repository:
+:::
+
+::::tabs{group="pypi"}
+:::tab[pip]{key="pip"}
+```bash title="Terminal"
+python -m pip install "sponsorkit @ git+https://github.com/sponsorkit/sponsorkit.io@main#subdirectory=sdks/python"
+```
+:::
+:::tab[uv]{key="uv"}
+```bash title="Terminal"
+uv add "sponsorkit @ git+https://github.com/sponsorkit/sponsorkit.io#subdirectory=sdks/python"
+```
+:::
+:::tab[Poetry]{key="poetry"}
+```bash title="Terminal"
+poetry add "git+https://github.com/sponsorkit/sponsorkit.io.git#subdirectory=sdks/python"
+```
+:::
+::::
+
+[Build from source](../../install/from-source.md#python) also covers local checkouts and pinning a commit.
+
+Check the install without signing in or touching the network:
+
+```bash title="Terminal"
+SPONSORKIT_MOCK=active-monthly python -c "import sponsorkit as s; print(s.__version__, len(s.Sponsorkit(github='octocat').get_financial_contribution().active()))"
+# 0.1.0 1
+```
+
+### After the first release {#after-the-first-release}
+
+Once `sponsorkit` is on PyPI, install it by name instead. These commands fail today.
+
 ::::tabs{group="pypi"}
 :::tab[pip]{key="pip"}
 ```bash title="Terminal"
@@ -62,18 +99,6 @@ sponsorkit>=0.1,<0.2
 
 Sponsorkit is a library: declare it as a dependency of your own tool instead of installing it with `pipx`.
 When your users run `pipx install your-tool` or `uv tool install your-tool`, it comes along.
-
-:::note[Pre-release]
-If your package manager can't find `sponsorkit`, it hasn't reached PyPI yet. Install it from the Git
-repository instead; [Build from source](/docs/install/from-source#python) has the pip, uv and Poetry commands.
-:::
-
-Check the install without signing in or touching the network:
-
-```bash title="Terminal"
-SPONSORKIT_MOCK=active-monthly python -c "import sponsorkit as s; print(s.__version__, len(s.Sponsorkit(github='octocat').get_financial_contribution().active()))"
-# 0.1.0 1
-```
 
 ## A first look
 

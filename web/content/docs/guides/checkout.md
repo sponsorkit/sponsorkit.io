@@ -12,16 +12,23 @@ their contributions until something new shows up.
 
 :::tabs
 ```ts title="sponsor.ts"
-import { Sponsorkit } from "@sponsorkit/sdk/node";
+import { Sponsorkit, SponsorkitError } from "@sponsorkit/sdk/node";
 
 const sk = new Sponsorkit({ github: "octocat", opencollective: "my-project", appName: "my-cli" });
 
-const result = await sk.openCheckout({ frequency: "monthly", amount: 500 });
-if (result.status === "contributed") {
-  const { amount } = result.contribution;
-  console.log(`Thank you for your ${amount.value / 100} ${amount.currency} contribution!`);
-} else {
-  console.log("We couldn't confirm a contribution yet. If you contributed, thank you! It will show up soon.");
+try {
+  const result = await sk.openCheckout({ frequency: "monthly", amount: 500 });
+  if (result.status === "contributed") {
+    const { amount } = result.contribution;
+    console.log(`Thank you for your ${amount.value / 100} ${amount.currency} contribution!`);
+  } else {
+    console.log("We couldn't confirm a contribution yet. If you contributed, thank you! It will show up soon.");
+  }
+} catch (e) {
+  // Only before polling starts: from the sign-in phase (cancelled, timeout, access_denied, network_error, ...) or disabled.
+  if (!(e instanceof SponsorkitError)) throw e;
+  console.error(e.code === "cancelled" || e.code === "timeout" ? "Sign-in was cancelled or timed out." : `Couldn't start checkout: ${e.message}`);
+  process.exitCode = 1;
 }
 ```
 ```csharp title="Sponsor.cs"
@@ -34,22 +41,46 @@ var sk = new SponsorkitClient(new SponsorkitOptions
     AppName = "my-cli",
 });
 
-var result = await sk.OpenCheckoutAsync(new CheckoutOptions { Frequency = Frequencies.Monthly, Amount = 500 });
-if (result.Status == CheckoutStatus.Contributed && result.Contribution is { } c)
+try
 {
-    Console.WriteLine($"Thank you for your {c.Amount.Value / 100m} {c.Amount.Currency} contribution!");
+    var result = await sk.OpenCheckoutAsync(new CheckoutOptions { Frequency = Frequencies.Monthly, Amount = 500 });
+    if (result.Status == CheckoutStatus.Contributed && result.Contribution is { } c)
+    {
+        Console.WriteLine($"Thank you for your {c.Amount.Value / 100m} {c.Amount.Currency} contribution!");
+    }
+    else
+    {
+        Console.WriteLine("We couldn't confirm a contribution yet. If you contributed, thank you! It will show up soon.");
+    }
 }
-else
+// Only before polling starts: from the sign-in phase (cancelled, timeout, access_denied, network_error, ...) or disabled.
+catch (SponsorkitError e) when (e.Code is SponsorkitErrorCodes.Cancelled or SponsorkitErrorCodes.Timeout)
 {
-    Console.WriteLine("We couldn't confirm a contribution yet. If you contributed, thank you! It will show up soon.");
+    Console.Error.WriteLine("Sign-in was cancelled or timed out.");
+    Environment.ExitCode = 1;
+}
+catch (SponsorkitError e)
+{
+    Console.Error.WriteLine($"Couldn't start checkout: {e.Message}");
+    Environment.ExitCode = 1;
 }
 ```
 ```python title="sponsor.py"
-from sponsorkit import Sponsorkit
+import sys
+
+from sponsorkit import Sponsorkit, SponsorkitError
 
 sk = Sponsorkit(github="octocat", opencollective="my-project", app_name="my-cli")
 
-result = sk.open_checkout(frequency="monthly", amount=500)
+try:
+    result = sk.open_checkout(frequency="monthly", amount=500)
+except SponsorkitError as e:
+    # Only before polling starts: from the sign-in phase (cancelled, timeout, access_denied, network_error, ...)
+    # or disabled.
+    if e.code in ("cancelled", "timeout"):
+        sys.exit("Sign-in was cancelled or timed out.")
+    sys.exit(f"Couldn't start checkout: {e}")
+
 if result.status == "contributed" and result.contribution is not None:
     amount = result.contribution.amount
     print(f"Thank you for your {amount.value / 100} {amount.currency} contribution!")
@@ -78,7 +109,12 @@ func main() {
 		Amount:    500,
 	})
 	if err != nil {
-		log.Fatal(err)
+		// Only before polling starts: from the sign-in phase (cancelled, timeout,
+		// access_denied, network_error, ...) or disabled.
+		if code := sponsorkit.ErrorCodeOf(err); code == sponsorkit.CodeCancelled || code == sponsorkit.CodeTimeout {
+			log.Fatal("Sign-in was cancelled or timed out.")
+		}
+		log.Fatalf("Couldn't start checkout: %v", err)
 	}
 	if r.Status == sponsorkit.CheckoutContributed {
 		a := r.Contribution.Amount
@@ -89,7 +125,7 @@ func main() {
 }
 ```
 ```rust title="main.rs"
-use sponsorkit::{CheckoutOptions, Frequency, Options, Sponsorkit};
+use sponsorkit::{CheckoutOptions, ErrorCode, Frequency, Options, Sponsorkit};
 
 #[tokio::main]
 async fn main() -> Result<(), sponsorkit::Error> {
@@ -106,7 +142,20 @@ async fn main() -> Result<(), sponsorkit::Error> {
             amount: Some(500),
             ..Default::default()
         })
-        .await?;
+        .await;
+    // Only before polling starts: from the sign-in phase (cancelled, timeout,
+    // access_denied, network_error, ...) or disabled.
+    let outcome = match outcome {
+        Ok(outcome) => outcome,
+        Err(e) => {
+            if matches!(e.code(), ErrorCode::Cancelled | ErrorCode::Timeout) {
+                eprintln!("Sign-in was cancelled or timed out.");
+            } else {
+                eprintln!("Couldn't start checkout: {e}");
+            }
+            std::process::exit(1);
+        }
+    };
 
     match outcome.contribution() {
         Some(c) => println!("Thank you for your {} {} contribution!", c.amount.value as f64 / 100.0, c.amount.currency),
@@ -172,6 +221,8 @@ All options are optional. Without any, the supporter picks the provider and the 
   `signIn()` does.
 - If the sign-in phase exceeds `signInTimeout`, `openCheckout()` **fails** with `timeout`.
 - Other sign-in failures (`access_denied`, `network_error` and so on) fail as they would in `signIn()`.
+- In the browser, `openCheckout()` opens its popup first, so it can fail with `popup_blocked` (when no `returnTo` fallback
+  is set) even when the supporter is already signed in.
 - With `SPONSORKIT_DISABLE` set, `openCheckout()` fails with `disabled`. In [mock mode](mock-mode.md) it resolves
   `contributed` immediately with a simulated contribution.
 

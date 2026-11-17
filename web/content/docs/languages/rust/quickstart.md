@@ -14,23 +14,17 @@ This page builds `my-cli`, a command-line tool with four commands:
 
 ## Create the project
 
+`sponsorkit` isn't on crates.io yet, so add it from the Git repository. The [Git and Local path
+tabs](index.md#install) show the same thing in `Cargo.toml`.
+
 ```bash title="Terminal"
 cargo new my-cli
 cd my-cli
-cargo add sponsorkit
+cargo add sponsorkit --git https://github.com/sponsorkit/sponsorkit.io --branch main
 cargo add tokio --features macros,rt-multi-thread
 ```
 
-:::note[Pre-release]
-`sponsorkit` isn't on crates.io yet, so `cargo add sponsorkit` fails with "could not be found in registry index"
-for now. Until the first release, add it from the repository instead:
-
-```bash title="Terminal"
-cargo add sponsorkit --git https://github.com/sponsorkit/sponsorkit.io --branch main
-```
-
-The [Git and Local path tabs](index.md#install) show the same thing in `Cargo.toml`.
-:::
+After the first release, `cargo add sponsorkit` (from crates.io) replaces the Git line.
 
 ## Write the program
 
