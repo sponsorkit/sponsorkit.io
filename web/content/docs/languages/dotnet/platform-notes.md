@@ -80,8 +80,8 @@ precedence over `StorageDirectory`. Exceptions your backend throws are handled l
 
 - **Opening the browser.** The default opener uses the shell on Windows (`UseShellExecute`), `open` on macOS and
   `xdg-open` on Linux. Replace it with the `OpenBrowser` option, for example in a sandboxed desktop app.
-- **SSH and headless Linux.** With `SignInMethod.Auto`, an SSH session (`SSH_CONNECTION`) or a Linux session
-  without `DISPLAY` and `WAYLAND_DISPLAY` signs in with paste-back. See [sign-in](sign-in.md#how-auto-chooses).
+- **SSH and headless machines.** With `SignInMethod.Auto`, an SSH session (`SSH_CONNECTION`), or a session on any
+  OS other than Windows and macOS without `DISPLAY` and `WAYLAND_DISPLAY`, signs in with paste-back. See [sign-in](sign-in.md#how-auto-chooses).
 - **Containers.** The loopback flow binds `127.0.0.1` inside the container, which the host's browser can't reach.
   Paste-back works everywhere; force it with `SignInMethod.Paste` when your app runs in a container with a
   display.
