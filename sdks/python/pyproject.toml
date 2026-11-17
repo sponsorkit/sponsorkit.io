@@ -58,6 +58,7 @@ ignore = ["D105", "D107", "D203", "D213", "D401", "D413", "RUF022"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "PT018"]
+"scripts/**" = ["D101", "D102", "D103"]
 
 [tool.mypy]
 python_version = "3.10"

@@ -198,7 +198,6 @@ function combineSignals(signal: AbortSignal | undefined, timeoutMs: number | nul
   };
 }
 
-/** Base class with the shared client behaviour. Use `Sponsorkit` from `@sponsorkit/sdk` or `@sponsorkit/sdk/node`. */
 /**
  * `process.env.NODE_ENV`, written literally so bundlers can inline it; undefined
  * where there is no `process` (e.g. browsers without a bundler define).
@@ -211,6 +210,7 @@ function buildMode(): string | undefined {
   }
 }
 
+/** Base class with the shared client behaviour. Use `Sponsorkit` from `@sponsorkit/sdk` or `@sponsorkit/sdk/node`. */
 export abstract class SponsorkitCore<I = unknown> {
   /** Resets per-process memo state (same as the `resetProcessState()` export). */
   static resetProcessState(): void {
@@ -375,7 +375,9 @@ export abstract class SponsorkitCore<I = unknown> {
    * Sends the user to contribute and waits for the new contribution (SPEC §7.3):
    * signs in first if needed, opens `/checkout`, then polls with `cacheTtl: 0`
    * until a new or changed contribution appears. Resolves `{ status: "unknown" }`
-   * on timeout or cancellation.
+   * when the polling `timeout` passes or `signal` aborts. Rejects with the
+   * `signIn()` codes during the sign-in phase, including `timeout`
+   * (`signInTimeout`) and `cancelled` (popup closed or no code entered).
    */
   async openCheckout(options: OpenCheckoutOptions = {}): Promise<CheckoutResult> {
     if (this.disabled) throw new SponsorkitError("disabled", "Sponsorkit is disabled (SPONSORKIT_DISABLE)");

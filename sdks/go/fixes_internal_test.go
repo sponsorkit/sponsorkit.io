@@ -141,3 +141,20 @@ func TestTokenExchange400InvalidRequestIsNetworkError(t *testing.T) {
 		srv.Close()
 	}
 }
+
+// PROTOCOL §7: VerifySession carries Retry-After on any network_error response,
+// not only on 429.
+func TestVerifySessionRetryAfterOnUnexpectedStatus(t *testing.T) {
+	for _, status := range []int{http.StatusTooManyRequests, http.StatusServiceUnavailable, http.StatusInternalServerError} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Retry-After", "30")
+			w.WriteHeader(status)
+		}))
+		_, err := VerifySession(context.Background(), "tok", Targets{GitHub: "octocat"}, WithAPIBaseURL(srv.URL))
+		var e *Error
+		if !errors.As(err, &e) || e.Code != CodeNetworkError || e.RetryAfter == nil || *e.RetryAfter != 30*time.Second {
+			t.Errorf("HTTP %d: want network_error with RetryAfter 30s, got %v", status, err)
+		}
+		srv.Close()
+	}
+}

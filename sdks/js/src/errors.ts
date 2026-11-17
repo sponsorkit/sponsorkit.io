@@ -28,7 +28,7 @@ export type SponsorkitErrorCode =
   | "session_invalid"
   | "targets_mismatch";
 
-/** All error codes, in PROTOCOL §7 order. */
+/** All error codes, in the order of the wire protocol's error contract. */
 export const SPONSORKIT_ERROR_CODES: readonly SponsorkitErrorCode[] = [
   "invalid_config",
   "disabled",

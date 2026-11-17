@@ -13,7 +13,7 @@ import (
 //go:embed mock-presets.json
 var mockPresetsJSON []byte
 
-// MockPresetNames lists the mock presets (SPEC §7.4).
+// MockPresetNames lists the mock presets.
 var MockPresetNames = []string{"signed-out", "none", "active-monthly", "one-time", "cancelled", "org"}
 
 type mockPresetsFile struct {

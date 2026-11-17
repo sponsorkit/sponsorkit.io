@@ -4,13 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Re-run CI by hand from the Actions tab.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded pull request runs are cancelled; runs on main finish so a deploy is never cut off halfway.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   typescript:
@@ -31,19 +34,83 @@ jobs:
         working-directory: sdks/conformance
 
   web:
-    name: Website
+    # Builds the site WITH the generated API reference of every SDK, tests it, and hands web/out to the
+    # Cloudflare deploy job as the `site` artifact.
+    name: Website & docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      # Toolchains the reference generators need (sdks/<lang>/scripts/gen-docs.sh).
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: sdks/python/pyproject.toml
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache-dependency-path: |
+            sdks/go/go.mod
+            sdks/go/scripts/gendocs/go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            sdks/rust
+            sdks/rust/scripts/docgen
+      - name: Cache bun and NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.nuget/packages
+          key: web-${{ runner.os }}-${{ hashFiles('bun.lock', 'sdks/dotnet/**/*.csproj', 'sdks/dotnet/Directory.Build.props') }}
+          restore-keys: web-${{ runner.os }}-
+
       - run: bun install --frozen-lockfile
+      - name: Python SDK virtualenv
+        working-directory: sdks/python
+        run: |
+          python -m venv .venv
+          # pip only warns about an undefined extra, so `docs` is picked up as soon as pyproject.toml adds it.
+          .venv/bin/pip install -e '.[dev,docs]'
       - run: bunx playwright install --with-deps chromium
         working-directory: web
-      - run: bun run typecheck && bun run test && bun run test:e2e
+
+      - name: Generate API reference (all languages, strict)
+        run: bun run --cwd web docs:generate --strict
+      - name: Typecheck and unit tests
         working-directory: web
+        run: bun run typecheck && bun run test
+      - name: Build (fails if a language reference is missing)
+        run: bun run --cwd web build
+        env:
+          DOCS_STRICT: "1"
+      - name: Check links
+        run: bun run --cwd web docs:check-links
+      # Same as the tail of `bun run test:e2e` (docs, pages, checkout, ...) without building a second time.
+      - name: End-to-end tests
+        working-directory: web
+        run: bunx playwright test --trace off
       - name: Worker bundles with the static site
         run: bunx wrangler deploy --dry-run --outdir /tmp/wrangler
         working-directory: app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: web/out
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
 
   sdk-js:
     name: SDK (JS/TS)
@@ -152,8 +219,12 @@ jobs:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run build
-        working-directory: web
+      # Deploy exactly what the Website & docs job built and tested (with the API reference) instead of
+      # rebuilding here without the SDK toolchains.
+      - uses: actions/download-artifact@v5
+        with:
+          name: site
+          path: web/out
       - run: bunx wrangler deploy
         working-directory: app
         env:

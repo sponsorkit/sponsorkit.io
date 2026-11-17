@@ -46,8 +46,10 @@ const (
 	CodeTargetsMismatch ErrorCode = "targets_mismatch"
 )
 
-// Error is the only error type returned by this package. Use errors.As to
-// inspect Code:
+// Error is the error type returned by New, the Client methods, VerifySession,
+// TargetsParam, TargetsHash and ParseISODuration. The pluggable helpers
+// OpenSystemBrowser, PromptStdin and DirStorage return ordinary errors. Use
+// errors.As to inspect Code:
 //
 //	var skErr *sponsorkit.Error
 //	if errors.As(err, &skErr) && skErr.Code == sponsorkit.CodeDisabled { ... }
@@ -59,11 +61,14 @@ type Error struct {
 	// Err is the underlying cause, if any (for example context.Canceled).
 	Err error
 	// RetryAfter is how long the API asked the caller to wait (its Retry-After
-	// header) for a network_error caused by a 429 response. It is nil when the
-	// API sent no Retry-After.
+	// header) on a network_error from SignIn or VerifySession, whatever the
+	// HTTP status (429, 503 or any other unexpected response). It is nil when
+	// the API sent no usable Retry-After.
 	RetryAfter *time.Duration
 }
 
+// Error formats the error as "sponsorkit: <code>: <message>", followed by
+// ": <cause>" when Err is set.
 func (e *Error) Error() string {
 	msg := e.Message
 	if msg == "" {

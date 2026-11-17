@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { HeartIcon } from "./icons";
+import { Search } from "./search";
+import { ThemeToggle } from "./theme-toggle";
 
 export const REPO_URL = "https://github.com/sponsorkit/sponsorkit.io";
 export const PROTOCOL_URL = `${REPO_URL}/blob/main/docs/PROTOCOL.md`;
@@ -14,15 +16,24 @@ export function Brand() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ current }: { current?: "docs" } = {}) {
   return (
     <header className="site-header">
-      <div className="container">
+      <div className={current === "docs" ? "container container-wide" : "container"}>
         <Brand />
-        <nav className="nav" aria-label="Main">
-          <Link href="/docs">Docs</Link>
-          <a href={REPO_URL}>GitHub</a>
-        </nav>
+        <div className="header-end">
+          <nav className="nav" aria-label="Main">
+            <Link href="/docs" aria-current={current === "docs" ? "true" : undefined}>
+              Docs
+            </Link>
+            <Link href="/docs/reference" className="nav-optional">
+              API
+            </Link>
+            <a href={REPO_URL}>GitHub</a>
+          </nav>
+          <Search />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

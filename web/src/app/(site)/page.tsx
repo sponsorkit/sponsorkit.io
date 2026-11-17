@@ -66,7 +66,7 @@ const faqs: { q: string; a: ReactNode }[] = [
     a: (
       <p>
         Yes. Sponsorkit is a single stateless Cloudflare Worker with no database. Bring your own OAuth apps and point the SDK at
-        it with <code>apiBaseUrl</code>. See <Link href="/docs#self-hosting">self-hosting</Link>.
+        it with <code>apiBaseUrl</code>. See <Link href="/docs/reference-http/self-hosting">self-hosting</Link>.
       </p>
     ),
   },
@@ -87,7 +87,7 @@ export default function Home() {
               an ad, skip a nag, unlock a feature. No account, no API key, no stored data.
             </p>
             <div className="cta-row">
-              <Link className="btn" href="/docs">
+              <Link className="btn" href="/docs/getting-started">
                 Get started
               </Link>
               <a className="btn btn-secondary" href="#how-it-works">
@@ -117,7 +117,7 @@ export default function Home() {
           </div>
           <div className="tag-row" aria-label="Available SDKs">
             {languages.map((l) => (
-              <Link key={l.id} className="lang-tag" href={`/docs#quickstart-${l.id}`}>
+              <Link key={l.id} className="lang-tag" href={`/docs/languages/${l.id}`}>
                 {l.name}
               </Link>
             ))}

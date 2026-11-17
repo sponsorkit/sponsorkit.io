@@ -56,7 +56,8 @@ public sealed class SponsorkitClient
 
     /// <summary>Creates a client. Validates the configuration synchronously and performs no I/O.</summary>
     /// <param name="options">The configuration. At least one of <see cref="SponsorkitOptions.GitHub"/> and <see cref="SponsorkitOptions.OpenCollective"/> is required.</param>
-    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c> or <c>appName</c>, a non-positive <c>SignInTimeout</c>, or an unknown mock preset.</exception>
+    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c> or <c>appName</c>, a non-positive <c>SignInTimeout</c>, a negative <c>RequestTimeout</c>, or an unknown mock preset.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public SponsorkitClient(SponsorkitOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -721,9 +722,10 @@ public sealed class SponsorkitClient
     /// Signs out locally: deletes the stored session token and cache, keeping nag state. There is no server-side
     /// sign-out; the supporter can revoke Sponsorkit's access at the provider.
     /// </summary>
-    /// <param name="cancellationToken">Unused; present for API symmetry.</param>
-    /// <returns>A completed task.</returns>
+    /// <param name="cancellationToken">Checked once on entry: an already-cancelled token throws <see cref="OperationCanceledException"/>. The call is otherwise synchronous.</param>
+    /// <returns>A task that has already completed when the method returns.</returns>
     /// <exception cref="SponsorkitError"><c>invalid_config</c>: the storage could not be written.</exception>
+    /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was already cancelled when the method was called.</exception>
     public Task SignOutAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

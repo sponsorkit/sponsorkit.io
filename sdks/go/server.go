@@ -30,7 +30,7 @@ func WithRequestTimeout(d time.Duration) VerifyOption {
 	return func(v *verifyConfig) { v.requestTimeout = d }
 }
 
-// VerifySession is the backend helper (SPEC §6.4). A frontend forwards its
+// VerifySession is the backend helper. A frontend forwards its
 // session token (Client.SessionToken); the backend calls VerifySession, which
 // fetches GET /api/v1/contributions with the token and checks that the
 // session's targets equal targets. It uses no local storage or cache.
@@ -77,7 +77,12 @@ func VerifySession(ctx context.Context, token string, targets Targets, opts ...V
 		if res.status != 0 {
 			msg = fmt.Sprintf("unexpected response from Sponsorkit (HTTP %d)", res.status)
 		}
-		return nil, newError(CodeNetworkError, msg, res.err)
+		e := newError(CodeNetworkError, msg, res.err)
+		if res.retryAfterSent {
+			ra := res.retryAfter
+			e.RetryAfter = &ra
+		}
+		return nil, e
 	}
 	actual, err := canonicalParamFromStrings(res.result.Targets)
 	if err != nil {
