@@ -221,6 +221,7 @@ When Sponsorkit is unreachable or answers 5xx or 429 it throws `network_error`, 
 dotnet test sdks/dotnet            # unit tests + the full conformance suite (needs `bun` on PATH)
 dotnet format sdks/dotnet/Sponsorkit.slnx --verify-no-changes
 dotnet pack sdks/dotnet -c Release
+bash sdks/dotnet/scripts/gen-docs.sh /tmp/dotnet-ref   # API reference Markdown (see scripts/docgen)
 ```
 
 The conformance tests run every scenario in `sdks/conformance/scenarios.json` against the fake server (`bun sdks/conformance/server.ts`).

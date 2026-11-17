@@ -94,8 +94,8 @@ func (c *Client) CheckoutURL(opts CheckoutOptions) (string, error) {
 	return c.apiBaseURL + "/checkout?" + q.Encode(), nil
 }
 
-// OpenCheckout sends the user to contribute and waits for the result
-// (SPEC §7.3): it signs in first if needed (so the new contribution can be
+// OpenCheckout sends the user to contribute and waits for the result: it
+// signs in first if needed (so the new contribution can be
 // detected), opens /checkout in the browser, then polls with a zero cache TTL
 // until a new or changed contribution appears. CheckoutOptions.Timeout bounds
 // only the polling phase; the sign-in phase is bounded by

@@ -1,0 +1,16 @@
+[package]
+name = "sponsorkit-docgen"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "Generates the Markdown API reference of the sponsorkit crate for sponsorkit.io (dev tooling, not published)."
+
+# Standalone: not a member of the sponsorkit package or any workspace.
+[workspace]
+
+[dependencies]
+proc-macro2 = { version = "1", features = ["span-locations"] }
+syn = { version = "2", features = ["full", "extra-traits", "parsing", "printing"] }
+quote = "1"
+prettyplease = "0.2"
+serde_json = "1"

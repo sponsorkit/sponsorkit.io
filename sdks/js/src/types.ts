@@ -145,13 +145,13 @@ export interface CheckoutOptions {
 /** The outcome of `openCheckout()`. */
 export type CheckoutResult = { status: "contributed"; contribution: Contribution } | { status: "unknown" };
 
-/** PROTOCOL §8 nag state. */
+/** Nag state as persisted in the {@link StorageFile}, keyed by nag id. */
 export interface NagState {
   runs: number;
   lastShown: string | null;
 }
 
-/** PROTOCOL §8: the JSON document stored per target set. */
+/** The JSON document stored per target set (session token, cached result and nag state). */
 export interface StorageFile {
   v: 1;
   sessionToken?: string | null;

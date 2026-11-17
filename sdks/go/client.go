@@ -60,7 +60,7 @@ type Options struct {
 	// without calling the API. Zero means one hour; values below one minute
 	// are raised to one minute. Use WithCacheTTL per call to force a refresh.
 	CacheTTL time.Duration
-	// Mock enables mock mode (SPEC §7.4): see MockPreset and MockContributions.
+	// Mock enables mock mode: see MockPreset and MockContributions.
 	// It takes precedence over the SPONSORKIT_MOCK environment variable.
 	Mock *Mock
 	// StorageDir is the directory for the local state file. Defaults to
@@ -434,8 +434,8 @@ func WithCacheTTL(d time.Duration) GetOption {
 
 // GetFinancialContribution reports what the current user has contributed to
 // the targets. It never returns an error for network or server problems: it
-// serves the cache, or a stale signed-in result when nothing is cached
-// (SPEC §7.2). The only error is invalid_config from the dev-time target
+// serves the cache, or a stale signed-in result when nothing is cached. The
+// only error is invalid_config from the dev-time target
 // existence check.
 func (c *Client) GetFinancialContribution(ctx context.Context, opts ...GetOption) (*Result, error) {
 	if c.disabled {
@@ -468,7 +468,7 @@ func (c *Client) emptyResult(mod func(*Result)) *Result {
 
 func (c *Client) memoKey() string { return c.apiBaseURL + "|" + c.param }
 
-// refresh implements the cache and error contract (SPEC §7.2, PROTOCOL §7.1).
+// refresh implements the cache and error contract (PROTOCOL §7.1).
 func (c *Client) refresh(ctx context.Context, ttl time.Duration) *Result {
 	st := c.store()
 	stored := st.read()
@@ -698,7 +698,10 @@ func fetchContributions(ctx context.Context, hc *http.Client, timeout time.Durat
 		ra, sent := parseRetryAfter(res.header.Get("Retry-After"), time.Now())
 		return fetchResult{kind: fetchRateLimited, status: res.status, retryAfter: ra, retryAfterSent: sent}
 	case res.status != http.StatusOK:
-		return fetchResult{kind: fetchFailed, status: res.status}
+		// PROTOCOL §7: Retry-After is reported on any unexpected response,
+		// not only 429. VerifySession surfaces it; the client ignores it.
+		ra, sent := parseRetryAfter(res.header.Get("Retry-After"), time.Now())
+		return fetchResult{kind: fetchFailed, status: res.status, retryAfter: ra, retryAfterSent: sent}
 	}
 	var r Result
 	if err := json.Unmarshal(res.body, &r); err != nil || r.Targets == nil {

@@ -40,12 +40,14 @@
 // # Testing
 //
 // Options.Mock (MockPreset, MockContributions) or the SPONSORKIT_MOCK
-// environment variable switch to mock mode: no network, no disk, results carry
-// Mock: true. Options also exposes test hooks: APIBaseURL, StorageDir,
-// OpenBrowser, PromptForCode, SignInMethod, SignInTimeout, RequestTimeout, Env, DevChecks,
-// Interactive, CheckoutPollInterval and Clock. Env replaces the process
+// environment variable switch to mock mode: no network, no disk, and
+// Result.Mock is true. Options also exposes test hooks: Options.APIBaseURL,
+// Options.StorageDir, Options.OpenBrowser, Options.PromptForCode,
+// Options.SignInMethod, Options.SignInTimeout, Options.RequestTimeout,
+// Options.Env, Options.DevChecks, Options.Interactive,
+// Options.CheckoutPollInterval and Options.Clock. Options.Env replaces the process
 // environment for the SPONSORKIT_* variables and CI; the dev-time target check
-// is off unless DevChecks or SPONSORKIT_DEV_CHECKS turns it on. ResetProcessState simulates a new process.
+// is off unless Options.DevChecks or SPONSORKIT_DEV_CHECKS turns it on. ResetProcessState simulates a new process.
 //
 // The wire protocol is specified in docs/PROTOCOL.md of
 // https://github.com/sponsorkit/sponsorkit.io; this package passes the

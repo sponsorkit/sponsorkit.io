@@ -94,6 +94,12 @@ def make(api: Api | None = None, **kw: Any) -> Sponsorkit:
         {"github": "ok", "app_name": "x" * 65},
         {"github": "ok", "mock": "platinum"},
         {"github": "ok", "checkout_poll_interval": 0},
+        {"github": "ok", "checkout_poll_interval": "x"},
+        {"github": "ok", "checkout_poll_interval": float("inf")},
+        {"github": "ok", "cache_ttl": float("nan")},
+        {"github": "ok", "cache_ttl": float("inf")},
+        {"github": "ok", "sign_in_timeout": float("nan")},
+        {"github": "ok", "storage_dir": 5},
     ],
 )
 def test_invalid_config(kwargs: dict[str, Any]) -> None:
@@ -410,6 +416,7 @@ def test_sign_in_timeout_and_cancel(
     with pytest.raises(SponsorkitError) as e:
         sk.sign_in(method="loopback", timeout=0.3)
     assert e.value.code == "timeout" and time.monotonic() - started < 5
+    assert "0.3 s (timeout)" in str(e.value)
     cancel = threading.Event()
     threading.Timer(0.2, cancel.set).start()
     with pytest.raises(SponsorkitError) as e:
@@ -600,6 +607,31 @@ def test_checkout_url_rejects_unconfigured_provider() -> None:
     with pytest.raises(SponsorkitError) as e:
         sk.checkout_url(provider="opencollective")
     assert e.value.code == "invalid_config"
+
+
+@pytest.mark.parametrize(
+    "kwargs", [{"timeout": 0}, {"timeout": -1}, {"poll_interval": 0}, {"poll_interval": "5"}]
+)
+def test_open_checkout_rejects_invalid_durations(kwargs: dict[str, Any]) -> None:
+    with pytest.raises(SponsorkitError) as e:
+        make(mock="none").open_checkout(**kwargs)
+    assert e.value.code == "invalid_config"
+
+
+@pytest.mark.parametrize("value", [0, -1, float("nan"), "5"])
+def test_sign_in_rejects_invalid_timeout(value: Any) -> None:
+    with pytest.raises(SponsorkitError) as e:
+        make(mock="signed-out").sign_in(timeout=value)
+    assert e.value.code == "invalid_config"
+
+
+def test_requests_through_a_custom_http_client_carry_the_user_agent() -> None:
+    api = Api()
+    make(api, storage=signed_in_storage(stored_at=None)).get_financial_contribution()
+    assert api.calls
+    for req in api.calls:
+        assert req.headers["user-agent"].startswith("sponsorkit-python/")
+        assert req.headers["accept"] == "application/json"
 
 
 def _paste_sk(api: Api, prompt: Callable[[str], str], **kw: Any) -> Sponsorkit:

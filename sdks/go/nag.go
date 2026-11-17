@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// NagOptions configures a nag (SPEC §7.5).
+// NagOptions configures a nag.
 type NagOptions struct {
 	// ID names the nag; state is kept per ID and target set.
 	ID string

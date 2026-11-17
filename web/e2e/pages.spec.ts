@@ -25,31 +25,40 @@ test.describe("static pages", () => {
   });
 
   test("docs cover every language and concept", async ({ page }) => {
-    await page.goto("/docs");
-    for (const id of [
-      "quickstart-js",
-      "quickstart-dotnet",
-      "quickstart-python",
-      "quickstart-go",
-      "quickstart-rust",
-      "targets",
-      "sessions",
-      "contributions",
-      "statuses",
-      "organizations",
-      "caching",
-      "checkout",
-      "nag",
-      "mock-mode",
-      "backend-verification",
-      "error-contract",
-      "self-hosting",
-      "protocol",
-    ]) {
-      await expect(page.locator(`#${id}`)).toHaveCount(1);
+    const cases: [string, string | RegExp][] = [
+      ["/docs/getting-started/quickstart", "Quickstart"],
+      ["/docs/concepts/targets", "Targets"],
+      ["/docs/concepts/sessions", "Sign-in & sessions"],
+      ["/docs/concepts/contributions", "Contribution shape"],
+      ["/docs/concepts/statuses", "Statuses"],
+      ["/docs/concepts/organizations", "Organization sponsorships"],
+      ["/docs/concepts/caching", "Caching & freshness"],
+      ["/docs/concepts/error-contract", "Error contract"],
+      ["/docs/guides/checkout", "Open checkout and detect a new contribution"],
+      ["/docs/guides/nag", "Show a sponsor nag in a CLI"],
+      ["/docs/guides/mock-mode", "Test your integration"],
+      ["/docs/guides/backend-verification", "Verify supporters on your backend"],
+      ["/docs/reference-http/self-hosting", "Self-hosting"],
+      ["/docs/reference-http", "HTTP API & protocol"],
+      ...["js", "dotnet", "python", "go", "rust"].map((l): [string, RegExp] => [`/docs/languages/${l}`, /^Sponsorkit for /]),
+    ];
+    for (const [url, h1] of cases) {
+      await page.goto(url);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(h1);
     }
+    await page.goto("/docs/install/supported-platforms");
     await expect(page.getByText("GetFinancialContributionAsync(ct)").first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "normative wire protocol" })).toHaveAttribute("href", /PROTOCOL\.md$/);
+    await page.goto("/docs/reference-http/protocol");
+    await expect(page.getByRole("main").getByRole("link", { name: "wire protocol", exact: true }).first()).toHaveAttribute("href", /PROTOCOL\.md$/);
+  });
+
+  test("landing page links into the docs", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Get started" }).click();
+    await expect(page).toHaveURL(/\/docs\/getting-started$/);
+    await page.goto("/");
+    await page.getByRole("link", { name: "Rust", exact: true }).click();
+    await expect(page).toHaveURL(/\/docs\/languages\/rust$/);
   });
 
   test("unknown paths render the 404 page", async ({ page }) => {

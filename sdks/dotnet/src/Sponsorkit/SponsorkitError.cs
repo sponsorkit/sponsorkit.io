@@ -3,8 +3,11 @@ using System;
 namespace Sponsorkit;
 
 /// <summary>
-/// The single exception type thrown by Sponsorkit. <see cref="Code"/> is a stable, machine-readable
-/// error code (see <see cref="SponsorkitErrorCodes"/>).
+/// The exception type for every error Sponsorkit raises on purpose. <see cref="Code"/> is a stable, machine-readable
+/// error code (see <see cref="SponsorkitErrorCodes"/>). The SDK also throws the standard
+/// <see cref="ArgumentException"/> and <see cref="ArgumentNullException"/> for invalid arguments, and
+/// <see cref="OperationCanceledException"/> when a <see cref="System.Threading.CancellationToken"/> you pass is cancelled
+/// (except in sign-in, which throws the <c>cancelled</c> code, and checkout, which returns <see cref="CheckoutStatus.Unknown"/>).
 /// </summary>
 /// <remarks>
 /// <see cref="SponsorkitClient.GetFinancialContributionAsync(System.Threading.CancellationToken)"/> never throws

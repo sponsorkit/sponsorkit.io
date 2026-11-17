@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    API reference generator for the .NET SDK (dev-only; not part of Sponsorkit.slnx and never packed).
+    Run through ../gen-docs.sh. It loads the Sponsorkit assembly with reflection (exact signatures and
+    nullability), reads the compiler's XML documentation file for the doc comments, and scans
+    src/Sponsorkit/*.cs only to find source line numbers and property initializers.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AnalysisLevel>none</AnalysisLevel>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sponsorkit/Sponsorkit.csproj" SetTargetFramework="TargetFramework=net8.0" />
+  </ItemGroup>
+
+</Project>

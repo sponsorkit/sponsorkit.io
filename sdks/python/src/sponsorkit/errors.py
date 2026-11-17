@@ -31,9 +31,11 @@ ErrorCode = Literal[
   sign-in page to the loopback callback.
 * ``invalid_code``: the API rejected the code exchange (``400 invalid_code``: malformed, expired or
   tampered code, or a verifier mismatch).
-* ``cancelled``: sign-in was cancelled through its ``cancel`` event, by cancelling the awaiting
-  task, or the user entered no code at the paste-back prompt.
-* ``timeout``: sign-in did not complete within ``sign_in_timeout`` (300 s by default).
+* ``cancelled``: sign-in was cancelled through its ``cancel`` event, or the user entered no code
+  at the paste-back prompt. Cancelling the task that awaits ``asign_in()`` or ``aopen_checkout()``
+  raises :class:`asyncio.CancelledError` instead.
+* ``timeout``: sign-in did not complete within ``sign_in_timeout`` (300 s by default) or the
+  ``timeout`` passed to that call.
 * ``network_error``: sign-in or :func:`~sponsorkit.server.verify_session` could not reach the API,
   or it answered ``5xx``, ``429`` or something unexpected. :attr:`SponsorkitError.retry_after`
   carries the API's ``Retry-After`` in seconds when it sent one.

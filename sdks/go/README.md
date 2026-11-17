@@ -122,7 +122,7 @@ fc.Direct()                       // excludes organization sponsorships
 
 ### Errors
 
-Every error is a `*sponsorkit.Error` with a `Code`:
+Every error from `New`, the `Client` methods and `VerifySession` is a `*sponsorkit.Error` with a `Code` (the pluggable helpers `OpenSystemBrowser`, `PromptStdin` and `DirStorage` return ordinary errors):
 
 | Code | When |
 |---|---|
@@ -225,5 +225,12 @@ gofmt -l .
 ```
 
 `TestConformance` starts `bun ../conformance/server.ts`, then runs every scenario in `sdks/conformance/scenarios.json` as a subtest named after its id, e.g. `go test -run 'TestConformance/checkout-signs-in-first'`. It sets configure's `processEnv` in the real process environment and restores it after each scenario, maps `cancelAfter` to a cancelled `context.Context`, and matches `expect.error` against `{code, retryAfter}` from `*sponsorkit.Error`. A `checkoutUrl` step with `amount: 0` (or a fractional amount) is logged and treated as passed, because `CheckoutOptions.Amount` is an `int64` in which 0 means unset.
+
+The website's API reference (`/docs/reference/go`) is generated from the doc comments by `scripts/gen-docs.sh`, which runs the standard-library generator in `scripts/gendocs` (a separate module, so it is not part of the published package):
+
+```sh
+bash scripts/gen-docs.sh /tmp/go-ref                  # or: bun run --cwd web docs:generate --only go
+bun run --cwd web docs:validate go --dir /tmp/go-ref  # from the repository root
+```
 
 Releases are tagged `sdks/go/vX.Y.Z`.

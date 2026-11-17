@@ -16,6 +16,17 @@ It works with GitHub Sponsors and Open Collective. SDKs: JS/TS (`npm i @sponsork
 - send users to contribute (`openCheckout()`),
 - gate features, show nag messages or ads based on contribution.
 
+## Documentation
+
+The full documentation lives at **[sponsorkit.io/docs](https://sponsorkit.io/docs)**. Good places to start:
+
+- [Getting started](https://sponsorkit.io/docs/getting-started) and the five-language [quickstart](https://sponsorkit.io/docs/getting-started/quickstart)
+- [Install](https://sponsorkit.io/docs/install): how to fetch the SDK for each language, from a package registry or from source
+- [Concepts](https://sponsorkit.io/docs/concepts) and [guides](https://sponsorkit.io/docs/guides)
+- The [API reference](https://sponsorkit.io/docs/reference), generated from each SDK's source
+
+The site is built from `web/` by `.github/workflows/ci.yml`, with the API reference generated from each SDK, and deployed together with the Worker to Cloudflare on every push to `main` (once deploys are enabled; see `docs/SPEC.md` §13). To work on the docs, see `web/content/docs/CONTRIBUTING-DOCS.md`.
+
 ## Repository
 
 | Path | What |

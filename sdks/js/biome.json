@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "files": { "includes": ["src/**", "test/**", "*.ts", "*.json", "!src/mock-presets.json"] },
+  "files": { "includes": ["src/**", "test/**", "scripts/**", "*.ts", "*.json", "!src/mock-presets.json"] },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 160 },
   "linter": {
     "enabled": true,
