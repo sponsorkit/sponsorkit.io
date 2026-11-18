@@ -50,7 +50,7 @@ The paste-back prompt looks like this on stderr:
 ```text
 To sign in with Sponsorkit, open this URL in a browser on any device:
 
-  https://sponsorkit.io/connect?targets=github%3Aoctocat&challenge=…&delivery=paste&app_name=my-cli
+  https://sponsorkit.github.io/sponsorkit.io/connect/?targets=github%3Aoctocat&challenge=…&delivery=paste&app_name=my-cli
 
 Then paste the code shown on the page here:
 ```

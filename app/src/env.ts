@@ -5,11 +5,6 @@ export interface RateLimitBinding {
   limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
-/** Static assets binding. */
-export interface AssetsBinding {
-  fetch(request: Request): Promise<Response>;
-}
-
 export interface Env {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
@@ -20,13 +15,17 @@ export interface Env {
   PAIRWISE_KEY?: string;
   /** Token used only for public `/targets` metadata. */
   GITHUB_METADATA_TOKEN?: string;
+  /** The API origin (PROTOCOL §0.1); used for provider callback URLs. Defaults to the request origin. */
   PUBLIC_ORIGIN?: string;
+  /** Site base URL (origin + optional base path); deliveries, consent and docs links. Defaults to PUBLIC_ORIGIN. */
+  SITE_BASE_URL?: string;
+  /** The only `Origin` accepted by `POST /api/oauth/:provider/start`. Defaults to the origin of SITE_BASE_URL. */
+  SITE_ORIGIN?: string;
   GITHUB_OAUTH_BASE?: string;
   GITHUB_API_BASE?: string;
   OPENCOLLECTIVE_BASE?: string;
   OPENCOLLECTIVE_API_BASE?: string;
 
-  ASSETS?: AssetsBinding;
   RL_AUTH?: RateLimitBinding;
   RL_REFRESH?: RateLimitBinding;
   RL_IP?: RateLimitBinding;
@@ -62,6 +61,49 @@ export function providerUrls(env: Env): ProviderUrls {
 export function publicOrigin(env: Env, requestUrl: string): string {
   if (env.PUBLIC_ORIGIN) return trimSlash(env.PUBLIC_ORIGIN);
   return new URL(requestUrl).origin;
+}
+
+/**
+ * Site base URL, leniently (no validation): SITE_BASE_URL if configured, else the API origin
+ * (single-origin self-hosting). Used for links that must render even when the config is invalid.
+ */
+export function siteBaseUrl(env: Env, requestUrl: string): string {
+  return env.SITE_BASE_URL ? trimSlash(env.SITE_BASE_URL) : publicOrigin(env, requestUrl);
+}
+
+export interface SiteConfig {
+  /** Origin + optional base path, no trailing slash. */
+  siteBaseUrl: string;
+  /** Bare origin of the site; the only `Origin` accepted by the OAuth start (PROTOCOL §4.3). */
+  siteOrigin: string;
+}
+
+/**
+ * Validated site configuration (PROTOCOL §0.1). SITE_ORIGIN must be a bare http(s) origin equal
+ * to the origin of SITE_BASE_URL; anything else throws ConfigError so sign-in fails closed.
+ */
+export function siteConfig(env: Env, requestUrl: string): SiteConfig {
+  const base = siteBaseUrl(env, requestUrl);
+  let baseUrl: URL;
+  try {
+    baseUrl = new URL(base);
+  } catch {
+    throw new ConfigError("Invalid configuration: SITE_BASE_URL");
+  }
+  if ((baseUrl.protocol !== "https:" && baseUrl.protocol !== "http:") || baseUrl.search || baseUrl.hash || base.includes("#")) {
+    throw new ConfigError("Invalid configuration: SITE_BASE_URL");
+  }
+  const origin = env.SITE_ORIGIN ? trimSlash(env.SITE_ORIGIN) : baseUrl.origin;
+  let originOk = false;
+  try {
+    originOk = new URL(origin).origin === origin;
+  } catch {
+    originOk = false;
+  }
+  if (!originOk || origin !== baseUrl.origin) {
+    throw new ConfigError("Invalid configuration: SITE_ORIGIN must be the bare origin of SITE_BASE_URL");
+  }
+  return { siteBaseUrl: base, siteOrigin: origin };
 }
 
 /** Thrown when a required secret is missing; maps to a 500 `internal` problem. */

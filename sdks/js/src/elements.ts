@@ -13,10 +13,10 @@ import type { Frequency, Provider } from "./types";
 
 const HTMLElementBase: typeof HTMLElement = typeof HTMLElement === "undefined" ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
 
-/** Options applied to every element-created client (e.g. `apiBaseUrl`, `returnTo`). */
+/** Options applied to every element-created client (e.g. `apiBaseUrl`, `siteBaseUrl`, `returnTo`). */
 export const elementDefaults: Partial<SponsorkitOptions> = {};
 
-const TARGET_ATTRS = ["github", "opencollective", "api-base-url"] as const;
+const TARGET_ATTRS = ["github", "opencollective", "api-base-url", "site-base-url"] as const;
 
 abstract class SponsorkitElementBase extends HTMLElementBase {
   private clientInstance: Sponsorkit | null = null;
@@ -28,7 +28,7 @@ abstract class SponsorkitElementBase extends HTMLElementBase {
     this.clientKey = client ? "custom" : "";
   }
 
-  /** The client for this element (built from `github`, `opencollective` and `api-base-url` attributes). */
+  /** The client for this element (built from the `github`, `opencollective`, `api-base-url` and `site-base-url` attributes). */
   get client(): Sponsorkit | null {
     if (this.clientKey === "custom") return this.clientInstance;
     const key = TARGET_ATTRS.map((a) => this.getAttribute(a) ?? "").join("|");
@@ -40,6 +40,7 @@ abstract class SponsorkitElementBase extends HTMLElementBase {
           github: this.getAttribute("github") ?? undefined,
           opencollective: this.getAttribute("opencollective") ?? undefined,
           ...(this.getAttribute("api-base-url") ? { apiBaseUrl: this.getAttribute("api-base-url") as string } : {}),
+          ...(this.getAttribute("site-base-url") ? { siteBaseUrl: this.getAttribute("site-base-url") as string } : {}),
         });
       } catch (error) {
         this.clientInstance = null;
@@ -104,7 +105,7 @@ export class SponsorkitButtonElement extends SponsorkitElementBase {
  * Call `refresh()` after signing in or checking out.
  */
 export class SponsorkitBadgeElement extends SponsorkitElementBase {
-  static readonly observedAttributes = ["github", "opencollective", "api-base-url"];
+  static readonly observedAttributes = ["github", "opencollective", "api-base-url", "site-base-url"];
   private seq = 0;
 
   connectedCallback(): void {

@@ -147,7 +147,7 @@ public sealed class MockPresetTests
     public void Checkout_url_is_offline_and_validates_provider()
     {
         var sk = Client("none");
-        Assert.Equal("https://sponsorkit.io/checkout?targets=github%3Aoctocat%2Copencollective%3Amy-collective&frequency=monthly",
+        Assert.Equal("https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat%2Copencollective%3Amy-collective&frequency=monthly",
             sk.CheckoutUrl(new CheckoutUrlOptions { Frequency = Frequencies.Monthly }));
         Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => Client("none", oc: null).CheckoutUrl(new CheckoutUrlOptions { Provider = "opencollective" })).Code);
     }

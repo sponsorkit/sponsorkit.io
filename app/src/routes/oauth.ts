@@ -1,8 +1,8 @@
 /** Provider OAuth start/callback (PROTOCOL §4.3, §4.4). */
-import { Provider } from "@sponsorkit/shared";
+import { OAUTH_START_FIELDS, Provider, SITE_PATHS, siteUrl } from "@sponsorkit/shared";
 import { Hono, type Context } from "hono";
 import { base64urlEncode, randomBytes, sha256, timingSafeEqual } from "../encoding";
-import { ConfigError, publicOrigin } from "../env";
+import { ConfigError, publicOrigin, siteBaseUrl, siteConfig } from "../env";
 import type { AppEnv } from "../hono";
 import { htmlErrorPage } from "../html";
 import { describeError, logEvent } from "../log";
@@ -66,58 +66,114 @@ function configErrorPage(c: Context<AppEnv>, e: unknown): Response {
   return htmlErrorPage(500, "Sign-in unavailable", "Sponsorkit is not configured correctly. Please try again later.", c.get("requestId"));
 }
 
-// ---------- GET /api/oauth/:provider/start ----------
+// ---------- POST /api/oauth/:provider/start ----------
+
+/** Largest accepted form body (PROTOCOL §4.3 step 1). */
+export const START_BODY_LIMIT = 8 * 1024;
+
+/** Sign-in params carried from the start request to the consent page link (PROTOCOL §4.3 step 2). */
+const CONSENT_PARAMS = OAUTH_START_FIELDS.filter((k) => k !== "continue");
 
 /**
- * Whether the navigation to /start came from Sponsorkit's own pages (the /connect or /checkout
- * consent screen). Browsers that send Fetch Metadata mark a navigation from another site, or one
- * with no initiator (pasted URL), as `cross-site` / `none`. Those skip the consent screen, which
- * is the only place the user sees who is asking and for which targets (SPEC §5.4), and providers
- * don't re-prompt for an app the user already authorized. Without the header (old browsers,
- * non-browser clients) there is nothing to check.
+ * Why a start request may not proceed, or null when it came from the consent screen (PROTOCOL
+ * §4.3 step 2): the browser-set `Origin` must be exactly the site origin (a missing or `null`
+ * Origin fails closed), and a `Sec-Fetch-Dest` other than `document` (a framed submit) is refused.
  */
-export function startInitiatedByConsent(req: Request): boolean {
-  const site = req.headers.get("Sec-Fetch-Site");
-  return site === null || site === "same-origin" || site === "same-site";
+export function startRejection(req: Request, siteOrigin: string): "origin_missing" | "origin_null" | "origin_mismatch" | "framed" | null {
+  const origin = req.headers.get("Origin");
+  if (origin === null) return "origin_missing";
+  if (origin === "null") return "origin_null";
+  if (origin !== siteOrigin) return "origin_mismatch";
+  const dest = req.headers.get("Sec-Fetch-Dest");
+  if (dest !== null && dest !== "document") return "framed";
+  return null;
 }
 
-/** The consent page for these /start params: /checkout when a `continue` value is present (§4.6), else /connect. */
-export function consentUrlFor(origin: string, query: URLSearchParams): string {
+/**
+ * The consent page for these start params, on the site: `/checkout/` when a `continue` value is
+ * present (§4.6; sign-in params already in `continue` are not repeated), else `/connect/`.
+ */
+export function consentUrlFor(siteBase: string, params: URLSearchParams): string {
   const q = new URLSearchParams();
-  for (const key of ["targets", "challenge", "delivery", "origin", "redirect_uri", "app_name", "provider", "add"]) {
-    const v = query.get(key);
+  for (const key of CONSENT_PARAMS) {
+    const v = params.get(key);
     if (v !== null) q.set(key, v);
   }
-  const cont = query.get("continue");
-  if (cont !== null) {
+  const cont = params.get("continue");
+  if (cont !== null && cont !== "") {
     const merged = new URLSearchParams(cont);
     for (const [k, v] of q) if (!merged.has(k)) merged.set(k, v);
-    return `${origin}/checkout?${merged.toString()}`;
+    return siteUrl(siteBase, SITE_PATHS.checkout, merged);
   }
-  return `${origin}/connect?${q.toString()}`;
+  return siteUrl(siteBase, SITE_PATHS.connect, q);
 }
 
-oauth.get("/:provider/start", async (c) => {
-  const provider = routeProvider(c);
-  if (!provider) return htmlErrorPage(404, "Unknown provider", "This sign-in provider is not supported.", c.get("requestId"));
+class BodyError extends Error {}
 
+/** Read an `application/x-www-form-urlencoded` body of at most START_BODY_LIMIT bytes. */
+async function readFormBody(req: Request): Promise<URLSearchParams> {
+  const type = (req.headers.get("Content-Type") ?? "").split(";")[0]!.trim().toLowerCase();
+  if (type !== "application/x-www-form-urlencoded") throw new BodyError("The request body must be a form (application/x-www-form-urlencoded).");
+  const declared = req.headers.get("Content-Length");
+  if (declared !== null && Number(declared) > START_BODY_LIMIT) throw new BodyError("The request body is too large.");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  if (req.body) {
+    const reader = req.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > START_BODY_LIMIT) {
+        await reader.cancel().catch(() => {});
+        throw new BodyError("The request body is too large.");
+      }
+      chunks.push(value);
+    }
+  }
+  const bytes = new Uint8Array(size);
+  let off = 0;
+  for (const ch of chunks) {
+    bytes.set(ch, off);
+    off += ch.byteLength;
+  }
+  return new URLSearchParams(new TextDecoder().decode(bytes));
+}
+
+oauth.post("/:provider/start", async (c) => {
+  const requestId = c.get("requestId");
+  const provider = routeProvider(c);
+  if (!provider) return htmlErrorPage(404, "Unknown provider", "This sign-in provider is not supported.", requestId);
+
+  // Step 1: parse and validate the form body (the query string is ignored).
+  let form: URLSearchParams;
   let params;
-  const query = new URL(c.req.url).searchParams;
   try {
-    params = parseStartParams(query, provider);
+    form = await readFormBody(c.req.raw);
+    params = parseStartParams(form, provider);
   } catch (e) {
-    if (e instanceof ParamError) return htmlErrorPage(400, "Invalid sign-in link", e.message, c.get("requestId"));
+    if (e instanceof BodyError || e instanceof ParamError) return htmlErrorPage(400, "Invalid sign-in request", e.message, requestId);
     throw e;
   }
 
-  if (!startInitiatedByConsent(c.req.raw)) {
-    logEvent("warn", { msg: "oauth_start_without_consent", provider, site: c.req.header("Sec-Fetch-Site") ?? null, requestId: c.get("requestId") });
+  let site;
+  try {
+    site = siteConfig(c.env, c.req.url);
+  } catch (e) {
+    if (e instanceof ConfigError) return configErrorPage(c, e);
+    throw e;
+  }
+
+  // Step 2: only the consent screen on the site origin may start sign-in.
+  const rejection = startRejection(c.req.raw, site.siteOrigin);
+  if (rejection) {
+    logEvent("warn", { msg: "oauth_start_without_consent", provider, reason: rejection, requestId });
     return htmlErrorPage(
       403,
       "Review this sign-in first",
-      "This sign-in link skipped Sponsorkit's consent screen. Continue to review who is asking and what will be checked.",
-      c.get("requestId"),
-      { href: consentUrlFor(publicOrigin(c.env, c.req.url), query), label: "Review and continue" },
+      "This sign-in request did not come from Sponsorkit's consent screen. Continue to review who is asking and what will be checked.",
+      requestId,
+      { href: consentUrlFor(site.siteBaseUrl, form), label: "Review and continue" },
     );
   }
 
@@ -152,6 +208,20 @@ oauth.get("/:provider/start", async (c) => {
   }
 });
 
+// Step 0: sign-in starts only with the consent screen's form POST. Links (GET) and everything
+// else get a 405 that points at the consent screen, with no cookie and no redirect.
+oauth.all("/:provider/start", (c) => {
+  const res = htmlErrorPage(
+    405,
+    "Start sign-in from the consent screen",
+    "Sign-in starts on Sponsorkit's consent screen, where you can review who is asking and what will be checked.",
+    c.get("requestId"),
+    { href: consentUrlFor(siteBaseUrl(c.env, c.req.url), new URL(c.req.url).searchParams), label: "Review and continue" },
+  );
+  res.headers.set("Allow", "POST");
+  return res;
+});
+
 // ---------- GET /api/oauth/:provider/callback ----------
 
 oauth.get("/:provider/callback", async (c) => {
@@ -160,8 +230,10 @@ oauth.get("/:provider/callback", async (c) => {
   if (!provider) return htmlErrorPage(404, "Unknown provider", "This sign-in provider is not supported.", requestId);
 
   let keys;
+  let site;
   try {
     keys = await loadSealingKeys(c.env.SEALING_KEYS);
+    site = siteConfig(c.env, c.req.url);
   } catch (e) {
     if (e instanceof ConfigError) return withClearedCookie(configErrorPage(c, e));
     throw e;
@@ -196,7 +268,7 @@ oauth.get("/:provider/callback", async (c) => {
     );
   }
 
-  const deliverError = (error: DeliveryError) => withClearedCookie(redirect(errorLocation(c, state, error)));
+  const deliverError = (error: DeliveryError) => withClearedCookie(redirect(errorLocationFor(site.siteBaseUrl, state, error)));
 
   if (!(state.x > nowSeconds())) return deliverError("invalid_state");
 
@@ -229,14 +301,10 @@ oauth.get("/:provider/callback", async (c) => {
   if (state.r) payload.r = state.r;
   const skc = await seal("code", payload, keys);
   logEvent("info", { msg: "oauth_signed_in", provider, delivery: state.d, requestId });
-  return withClearedCookie(redirect(codeLocation(c, state, skc)));
+  return withClearedCookie(redirect(codeLocationFor(site.siteBaseUrl, state, skc)));
 });
 
 // ---------- delivery ----------
-
-function siteUrl(c: Context<AppEnv>, path: string): string {
-  return `${publicOrigin(c.env, c.req.url)}${path}`;
-}
 
 function fragment(pairs: Array<[string, string | undefined]>): string {
   return pairs
@@ -251,39 +319,36 @@ function appendQuery(uri: string, key: string, value: string): string {
   return u.toString();
 }
 
-/** PROTOCOL §4.4 delivery table. */
-export function codeLocationFor(origin: string, state: StatePayload, skc: string): string {
+/** `<siteBase>/connect/done/#<fragment>` (PROTOCOL §4.4: `/connect/done/` is a site page). */
+function doneUrl(siteBase: string, frag: string): string {
+  return `${siteUrl(siteBase, SITE_PATHS.connectDone)}#${frag}`;
+}
+
+/** PROTOCOL §4.4 delivery table. `siteBase` is the site base URL (SITE_BASE_URL). */
+export function codeLocationFor(siteBase: string, state: StatePayload, skc: string): string {
   switch (state.d) {
     case "web_message":
-      return `${origin}/connect/done#${fragment([["code", skc], ["origin", state.o], ["continue", state.k]])}`;
+      return doneUrl(siteBase, fragment([["code", skc], ["origin", state.o], ["continue", state.k]]));
     case "redirect":
       return appendQuery(state.r!, "sponsorkit_code", skc);
     case "loopback":
       return `${state.r!}?code=${encodeURIComponent(skc)}`;
     case "paste":
-      return `${origin}/connect/done#${fragment([["paste", skc], ["continue", state.k]])}`;
+      return doneUrl(siteBase, fragment([["paste", skc], ["continue", state.k]]));
   }
 }
 
-export function errorLocationFor(origin: string, state: StatePayload, error: DeliveryError): string {
+export function errorLocationFor(siteBase: string, state: StatePayload, error: DeliveryError): string {
   switch (state.d) {
     case "web_message":
-      return `${origin}/connect/done#${fragment([["error", error], ["origin", state.o]])}`;
+      return doneUrl(siteBase, fragment([["error", error], ["origin", state.o]]));
     case "redirect":
       return appendQuery(state.r!, "sponsorkit_error", error);
     case "loopback":
       return `${state.r!}?error=${encodeURIComponent(error)}`;
     case "paste":
-      return `${origin}/connect/done#${fragment([["error", error]])}`;
+      return doneUrl(siteBase, fragment([["error", error]]));
   }
-}
-
-function codeLocation(c: Context<AppEnv>, state: StatePayload, skc: string): string {
-  return codeLocationFor(siteUrl(c, ""), state, skc);
-}
-
-function errorLocation(c: Context<AppEnv>, state: StatePayload, error: DeliveryError): string {
-  return errorLocationFor(siteUrl(c, ""), state, error);
 }
 
 export function readCookie(header: string | undefined, name: string): string | null {

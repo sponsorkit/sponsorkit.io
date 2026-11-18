@@ -17,8 +17,11 @@ describe("parseDoneHash (PROTOCOL §4.5)", () => {
     const cont = encodeURIComponent("targets=github:octocat&amount=500");
     const s = parseDoneHash(`#code=${CODE}&origin=https%3A%2F%2Fa.example&continue=${cont}`);
     expect(s.kind === "code" && s.continueQuery).toBe("targets=github%3Aoctocat&amount=500");
-    expect(s.kind === "code" && s.continueQuery && checkoutContinueHref(s.continueQuery)).toBe(
-      "/checkout?targets=github%3Aoctocat&amount=500&step=choose",
+    expect(s.kind === "code" && s.continueQuery && checkoutContinueHref(s.continueQuery, "")).toBe(
+      "/checkout/?targets=github%3Aoctocat&amount=500&step=choose",
+    );
+    expect(s.kind === "code" && s.continueQuery && checkoutContinueHref(s.continueQuery, "/sponsorkit.io")).toBe(
+      "/sponsorkit.io/checkout/?targets=github%3Aoctocat&amount=500&step=choose",
     );
   });
 

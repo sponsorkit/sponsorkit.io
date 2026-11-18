@@ -1,7 +1,9 @@
 # Sponsorkit: product & technical specification
 
 > Status: **v8, implemented.** See §11 for what still has to be verified against the live providers.
-> Last updated: 2026-11-16.
+> Last updated: 2026-11-18.
+>
+> **Hosting split (v8.1):** the whole website moves to **GitHub Pages** (`https://sponsorkit.github.io/sponsorkit.io`). The Worker becomes **API-only** on `https://api.sponsorkit.io`. Sign-in now starts with an `Origin`-checked form POST, because the site and the API are cross-site (§3, PROTOCOL §0 and §4.3).
 >
 > **What changed in v8:** Sponsorkit is now a **single stateless Worker with no database**.
 > - Session tokens are encrypted blobs. Each one carries the supporter's provider token(s) and the consented target set.
@@ -73,23 +75,41 @@ Patreon and other providers are deferred (D3). They will be added later through 
 ## 3. Architecture
 
 ```
-                        sponsorkit.io  (one Cloudflare Worker, free plan, no database)
+        SITE: https://sponsorkit.github.io/sponsorkit.io   (GitHub Pages, static Next.js export)
                  ┌────────────────────────────────────────────────────────────┐
- Supporter ────▶ │ static (Next.js export): /, /docs, /connect, /checkout      │
- (browser)       │                      ← free, no Worker CPU                  │
+ Supporter ────▶ │ /  /docs/  /connect/  /connect/done/  /checkout/            │
+ (browser)       │ /checkout/thanks/  404           ← free, no Worker at all   │
+                 └───────┬───────────────────────────────┬────────────────────┘
+       fetch (CORS *)    │ GET /api/v1/targets            │ top-level form POST
+                         │                                │ /api/oauth/:p/start
+                         ▼                                ▼   (Origin must = SITE_ORIGIN)
+        API: https://api.sponsorkit.io   (one Cloudflare Worker, free plan, no database, no assets)
+                 ┌────────────────────────────────────────────────────────────┐
  SDK in app ───▶ │ /api/v1/*      public API (Hono)                           │
- Your backend ─▶ │ /api/oauth/*   provider OAuth start/callback                │
+ Your backend ─▶ │ /api/oauth/*   provider OAuth start (POST) / callback (GET) │
  (forwards sks_) │ secrets: GitHub + OC OAuth credentials, sealing keys        │
+                 │ vars: PUBLIC_ORIGIN, SITE_ORIGIN, SITE_BASE_URL             │
                  └──────────────────────────────┬─────────────────────────────┘
                                                 │ fetch, on demand
                                                 ▼
                                GitHub GraphQL · Open Collective GraphQL
+
+ Callback deliveries (web_message, paste) ──302──▶ SITE /connect/done/#…
 ```
+
+- **Two origins.**
+  - The **site** is the static export of `web/`, hosted on GitHub Pages as a project site. Its origin is `https://sponsorkit.github.io` and its base path is `/sponsorkit.io`. Page URLs end in `/` because Pages serves directories.
+  - The **API** is the Worker on its own custom domain, `https://api.sponsorkit.io` by default and configurable. Paths stay `/api/v1/…` and `/api/oauth/…`, and the OAuth provider callback URLs are on the API domain.
+- **Why cross-site is safe.** The consent page on the site starts sign-in with a top-level form POST to the API. The Worker accepts it only when the browser-set `Origin` header equals `SITE_ORIGIN`. Other sites can't forge that header, so the consent screen can't be skipped (PROTOCOL §4.3, "Security: cross-site consent start"). The browser-nonce cookie lives on the API domain, and is set and read only in top-level navigations. The site needs no cookies.
+- **Single-origin self-hosting** still works. Serve the site and the API behind one origin, set `SITE_ORIGIN` to that origin, and give SDKs only `apiBaseUrl`.
 
 - **Runtime:**
   - TypeScript on **Cloudflare Workers**, using the **Hono** framework. Hono also runs on Node and Bun, so the Worker can be self-hosted.
   - Bun is used for local development, scripts and tests.
-- **Web:** a Next.js static export. It contains the landing page, the docs (MDX), and two client-rendered supporter pages, `/connect` and `/checkout`. These are served as Worker static assets, which are free and don't invoke the Worker.
+- **Web:** a Next.js static export, built with `BASE_PATH=/sponsorkit.io TRAILING_SLASH=1`. It contains the landing page, the docs (MDX), and the client-rendered supporter pages `/connect/`, `/connect/done/`, `/checkout/` and `/checkout/thanks/`.
+  - It is deployed to **GitHub Pages** by a GitHub Actions workflow (`actions/upload-pages-artifact` + `actions/deploy-pages`).
+  - The pages call the API at `NEXT_PUBLIC_SPONSORKIT_API_BASE`, which defaults to `https://api.sponsorkit.io`. Empty means same origin.
+- **API:** the Worker serves only `/api/*`. It has no static-assets binding, and everything else is `404`.
 - **State:** none.
   - Session tokens, OAuth `state` values and sign-in codes are all **sealed**: encrypted and authenticated, so nothing needs storing (§4).
   - The only server-side cache is the free Workers Cache API, used for public target metadata (§5.6).
@@ -109,7 +129,7 @@ Patreon and other providers are deferred (D3). They will be added later through 
 
 | Workers Free limit | How Sponsorkit fits |
 |---|---|
-| 100k requests/day | Static assets don't count. SDKs cache locally, so each user makes about one call per hour at most. |
+| 100k requests/day | The site is on GitHub Pages and costs no Worker requests. SDKs cache locally, so each user makes about one call per hour at most. |
 | 10 ms CPU per request | One AES-GCM decrypt, JSON parsing, and waiting on network I/O, which doesn't count as CPU. No server-side rendering. |
 | 50 subrequests per request | At most 1 GitHub GraphQL call plus 2 Open Collective calls. |
 
@@ -118,15 +138,15 @@ If Sponsorkit outgrows the free plan, Workers Paid costs $5/mo. Switching is a p
 ### 3.2 Repository layout (Bun workspaces)
 
 ```
-app/                     Cloudflare Worker: Hono API, OAuth, sealing, static assets binding
+app/                     Cloudflare Worker (API only): Hono API, OAuth, sealing
   src/{api,oauth,seal,providers/{github,opencollective}}
   test/                  Vitest (Node); provider fetch stubbed with fixtures built from the documented schemas
-web/                     Next.js static export (landing, docs, /connect, /checkout) + Playwright e2e
-packages/shared/         Zod schemas & types (app, web, JS SDK)
+web/                     Next.js static export for GitHub Pages (landing, docs, /connect/, /checkout/) + Playwright e2e
+packages/shared/         Zod schemas, types & URL constants (app, web, JS SDK)
 sdks/{js,dotnet,python,go,rust}/
 sdks/conformance/        fake API + fixtures + scenarios every SDK must pass
 docs/                    this spec
-.github/workflows/       CI, Worker deploy, trusted publishing
+.github/workflows/       CI, Worker deploy, GitHub Pages deploy, trusted publishing
 ```
 
 ## 4. Sealed tokens (replaces the database)
@@ -137,7 +157,7 @@ Each sealed value has the format `prefix + keyId + nonce + ciphertext`. Associat
 
 | Value | Contents | Lifetime | Where it travels |
 |---|---|---|---|
-| `state` (OAuth) | `{ provider, targets, delivery, origin?, redirectUri?, codeChallenge, appName?, browserNonceHash, providerPkceVerifier, exp }` | 10 min | Provider OAuth `state` parameter. A `__Host-` cookie nonce binds it to the browser that started the flow. |
+| `state` (OAuth) | `{ provider, targets, delivery, origin?, redirectUri?, codeChallenge, appName?, browserNonceHash, providerPkceVerifier, continue?, exp }` | 10 min | Provider OAuth `state` parameter. A `__Host-` cookie nonce on the API domain binds it to the browser that started the flow. |
 | Sign-in code (`skc_…`) | `{ identity: { provider, id, handle, token, tokenExp }, targets, codeChallenge, delivery, origin?/redirectUri?, exp }` | 60 s, or 10 min for `paste` | Delivered to the SDK. Useless without the PKCE verifier. |
 | Session token (`sks_…`) | `{ v, targets, identities: [ { provider, id, handle, token, tokenExp } ], iat, exp }` | 180 days, renewed on use | Held by the SDK. Sent as `Authorization: Bearer`. |
 
@@ -289,19 +309,21 @@ Sponsorkit acts as an OAuth-style authorization server for the SDKs. Provider OA
   - They are checked again at `POST /api/v1/auth/token`.
   - A code is useless without the verifier, which only the initiating SDK holds.
 - **Delivery.** There are no registered origins, so how a code may be delivered is constrained by the delivery mechanism itself:
-  - **`web_message`:** `/connect` posts the code only to `window.opener`, with `targetOrigin` set to the origin the SDK passed. The browser enforces that this origin is real. The origin is also shown on the consent screen.
+  - **`web_message`:** `/connect/done/` posts the code only to `window.opener`, with `targetOrigin` set to the origin the SDK passed. The browser enforces that this origin is real. The origin is also shown on the consent screen.
   - **`redirect`** (fallback when popups are blocked): requires an `https` or localhost `redirect_uri`. The consent screen shows *"You'll return to ‹host›"*.
   - **`loopback`:** only `http://127.0.0.1:{port}/callback` or `http://[::1]:{port}/callback` (RFC 8252 §7.3).
   - **`paste`:** headless use. The page displays the code for the user to paste back into the app.
 - **Provider OAuth `state`.** The state is sealed (§4) and checked against the `__Host-` browser nonce cookie. Any mismatch is rejected.
+- **Consent can't be skipped.** Provider OAuth starts only with a `POST` whose `Origin` is the site origin, which only the consent page can produce (PROTOCOL §4.3). A `GET` start returns `405`, and a start from any other origin, or with no `Origin`, returns `403`. Both link to the consent page.
+- **Message origin.** The browser SDK accepts `postMessage` events only from the origin of its `siteBaseUrl`.
 
 ### 6.2 Flows
 
 | Host | Flow |
 |---|---|
-| Browser | `signIn()`, called from a click handler, synchronously opens a popup to `/connect?targets=…&challenge=…&delivery=web_message&origin=…`. The user picks a provider, sees the consent screen and completes provider OAuth. The code is posted back to the app, and the SDK exchanges it. If popups are blocked, `delivery=redirect` is used when `returnTo` is set. Otherwise `signIn()` rejects with `popup_blocked`. |
+| Browser | `signIn()`, called from a click handler, synchronously opens a popup to `<siteBaseUrl>/connect/?targets=…&challenge=…&delivery=web_message&origin=…`. The user picks a provider, sees the consent screen and completes provider OAuth. The code is posted back to the app, and the SDK exchanges it. If popups are blocked, `delivery=redirect` is used when `returnTo` is set. Otherwise `signIn()` rejects with `popup_blocked`. |
 | CLI / desktop with a local browser | **Loopback.** The SDK listens on `127.0.0.1:{random}/callback` and opens the system browser. |
-| Headless / SSH / container | **Paste-back.** The SDK prints a `sponsorkit.io/connect?…&delivery=paste` URL, which the user opens on any device. After consent, the page shows the sign-in code with a copy button, and the user pastes it into the terminal. The page names the targets and the `appName`. The code is valid for 10 minutes and useless without the SDK's verifier. |
+| Headless / SSH / container | **Paste-back.** The SDK prints a `sponsorkit.github.io/sponsorkit.io/connect/?…&delivery=paste` URL, which the user opens on any device. After consent, the page shows the sign-in code with a copy button, and the user pastes it into the terminal. The page names the targets and the `appName`. The code is valid for 10 minutes and useless without the SDK's verifier. |
 | Auto-pick | Native SDKs try loopback first. They fall back to paste-back when there is no display, when `SSH_CONNECTION` is set, or when opening the browser fails. |
 
 **Adding a second identity.** `signIn({ provider: "opencollective" })` while already signed in runs the same flow. The SDK then sends `{ code, codeVerifier, sessionToken }` to `/auth/token`. The Worker unseals both and returns a new session token containing both identities, after checking that both are bound to the same target set.
@@ -340,14 +362,16 @@ const sk = new Sponsorkit({
   cacheTtl: 3600,                     // seconds served from local cache without calling the API (min 60)
   mock: undefined,                    // §7.4
   storage: undefined,                 // default: localStorage / per-user config dir
-  apiBaseUrl: undefined,              // self-hosting / tests
+  apiBaseUrl: undefined,              // API origin; default https://api.sponsorkit.io
+  siteBaseUrl: undefined,             // pages (/connect/, /checkout/); default https://sponsorkit.github.io/sponsorkit.io,
+                                      //   or apiBaseUrl when only apiBaseUrl is set (single-origin self-hosting, tests)
 });
 
 await sk.signIn();                     // provider picker; { provider } to skip it
 sk.isSignedIn();
 const fc = await sk.getFinancialContribution({ cacheTtl? });
 const r = await sk.openCheckout({ provider?, amount?, currency?, frequency?, timeout?, signal? });
-sk.checkoutUrl({ amount?, frequency? });   // sync, offline-safe link to /checkout (no sign-in)
+sk.checkoutUrl({ amount?, frequency? });   // sync, offline-safe link to <siteBaseUrl>/checkout/ (no sign-in)
 await sk.signOut();                        // deletes token + cache locally
 ```
 
@@ -376,18 +400,18 @@ await sk.signOut();                        // deletes token + cache locally
 `openCheckout(opts)` works in four steps:
 
 1. **Sign in first if needed**, so the new contribution can be detected afterwards.
-   - **Browser:** everything happens in **one** popup, opened synchronously: `/checkout?targets=…&amount=…&frequency=…&challenge=…&origin=…`. That page runs the connect flow when needed, posts the code back, and continues.
-   - **Native:** the loopback callback redirects onward. With paste-back, the page continues after showing the code.
-2. **Choose a provider.** The static `/checkout` page uses `/targets` data. If only one provider fits, it goes straight there; if both fit, it shows a small chooser. A provider is offered only if:
+   - **Browser:** everything happens in **one** popup, opened synchronously: `<siteBaseUrl>/checkout/?targets=…&amount=…&frequency=…&challenge=…&origin=…`. That page runs the connect flow when needed, posts the code back, and continues.
+   - **Native:** the loopback callback redirects onward to `<siteBaseUrl>/checkout/?…&step=choose`. With paste-back, the page continues after showing the code.
+2. **Choose a provider.** The static `/checkout/` page uses `/targets` data. If only one provider fits, it goes straight there; if both fit, it shows a small chooser. A provider is offered only if:
    - **Currency** matches exactly: USD for GitHub, the collective's currency for Open Collective.
    - **Frequency** is supported: monthly or one-time on GitHub, any frequency on Open Collective.
    - **Tier** fits (GitHub only): the cheapest tier at or above the amount is used, otherwise the highest tier. A listing with no tiers is disabled.
 
    Each disabled option shows the reason.
-3. **Redirect** to the GitHub tier on `github.com/sponsors/{login}`, or to `opencollective.com/{slug}/donate?amount=…&interval=…&redirect=…`. *To verify:* GitHub's tier and frequency URL parameters.
+3. **Redirect** to the GitHub tier on `github.com/sponsors/{login}`, or to `opencollective.com/{slug}/donate?amount=…&interval=…&redirect=<siteBaseUrl>/checkout/thanks/`. *To verify:* GitHub's tier and frequency URL parameters.
 4. **Detect the result.** Sponsorkit can't see the payment, so the SDK re-checks. It polls `getFinancialContribution({ cacheTtl: 0 })` every 60 s, starting after the popup closes (browser) or immediately (native). Polling stops when a new or changed contribution appears, or when `timeout` (default 10 min) or `signal` fires. The result is `{ status: "contributed", contribution }` or `{ status: "unknown" }`.
 
-`checkoutUrl()` returns the same `/checkout` page without a PKCE challenge. It is offline-safe and suits nags and READMEs.
+`checkoutUrl()` returns the same `<siteBaseUrl>/checkout/` page without a PKCE challenge. It is offline-safe and suits nags and READMEs.
 
 ### 7.4 Mock mode
 
@@ -467,7 +491,7 @@ All five SDKs ship together in v1.
 - **Storage:** file permissions, concurrent writes.
 - **Server helper:** `verifySession` with matching targets, `verifySession` with mismatched targets.
 
-## 8. HTTP API (`https://sponsorkit.io/api/v1`)
+## 8. HTTP API (`https://api.sponsorkit.io/api/v1`)
 
 Requests and responses are JSON. Errors use `application/problem+json` with a stable `code`:
 
@@ -477,7 +501,7 @@ Requests and responses are JSON. Errors use `application/problem+json` with a st
 - `session_invalid`
 - `rate_limited`
 
-CORS allows any origin, without credentials. Every response carries `Sponsorkit-Request-Id`.
+CORS allows any origin, without credentials; the site's own pages use it too. Every response carries `Sponsorkit-Request-Id`. Problem `type` URLs point at the docs on the site.
 
 | Method & path | Auth | Purpose |
 |---|---|---|
@@ -486,7 +510,7 @@ CORS allows any origin, without credentials. Every response carries `Sponsorkit-
 | `GET /contributions` | session | The §5.1 result. May return a renewed token in `Sponsorkit-Session`. |
 | `GET /health` | none | Reachability of each provider |
 
-Browser OAuth goes through `/connect` and `/checkout` (static) plus `/api/oauth/{provider}/start` and `/api/oauth/{provider}/callback`.
+Browser OAuth goes through the site pages `/connect/` and `/checkout/`, plus the API endpoints `POST /api/oauth/{provider}/start` (form POST from the consent page, `Origin`-checked) and `GET /api/oauth/{provider}/callback`.
 
 Rate limits (starting values):
 
@@ -499,7 +523,10 @@ Rate limits (starting values):
 ## 9. Operations
 
 - **Logs:** Workers Logs, structured JSON. Logs never contain tokens, codes or identities.
-- **Deploy:** GitHub Actions runs `wrangler deploy`. Preview deployments use Workers versions. There are no migrations.
+- **Deploy:**
+  - **API:** GitHub Actions runs `wrangler deploy`. Preview deployments use Workers versions. There are no migrations.
+  - **Site:** a GitHub Actions workflow builds `web/` with `BASE_PATH=/sponsorkit.io TRAILING_SLASH=1` and `NEXT_PUBLIC_SPONSORKIT_API_BASE=https://api.sponsorkit.io`. It publishes `web/out` with `actions/upload-pages-artifact` and `actions/deploy-pages` (permissions `pages: write`, `id-token: write`; environment `github-pages`).
+  - The two deploy independently. API changes that pages depend on ship first.
 - **Sealing-key rotation:**
   1. Add the new key.
   2. Make it current.
@@ -554,7 +581,7 @@ All of this lands in this PR as reviewable commits:
 | # | Decision | Outcome |
 |---|---|---|
 | D1 | Stripe processing fees | Moot: Stripe removed (D8). |
-| D2 | Hosting | ✅ One Cloudflare Worker (free plan), TypeScript, static site. |
+| D2 | Hosting | ✅ API: one Cloudflare Worker (free plan, API only) on `api.sponsorkit.io`. Site: GitHub Pages project site `sponsorkit.github.io/sponsorkit.io`. |
 | D3 | Patreon | ✅ Deferred: its shared-app consent would require reading all of a user's memberships. |
 | D4 | Package names | ✅ `@sponsorkit/sdk`, `Sponsorkit`, `sponsorkit` (PyPI and crates.io), `github.com/sponsorkit/sponsorkit.io/sdks/go`. Fall back to `sponsorkit-sdk` if a name is taken. |
 | D5 | Org sponsorships | ✅ Always included, marked `via: "organization"`. |
@@ -568,23 +595,33 @@ All of this lands in this PR as reviewable commits:
 | D13 | Checkout | ✅ Stateless: sign in, redirect, then re-check. |
 | D14 | SDK rollout | ✅ All five SDKs in v1. |
 | D15 | Database | ✅ None. Sealed session tokens; the cache lives in the SDK; headless sign-in is paste-back. |
+| D16 | Cross-site consent start | ✅ The consent page form-POSTs to `/api/oauth/:provider/start`, and the Worker requires `Origin` = `SITE_ORIGIN`. `GET` start is removed (`405`). |
+| D17 | SDK base URLs | ✅ `siteBaseUrl` for pages and `apiBaseUrl` for API calls. `siteBaseUrl` falls back to `apiBaseUrl` when only that one is set. |
 
 ## 13. What you need to provide to go live
 
-1. A **GitHub OAuth App** with its callback URL set to `https://sponsorkit.io/api/oauth/github/callback`: client ID and secret.
-2. An **Open Collective OAuth app** with its callback URL set to `https://sponsorkit.io/api/oauth/opencollective/callback`: client ID and secret.
+1. A **GitHub OAuth App** with its callback URL set to `https://api.sponsorkit.io/api/oauth/github/callback` (on the API domain): client ID and secret.
+2. An **Open Collective OAuth app** with its callback URL set to `https://api.sponsorkit.io/api/oauth/opencollective/callback` (on the API domain): client ID and secret.
 3. A free **Cloudflare account** with:
-   - `sponsorkit.io` as a zone, used by the `custom_domain` route in `app/wrangler.jsonc`;
+   - `sponsorkit.io` as a zone, so the Worker can use the **API custom domain** `api.sponsorkit.io` (the `custom_domain` route in `app/wrangler.jsonc`). For a different API hostname, change the route, `PUBLIC_ORIGIN` and both OAuth callback URLs together;
    - an API token that can edit Workers, plus your account ID.
+   - The Worker has **no** static-assets binding and no route on the apex `sponsorkit.io`.
+   - Optionally, point the apex `sponsorkit.io` at the site with a redirect rule to `https://sponsorkit.github.io/sponsorkit.io/`.
 4. **Worker secrets**, set with `wrangler secret put` (see `app/.dev.vars.example` for formats and key generation):
    - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
    - `OPENCOLLECTIVE_CLIENT_ID`, `OPENCOLLECTIVE_CLIENT_SECRET`
    - `SEALING_KEYS`, `PAIRWISE_KEY`
    - `GITHUB_METADATA_TOKEN`
+   - **Worker vars** (not secrets), set in `app/wrangler.jsonc` under `vars`:
+     - `PUBLIC_ORIGIN=https://api.sponsorkit.io`;
+     - `SITE_ORIGIN=https://sponsorkit.github.io`, the only `Origin` accepted by the OAuth start;
+     - `SITE_BASE_URL=https://sponsorkit.github.io/sponsorkit.io`, used for `/connect/done/` deliveries, consent links and problem `type` URLs.
 5. **GitHub repository settings for deploys:**
    - secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`;
    - the variable `DEPLOY_ENABLED=true`;
    - a `production` environment.
+   - **GitHub Pages enabled** under Settings → Pages, with **Source: GitHub Actions**. The deploy workflow uses the `github-pages` environment, which GitHub creates. The repository must be named `sponsorkit.io` under the `sponsorkit` account so the site is `https://sponsorkit.github.io/sponsorkit.io/`.
+   - Only trusted repositories of the `sponsorkit` account may publish to GitHub Pages: they share the origin `https://sponsorkit.github.io`, which the Worker trusts to start sign-in (PROTOCOL §4.3, residual risks).
 6. **Package registries:**
    - Reserve the names: `@sponsorkit/sdk` on npm, `Sponsorkit` on NuGet, and `sponsorkit` on PyPI and crates.io.
    - Configure trusted publishing for `.github/workflows/release.yml` (environment `release`). NuGet also needs the repository variable `NUGET_USER`.

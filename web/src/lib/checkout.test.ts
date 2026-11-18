@@ -12,7 +12,8 @@ import {
   toMajorUnits,
 } from "./checkout";
 
-const ORIGIN = "https://sponsorkit.io";
+/** The site base URL (origin + base path), as the page passes it. */
+const ORIGIN = "https://sponsorkit.github.io/sponsorkit.io";
 
 function tier(id: string, value: number, frequency: TargetTier["frequency"], url: string | null = null): TargetTier {
   return { id, name: `Tier ${id}`, amount: { value, currency: "USD" }, frequency, url };
@@ -139,7 +140,7 @@ describe("Open Collective URL", () => {
     expect(url.origin + url.pathname).toBe("https://opencollective.com/sponsorkit/donate");
     expect(url.searchParams.get("amount")).toBe("5.5");
     expect(url.searchParams.get("interval")).toBe("month");
-    expect(url.searchParams.get("redirect")).toBe("https://sponsorkit.io/checkout/thanks");
+    expect(url.searchParams.get("redirect")).toBe("https://sponsorkit.github.io/sponsorkit.io/checkout/thanks/");
   });
   it("uses interval=year and omits interval for one-time", () => {
     expect(new URL(openCollectiveCheckoutUrl(oc(), { frequency: "yearly" }, ORIGIN)).searchParams.get("interval")).toBe("year");
@@ -149,7 +150,7 @@ describe("Open Collective URL", () => {
   });
   it("omits amount when not given", () => {
     const url = openCollectiveCheckoutUrl(oc(), {}, ORIGIN);
-    expect(url).toBe(`https://opencollective.com/sponsorkit/donate?redirect=${encodeURIComponent(`${ORIGIN}/checkout/thanks`)}`);
+    expect(url).toBe(`https://opencollective.com/sponsorkit/donate?redirect=${encodeURIComponent(`${ORIGIN}/checkout/thanks/`)}`);
   });
   it("uses ISO 4217 minor units where CLDR disagrees", () => {
     expect(new URL(openCollectiveCheckoutUrl(oc({ currency: "HUF" }), { amount: 150000 }, ORIGIN)).searchParams.get("amount")).toBe("1500");

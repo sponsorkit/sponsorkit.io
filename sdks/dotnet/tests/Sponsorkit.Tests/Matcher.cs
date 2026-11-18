@@ -223,11 +223,13 @@ internal static class Matcher
             var call = (JsonObject)callNode!;
             var method = call["method"]!.GetValue<string>();
             var path = call["path"]!.GetValue<string>();
+            var server = call["server"]?.GetValue<string>();
             var n = 0;
             for (var i = 0; i < relevant.Count; i++)
             {
                 var r = relevant[i];
                 if (r["method"]!.GetValue<string>() != method || r["path"]!.GetValue<string>() != path) continue;
+                if (server is not null && r["server"]?.GetValue<string>() != server) continue;
                 var ok = (!call.ContainsKey("query") || Match(r["query"], call["query"]).Count == 0)
                     && (!call.ContainsKey("headers") || Match(r["headers"], call["headers"]).Count == 0)
                     && (!call.ContainsKey("body") || Match(r["body"], call["body"], "$", r.ContainsKey("body")).Count == 0);
@@ -235,7 +237,7 @@ internal static class Matcher
                 matched.Add(i);
                 n++;
             }
-            var label = $"{method} {path}";
+            var label = server is null ? $"{method} {path}" : $"{method} {path} ({server})";
             int? count = call["count"]?.GetValue<int>(), min = call["min"]?.GetValue<int>(), max = call["max"]?.GetValue<int>();
             if (count is not null && n != count) errors.Add($"{label}: expected {count} matching request(s), got {n}");
             if (min is not null && n < min) errors.Add($"{label}: expected at least {min}, got {n}");
@@ -247,7 +249,7 @@ internal static class Matcher
             for (var i = 0; i < relevant.Count; i++)
             {
                 if (!matched.Contains(i))
-                    errors.Add($"unexpected request {relevant[i]["method"]} {relevant[i]["path"]}?{relevant[i]["query"]?.ToJsonString()}");
+                    errors.Add($"unexpected request {relevant[i]["method"]} {relevant[i]["path"]}?{relevant[i]["query"]?.ToJsonString()}{(relevant[i]["server"] is JsonValue sv ? $" ({sv})" : "")}");
             }
         }
         return errors;

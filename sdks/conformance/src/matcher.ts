@@ -131,6 +131,8 @@ export function match(actual: unknown, expected: unknown, path = "$"): string[] 
 
 /** Request-log assertion (README "Request expectations"). */
 export interface LoggedRequest {
+  /** "api" or "site": the listener that received the request. */
+  server?: string;
   method: string;
   path: string;
   query: Record<string, string>;
@@ -141,7 +143,7 @@ export interface LoggedRequest {
 export interface RequestExpectationInput {
   exact?: boolean;
   includeTargetsLookups?: boolean;
-  calls?: { method: string; path: string; count?: number; min?: number; max?: number; query?: unknown; headers?: unknown; body?: unknown }[];
+  calls?: { method: string; path: string; server?: string; count?: number; min?: number; max?: number; query?: unknown; headers?: unknown; body?: unknown }[];
 }
 
 export function matchRequests(log: LoggedRequest[], spec: RequestExpectationInput): string[] {
@@ -152,6 +154,7 @@ export function matchRequests(log: LoggedRequest[], spec: RequestExpectationInpu
   for (const call of spec.calls ?? []) {
     const hits = relevant.filter((r, i) => {
       if (r.method !== call.method || r.path !== call.path) return false;
+      if (call.server !== undefined && r.server !== call.server) return false;
       const ok =
         (call.query === undefined || match(r.query, call.query).length === 0) &&
         (call.headers === undefined || match(r.headers, call.headers).length === 0) &&
@@ -159,7 +162,7 @@ export function matchRequests(log: LoggedRequest[], spec: RequestExpectationInpu
       if (ok) matched.add(i);
       return ok;
     });
-    const label = `${call.method} ${call.path}`;
+    const label = `${call.method} ${call.path}${call.server ? ` (${call.server})` : ""}`;
     const n = hits.length;
     if (call.count !== undefined && n !== call.count) errors.push(`${label}: expected ${call.count} matching request(s), got ${n}`);
     if (call.min !== undefined && n < call.min) errors.push(`${label}: expected at least ${call.min}, got ${n}`);
@@ -168,7 +171,7 @@ export function matchRequests(log: LoggedRequest[], spec: RequestExpectationInpu
   }
   if (exact) {
     relevant.forEach((r, i) => {
-      if (!matched.has(i)) errors.push(`unexpected request ${r.method} ${r.path}`);
+      if (!matched.has(i)) errors.push(`unexpected request ${r.method} ${r.path}${r.server ? ` (${r.server})` : ""}`);
     });
   }
   return errors;

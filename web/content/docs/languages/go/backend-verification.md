@@ -78,7 +78,7 @@ context so a client that disconnects cancels the call.
 
 | Option | Default | Meaning |
 |---|---|---|
-| `sponsorkit.WithAPIBaseURL(u)` | `https://sponsorkit.io` | The API origin, for [self-hosting](../../reference-http/self-hosting.md) and tests. |
+| `sponsorkit.WithAPIBaseURL(u)` | `https://api.sponsorkit.io` | The API origin, for [self-hosting](../../reference-http/self-hosting.md) and tests. |
 | `sponsorkit.WithHTTPClient(hc)` | `&http.Client{}` | The HTTP client to use. |
 | `sponsorkit.WithRequestTimeout(d)` | 30 s | Bounds the request, including reading the response. `sponsorkit.NoRequestTimeout` disables it. A timeout is `network_error`. |
 

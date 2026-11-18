@@ -238,13 +238,11 @@ const fc = await verifySession(token, { github: "mathiaslorenzen" });
 
 if (fc.active().length > 0) unlockPremium(fc.supporter.id); // pairwise, stable id`;
 
-export const verifyCurl = `curl https://sponsorkit.io/api/v1/contributions \\
+export const verifyCurl = `curl https://api.sponsorkit.io/api/v1/contributions \\
   -H "Authorization: Bearer sks_…"`;
 
-export const selfHostSnippet = `# From the repository root: build the static pages (→ web/out).
-bun run --filter @sponsorkit/web build
-
-# Worker secrets and deploy run from app/, where the config lives (app/wrangler.jsonc).
+export const selfHostSnippet = `# The Worker is API only. Secrets and deploy run from app/, where the config lives
+# (app/wrangler.jsonc; set the PUBLIC_ORIGIN, SITE_ORIGIN and SITE_BASE_URL vars there).
 cd app
 wrangler secret put GITHUB_CLIENT_ID
 wrangler secret put GITHUB_CLIENT_SECRET
@@ -255,4 +253,4 @@ wrangler secret put SEALING_KEYS      # [{"id":1,"key":"<32 bytes, base64url>"}]
 wrangler secret put PAIRWISE_KEY      # HMAC key for pairwise supporter ids
 wrangler deploy`;
 
-export const selfHostClient = `new Sponsorkit({ github: "your-login", apiBaseUrl: "https://sponsors.example.com" });`;
+export const selfHostClient = `new Sponsorkit({ github: "your-login", apiBaseUrl: "https://sponsors.example.com" }); // site defaults to the same origin`;

@@ -8,6 +8,7 @@ import {
   ContributionResult,
   Problem,
   TokenResponse,
+  problemTypeUrl,
   targetsFromParam,
   targetsHash,
   type ErrorCode,
@@ -60,7 +61,7 @@ async function exampleResults() {
 }
 
 function problemExample(status: number, code: ErrorCode, title: string, detail: string) {
-  return Problem.parse({ type: `https://sponsorkit.io/problems/${code}`, title, status, code, detail });
+  return Problem.parse({ type: problemTypeUrl(), title, status, code, detail });
 }
 
 async function vectors() {

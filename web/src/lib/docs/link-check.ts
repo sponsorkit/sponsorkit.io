@@ -60,11 +60,20 @@ export interface LinkCheckInput {
   html: Map<string, string>;
   /** Contents of search-index.json, if any. */
   searchIndex?: string;
+  /** Contents of sitemap.xml, if any: every `<loc>` must be a page of this site. */
+  sitemap?: string;
   basePath?: string;
+  /**
+   * Absolute site base URL (origin + base path), e.g. `https://sponsorkit.github.io/sponsorkit.io`.
+   * Absolute links under it (canonical, og:url, sitemap) are checked like internal ones.
+   */
+  siteUrl?: string;
 }
 
 export function checkLinks(input: LinkCheckInput): LinkCheckResult {
   const base = (input.basePath ?? "").replace(/\/+$/, "");
+  const siteUrl = (input.siteUrl ?? "").replace(/\/+$/, "");
+  const siteOrigin = siteUrl ? new URL(siteUrl).origin : "";
   const idCache = new Map<string, Set<string>>();
   const ids = (file: string) => {
     let s = idCache.get(file);
@@ -81,6 +90,10 @@ export function checkLinks(input: LinkCheckInput): LinkCheckResult {
   // missing base path on an icon, stylesheet or script is caught too.
   const check = (from: string, href: string, pageUrl: string, asset = false) => {
     if (!href || href === "#") return;
+    // An absolute URL on this site: check its path (which must then carry the base path).
+    if (siteUrl && (href === siteUrl || href.startsWith(`${siteUrl}/`) || href.startsWith(`${siteUrl}?`) || href.startsWith(`${siteUrl}#`))) {
+      href = href.slice(siteOrigin.length) || "/";
+    }
     if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith("//")) return;
     let url: URL;
     try {
@@ -123,6 +136,16 @@ export function checkLinks(input: LinkCheckInput): LinkCheckResult {
   if (input.searchIndex) {
     const index = JSON.parse(input.searchIndex) as { entries: { u: string }[] };
     for (const e of index.entries) check("search-index.json", `${base}${e.u}`, "/");
+  }
+  if (input.sitemap) {
+    for (const m of input.sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)) {
+      const loc = decodeHtml(m[1]!.trim());
+      if (siteUrl && !(loc === siteUrl || loc.startsWith(`${siteUrl}/`))) {
+        broken.push({ from: "sitemap.xml", href: loc, reason: `not under the site URL ${siteUrl}` });
+        continue;
+      }
+      check("sitemap.xml", loc, "/");
+    }
   }
   return { pages: input.html.size, checked, broken };
 }

@@ -92,7 +92,11 @@ internal static class SessionTokens
 /// <summary>The PROTOCOL §3 HTTP API.</summary>
 internal sealed class ApiClient
 {
-    public const string DefaultBaseUrl = "https://sponsorkit.io";
+    /// <summary>The default API origin (PROTOCOL §0, §7).</summary>
+    public const string DefaultBaseUrl = "https://api.sponsorkit.io";
+
+    /// <summary>The default site base URL: origin plus base path, no trailing slash (PROTOCOL §0, §7).</summary>
+    public const string DefaultSiteBaseUrl = "https://sponsorkit.github.io/sponsorkit.io";
 
     /// <summary>The default per-request timeout (PROTOCOL §7.0).</summary>
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
@@ -130,12 +134,23 @@ internal sealed class ApiClient
     public string BaseUrl { get; }
 
     /// <summary>Validates and normalizes an <c>apiBaseUrl</c> (origin; trailing slashes removed).</summary>
-    public static string NormalizeBaseUrl(string? value)
+    public static string NormalizeBaseUrl(string? value) => Normalize(value, "apiBaseUrl") ?? DefaultBaseUrl;
+
+    /// <summary>
+    /// Resolves the <c>siteBaseUrl</c> option (PROTOCOL §7 defaulting rule): the option when set, else <c>apiBaseUrl</c>
+    /// when that is set (single-origin self-hosting), else <see cref="DefaultSiteBaseUrl"/>. Empty strings count as unset;
+    /// trailing slashes are removed. The site base URL may carry a path.
+    /// </summary>
+    public static string ResolveSiteBaseUrl(string? siteBaseUrl, string? apiBaseUrl) =>
+        Normalize(siteBaseUrl, "siteBaseUrl") ?? Normalize(apiBaseUrl, "apiBaseUrl") ?? DefaultSiteBaseUrl;
+
+    private static string? Normalize(string? value, string name)
     {
-        if (string.IsNullOrWhiteSpace(value)) return DefaultBaseUrl;
+        if (string.IsNullOrWhiteSpace(value)) return null;
         var trimmed = value!.Trim().TrimEnd('/');
-        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"apiBaseUrl must be an absolute http(s) URL, got \"{value}\"");
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
+            throw new SponsorkitError(SponsorkitErrorCodes.InvalidConfig, $"{name} must be an absolute http(s) URL, got \"{value}\"");
         return trimmed;
     }
 

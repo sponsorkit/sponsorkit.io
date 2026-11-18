@@ -80,8 +80,8 @@ mod types;
 pub use checkout::{CheckoutOptions, DEFAULT_CHECKOUT_TIMEOUT};
 pub use client::{
     BoxFuture, DEFAULT_API_BASE_URL, DEFAULT_CACHE_TTL, DEFAULT_CHECKOUT_POLL_INTERVAL, DEFAULT_REQUEST_TIMEOUT,
-    DEFAULT_SIGN_IN_TIMEOUT, GetOptions, MAX_RETRY_AFTER, MIN_CACHE_TTL, OpenBrowserHook, Options, PromptForCodeHook,
-    SignInMethod, Sponsorkit,
+    DEFAULT_SIGN_IN_TIMEOUT, DEFAULT_SITE_BASE_URL, GetOptions, MAX_RETRY_AFTER, MIN_CACHE_TTL, OpenBrowserHook,
+    Options, PromptForCodeHook, SignInMethod, Sponsorkit,
 };
 pub use error::{Error, ErrorCode, Result};
 pub use mock::{MOCK_PRESETS_JSON, Mock, MockPreset, mock_result};

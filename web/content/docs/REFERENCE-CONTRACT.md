@@ -136,7 +136,7 @@ TypeScript`, `.NET`, `Python`, `Go`, `Rust`).
   `[Error](../errors/index.md)`. They must resolve to a file in the same language's output, and the anchor must
   exist on the target page.
 - **Links to hand-written docs** are `/docs/...` paths (e.g. `/docs/concepts/error-contract`); they must exist.
-  Don't link to another language's reference or to `https://sponsorkit.io/docs/...`.
+  Don't link to another language's reference or to the site's absolute `https://sponsorkit.github.io/sponsorkit.io/docs/...` URLs.
 - External links (e.g. MDN, docs.rs for dependencies) are full `https://` URLs.
 
 ### Validation

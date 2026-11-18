@@ -5,7 +5,7 @@ import { parseConnectParams, type ParseResult, type SignInParams } from "@/lib/p
 import { Consent, InvalidLink, Loading } from "./consent";
 import { useTargets } from "./use-targets";
 
-/** `/connect` (PROTOCOL §4.2). */
+/** `/connect/` (PROTOCOL §4.2). */
 export function ConnectClient() {
   const [parsed, setParsed] = useState<ParseResult<SignInParams> | null>(null);
 

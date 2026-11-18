@@ -37,7 +37,8 @@ Console.WriteLine(string.Join(", ", sk.Targets)); // github:octocat, opencollect
 | `Mock` | `SponsorkitMock?` | `null` | Mock mode: a preset name such as `"active-monthly"` or `SponsorkitMock.WithContributions(...)`. Wins over `SPONSORKIT_MOCK`. See [testing](testing.md). |
 | `StorageDirectory` | `string?` | per-user config folder | Where the state file lives. See [platform notes](platform-notes.md#where-state-is-kept). |
 | `Storage` | `ISponsorkitStorage?` | `null` | A custom storage backend. Takes precedence over `StorageDirectory`. |
-| `ApiBaseUrl` | `string?` | `https://sponsorkit.io` | The Sponsorkit origin, for [self-hosting](../../reference-http/self-hosting.md) and tests. Must be an absolute http(s) URL; trailing slashes are removed. |
+| `ApiBaseUrl` | `string?` | `https://api.sponsorkit.io` | The API origin, used for every API call, for [self-hosting](../../reference-http/self-hosting.md) and tests. Must be an absolute http(s) URL; trailing slashes are removed. An empty string counts as unset. |
+| `SiteBaseUrl` | `string?` | `https://sponsorkit.github.io/sponsorkit.io`, or `ApiBaseUrl` when only that is set | The site base URL (origin plus optional path), used for the `/connect/` and `/checkout/` pages, `CheckoutUrl` and the loopback checkout redirect. Must be an absolute http(s) URL; trailing slashes are removed. An empty string counts as unset. |
 | `SignInMethod` | `SignInMethod` | `Auto` | `Auto`, `Loopback` or `Paste`. See [sign-in](sign-in.md). |
 | `OpenBrowser` | `Func<string, CancellationToken, Task>?` | system browser | Opens the sign-in or checkout URL. Throwing counts as "the browser could not open". |
 | `PromptForCode` | `Func<string, CancellationToken, Task<string>>?` | reads a line from stdin | Asks for the paste-back code; receives the URL. An empty answer throws `cancelled`. |
@@ -67,7 +68,7 @@ Each of these throws `SponsorkitError` with `Code == "invalid_config"`:
 
 - no target, or a malformed login or slug;
 - an `AppName` that is only whitespace or longer than 64 characters (an empty string counts as not set);
-- an `ApiBaseUrl` that isn't an absolute http or https URL;
+- an `ApiBaseUrl` or `SiteBaseUrl` that isn't an absolute http or https URL;
 - a `SignInTimeout` of zero or less (other than `Timeout.InfiniteTimeSpan`);
 - a negative `RequestTimeout`;
 - an unknown mock preset, from `Mock` or `SPONSORKIT_MOCK`.
@@ -111,7 +112,8 @@ ones. If Sponsorkit can't be reached, the check passes silently.
 | `TargetsHash` | The hash that names this target set's state file. |
 | `IsDisabled` | Whether `SPONSORKIT_DISABLE` is set for this instance. |
 | `IsMock` | Whether mock mode is active. |
-| `ApiBaseUrl` | The origin in use, after normalization. |
+| `ApiBaseUrl` | The API origin in use, after normalization. |
+| `SiteBaseUrl` | The site base URL in use (pages and checkout links), after normalization. |
 | `IsSignedIn()` | Whether a session token is stored. No network access. |
 
 ## With dependency injection

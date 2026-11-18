@@ -1,0 +1,18 @@
+{
+  "name": "@sponsorkit/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cross-origin end-to-end test of the split deployment: the static site, the API-only Worker (wrangler dev), the JS SDK on a third origin, and fake GitHub / Open Collective providers.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --test --test-concurrency=1 --test-timeout=300000 --test-reporter=spec \"test/*.test.mjs\"",
+    "test:only": "node --test --test-concurrency=1 --test-timeout=300000 --test-reporter=spec \"test/*.test.mjs\"",
+    "stack": "node scripts/stack.mjs",
+    "install:browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "wrangler": "^4.163.0"
+  }
+}

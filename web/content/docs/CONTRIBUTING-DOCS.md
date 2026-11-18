@@ -1,11 +1,12 @@
 # Writing Sponsorkit docs
 
-This folder is the source of <https://sponsorkit.io/docs>. Every `.md` file here (except files whose name has
+This folder is the source of <https://sponsorkit.github.io/sponsorkit.io/docs/>. Every `.md` file here (except files whose name has
 uppercase letters, like this one) is a page. The generated API reference is described in
 [REFERENCE-CONTRACT.md](REFERENCE-CONTRACT.md).
 
 ```sh
-bun run --cwd web dev               # http://localhost:3000/docs, re-reads content on every request
+bun run --cwd web dev               # http://localhost:3000/sponsorkit.io/docs/ (default BASE_PATH), re-reads content on every request
+BASE_PATH= bun run --cwd web dev    # the same at the root: http://localhost:3000/docs/
 bun run --cwd web test              # unit tests, including "every page compiles"
 bun run --cwd web build             # static export to web/out; fails on any content error
 bun run --cwd web docs:check-links  # after a build: every internal link and #anchor resolves
@@ -109,7 +110,8 @@ Write internal links as **relative `.md` paths** (preferred) or **`/docs/...` pa
 - Link into the generated reference with `/docs/reference/<lang>/...` paths. When a language's reference wasn't
   generated (local builds), such deep links fall back to `/docs/reference/<lang>` with a warning; with
   `DOCS_STRICT=1` they fail the build.
-- Other site paths allowed: `/`, `/connect`, `/connect/done`, `/checkout`, `/checkout/thanks`.
+- Other site paths allowed: `/`, `/connect/`, `/connect/done/`, `/checkout/`, `/checkout/thanks/` (write the
+  trailing-slash form; the form without the slash is accepted too). The base path is added at build time.
 - External links: full `https://` URLs.
 
 ### Code blocks

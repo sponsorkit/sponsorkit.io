@@ -71,4 +71,26 @@ describe("checkLinks", () => {
       { from: "docs.html", href: "/sk/missing.png", reason: "no such page" },
     ]);
   });
+  it("checks absolute links and sitemap entries under the site URL", () => {
+    const site = "https://example.github.io/sk";
+    const r = checkLinks({
+      files,
+      html: new Map([
+        [
+          "docs.html",
+          `<link rel="canonical" href="${site}/docs/a/"/><meta property="og:url" content="${site}/"/>` +
+            `<a href="${site}/docs/gone/">gone</a><a href="https://example.github.io/other/">other site</a><a href="${site}/docs/a#x">x</a>`,
+        ],
+        ["docs/a.html", '<h2 id="x">X</h2>'],
+      ]),
+      sitemap: `<urlset><url><loc>${site}/docs/a/</loc></url><url><loc>${site}/nope/</loc></url><url><loc>https://elsewhere.example/</loc></url></urlset>`,
+      basePath: "/sk",
+      siteUrl: `${site}/`,
+    });
+    expect(r.broken).toEqual([
+      { from: "docs.html", href: "/sk/docs/gone/", reason: "no such page" },
+      { from: "sitemap.xml", href: "/sk/nope/", reason: "no such page" },
+      { from: "sitemap.xml", href: "https://elsewhere.example/", reason: "not under the site URL https://example.github.io/sk" },
+    ]);
+  });
 });

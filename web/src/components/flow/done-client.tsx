@@ -49,7 +49,7 @@ function handle(state: DoneState): Outcome {
   }
 }
 
-/** `/connect/done` (PROTOCOL §4.5). */
+/** `/connect/done/` (PROTOCOL §4.5). */
 export function DoneClient() {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const ran = useRef(false);

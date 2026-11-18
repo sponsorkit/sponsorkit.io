@@ -72,7 +72,7 @@ func (c *Client) SignIn(ctx context.Context, opts ...SignInOptions) (*Result, er
 	if c.store().read().token() != "" {
 		params.Set("add", "1")
 	}
-	code, err := c.obtainCode(ctx, codeRequest{path: "/connect", params: params, method: o.Method})
+	code, err := c.obtainCode(ctx, codeRequest{path: connectPath, params: params, method: o.Method})
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *Client) hasProvider(p Provider) bool {
 }
 
 type codeRequest struct {
-	path   string // "/connect" or "/checkout"
+	path   string // connectPath or checkoutPath, on the site
 	params url.Values
 	method SignInMethod
 	// continueURL is where the loopback callback redirects the browser after
@@ -168,7 +168,7 @@ func cloneValues(v url.Values) url.Values {
 func (c *Client) paste(ctx, sctx context.Context, r codeRequest) (string, error) {
 	q := c.withAppName(cloneValues(r.params))
 	q.Set("delivery", "paste")
-	u := c.apiBaseURL + r.path + "?" + q.Encode()
+	u := c.siteURL(r.path, q)
 	fmt.Fprintf(c.stderr, "To sign in, open this URL on any device:\n\n  %s\n\nthen paste the code shown there (valid for 10 minutes).\n", u)
 	code, err := c.promptForCode(sctx, u)
 	if sctx.Err() != nil {
@@ -243,7 +243,7 @@ func (c *Client) loopback(ctx, sctx context.Context, r codeRequest, forced bool)
 	q := c.withAppName(cloneValues(r.params))
 	q.Set("delivery", "loopback")
 	q.Set("redirect_uri", "http://127.0.0.1:"+strconv.Itoa(port)+"/callback")
-	u := c.apiBaseURL + r.path + "?" + q.Encode()
+	u := c.siteURL(r.path, q)
 	// PROTOCOL §7.0: the callback is accepted while openBrowser is still
 	// running, so the opener runs concurrently with the wait.
 	// The opener's context ends when the sign-in fails, is cancelled or times

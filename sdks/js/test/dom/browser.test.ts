@@ -9,7 +9,10 @@ beforeAll(() => GlobalRegistrator.register({ url: "https://app.example/page" }))
 afterAll(() => GlobalRegistrator.unregister());
 
 const sdk = () => import("../../src/index");
-const API = "https://sponsorkit.io";
+/** Default site base URL (pages) and its origin (postMessage); the API is a different origin. */
+const SITE = "https://sponsorkit.github.io/sponsorkit.io";
+const SITE_ORIGIN = "https://sponsorkit.github.io";
+const API = "https://api.sponsorkit.io";
 const HASH = "3363d36356e472dab64ce744efd4e8bad412dd7f152bfd357ba96aa97180ac0e";
 
 class FakePopup {
@@ -24,11 +27,11 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 function setup(over: Record<string, unknown> = {}) {
   const popups: FakePopup[] = [];
-  const calls: { path: string; body?: unknown }[] = [];
+  const calls: { origin: string; path: string; body?: unknown }[] = [];
   let contributionsBody: unknown = fullResult;
   const fetch = async (input: string, init?: RequestInit) => {
     const url = new URL(input);
-    calls.push({ path: url.pathname, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    calls.push({ origin: url.origin, path: url.pathname, body: init?.body ? JSON.parse(String(init.body)) : undefined });
     if (url.pathname === "/api/v1/auth/token") return json({ sessionToken: "sks_browser", expiresAt: "2030-01-01T00:00:00Z", result: fullResult });
     if (url.pathname === "/api/v1/contributions") return json(contributionsBody);
     return new Response("nope", { status: 404 });
@@ -54,7 +57,7 @@ function setup(over: Record<string, unknown> = {}) {
   };
 }
 
-function post(source: unknown, data: unknown, origin = API) {
+function post(source: unknown, data: unknown, origin = SITE_ORIGIN) {
   window.dispatchEvent(new MessageEvent("message", { origin, source: source as Window, data }));
 }
 
@@ -76,7 +79,7 @@ describe("popup sign-in (delivery=web_message)", () => {
     const popup = env.popups[0]!;
     await tick(10);
     const url = new URL(popup.location.href);
-    expect(url.origin + url.pathname).toBe(`${API}/connect`);
+    expect(url.origin + url.pathname).toBe(`${SITE}/connect/`);
     expect(url.searchParams.get("delivery")).toBe("web_message");
     expect(url.searchParams.get("origin")).toBe("https://app.example");
     expect(url.searchParams.get("targets")).toBe("github:sponsorkit-conformance,opencollective:sponsorkit-conformance");
@@ -86,16 +89,46 @@ describe("popup sign-in (delivery=web_message)", () => {
     expect(url.searchParams.has("redirect_uri")).toBe(false);
 
     post(popup, { type: "sponsorkit:code", code: "skc_evil" }, "https://evil.example"); // wrong origin
+    post(popup, { type: "sponsorkit:code", code: "skc_evil" }, API); // the API origin never posts messages
     post(new FakePopup(), { type: "sponsorkit:code", code: "skc_evil" }); // wrong source
     post(popup, { type: "sponsorkit:code", code: "skc_good" });
     const fc = await pending;
     expect(fc.signedIn).toBe(true);
     expect(env.calls.filter((c) => c.path === "/api/v1/auth/token").map((c) => (c.body as { code: string }).code)).toEqual(["skc_good"]);
+    expect(new Set(env.calls.map((c) => c.origin))).toEqual(new Set([API]));
     const stored = JSON.parse(localStorage.getItem(`sponsorkit:${HASH}`) ?? "null");
     expect(stored).toMatchObject({ v: 1, sessionToken: "sks_browser", cache: { result: { signedIn: true } } });
     expect(await sk.isSignedIn()).toBe(true);
     expect(await sk.getSessionToken()).toBe("sks_browser");
     expect((await sk.getFinancialContribution()).fromCache).toBe(true);
+  });
+
+  test("siteBaseUrl and apiBaseUrl: pages and message origin on the site, API calls on the API", async () => {
+    const { Sponsorkit } = await sdk();
+    const env = setup({ apiBaseUrl: "https://api.self.example/", siteBaseUrl: "https://pages.self.example/kit//" });
+    const sk = new Sponsorkit(env.options);
+    expect(sk.apiBaseUrl).toBe("https://api.self.example");
+    expect(sk.siteBaseUrl).toBe("https://pages.self.example/kit");
+    const pending = sk.signIn();
+    await tick(10);
+    const popup = env.popups[0]!;
+    const url = new URL(popup.location.href);
+    expect(url.origin + url.pathname).toBe("https://pages.self.example/kit/connect/");
+    post(popup, { type: "sponsorkit:code", code: "skc_evil" }, "https://api.self.example"); // API origin: ignored
+    post(popup, { type: "sponsorkit:code", code: "skc_evil" }, SITE_ORIGIN); // default site origin: ignored
+    post(popup, { type: "sponsorkit:code", code: "skc_good" }, "https://pages.self.example");
+    await pending;
+    expect(env.calls.map((c) => `${c.origin}${c.path}`)).toEqual(["https://api.self.example/api/v1/auth/token"]);
+    expect(env.calls[0]?.body).toMatchObject({ code: "skc_good" });
+  });
+
+  test("apiBaseUrl alone: the site defaults to it (single origin)", async () => {
+    const { Sponsorkit } = await sdk();
+    const sk = new Sponsorkit({ github: "octocat", env: {}, apiBaseUrl: "http://127.0.0.1:8787", siteBaseUrl: "" });
+    expect(sk.siteBaseUrl).toBe("http://127.0.0.1:8787");
+    expect(sk.checkoutUrl()).toBe("http://127.0.0.1:8787/checkout/?targets=github%3Aoctocat");
+    expect(() => new Sponsorkit({ github: "octocat", env: {}, siteBaseUrl: "ftp://x.example" })).toThrow(/siteBaseUrl/);
+    expect(() => new Sponsorkit({ github: "octocat", env: {}, siteBaseUrl: "https://x.example/?q=1" })).toThrow(/siteBaseUrl/);
   });
 
   test("an error message rejects with its code", async () => {
@@ -157,7 +190,7 @@ describe("redirect fallback (returnTo)", () => {
     expect(sessionStorage.getItem(`sponsorkit:pending:${HASH}`)).toBeNull();
   });
 
-  test("a blocked popup navigates to /connect with delivery=redirect and remembers the verifier", async () => {
+  test("a blocked popup navigates to /connect/ with delivery=redirect and remembers the verifier", async () => {
     const { Sponsorkit } = await sdk();
     const env = setup({ openWindow: () => null, returnTo: "https://app.example/page" });
     const assigned: string[] = [];
@@ -172,7 +205,7 @@ describe("redirect fallback (returnTo)", () => {
     }
     expect(assigned).toHaveLength(1);
     const url = new URL(assigned[0]!);
-    expect(url.pathname).toBe("/connect");
+    expect(url.origin + url.pathname).toBe(`${SITE}/connect/`);
     expect(url.searchParams.get("delivery")).toBe("redirect");
     expect(url.searchParams.get("redirect_uri")).toBe("https://app.example/page");
     const pending = JSON.parse(sessionStorage.getItem(`sponsorkit:pending:${HASH}`) ?? "null");
@@ -194,7 +227,7 @@ describe("redirect fallback (returnTo)", () => {
 });
 
 describe("checkout", () => {
-  test("signed in: popup goes to /checkout without challenge; polls after it closes", async () => {
+  test("signed in: popup goes to /checkout/ without challenge; polls after it closes", async () => {
     const { Sponsorkit } = await sdk();
     const env = setup({ checkoutPollInterval: 0.05 });
     localStorage.setItem(
@@ -206,7 +239,7 @@ describe("checkout", () => {
     expect(env.popups).toHaveLength(1);
     await tick(20);
     const url = new URL(env.popups[0]!.location.href);
-    expect(url.pathname).toBe("/checkout");
+    expect(url.origin + url.pathname).toBe(`${SITE}/checkout/`);
     expect(url.searchParams.has("challenge")).toBe(false);
     expect(url.searchParams.get("amount")).toBe("1000");
     await tick(100);
@@ -218,14 +251,14 @@ describe("checkout", () => {
     expect(r).toEqual({ status: "contributed", contribution: added as never });
   });
 
-  test("signed out: one popup signs in via /checkout and continues", async () => {
+  test("signed out: one popup signs in via /checkout/ and continues", async () => {
     const { Sponsorkit } = await sdk();
     const env = setup({ checkoutPollInterval: 0.05 });
     const ac = new AbortController();
     const pending = new Sponsorkit(env.options).openCheckout({ frequency: "monthly", signal: ac.signal });
     await tick(20);
     const url = new URL(env.popups[0]!.location.href);
-    expect(url.pathname).toBe("/checkout");
+    expect(url.origin + url.pathname).toBe(`${SITE}/checkout/`);
     expect(url.searchParams.get("challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(url.searchParams.get("delivery")).toBe("web_message");
     post(env.popups[0], { type: "sponsorkit:code", code: "skc_checkout" });
@@ -238,7 +271,7 @@ describe("checkout", () => {
   test("checkoutUrl is synchronous", async () => {
     const { Sponsorkit } = await sdk();
     expect(new Sponsorkit({ github: "octocat", env: {} }).checkoutUrl({ frequency: "one_time" })).toBe(
-      `${API}/checkout?targets=github%3Aoctocat&frequency=one_time`,
+      `${SITE}/checkout/?targets=github%3Aoctocat&frequency=one_time`,
     );
   });
 });

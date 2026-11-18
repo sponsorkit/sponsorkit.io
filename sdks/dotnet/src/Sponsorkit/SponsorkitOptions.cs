@@ -53,8 +53,19 @@ public sealed class SponsorkitOptions
     /// <summary>A custom storage backend (for example a keychain). Takes precedence over <see cref="StorageDirectory"/>.</summary>
     public ISponsorkitStorage? Storage { get; set; }
 
-    /// <summary>The Sponsorkit origin. Default <c>https://sponsorkit.io</c>; override for self-hosting and tests.</summary>
+    /// <summary>
+    /// The Sponsorkit API origin, used for every API call (<c>/api/v1/…</c>). Default <c>https://api.sponsorkit.io</c>;
+    /// override for self-hosting and tests. Trailing slashes are removed and an empty string counts as unset.
+    /// </summary>
     public string? ApiBaseUrl { get; set; }
+
+    /// <summary>
+    /// The Sponsorkit site base URL (origin plus optional base path), used for every page URL: <c>/connect/</c>,
+    /// <c>/checkout/</c>, <see cref="SponsorkitClient.CheckoutUrl"/> and the loopback redirect after a checkout sign-in.
+    /// Default <c>https://sponsorkit.github.io/sponsorkit.io</c>, or <see cref="ApiBaseUrl"/> when that is set and this
+    /// is not (single-origin self-hosting). Trailing slashes are removed and an empty string counts as unset.
+    /// </summary>
+    public string? SiteBaseUrl { get; set; }
 
     /// <summary>Which sign-in flow to use. Default <see cref="SignInMethod.Auto"/>.</summary>
     public SignInMethod SignInMethod { get; set; } = SignInMethod.Auto;

@@ -1,5 +1,5 @@
 {
-  "type": "https://sponsorkit.io/problems/rate_limited",
+  "type": "https://sponsorkit.github.io/sponsorkit.io/docs/reference-http/http-api/#errors",
   "title": "Rate limited",
   "status": 429,
   "code": "rate_limited",

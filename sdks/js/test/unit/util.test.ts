@@ -1,11 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import fullResult from "@sponsorkit/conformance/fixtures/contribution-result.json";
 import fixtureStorage from "@sponsorkit/conformance/fixtures/storage-file.json";
+import * as shared from "@sponsorkit/shared";
 import { parseRetryAfter } from "../../src/http";
 import { FinancialContribution } from "../../src/result";
 import { parseStorageFile, serializeStorageFile } from "../../src/storage";
 import type { ContributionResult } from "../../src/types";
-import { durationMs, isEnvSet, normalizeBaseUrl, stableStringify } from "../../src/util";
+import {
+  DEFAULT_API_BASE_URL,
+  DEFAULT_SITE_BASE_URL,
+  durationMs,
+  isEnvSet,
+  normalizeBaseUrl,
+  normalizeSiteBaseUrl,
+  resolveBaseUrls,
+  SITE_PATHS,
+  stableStringify,
+} from "../../src/util";
 
 describe("env flags (PROTOCOL §7)", () => {
   test.each([
@@ -44,6 +55,30 @@ test("apiBaseUrl normalization", () => {
   expect(normalizeBaseUrl("http://127.0.0.1:1234")).toBe("http://127.0.0.1:1234");
   expect(() => normalizeBaseUrl("ftp://x")).toThrow();
   expect(() => normalizeBaseUrl("nope")).toThrow();
+});
+
+test("siteBaseUrl normalization keeps the base path", () => {
+  expect(normalizeSiteBaseUrl("https://sponsorkit.github.io/sponsorkit.io/")).toBe("https://sponsorkit.github.io/sponsorkit.io");
+  expect(normalizeSiteBaseUrl("http://127.0.0.1:1234//")).toBe("http://127.0.0.1:1234");
+  expect(() => normalizeSiteBaseUrl("ftp://x")).toThrow(/siteBaseUrl/);
+  expect(() => normalizeSiteBaseUrl("https://x.example/#a")).toThrow(/siteBaseUrl/);
+});
+
+test("base URL defaulting matches @sponsorkit/shared (PROTOCOL §7)", () => {
+  const cases: { apiBaseUrl?: string; siteBaseUrl?: string }[] = [
+    {},
+    { apiBaseUrl: "" },
+    { siteBaseUrl: "" },
+    { apiBaseUrl: "http://127.0.0.1:9/" },
+    { apiBaseUrl: "http://127.0.0.1:9", siteBaseUrl: "" },
+    { siteBaseUrl: "https://pages.example/kit/" },
+    { apiBaseUrl: "https://api.example", siteBaseUrl: "https://pages.example/kit" },
+  ];
+  for (const c of cases) expect(resolveBaseUrls(c)).toEqual(shared.resolveBaseUrls(c));
+  expect(DEFAULT_API_BASE_URL).toBe(shared.DEFAULT_API_BASE_URL);
+  expect(DEFAULT_SITE_BASE_URL).toBe(shared.DEFAULT_SITE_BASE_URL);
+  expect(SITE_PATHS.connect).toBe(shared.SITE_PATHS.connect);
+  expect(SITE_PATHS.checkout).toBe(shared.SITE_PATHS.checkout);
 });
 
 test("stableStringify ignores key order", () => {

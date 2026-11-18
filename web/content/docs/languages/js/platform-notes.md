@@ -39,8 +39,9 @@ of browser bundles. The other three only use web-standard APIs (`fetch`, Web Cry
 - **Cross-Origin-Opener-Policy.** The popup reports back with `postMessage` and the SDK watches `popup.closed`.
   A `Cross-Origin-Opener-Policy: same-origin` header on your page cuts the link to the cross-origin popup, so
   sign-in can't complete. Use `same-origin-allow-popups` (or no COOP header) on pages that sign in.
-- **Content Security Policy.** Allow the API origin in `connect-src` (`connect-src https://sponsorkit.io`, or
-  your `apiBaseUrl`). The web components add an inline `<style>` to their shadow root, which a `style-src` policy
+- **Content Security Policy.** Allow the API origin in `connect-src` (`connect-src https://api.sponsorkit.io`, or
+  your `apiBaseUrl`). The popup and checkout pages are on the site (`siteBaseUrl`), which `connect-src` doesn't
+  govern. The web components add an inline `<style>` to their shadow root, which a `style-src` policy
   without `'unsafe-inline'` blocks.
 - **Several tabs** share one `localStorage` entry, so signing in in one tab signs in all of them (each picks the
   session up on its next call).

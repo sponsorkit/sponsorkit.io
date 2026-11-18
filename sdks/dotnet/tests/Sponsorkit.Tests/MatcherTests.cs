@@ -54,6 +54,17 @@ public sealed class MatcherTests
     }
 
     [Fact]
+    public void Request_expectations_can_pin_the_listener()
+    {
+        var log = (JsonArray)JsonNode.Parse("""
+            [{"server":"site","method":"GET","path":"/sponsorkit.io/connect/","query":{},"headers":{}}]
+            """)!;
+        Assert.Empty(Matcher.MatchRequests(log, (JsonObject)JsonNode.Parse("""{"calls":[{"method":"GET","path":"/sponsorkit.io/connect/","server":"site","count":1}]}""")!));
+        Assert.Empty(Matcher.MatchRequests(log, (JsonObject)JsonNode.Parse("""{"calls":[{"method":"GET","path":"/sponsorkit.io/connect/","count":1}]}""")!));
+        Assert.NotEmpty(Matcher.MatchRequests(log, (JsonObject)JsonNode.Parse("""{"calls":[{"method":"GET","path":"/sponsorkit.io/connect/","server":"api"}]}""")!));
+    }
+
+    [Fact]
     public void Substitution_prefers_longer_names()
     {
         var vars = new Dictionary<string, string> { ["$STORAGE_DIR"] = "/d", ["$STORAGE_FILE"] = "/d/f.json" };

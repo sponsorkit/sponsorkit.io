@@ -64,7 +64,7 @@ if __name__ == "__main__":
 |---|---|---|
 | `token` | required | The session token (`sks_…`) from the client. Surrounding whitespace is ignored. |
 | `targets` | required | Your targets as `{"github": …, "opencollective": …}`, a target string such as `"github:octocat,opencollective:my-collective"`, or a list of target strings. Normalized the same way as the client's options. |
-| `api_base_url` | `"https://sponsorkit.io"` | For self-hosting and tests. |
+| `api_base_url` | `"https://api.sponsorkit.io"` | For self-hosting and tests. |
 | `request_timeout` | `30.0` | Seconds for the HTTP request; `0` disables the timeout. |
 | `http_client` | a new client per call | An `httpx.Client` (`httpx.AsyncClient` for `averify_session`) to reuse connections, proxies or a test transport. Sponsorkit doesn't close it. |
 | `timeout` | `None` | Deprecated alias of `request_timeout`. |

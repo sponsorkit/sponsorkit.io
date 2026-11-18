@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Sponsorkit SDK: check GitHub Sponsors and Open Collective contributions and open checkout from your app. Zero dependencies; browsers, Node, Bun, Deno and Workers.",
   "license": "MIT",
-  "homepage": "https://sponsorkit.io",
+  "homepage": "https://sponsorkit.github.io/sponsorkit.io/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sponsorkit/sponsorkit.io.git",

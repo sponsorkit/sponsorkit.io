@@ -5,12 +5,25 @@ order: 20
 ---
 
 The [wire protocol](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/PROTOCOL.md) is the contract
-between the Worker, the static pages, the conformance suite and every SDK. This page walks through it in plain
+between the Worker (the API), the static pages (the site), the conformance suite and every SDK. This page walks through it in plain
 language. When the two disagree, PROTOCOL.md wins. The reasons behind the design are in the
 [specification](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/SPEC.md).
 
 You need this if you're writing an SDK for another language, reviewing Sponsorkit's security, or running your own
 instance. To use Sponsorkit from an app, the [guides](../guides/index.md) are a better start.
+
+## Site and API
+
+Sponsorkit runs in two places, on different origins:
+
+| Part | What | Default |
+|---|---|---|
+| **Site** | The static export of the website: landing page, docs, `/connect/`, `/connect/done/`, `/checkout/`, `/checkout/thanks/`. Hosted on GitHub Pages. | `https://sponsorkit.github.io/sponsorkit.io` |
+| **API** | The Cloudflare Worker: `/api/v1/…` and `/api/oauth/…`, nothing else. | `https://api.sponsorkit.io` |
+
+Page URLs are relative to the site base URL and always end in `/` (GitHub Pages serves directories). API paths
+are relative to the API origin. SDKs take both as options, `siteBaseUrl` and `apiBaseUrl`; setting only
+`apiBaseUrl` uses it for both, which suits an instance that serves the site and the API from one origin.
 
 ## Targets
 
@@ -34,13 +47,15 @@ Sign-in is an OAuth-style flow with [PKCE](https://www.rfc-editor.org/rfc/rfc763
 to register anything:
 
 1. **The SDK** generates a random code verifier (32 bytes, base64url, 43 characters) and its S256 challenge.
-2. **The SDK** opens `/connect?targets=…&challenge=…&delivery=…` (plus `origin`, `redirect_uri` or `app_name`,
-   depending on the delivery).
+2. **The SDK** opens the site's `/connect/?targets=…&challenge=…&delivery=…` (plus `origin`, `redirect_uri` or
+   `app_name`, depending on the delivery).
 3. **The consent page** loads the targets' public metadata and shows who is asking, which accounts will be
    checked and what will be shared. The person picks GitHub or Open Collective.
-4. **The Worker** (`/api/oauth/:provider/start`) checks the request came from the consent page, sets a short-lived
-   `__Host-` nonce cookie, seals everything it needs into the OAuth `state`, and redirects to the provider.
-5. **The provider** asks the person to authorize, and redirects back to `/api/oauth/:provider/callback`.
+4. **The consent page** submits the sign-in parameters as a top-level form POST to the API's
+   `/api/oauth/:provider/start`. **The Worker** checks that the request came from the consent page (its `Origin`
+   header must be exactly the site's origin), sets a short-lived `__Host-` nonce cookie on the API's domain, seals
+   everything it needs into the OAuth `state`, and redirects to the provider.
+5. **The provider** asks the person to authorize, and redirects back to the API's `/api/oauth/:provider/callback`.
 6. **The Worker** checks the state against the cookie, exchanges the provider code for a token, reads the person's
    provider user id, and seals all of it into a **sign-in code** (`skc_…`) bound to the challenge.
 7. **The code is delivered** to the app (see below).
@@ -50,6 +65,18 @@ to register anything:
 Provider tokens never leave the Worker in readable form, and a code is useless without the verifier, which never
 leaves the SDK.
 
+### Why the start is a form POST
+
+The consent screen is the only place the supporter sees who is asking and which accounts will be checked, and
+providers don't ask again for an app the supporter already authorized. So the start endpoint must only accept
+requests from the consent page. Because the site and the API are on different sites, the Worker checks the
+`Origin` header, which browsers set themselves and pages can't forge, and which they always send on a POST. A
+`GET` is never accepted, so no link or redirect can start a sign-in; a request without the right `Origin` gets a
+page that links to the consent screen. The consent pages use the referrer policy `strict-origin` (under
+`no-referrer` browsers would send `Origin: null`) and hide their provider buttons when framed. The residual risks
+(every page on the shared `sponsorkit.github.io` origin is trusted, framing, social engineering) are listed in
+[PROTOCOL.md §4.3](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/PROTOCOL.md#security-cross-site-consent-start).
+
 ### Delivery methods
 
 How the code gets back to the app depends on where the app runs. Each method limits where a code can go, so no
@@ -57,10 +84,10 @@ allowlist of apps is needed:
 
 | `delivery` | Used by | How the code arrives | What keeps it safe |
 |---|---|---|---|
-| `web_message` | Browser apps (popup) | `/connect/done` posts it to `window.opener` with `postMessage`. | The browser only delivers to the `origin` the SDK named; that origin is shown on the consent screen. |
+| `web_message` | Browser apps (popup) | The site's `/connect/done/` posts it to `window.opener` with `postMessage`. | The browser only delivers to the `origin` the SDK named; that origin is shown on the consent screen. The SDK only accepts messages whose origin is the site's. |
 | `redirect` | Browser apps when the popup is blocked | Redirect to `redirect_uri` with `?sponsorkit_code=…`. | `redirect_uri` must be `https` or localhost; its host is shown on the consent screen. |
 | `loopback` | Desktop apps and CLIs | Redirect to `http://127.0.0.1:<port>/callback?code=…`. | Only a loopback address on the person's own machine is accepted ([RFC 8252](https://www.rfc-editor.org/rfc/rfc8252#section-7.3)). |
-| `paste` | Headless machines | `/connect/done` shows the code to copy into the app. | The code expires in 10 minutes and needs the verifier. |
+| `paste` | Headless machines | The site's `/connect/done/` shows the code to copy into the app. | The code expires in 10 minutes and needs the verifier. |
 
 For native apps, the consent screen shows the SDK-supplied `app_name` labelled "says it is", because nothing can
 verify it. If sign-in fails at the provider, the Worker delivers `access_denied`, `invalid_state` or
@@ -108,7 +135,7 @@ identity's token, in parallel. Results are normalized into one shape (see
 
 ## Checkout
 
-`/checkout` is a static page. Given `targets` and optional `amount`, `currency`, `frequency` and `provider`, it
+`/checkout/` is a static page on the site. Given `targets` and optional `amount`, `currency`, `frequency` and `provider`, it
 offers a provider only if:
 
 1. the account exists;
@@ -123,7 +150,7 @@ disabled option. It never switches away from a requested provider silently.
   `https://github.com/sponsors/<login>`.
 - **Open Collective:** `https://opencollective.com/<slug>/donate` with the amount in major units (using ISO 4217
   minor-unit digits, so `JPY` has none and `KWD` has three), `interval=month|year`, and a redirect back to
-  `/checkout/thanks`.
+  the site's `/checkout/thanks/`.
 
 With a `challenge`, the page signs the person in first and continues to the chooser afterwards, so the SDK can
 detect the new contribution. Without one (a link from `checkoutUrl()`), it skips sign-in.
@@ -133,7 +160,7 @@ detect the new contribution. Without one (a link from `checkoutUrl()`), it skips
 Section 7 of the protocol pins down the SDK behaviour that apps rely on, so that the five SDKs are
 interchangeable:
 
-- **Options** with the same meaning everywhere: `apiBaseUrl`, `openBrowser`, `promptForCode`, `storageDir` or
+- **Options** with the same meaning everywhere: `apiBaseUrl`, `siteBaseUrl`, `openBrowser`, `promptForCode`, `storageDir` or
   `storage`, `clock`, `signInTimeout`, `interactive`, `signInMethod`, `env`, `devChecks`,
   `checkoutPollInterval`, `requestTimeout` and a way to reset per-process state.
 - **The error contract:** `getFinancialContribution()` never throws for network or server problems and serves its
@@ -165,6 +192,7 @@ in through one SDK is signed in for every app on the machine that uses the same 
 ## Conformance suite
 
 [`sdks/conformance`](https://github.com/sponsorkit/sponsorkit.io/tree/main/sdks/conformance) contains a fake
-Sponsorkit API (`bun sdks/conformance/server.ts`) and a list of scenarios with expected results: sign-in flows,
+Sponsorkit API (`bun sdks/conformance/server.ts`), which also serves the site's `/connect/` and `/checkout/` paths
+so tests only need to set `apiBaseUrl`, and a list of scenarios with expected results: sign-in flows,
 caching, outages, rate limits, checkout, nags, storage and `verifySession`. Every SDK runs every scenario in its
 own test framework. A new SDK is done when it passes them all.

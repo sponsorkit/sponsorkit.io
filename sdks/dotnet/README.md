@@ -47,17 +47,17 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 
 | Member | Description |
 |---|---|
-| `new SponsorkitClient(SponsorkitOptions)` | Validates the configuration and performs no I/O. It throws `SponsorkitError("invalid_config")` when there are no targets, a target is malformed, `ApiBaseUrl` or `AppName` is invalid, or the mock preset is unknown. |
+| `new SponsorkitClient(SponsorkitOptions)` | Validates the configuration and performs no I/O. It throws `SponsorkitError("invalid_config")` when there are no targets, a target is malformed, `ApiBaseUrl`, `SiteBaseUrl` or `AppName` is invalid, or the mock preset is unknown. |
 | `Task<ContributionResult> GetFinancialContributionAsync(CancellationToken)` | Returns the supporter's contributions to your targets. The result comes from the local cache while it is younger than `CacheTtl`. |
 | `Task<ContributionResult> GetFinancialContributionAsync(TimeSpan cacheTtl, CancellationToken)` | The same with a per-call cache TTL. `TimeSpan.Zero` always asks the API, unless a `Retry-After` backoff is in force. |
 | `Task<ContributionResult> SignInAsync(SignInOptions?, CancellationToken)` | Signs in via loopback (system browser) or paste-back. While already signed in, `new SignInOptions { Provider = "opencollective" }` adds a second identity to the session. If the stored session has died, it starts a fresh session with the new identity. Cancelling the token throws `cancelled`. |
 | `bool IsSignedIn()` | Whether a session token is stored. No network access. |
 | `Task<CheckoutResult> OpenCheckoutAsync(CheckoutOptions?, CancellationToken)` | Signs in first if needed, opens the checkout page, then polls until a new or changed contribution appears. It resolves `Unknown` when polling times out (`Timeout`, default 10 minutes) or on cancellation in either phase. The sign-in phase is bounded by `SignInTimeout` and throws `timeout` when it runs out. |
-| `string CheckoutUrl(CheckoutUrlOptions?)` | Returns an anonymous checkout link. It is synchronous and offline, so it suits nags, `--help` text and READMEs. It throws `invalid_config` for an unconfigured provider or an invalid frequency, amount or currency. |
+| `string CheckoutUrl(CheckoutUrlOptions?)` | Returns an anonymous checkout link, `<SiteBaseUrl>/checkout/?…`. It is synchronous and offline, so it suits nags, `--help` text and READMEs. It throws `invalid_config` for an unconfigured provider or an invalid frequency, amount or currency. |
 | `Task SignOutAsync(CancellationToken)` | Deletes the session token and cache locally and keeps nag state. |
 | `SponsorkitNag Nag(NagOptions)` | The nag helper (see below). |
 | `static void ResetProcessState()` | Forgets per-process memo state: counted nag runs, the dev-time check and `Retry-After` backoff. Intended for tests. |
-| `Targets`, `TargetsHash`, `IsDisabled`, `IsMock`, `ApiBaseUrl` | Read-only information about the instance. |
+| `Targets`, `TargetsHash`, `IsDisabled`, `IsMock`, `ApiBaseUrl`, `SiteBaseUrl` | Read-only information about the instance. |
 
 ### `SponsorkitOptions`
 
@@ -69,7 +69,8 @@ call. Call `SignInAsync()` when the user asks for it, for example from a `my-cli
 | `Mock` | `null` | Mock mode (see below). |
 | `StorageDirectory` | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit`, `~/Library/Application Support/sponsorkit` or `%APPDATA%\sponsorkit`. If no per-user config directory can be determined (for example `HOME` is unset), state is kept in memory for the life of the client. The SDK never writes to the working directory and construction never fails over it. |
 | `Storage` | `null` | A custom `ISponsorkitStorage` backend, for example a keychain. |
-| `ApiBaseUrl` | `https://sponsorkit.io` | For self-hosting and tests. |
+| `ApiBaseUrl` | `https://api.sponsorkit.io` | The API origin, used for every API call (`/api/v1/…`). For self-hosting and tests. |
+| `SiteBaseUrl` | `https://sponsorkit.github.io/sponsorkit.io`, or `ApiBaseUrl` when that is set and this isn't | The site base URL (origin plus optional base path), used for every page URL: `<SiteBaseUrl>/connect/`, `<SiteBaseUrl>/checkout/`, `CheckoutUrl()` and the loopback redirect after a checkout sign-in. Setting only `ApiBaseUrl` serves both from one origin (single-origin self-hosting). Trailing slashes are trimmed from both, and an empty string counts as unset. |
 | `SignInMethod` | `Auto` | `Auto` uses loopback, and falls back to paste-back over SSH, without a display, when `127.0.0.1` can't be bound, or when the browser cannot open. `Loopback` and `Paste` force one flow (a forced `Loopback` that can't bind throws `network_error`). |
 | `OpenBrowser` | system browser | `Func<string, CancellationToken, Task>`. Throwing counts as "the browser could not open". The callback is accepted while it is still running. The system launcher (`open`/`xdg-open`) counts as failed when it exits non-zero, and as opened when it is still running after about 1.5 s. |
 | `PromptForCode` | reads stdin | `Func<string url, CancellationToken, Task<string>>`, used by paste-back sign-in. An empty answer throws `cancelled`. See [the stdin limitation](#paste-back-and-stdin). |
@@ -126,10 +127,10 @@ Cancelling `GetFinancialContributionAsync` or `VerifySessionAsync` raises `Opera
 
 - **Loopback (desktop):**
   1. The SDK listens on `http://127.0.0.1:<random>/callback`.
-  2. It opens the system browser on the Sponsorkit consent page.
+  2. It opens the system browser on the Sponsorkit consent page, `<SiteBaseUrl>/connect/?…`.
   3. It receives the code and exchanges it with its PKCE verifier.
 - **Paste-back (SSH, containers, no display):**
-  1. The SDK prints a URL to stderr.
+  1. The SDK prints a `<SiteBaseUrl>/connect/?…` URL to stderr.
   2. The user opens it on any device.
   3. The user pastes the displayed code back into the terminal.
 
@@ -186,7 +187,7 @@ var custom = new SponsorkitClient(new SponsorkitOptions
 
 For integration tests, use these options:
 
-- `ApiBaseUrl` points the SDK at a fake server.
+- `ApiBaseUrl` points the SDK at a fake server. Without `SiteBaseUrl`, the pages (`/connect/`, `/checkout/`) are on the same origin too.
 - `OpenBrowser` and `PromptForCode` drive sign-in.
 - `StorageDirectory` should be a temp directory.
 - `Environment` sets the environment variables for one instance.

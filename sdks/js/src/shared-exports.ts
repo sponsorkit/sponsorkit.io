@@ -7,6 +7,7 @@ export {
   DEFAULT_CHECKOUT_POLL_INTERVAL,
   DEFAULT_CHECKOUT_TIMEOUT,
   DEFAULT_SIGN_IN_TIMEOUT,
+  DEFAULT_SITE_BASE_URL,
   type Nag,
   type NagDueOptions,
   type NagOptions,

@@ -29,17 +29,66 @@ jobs:
       - name: Worker
         run: bun run typecheck && bun run test
         working-directory: app
+      # The API-only Worker (no static assets) bundles; deploy-api deploys the same config.
+      - name: Worker bundles
+        run: bunx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/wrangler"
+        working-directory: app
       - name: Conformance kit
         run: bun run typecheck && bun test
         working-directory: sdks/conformance
 
   web:
-    # Builds the site WITH the generated API reference of every SDK, tests it, and hands web/out to the
-    # Cloudflare deploy job as the `site` artifact.
+    # Builds the GitHub Pages site (web/ static export) WITH the generated API reference of every SDK,
+    # link-checks and end-to-end tests that exact build, and uploads web/out as the Pages artifact.
+    # On pull requests this is build + test only; `deploy-site` publishes it on pushes to main.
     name: Website & docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # actions/configure-pages reads the Pages settings (base path, URL).
+      pages: read
+    outputs:
+      # "true" when GitHub Pages is enabled for this repository (configure-pages succeeded).
+      pages-enabled: ${{ steps.site.outputs.pages-enabled }}
     steps:
       - uses: actions/checkout@v5
+
+      # Base path and URL of the Pages site (/sponsorkit.io and https://sponsorkit.github.io/sponsorkit.io,
+      # or "" and the custom domain once one is set). Fails while Pages is not enabled (Settings → Pages →
+      # Source: GitHub Actions) and on some fork pull requests; the next step then uses the defaults.
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+      - name: Site settings (PROTOCOL §0.2)
+        id: site
+        env:
+          PAGES_OUTCOME: ${{ steps.pages.outcome }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          # Optional repository variable for a self-hosted API; empty or unset = https://api.sponsorkit.io.
+          API_BASE: ${{ vars.SPONSORKIT_API_BASE || 'https://api.sponsorkit.io' }}
+        run: |
+          if [ "$PAGES_OUTCOME" = success ] && [ -n "$PAGES_BASE_URL" ]; then
+            base_path="$PAGES_BASE_PATH"
+            site_url="$PAGES_BASE_URL"
+            echo "pages-enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            base_path="/sponsorkit.io"
+            site_url="https://sponsorkit.github.io/sponsorkit.io"
+            echo "pages-enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=GitHub Pages::GitHub Pages is not configured for this repository (Settings → Pages → Source: GitHub Actions); building for $site_url and not deploying."
+          fi
+          base_path="${base_path%/}"
+          site_url="${site_url%/}"
+          # Every later step (build, link check, Playwright's static server) uses the same values.
+          {
+            echo "BASE_PATH=$base_path"
+            echo "SITE_URL=$site_url"
+            echo "TRAILING_SLASH=1"
+            echo "NEXT_PUBLIC_SPONSORKIT_API_BASE=${API_BASE%/}"
+          } >> "$GITHUB_ENV"
+          echo "Site: $site_url (base path '${base_path}'), API: ${API_BASE%/}"
 
       # Toolchains the reference generators need (sdks/<lang>/scripts/gen-docs.sh).
       - uses: oven-sh/setup-bun@v2
@@ -90,27 +139,41 @@ jobs:
       - name: Typecheck and unit tests
         working-directory: web
         run: bun run typecheck && bun run test
+      # Static export for GitHub Pages: BASE_PATH, SITE_URL, TRAILING_SLASH and
+      # NEXT_PUBLIC_SPONSORKIT_API_BASE come from the "Site settings" step.
       - name: Build (fails if a language reference is missing)
         run: bun run --cwd web build
         env:
           DOCS_STRICT: "1"
       - name: Check links
         run: bun run --cwd web docs:check-links
-      # Same as the tail of `bun run test:e2e` (docs, pages, checkout, ...) without building a second time.
+      # Same as the tail of `bun run test:e2e` (docs, pages, checkout, ...) without building a second
+      # time: Playwright serves this exact web/out under BASE_PATH, like GitHub Pages.
       - name: End-to-end tests
         working-directory: web
         run: bunx playwright test --trace off
-      - name: Worker bundles with the static site
-        run: bunx wrangler deploy --dry-run --outdir /tmp/wrangler
-        working-directory: app
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-pages-artifact@v4
         with:
-          name: site
           path: web/out
-          include-hidden-files: true
-          if-no-files-found: error
           retention-days: 7
+
+  e2e-split:
+    # The real split deployment: the static site, the API-only Worker (wrangler dev) and the JS SDK
+    # on three different origins against fake GitHub / Open Collective providers.
+    name: Cross-origin end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run install:browsers
+        working-directory: e2e
+      - run: bun run test
+        working-directory: e2e
 
   sdk-js:
     name: SDK (JS/TS)
@@ -207,24 +270,53 @@ jobs:
         working-directory: sdks/rust
         run: cargo test
 
-  deploy:
-    name: Deploy to Cloudflare
+  deploy-site:
+    name: Deploy site to GitHub Pages
     needs: [typescript, web]
-    # Enable by setting the repository variable DEPLOY_ENABLED=true and the
-    # secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+    # Publishes exactly what the Website & docs job built and tested. Requires GitHub Pages with
+    # "Source: GitHub Actions" (SPEC §13); until then the web job warns and this job is skipped.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.web.outputs.pages-enabled == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-api:
+    name: Deploy API Worker to Cloudflare
+    needs: [typescript]
+    # API-only Worker (app/, no static assets) on api.sponsorkit.io. Enable by setting the repository
+    # variable DEPLOY_ENABLED=true and the secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
+    concurrency:
+      group: deploy-api
+      cancel-in-progress: false
     steps:
+      - name: Check Cloudflare secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error title=Cloudflare deploy::DEPLOY_ENABLED is true but these secrets are not set:$missing"
+            exit 1
+          fi
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      # Deploy exactly what the Website & docs job built and tested (with the API reference) instead of
-      # rebuilding here without the SDK toolchains.
-      - uses: actions/download-artifact@v5
-        with:
-          name: site
-          path: web/out
       - run: bunx wrangler deploy
         working-directory: app
         env:

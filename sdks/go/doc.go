@@ -42,7 +42,7 @@
 // Options.Mock (MockPreset, MockContributions) or the SPONSORKIT_MOCK
 // environment variable switch to mock mode: no network, no disk, and
 // Result.Mock is true. Options also exposes test hooks: Options.APIBaseURL,
-// Options.StorageDir, Options.OpenBrowser, Options.PromptForCode,
+// Options.SiteBaseURL, Options.StorageDir, Options.OpenBrowser, Options.PromptForCode,
 // Options.SignInMethod, Options.SignInTimeout, Options.RequestTimeout,
 // Options.Env, Options.DevChecks, Options.Interactive,
 // Options.CheckoutPollInterval and Options.Clock. Options.Env replaces the process

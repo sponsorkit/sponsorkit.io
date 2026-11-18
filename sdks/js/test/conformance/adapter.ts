@@ -27,6 +27,8 @@ export const nodeAdapter: SdkAdapter = {
       cacheTtl: config.cacheTtl,
       mock: config.mock as MockOption | undefined,
       apiBaseUrl: config.apiBaseUrl,
+      // Passed only when the scenario sets it; an empty string is passed as-is (the SDK treats it as unset).
+      ...(config.siteBaseUrl !== undefined ? { siteBaseUrl: config.siteBaseUrl } : {}),
       storageDir: config.storageDir,
       signInMethod: config.signInMethod,
       // Always passed: it replaces the process environment for the SPONSORKIT_* variables and CI.

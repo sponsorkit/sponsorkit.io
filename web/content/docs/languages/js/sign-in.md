@@ -25,10 +25,11 @@ to see what the new supporter contributes.
 1. `signIn()` synchronously opens an empty popup (`window.open("about:blank", "sponsorkit", popupFeatures)`).
    That is why it must run inside a click or key handler: browsers only allow popups opened during a user
    gesture. Don't `await` anything before calling it.
-2. The popup goes to Sponsorkit's `/connect` page with a PKCE challenge, the user picks a provider and
-   approves.
-3. Sponsorkit posts a one-time code back to your page with `postMessage`. The SDK accepts it only from the API
-   origin and from that popup, exchanges it for a session token and stores the token in `localStorage`.
+2. The popup goes to Sponsorkit's `/connect/` page (on `siteBaseUrl`) with a PKCE challenge, the user picks a
+   provider and approves.
+3. Sponsorkit's `/connect/done/` page posts a one-time code back to your page with `postMessage`. The SDK accepts
+   it only from the origin of `siteBaseUrl` (by default `https://sponsorkit.github.io`) and from that popup,
+   exchanges it for a session token and stores the token in `localStorage`.
 
 If the user closes the popup, `signIn()` rejects with `cancelled`.
 

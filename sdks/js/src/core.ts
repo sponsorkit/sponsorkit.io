@@ -23,18 +23,22 @@ import { codeChallenge, createCodeVerifier, type Target, targetsFrom, targetsHas
 import type { CheckoutOptions, CheckoutResult, Contribution, ContributionResult, Frequency, MockOption, NagState, Provider, StorageFile } from "./types";
 import {
   DEFAULT_API_BASE_URL,
+  DEFAULT_SITE_BASE_URL,
   durationMs,
   type Env,
   isEnvSet,
   isObject,
-  normalizeBaseUrl,
   parseIsoTimestamp,
   processEnv,
+  resolveBaseUrls,
+  SITE_PATHS,
+  type SitePath,
+  sitePageUrl,
   sleep,
   stableStringify,
 } from "./util";
 
-export { DEFAULT_API_BASE_URL };
+export { DEFAULT_API_BASE_URL, DEFAULT_SITE_BASE_URL };
 /** Default `cacheTtl` in seconds. */
 export const DEFAULT_CACHE_TTL = 3600;
 /** Minimum constructor `cacheTtl` in seconds (SPEC §7.1). */
@@ -58,8 +62,18 @@ export interface SponsorkitCoreOptions {
   mock?: MockOption;
   /** Where the session token, cache and nag state live. Accepts a {@link SponsorkitStorage} or a Web Storage object. */
   storage?: SponsorkitStorage | WebStorageLike;
-  /** API origin, for self-hosting and tests. Default `https://sponsorkit.io`. */
+  /**
+   * API origin used for every API call (`/api/v1/…`), for self-hosting and tests. Default `https://api.sponsorkit.io`.
+   * An empty string counts as unset.
+   */
   apiBaseUrl?: string;
+  /**
+   * Site base URL (origin plus optional base path) used for every page: `/connect/`, `/checkout/`,
+   * `checkoutUrl()` and the loopback checkout redirect. Default `https://sponsorkit.github.io/sponsorkit.io`,
+   * or `apiBaseUrl` when that is set and this isn't (single-origin self-hosting, tests).
+   * An empty string counts as unset; trailing slashes are trimmed.
+   */
+  siteBaseUrl?: string;
   /**
    * Environment used for `SPONSORKIT_DISABLE`, `SPONSORKIT_MOCK`, `SPONSORKIT_NO_NAG`, `SPONSORKIT_DEV_CHECKS` and `CI`.
    * When given, it **replaces** the process environment for these variables (it is not merged). Default: the process environment.
@@ -138,8 +152,8 @@ export interface Nag {
 
 /** @internal A request for a sign-in code, handed to the platform. */
 export interface CodeRequest {
-  /** `/connect` or `/checkout`. */
-  path: "/connect" | "/checkout";
+  /** The site page: `/connect/` or `/checkout/`. */
+  path: SitePath;
   /** targets, challenge and optional provider/add/checkout params. Delivery params are added by the platform. */
   params: URLSearchParams;
   /** PKCE verifier (for flows that must persist it, e.g. browser redirects). */
@@ -221,8 +235,10 @@ export abstract class SponsorkitCore<I = unknown> {
   readonly targets: readonly string[];
   /** Canonical target param (`github:x,opencollective:y`). */
   readonly targetsParam: string;
-  /** API origin in use. */
+  /** API origin in use (no trailing slash). */
   readonly apiBaseUrl: string;
+  /** Site base URL in use (origin plus optional base path, no trailing slash). */
+  readonly siteBaseUrl: string;
   /** True when `SPONSORKIT_DISABLE` is set: no network, no disk, signed-out `disabled` results. */
   readonly disabled: boolean;
   /** True in mock mode. */
@@ -249,7 +265,9 @@ export abstract class SponsorkitCore<I = unknown> {
     this.targetList = targetsFrom({ github: options.github, opencollective: options.opencollective });
     this.targets = this.targetList.map(targetToString);
     this.targetsParam = targetsParam(this.targetList);
-    this.apiBaseUrl = normalizeBaseUrl(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
+    const urls = resolveBaseUrls(options);
+    this.apiBaseUrl = urls.apiBaseUrl;
+    this.siteBaseUrl = urls.siteBaseUrl;
     this.env = options.env ?? processEnv();
     const ttl = options.cacheTtl ?? DEFAULT_CACHE_TTL;
     if (typeof ttl !== "number" || !Number.isFinite(ttl) || ttl < 0) throw new SponsorkitError("invalid_config", "cacheTtl must be a number of seconds");
@@ -359,7 +377,7 @@ export abstract class SponsorkitCore<I = unknown> {
       if (options.provider) params.set("provider", options.provider);
       if (signedIn) params.set("add", "1");
       const method = (options as { method?: string }).method;
-      const code = await this.obtainCode(interaction, { path: "/connect", params, verifier, signal, method });
+      const code = await this.obtainCode(interaction, { path: SITE_PATHS.connect, params, verifier, signal, method });
       if (signal.aborted) throw abortError(signal);
       return new FinancialContribution(await this.exchange(code, verifier));
     } catch (e) {
@@ -373,7 +391,7 @@ export abstract class SponsorkitCore<I = unknown> {
 
   /**
    * Sends the user to contribute and waits for the new contribution (SPEC §7.3):
-   * signs in first if needed, opens `/checkout`, then polls with `cacheTtl: 0`
+   * signs in first if needed, opens `<siteBaseUrl>/checkout/`, then polls with `cacheTtl: 0`
    * until a new or changed contribution appears. Resolves `{ status: "unknown" }`
    * when the polling `timeout` passes or `signal` aborts. Rejects with the
    * `signIn()` codes during the sign-in phase, including `timeout`
@@ -415,12 +433,12 @@ export abstract class SponsorkitCore<I = unknown> {
           let code: string;
           try {
             code = await this.obtainCode(interaction, {
-              path: "/checkout",
+              path: SITE_PATHS.checkout,
               params,
               verifier,
               signal: signIn.signal,
               method: (options as { method?: string }).method,
-              continueUrl: `${this.apiBaseUrl}/checkout?${query}&step=choose`,
+              continueUrl: this.pageUrl(SITE_PATHS.checkout, `${query}&step=choose`),
             });
             if (signIn.signal.aborted) throw abortError(signIn.signal);
           } catch (e) {
@@ -437,7 +455,7 @@ export abstract class SponsorkitCore<I = unknown> {
         }
       }
       const { signal, deadline } = startPolling();
-      if (stored.sessionToken) await this.showCheckout(interaction, `${this.apiBaseUrl}/checkout?${query}`, signal);
+      if (stored.sessionToken) await this.showCheckout(interaction, this.pageUrl(SITE_PATHS.checkout, query), signal);
       await this.beforePolling(interaction, signal);
       return await this.pollForContribution(baseline, deadline, interval, signal);
     } catch (e) {
@@ -449,12 +467,12 @@ export abstract class SponsorkitCore<I = unknown> {
   }
 
   /**
-   * A link to the `/checkout` page without sign-in (synchronous, offline-safe).
+   * A link to the `<siteBaseUrl>/checkout/` page without sign-in (synchronous, offline-safe).
    * Suits nags, READMEs and "Sponsor" links. Checkout started this way can't be detected.
    */
   checkoutUrl(options: CheckoutOptions = {}): string {
     // Throws invalid_config for an unconfigured provider or an invalid amount, currency or frequency (PROTOCOL §7.1 item 16).
-    return `${this.apiBaseUrl}/checkout?${this.checkoutQuery(options)}`;
+    return this.pageUrl(SITE_PATHS.checkout, this.checkoutQuery(options));
   }
 
   /**
@@ -485,6 +503,11 @@ export abstract class SponsorkitCore<I = unknown> {
   }
 
   // ---------------------------------------------------------------- internals
+
+  /** `<siteBaseUrl><path>?<query>` for a site page (PROTOCOL §7: trailing-slash paths). */
+  protected pageUrl(path: SitePath, query: URLSearchParams | string): string {
+    return sitePageUrl(this.siteBaseUrl, path, query);
+  }
 
   /** The storage key (`targets_hash`). */
   protected hash(): Promise<string> {

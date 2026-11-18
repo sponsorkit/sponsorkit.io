@@ -1,5 +1,5 @@
 /** application/problem+json errors (PROTOCOL §3). */
-import type { ErrorCode, Problem } from "@sponsorkit/shared";
+import { problemTypeUrl, type ErrorCode, type Problem } from "@sponsorkit/shared";
 
 const TITLES: Record<ErrorCode, string> = {
   invalid_request: "Invalid request",
@@ -25,13 +25,12 @@ export class ApiError extends Error {
 
 /**
  * `type` must dereference to human-readable docs (RFC 9457 §3.1.1). The site has no per-code
- * errors page, so every problem points at the docs' error section; `code` tells them apart.
+ * errors page, so every problem points at the HTTP API docs' error list on the site
+ * (`<SITE_BASE_URL>/docs/reference-http/http-api/#errors`, PROTOCOL §3); `code` tells them apart.
  */
-export const PROBLEM_TYPE = "https://sponsorkit.io/docs#error-contract";
-
-export function problemBody(status: number, code: ErrorCode, detail?: string): Problem {
+export function problemBody(status: number, code: ErrorCode, detail: string | undefined, siteBaseUrl: string): Problem {
   const body: Problem = {
-    type: PROBLEM_TYPE,
+    type: problemTypeUrl(siteBaseUrl),
     title: TITLES[code],
     status,
     code,
@@ -40,8 +39,8 @@ export function problemBody(status: number, code: ErrorCode, detail?: string): P
   return body;
 }
 
-export function problemResponse(err: ApiError): Response {
+export function problemResponse(err: ApiError, siteBaseUrl: string): Response {
   const headers = new Headers({ "Content-Type": "application/problem+json", "Cache-Control": "no-store" });
   if (err.retryAfter !== undefined) headers.set("Retry-After", String(err.retryAfter));
-  return new Response(JSON.stringify(problemBody(err.status, err.code, err.detail)), { status: err.status, headers });
+  return new Response(JSON.stringify(problemBody(err.status, err.code, err.detail, siteBaseUrl)), { status: err.status, headers });
 }

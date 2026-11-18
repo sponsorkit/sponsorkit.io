@@ -186,7 +186,33 @@ fn checkout_url_is_offline_and_canonical() {
     let url = sk
         .checkout_url(&CheckoutOptions { amount: Some(500), frequency: Some(Frequency::Monthly), ..Default::default() })
         .unwrap();
-    assert_eq!(url, "https://example.test/checkout?targets=github%3Aoctocat&amount=500&frequency=monthly");
+    assert_eq!(url, "https://example.test/checkout/?targets=github%3Aoctocat&amount=500&frequency=monthly");
+}
+
+#[test]
+fn checkout_url_uses_the_site_base_url() {
+    let url = |api: Option<&str>, site: Option<&str>| {
+        Sponsorkit::new(Options {
+            github: Some("octocat".into()),
+            api_base_url: api.map(Into::into),
+            site_base_url: site.map(Into::into),
+            env: Some(Default::default()),
+            ..Default::default()
+        })
+        .unwrap()
+        .checkout_url(&CheckoutOptions::default())
+        .unwrap()
+    };
+    assert_eq!(url(None, None), "https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat");
+    assert_eq!(
+        url(Some("https://api.example.test"), Some("https://site.example.test/base/")),
+        "https://site.example.test/base/checkout/?targets=github%3Aoctocat"
+    );
+    // An empty site_base_url is unset: the site defaults to api_base_url.
+    assert_eq!(
+        url(Some("https://api.example.test"), Some("")),
+        "https://api.example.test/checkout/?targets=github%3Aoctocat"
+    );
 }
 
 #[test]

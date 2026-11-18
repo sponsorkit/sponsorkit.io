@@ -1,7 +1,8 @@
 /**
  * Checkout eligibility and provider redirect URLs (PROTOCOL §6).
  *
- * Pure and deterministic: the page passes in `/api/v1/targets` data and its own origin.
+ * Pure and deterministic: the page passes in `/api/v1/targets` data and its own site base URL
+ * (`location.origin` + base path, e.g. `https://sponsorkit.github.io/sponsorkit.io`).
  */
 import type { Frequency, Provider, Target, TargetInfo, TargetTier } from "@sponsorkit/shared";
 
@@ -183,21 +184,22 @@ export function describeOffer(option: ProviderOption, opts: CheckoutOptions, loc
   return opts.frequency ? `Any amount${per}` : "Any amount, once or recurring";
 }
 
-export function openCollectiveCheckoutUrl(info: TargetInfo, opts: CheckoutOptions, sponsorkitOrigin: string): string {
+/** Open Collective donate URL; `redirect` is site page `/checkout/thanks/` (PROTOCOL §6). */
+export function openCollectiveCheckoutUrl(info: TargetInfo, opts: CheckoutOptions, siteBaseUrl: string): string {
   const q = new URLSearchParams();
   if (opts.amount !== undefined) {
     q.set("amount", toMajorUnits(opts.amount, opts.currency ?? info.currency ?? "USD"));
   }
   if (opts.frequency === "monthly") q.set("interval", "month");
   else if (opts.frequency === "yearly") q.set("interval", "year");
-  q.set("redirect", `${sponsorkitOrigin}/checkout/thanks`);
+  q.set("redirect", `${siteBaseUrl.replace(/\/+$/, "")}/checkout/thanks/`);
   return `https://opencollective.com/${encodeURIComponent(info.account)}/donate?${q.toString()}`;
 }
 
-export function checkoutUrl(info: TargetInfo, opts: CheckoutOptions, sponsorkitOrigin: string): string {
+export function checkoutUrl(info: TargetInfo, opts: CheckoutOptions, siteBaseUrl: string): string {
   return info.provider === "github"
     ? githubCheckoutUrl(info, opts)
-    : openCollectiveCheckoutUrl(info, opts, sponsorkitOrigin);
+    : openCollectiveCheckoutUrl(info, opts, siteBaseUrl);
 }
 
 /**
@@ -208,7 +210,7 @@ export function planCheckout(
   targets: Target[],
   infos: TargetInfo[],
   opts: CheckoutOptions & { provider?: Provider },
-  sponsorkitOrigin: string,
+  siteBaseUrl: string,
 ): CheckoutPlan {
   const options: ProviderOption[] = targets.map((t) => {
     const target = `${t.provider}:${t.account}`;
@@ -224,7 +226,7 @@ export function planCheckout(
       };
     }
     const { eligible, reasons } = evaluateTarget(info, opts);
-    return { provider: t.provider, target, info, eligible, reasons, url: eligible ? checkoutUrl(info, opts, sponsorkitOrigin) : null };
+    return { provider: t.provider, target, info, eligible, reasons, url: eligible ? checkoutUrl(info, opts, siteBaseUrl) : null };
   });
 
   if (opts.provider) {

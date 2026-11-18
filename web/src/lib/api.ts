@@ -1,13 +1,13 @@
-import { TargetsResponse, type Target, type TargetInfo } from "@sponsorkit/shared";
+import { DEFAULT_API_BASE_URL, TargetsResponse, trimTrailingSlashes, type Target, type TargetInfo } from "@sponsorkit/shared";
 import { targetsQuery } from "./params";
 
 /**
- * Base URL for the Worker (`/api/*`). Same origin by default; `NEXT_PUBLIC_SPONSORKIT_API_BASE`
- * (an origin such as `http://127.0.0.1:8787`) overrides it for local development.
+ * Origin of the API (PROTOCOL §0.2): `NEXT_PUBLIC_SPONSORKIT_API_BASE`, inlined at build time,
+ * defaulting to https://api.sponsorkit.io. An empty string means same origin (`/api/…`), for
+ * single-origin self-hosting; `http://127.0.0.1:8787` talks to a local Worker.
  */
 export function apiBase(): string {
-  const v = process.env.NEXT_PUBLIC_SPONSORKIT_API_BASE ?? "";
-  return v.replace(/\/+$/, "");
+  return trimTrailingSlashes(process.env.NEXT_PUBLIC_SPONSORKIT_API_BASE ?? DEFAULT_API_BASE_URL);
 }
 
 export class ApiError extends Error {

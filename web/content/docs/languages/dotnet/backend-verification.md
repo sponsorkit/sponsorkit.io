@@ -24,7 +24,7 @@ person and your target set, so you can key your own user records on it.
 | `VerifySessionOptions` | Default | Meaning |
 |---|---|---|
 | `GitHub`, `OpenCollective` | `null` | The targets your backend expects. At least one is required. |
-| `ApiBaseUrl` | `https://sponsorkit.io` | For self-hosting. |
+| `ApiBaseUrl` | `https://api.sponsorkit.io` | For self-hosting. |
 | `HttpClient` | a shared internal client | Pass one from `IHttpClientFactory` if you manage handlers centrally. |
 | `RequestTimeout` | 30 seconds | `TimeSpan.Zero` or `Timeout.InfiniteTimeSpan` disables it; negative throws `invalid_config`. |
 

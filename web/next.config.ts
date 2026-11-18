@@ -1,23 +1,27 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import { siteConfig } from "./site-config";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(here, "..");
 
-// Optional, for hosting the static export under a sub-path (e.g. GitHub Pages project sites):
-//   BASE_PATH=/sponsorkit.io TRAILING_SLASH=1 bun run build
-// The default (served by the Worker at the domain root) is neither.
-const basePath = (process.env.BASE_PATH ?? "").replace(/\/+$/, "");
-const trailingSlash = process.env.TRAILING_SLASH === "1";
+// GitHub Pages project site by default: basePath /sponsorkit.io, trailing slashes, API on
+// https://api.sponsorkit.io. Overrides and single-origin self-hosting: see site-config.ts.
+const site = siteConfig();
 
 const config: NextConfig = {
-  // Served by the Worker as static assets from web/out. No server rendering at runtime.
+  // Static export (web/out), deployed to GitHub Pages. No server rendering at runtime.
   output: "export",
-  // `/connect/done` → out/connect/done.html; the Worker's asset handling resolves both forms.
-  trailingSlash,
-  ...(basePath ? { basePath } : {}),
-  env: { NEXT_PUBLIC_BASE_PATH: basePath, NEXT_PUBLIC_TRAILING_SLASH: trailingSlash ? "1" : "" },
+  // GitHub Pages serves directories: `/connect/` → out/connect/index.html.
+  trailingSlash: site.trailingSlash,
+  ...(site.basePath ? { basePath: site.basePath } : {}),
+  env: {
+    NEXT_PUBLIC_BASE_PATH: site.basePath,
+    NEXT_PUBLIC_TRAILING_SLASH: site.trailingSlash ? "1" : "",
+    NEXT_PUBLIC_SITE_URL: site.siteUrl,
+    NEXT_PUBLIC_SPONSORKIT_API_BASE: site.apiBase,
+  },
   images: { unoptimized: true },
   reactStrictMode: true,
   poweredByHeader: false,

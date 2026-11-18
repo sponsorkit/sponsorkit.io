@@ -54,7 +54,8 @@ changing it later signs users out of your app ([why](../../concepts/targets.md#t
 |---|---|---|---|
 | `cache_ttl` | `Option<Duration>` | 1 hour | How long a result is served from the local cache without calling the API. Values below 60 seconds are raised to 60 seconds. Per call, [`GetOptions`](#getoptions) overrides it without the minimum. |
 | `storage_dir` | `Option<PathBuf>` | per-user config directory | Directory of the state file. The default is `$XDG_CONFIG_HOME/sponsorkit` (else `~/.config/sponsorkit`) on Linux, `~/Library/Application Support/sponsorkit` on macOS and `%APPDATA%\sponsorkit` on Windows. If none can be determined (for example `HOME` is unset), the session is kept in memory for the life of the client; the SDK never writes to the working directory. See [where state is kept](platform-notes.md#where-state-is-kept). |
-| `api_base_url` | `Option<String>` | `https://sponsorkit.io` | The API origin, for [self-hosting](../../reference-http/self-hosting.md) and tests. Must be an `http` or `https` URL with a host; a trailing `/` is removed. |
+| `api_base_url` | `Option<String>` | `https://api.sponsorkit.io` | The API origin, used for every API call, for [self-hosting](../../reference-http/self-hosting.md) and tests. Must be an `http` or `https` URL with a host; a trailing `/` is removed. |
+| `site_base_url` | `Option<String>` | `https://sponsorkit.github.io/sponsorkit.io`, or `api_base_url` when only that is set | The site base URL (origin plus optional path), used for the `/connect/` and `/checkout/` pages, `checkout_url` and the loopback checkout redirect. Must be an `http` or `https` URL with a host; trailing slashes are removed. |
 | `request_timeout` | `Option<Duration>` | 30 seconds | Bounds each HTTP request, including reading the body. `Some(Duration::ZERO)` disables it. A timeout counts as a network failure: `get_financial_contribution` serves the stale cache, `sign_in` fails with `network_error`. |
 
 The SDK uses its own `reqwest` client (rustls, user agent `sponsorkit-rust/<version>`); you can't pass one to
@@ -95,7 +96,7 @@ pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 - neither `github` nor `opencollective` is set, or a target isn't a valid login or slug (checked even when
   `SPONSORKIT_DISABLE` is set, so the mistake doesn't hide);
 - `app_name` is longer than 64 characters;
-- `api_base_url` isn't an `http(s)` origin;
+- `api_base_url` isn't an `http(s)` origin, or `site_base_url` isn't an `http(s)` URL;
 - the mock preset (from `SPONSORKIT_MOCK`) is unknown.
 
 A missing or unwritable storage directory is **not** an error at construction. If the SDK can't write its state
@@ -183,7 +184,8 @@ or set `SPONSORKIT_DEV_CHECKS=1` while you develop.
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `DEFAULT_API_BASE_URL` | `"https://sponsorkit.io"` | Default `api_base_url`. |
+| `DEFAULT_API_BASE_URL` | `"https://api.sponsorkit.io"` | Default `api_base_url`. |
+| `DEFAULT_SITE_BASE_URL` | `"https://sponsorkit.github.io/sponsorkit.io"` | Default `site_base_url` (when `api_base_url` isn't set either). |
 | `DEFAULT_CACHE_TTL` | 1 hour | Default `cache_ttl`. |
 | `MIN_CACHE_TTL` | 60 seconds | Smallest `Options::cache_ttl`. |
 | `DEFAULT_REQUEST_TIMEOUT` | 30 seconds | Default `request_timeout` (also for `verify_session`). |

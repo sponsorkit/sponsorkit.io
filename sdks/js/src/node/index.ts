@@ -156,7 +156,7 @@ export class Sponsorkit extends SponsorkitCore<null> {
     const q = new URLSearchParams(request.params);
     for (const [k, v] of Object.entries(delivery)) q.set(k, v);
     if (this.appName) q.set("app_name", this.appName);
-    return `${this.apiBaseUrl}${request.path}?${q}`;
+    return this.pageUrl(request.path, q);
   }
 
   /** Returns the code, or `null` to fall back to paste-back (auto mode, browser could not be opened or the receiver could not bind). */

@@ -1,5 +1,5 @@
 {
-  "type": "https://sponsorkit.io/problems/invalid_code",
+  "type": "https://sponsorkit.github.io/sponsorkit.io/docs/reference-http/http-api/#errors",
   "title": "Invalid code",
   "status": 400,
   "code": "invalid_code",

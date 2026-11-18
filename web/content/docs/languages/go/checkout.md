@@ -125,7 +125,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Fprintln(os.Stderr, "Support my-cli:", link)
-	// https://sponsorkit.io/checkout?amount=500&frequency=monthly&targets=github%3Aoctocat
+	// https://sponsorkit.github.io/sponsorkit.io/checkout/?amount=500&frequency=monthly&targets=github%3Aoctocat
 }
 ```
 

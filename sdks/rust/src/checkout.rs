@@ -83,7 +83,9 @@ impl Sponsorkit {
         q
     }
 
-    /// A link to the `/checkout` page for these targets, without sign-in.
+    /// A link to the checkout page for these targets, without sign-in:
+    /// `<site_base_url>/checkout/?targets=…[&provider][&amount][&currency][&frequency]`
+    /// (see [`crate::Options::site_base_url`]).
     ///
     /// Synchronous and offline (no network, no disk): suitable for nags,
     /// READMEs and `--help` output.
@@ -93,16 +95,16 @@ impl Sponsorkit {
     pub fn checkout_url(&self, options: &CheckoutOptions) -> Result<String> {
         self.validate_checkout(options)?;
         let mut url =
-            reqwest::Url::parse(&format!("{}/checkout", self.inner.api_base_url)).expect("validated base URL");
+            reqwest::Url::parse(&format!("{}/checkout/", self.inner.site_base_url)).expect("validated base URL");
         url.query_pairs_mut().extend_pairs(self.checkout_params(options));
         Ok(url.to_string())
     }
 
     /// Sends the supporter to contribute and waits until the contribution shows up.
     ///
-    /// 1. When signed out, signs in first (through the `/checkout` page) so the
+    /// 1. When signed out, signs in first (through the `<site_base_url>/checkout/` page) so the
     ///    new contribution can be detected.
-    /// 2. Opens `/checkout`, which picks an eligible provider (PROTOCOL §6).
+    /// 2. Opens `<site_base_url>/checkout/`, which picks an eligible provider (PROTOCOL §6).
     /// 3. Polls `get_financial_contribution` (cache bypassed) every
     ///    `poll_interval` until a new or changed contribution appears.
     ///

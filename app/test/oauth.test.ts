@@ -3,33 +3,65 @@ import { base64urlEncode } from "../src/encoding";
 import { CodePayload, StatePayload } from "../src/payloads";
 import { NONCE_COOKIE } from "../src/routes/oauth";
 import { loadSealingKeys, seal, unseal } from "../src/seal";
+import type { Env } from "../src/env";
 import { CHALLENGE, KEYS_V1, ORIGIN, call, fakeLimiter, getCookie, installFakeProviders, makeEnv, type FakeProviders } from "./helpers";
 
 const TARGETS = "github:mathiaslorenzen,opencollective:sponsorkit";
 
-function startPath(provider: string, params: Record<string, string>): string {
-  return `/api/oauth/${provider}/start?${new URLSearchParams({ targets: TARGETS, challenge: CHALLENGE, ...params })}`;
+/** Two-origin deployment, as in production (PROTOCOL §0): site on Pages, API on its own host. */
+const SPLIT = {
+  PUBLIC_ORIGIN: "https://api.sponsorkit.test",
+  SITE_BASE_URL: "https://pages.test/sponsorkit.io/",
+  SITE_ORIGIN: "https://pages.test",
+} as const;
+const SPLIT_SITE = "https://pages.test/sponsorkit.io";
+
+function startForm(params: Record<string, string>): URLSearchParams {
+  return new URLSearchParams({ targets: TARGETS, challenge: CHALLENGE, ...params });
 }
 
-async function start(provider: string, params: Record<string, string>) {
-  const res = await call(startPath(provider, params));
+/** The consent page's top-level form POST (PROTOCOL §4.2 step 3). By default it comes from the site origin. */
+function postStart(
+  provider: string,
+  params: Record<string, string> | URLSearchParams | string,
+  opts: { origin?: string | null; headers?: Record<string, string>; env?: Env; contentType?: string; query?: string } = {},
+) {
+  const headers: Record<string, string> = { "Content-Type": opts.contentType ?? "application/x-www-form-urlencoded", ...opts.headers };
+  const origin = opts.origin === undefined ? ORIGIN : opts.origin;
+  if (origin !== null) headers.Origin = origin;
+  const body = typeof params === "string" ? params : (params instanceof URLSearchParams ? params : startForm(params)).toString();
+  return call(`/api/oauth/${provider}/start${opts.query ?? ""}`, { method: "POST", headers, body }, opts.env);
+}
+
+async function start(provider: string, params: Record<string, string>, env?: Env, origin?: string) {
+  const res = await postStart(provider, params, { env, origin });
   expect(res.status).toBe(302);
   const location = new URL(res.headers.get("Location")!);
   const nonce = getCookie(res, NONCE_COOKIE)!;
   return { res, location, nonce, state: location.searchParams.get("state")! };
 }
 
-async function callback(provider: string, query: Record<string, string>, nonce: string | null) {
+async function callback(provider: string, query: Record<string, string>, nonce: string | null, env?: Env) {
   const headers: Record<string, string> = {};
   if (nonce !== null) headers.Cookie = `other=1; ${NONCE_COOKIE}=${nonce}`;
-  return call(`/api/oauth/${provider}/callback?${new URLSearchParams(query)}`, { headers });
+  return call(`/api/oauth/${provider}/callback?${new URLSearchParams(query)}`, { headers }, env);
 }
 
 async function decodeCode(skc: string) {
   return unseal("code", skc, await loadSealingKeys(KEYS_V1), CodePayload);
 }
 
-describe("GET /api/oauth/:provider/start", () => {
+function linkIn(html: string): URL {
+  return new URL(/<a href="([^"]+)"/.exec(html)![1]!.replaceAll("&amp;", "&"));
+}
+
+function expectNoSideEffects(res: Response) {
+  expect(res.headers.get("Content-Type")).toContain("text/html");
+  expect(res.headers.get("Location")).toBeNull();
+  expect(res.headers.get("Set-Cookie")).toBeNull();
+}
+
+describe("POST /api/oauth/:provider/start", () => {
   beforeEach(() => {
     installFakeProviders();
   });
@@ -45,6 +77,7 @@ describe("GET /api/oauth/:provider/start", () => {
     expect(location.searchParams.get("code_challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(location.searchParams.get("code_challenge")).not.toBe(CHALLENGE); // the provider PKCE pair is the Worker's own
     expect(res.headers.get("Sponsorkit-Request-Id")).toBeTruthy();
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull(); // no CORS on /api/oauth/*
 
     const payload = await unseal("state", state, await loadSealingKeys(KEYS_V1), StatePayload);
     expect(payload).toMatchObject({ p: "github", t: TARGETS, d: "web_message", o: "https://app.example.com", a: "demo", c: CHALLENGE });
@@ -53,76 +86,191 @@ describe("GET /api/oauth/:provider/start", () => {
     expect(payload.x - Math.floor(Date.now() / 1000)).toBeGreaterThan(590);
   });
 
-  it("uses PUBLIC_ORIGIN for the callback URL when set", async () => {
-    const res = await call(startPath("opencollective", { delivery: "paste" }), {}, makeEnv({ PUBLIC_ORIGIN: "https://sponsorkit.io/" }));
-    const location = new URL(res.headers.get("Location")!);
+  it("parses the form body (charset parameter, add field, continue) and ignores the query string", async () => {
+    const res = await postStart(
+      "opencollective",
+      { delivery: "paste", add: "1", continue: "targets=opencollective%3Asponsorkit&amount=500" },
+      { contentType: "application/x-www-form-urlencoded; charset=UTF-8", query: `?targets=github:other&challenge=${"A".repeat(43)}&delivery=loopback` },
+    );
+    expect(res.status).toBe(302);
+    const state = new URL(res.headers.get("Location")!).searchParams.get("state")!;
+    const payload = await unseal("state", state, await loadSealingKeys(KEYS_V1), StatePayload);
+    expect(payload).toMatchObject({ p: "opencollective", t: TARGETS, d: "paste", c: CHALLENGE, k: "targets=opencollective%3Asponsorkit&amount=500" });
+  });
+
+  it("accepts the site origin of a two-origin deployment and uses PUBLIC_ORIGIN for the callback URL", async () => {
+    const env = makeEnv(SPLIT);
+    const { location, res } = await start("opencollective", { delivery: "paste" }, env, "https://pages.test");
     expect(location.origin).toBe("https://oc.test");
-    expect(location.searchParams.get("redirect_uri")).toBe("https://sponsorkit.io/api/oauth/opencollective/callback");
+    expect(location.searchParams.get("redirect_uri")).toBe("https://api.sponsorkit.test/api/oauth/opencollective/callback");
+    // The nonce cookie is host-only (__Host-), so it lives on the API origin that set it.
+    expect(res.headers.getSetCookie().find((c) => c.startsWith(NONCE_COOKIE))).not.toMatch(/Domain=/i);
   });
 
-  it("returns an HTML 400 for invalid params", async () => {
-    for (const path of [
-      startPath("github", { delivery: "redirect", redirect_uri: "http://evil.example.com/" }),
-      startPath("github", { delivery: "loopback", redirect_uri: "http://localhost:1234/callback" }),
-      startPath("github", { delivery: "web_message" }),
-      `/api/oauth/github/start?targets=opencollective:x&challenge=${CHALLENGE}&delivery=paste`,
-      `/api/oauth/github/start?targets=github:x&delivery=paste`,
+  it("defaults SITE_ORIGIN to the origin of SITE_BASE_URL", async () => {
+    const env = makeEnv({ PUBLIC_ORIGIN: SPLIT.PUBLIC_ORIGIN, SITE_BASE_URL: SPLIT.SITE_BASE_URL });
+    expect((await postStart("github", { delivery: "paste" }, { env, origin: "https://pages.test" })).status).toBe(302);
+    expect((await postStart("github", { delivery: "paste" }, { env, origin: "https://api.sponsorkit.test" })).status).toBe(403);
+  });
+
+  it("single-origin self-hosting: with no site vars the API origin is the site origin", async () => {
+    const env = makeEnv({ PUBLIC_ORIGIN: "https://self.example" });
+    expect((await postStart("github", { delivery: "paste" }, { env, origin: "https://self.example" })).status).toBe(302);
+    expect((await postStart("github", { delivery: "paste" }, { env, origin: ORIGIN })).status).toBe(403);
+  });
+
+  it("refuses a start whose Origin is missing, null or not exactly the site origin, linking to consent", async () => {
+    const env = makeEnv(SPLIT);
+    const params = { delivery: "redirect", redirect_uri: "https://evil.example/cb", app_name: "x", add: "1" };
+    for (const origin of [
+      null,
+      "null",
+      "https://evil.example",
+      "https://api.sponsorkit.test",
+      "http://pages.test",
+      "https://pages.test:8443",
+      "https://pages.test/",
+      "https://PAGES.test",
+      "https://sub.pages.test",
+      "https://pages.test.evil.example",
     ]) {
-      const res = await call(path);
-      expect(res.status, path).toBe(400);
-      expect(res.headers.get("Content-Type")).toContain("text/html");
-      expect(res.headers.get("Set-Cookie")).toBeNull();
-    }
-    expect((await call(`/api/oauth/patreon/start?targets=github:x`)).status).toBe(404);
-  });
-
-  it("returns 500 HTML when misconfigured", async () => {
-    const res = await call(startPath("github", { delivery: "paste" }), {}, makeEnv({ SEALING_KEYS: undefined }));
-    expect(res.status).toBe(500);
-    expect(await res.text()).not.toContain("SEALING_KEYS");
-  });
-
-  it("accepts navigations from Sponsorkit's own consent pages", async () => {
-    for (const site of ["same-origin", "same-site"]) {
-      const res = await call(startPath("github", { delivery: "paste" }), { headers: { "Sec-Fetch-Site": site, "Sec-Fetch-User": "?1" } });
-      expect(res.status, site).toBe(302);
-    }
-  });
-
-  it("refuses cross-site or direct links that skip the consent screen, linking to it instead", async () => {
-    const params = { delivery: "redirect", redirect_uri: "https://evil.example/cb", app_name: "x" };
-    for (const site of ["cross-site", "none"]) {
-      const res = await call(startPath("github", params), { headers: { "Sec-Fetch-Site": site } });
-      expect(res.status, site).toBe(403);
-      expect(res.headers.get("Content-Type")).toContain("text/html");
-      expect(res.headers.get("Location")).toBeNull();
-      expect(res.headers.get("Set-Cookie")).toBeNull();
-      const html = await res.text();
-      const href = /<a href="([^"]+)"/.exec(html)![1]!.replaceAll("&amp;", "&");
-      const u = new URL(href);
-      expect(u.origin + u.pathname).toBe(`${ORIGIN}/connect`);
+      const res = await postStart("github", params, { env, origin });
+      expect(res.status, String(origin)).toBe(403);
+      expectNoSideEffects(res);
+      const u = linkIn(await res.text());
+      expect(u.origin + u.pathname).toBe(`${SPLIT_SITE}/connect/`);
       expect(Object.fromEntries(u.searchParams)).toEqual({ targets: TARGETS, challenge: CHALLENGE, ...params });
     }
-    // A /checkout flow goes back to /checkout with its continue value plus the sign-in params.
-    const res = await call(startPath("opencollective", { delivery: "web_message", origin: "https://app.example.com", continue: "targets=opencollective%3Asponsorkit&amount=500" }), {
-      headers: { "Sec-Fetch-Site": "cross-site" },
-    });
-    const href = /<a href="([^"]+)"/.exec(await res.text())![1]!.replaceAll("&amp;", "&");
-    const u = new URL(href);
-    expect(u.pathname).toBe("/checkout");
+  });
+
+  it("refuses a framed start (Sec-Fetch-Dest other than document)", async () => {
+    for (const dest of ["iframe", "frame", "embed", "object", "empty"]) {
+      const res = await postStart("github", { delivery: "paste" }, { headers: { "Sec-Fetch-Dest": dest } });
+      expect(res.status, dest).toBe(403);
+      expectNoSideEffects(res);
+    }
+    expect((await postStart("github", { delivery: "paste" }, { headers: { "Sec-Fetch-Dest": "document", "Sec-Fetch-Site": "cross-site" } })).status).toBe(302);
+  });
+
+  it("links a refused /checkout start back to /checkout with its continue value plus the sign-in params", async () => {
+    const res = await postStart(
+      "opencollective",
+      { delivery: "web_message", origin: "https://app.example.com", continue: "targets=opencollective%3Asponsorkit&amount=500" },
+      { env: makeEnv(SPLIT), origin: "https://evil.example" },
+    );
+    expect(res.status).toBe(403);
+    const u = linkIn(await res.text());
+    expect(u.origin + u.pathname).toBe(`${SPLIT_SITE}/checkout/`);
     expect(u.searchParams.get("amount")).toBe("500");
-    expect(u.searchParams.get("targets")).toBe("opencollective:sponsorkit");
+    expect(u.searchParams.getAll("targets")).toEqual(["opencollective:sponsorkit"]);
     expect(u.searchParams.get("challenge")).toBe(CHALLENGE);
     expect(u.searchParams.get("origin")).toBe("https://app.example.com");
+    expect(u.searchParams.has("continue")).toBe(false);
+  });
+
+  it("answers GET, HEAD and other methods with 405 + Allow: POST and a link to consent", async () => {
+    const env = makeEnv(SPLIT);
+    const q = `?${startForm({ delivery: "paste" })}`;
+    for (const method of ["GET", "HEAD", "PUT", "DELETE"]) {
+      const res = await call(`/api/oauth/github/start${q}`, { method, headers: { Origin: "https://pages.test" } }, env);
+      expect(res.status, method).toBe(405);
+      expect(res.headers.get("Allow")).toBe("POST");
+      expectNoSideEffects(res);
+      if (method === "GET") {
+        const u = linkIn(await res.text());
+        expect(u.origin + u.pathname).toBe(`${SPLIT_SITE}/connect/`);
+        expect(Object.fromEntries(u.searchParams)).toEqual({ targets: TARGETS, challenge: CHALLENGE, delivery: "paste" });
+      }
+    }
+  });
+
+  it("returns an HTML 400 for invalid params, content types and oversized bodies", async () => {
+    const bodies: Array<[URLSearchParams | string, string?]> = [
+      [startForm({ delivery: "redirect", redirect_uri: "http://evil.example.com/" })],
+      [startForm({ delivery: "loopback", redirect_uri: "http://localhost:1234/callback" })],
+      [startForm({ delivery: "web_message" })],
+      [`targets=opencollective:x&challenge=${CHALLENGE}&delivery=paste`],
+      [`targets=github:x&delivery=paste`],
+      [""],
+      [startForm({ delivery: "paste" }), "application/json"],
+      [startForm({ delivery: "paste" }), "multipart/form-data; boundary=x"],
+      [startForm({ delivery: "paste" }), "text/plain"],
+      [`${startForm({ delivery: "paste" })}&app_name=${"a".repeat(9000)}`],
+    ];
+    for (const [body, contentType] of bodies) {
+      // Validation runs before the Origin check: even a cross-site request gets the 400.
+      for (const origin of [ORIGIN, "https://evil.example"]) {
+        const res = await postStart("github", body, { contentType, origin });
+        expect(res.status, `${String(body).slice(0, 80)} ${contentType}`).toBe(400);
+        expectNoSideEffects(res);
+      }
+    }
+    expect((await postStart("patreon", { delivery: "paste" })).status).toBe(404);
+  });
+
+  it("returns 500 HTML when misconfigured, without leaking the setting name", async () => {
+    for (const over of [
+      { ...SPLIT, SEALING_KEYS: undefined },
+      { SITE_BASE_URL: "https://pages.test/sponsorkit.io", SITE_ORIGIN: "https://other.test" },
+      { SITE_BASE_URL: "https://pages.test/sponsorkit.io", SITE_ORIGIN: "https://pages.test/sponsorkit.io" },
+      { SITE_BASE_URL: "not a url" },
+      { SITE_BASE_URL: "ftp://pages.test" },
+    ] as Array<Partial<Env>>) {
+      const env = makeEnv(over);
+      const res = await postStart("github", { delivery: "paste" }, { env, origin: "https://pages.test" });
+      expect(res.status, JSON.stringify(over)).toBe(500);
+      expectNoSideEffects(res);
+      const html = await res.text();
+      expect(html).toContain("Sign-in unavailable");
+      expect(html).not.toMatch(/SEALING_KEYS|SITE_ORIGIN|SITE_BASE_URL/);
+    }
   });
 
   it("is rate limited per IP", async () => {
     const env = makeEnv({ RL_AUTH: fakeLimiter(1) });
-    const req = () => call(startPath("github", { delivery: "paste" }), { headers: { "CF-Connecting-IP": "203.0.113.9" } }, env);
+    const req = () => postStart("github", { delivery: "paste" }, { headers: { "CF-Connecting-IP": "203.0.113.9" }, env });
     expect((await req()).status).toBe(302);
     const limited = await req();
     expect(limited.status).toBe(429);
     expect(limited.headers.get("Retry-After")).toBe("60");
+  });
+});
+
+describe("deliveries in a two-origin deployment", () => {
+  beforeEach(() => {
+    installFakeProviders();
+  });
+  const env = makeEnv(SPLIT);
+
+  it("sends web_message and paste codes, and errors, to the site's /connect/done/", async () => {
+    const wm = await start("github", { delivery: "web_message", origin: "https://app.example.com", continue: "targets=github%3Amathiaslorenzen" }, env, "https://pages.test");
+    const res = await callback("github", { code: "good", state: wm.state }, wm.nonce, env);
+    const loc = res.headers.get("Location")!;
+    expect(loc.startsWith(`${SPLIT_SITE}/connect/done/#code=skc_`)).toBe(true);
+    expect(new URLSearchParams(loc.split("#")[1]).get("continue")).toBe("targets=github%3Amathiaslorenzen");
+
+    const p = await start("github", { delivery: "paste" }, env, "https://pages.test");
+    const pres = await callback("github", { code: "good", state: p.state }, p.nonce, env);
+    expect(pres.headers.get("Location")!.startsWith(`${SPLIT_SITE}/connect/done/#paste=skc_`)).toBe(true);
+
+    const e = await start("github", { delivery: "web_message", origin: "https://app.example.com" }, env, "https://pages.test");
+    const eres = await callback("github", { error: "access_denied", state: e.state }, e.nonce, env);
+    expect(eres.headers.get("Location")).toBe(`${SPLIT_SITE}/connect/done/#error=access_denied&origin=https%3A%2F%2Fapp.example.com`);
+  });
+
+  it("uses the API origin for the provider callback URL in the code exchange", async () => {
+    const fake = installFakeProviders();
+    const { state, nonce } = await start("opencollective", { delivery: "paste" }, env, "https://pages.test");
+    await callback("opencollective", { code: "good", state }, nonce, env);
+    const exchange = fake.requests.find((r) => r.url.includes("token"))!;
+    expect(new URLSearchParams(exchange.body).get("redirect_uri")).toBe("https://api.sponsorkit.test/api/oauth/opencollective/callback");
+  });
+
+  it("fails closed on the callback when the site config is invalid", async () => {
+    const { state, nonce } = await start("github", { delivery: "paste" }, env, "https://pages.test");
+    const res = await callback("github", { code: "good", state }, nonce, makeEnv({ ...SPLIT, SITE_ORIGIN: "https://other.test" }));
+    expect(res.status).toBe(500);
+    expect(res.headers.get("Location")).toBeNull();
   });
 });
 
@@ -137,7 +285,7 @@ describe("GET /api/oauth/:provider/callback", () => {
       delivery: "web_message",
       extra: { origin: "https://app.example.com", continue: "targets=github%3Amathiaslorenzen&amount=500" },
       check: (loc) => {
-        expect(loc.startsWith(`${ORIGIN}/connect/done#code=skc_`)).toBe(true);
+        expect(loc.startsWith(`${ORIGIN}/connect/done/#code=skc_`)).toBe(true);
         const h = new URLSearchParams(loc.split("#")[1]);
         expect(h.get("origin")).toBe("https://app.example.com");
         expect(h.get("continue")).toBe("targets=github%3Amathiaslorenzen&amount=500");
@@ -166,7 +314,7 @@ describe("GET /api/oauth/:provider/callback", () => {
       delivery: "paste",
       extra: {},
       check: (loc) => {
-        expect(loc.startsWith(`${ORIGIN}/connect/done#paste=skc_`)).toBe(true);
+        expect(loc.startsWith(`${ORIGIN}/connect/done/#paste=skc_`)).toBe(true);
         return new URLSearchParams(loc.split("#")[1]).get("paste")!;
       },
     },
@@ -203,10 +351,10 @@ describe("GET /api/oauth/:provider/callback", () => {
   }
 
   const errorCases: Array<[string, Record<string, string>, (loc: string) => void]> = [
-    ["web_message", { origin: "https://app.example.com" }, (loc) => expect(loc).toBe(`${ORIGIN}/connect/done#error=access_denied&origin=https%3A%2F%2Fapp.example.com`)],
+    ["web_message", { origin: "https://app.example.com" }, (loc) => expect(loc).toBe(`${ORIGIN}/connect/done/#error=access_denied&origin=https%3A%2F%2Fapp.example.com`)],
     ["redirect", { redirect_uri: "https://app.example.com/after" }, (loc) => expect(loc).toBe("https://app.example.com/after?sponsorkit_error=access_denied")],
     ["loopback", { redirect_uri: "http://[::1]:4000/callback" }, (loc) => expect(loc).toBe("http://[::1]:4000/callback?error=access_denied")],
-    ["paste", {}, (loc) => expect(loc).toBe(`${ORIGIN}/connect/done#error=access_denied`)],
+    ["paste", {}, (loc) => expect(loc).toBe(`${ORIGIN}/connect/done/#error=access_denied`)],
   ];
   for (const [delivery, extra, check] of errorCases) {
     it(`delivers access_denied via ${delivery}`, async () => {
@@ -220,11 +368,11 @@ describe("GET /api/oauth/:provider/callback", () => {
   it("delivers provider_error when the code exchange fails", async () => {
     const { state, nonce } = await start("github", { delivery: "paste" });
     const res = await callback("github", { code: "bad", state }, nonce);
-    expect(res.headers.get("Location")).toBe(`${ORIGIN}/connect/done#error=provider_error`);
+    expect(res.headers.get("Location")).toBe(`${ORIGIN}/connect/done/#error=provider_error`);
     const res2 = await callback("github", { state }, nonce);
-    expect(res2.headers.get("Location")).toBe(`${ORIGIN}/connect/done#error=provider_error`);
+    expect(res2.headers.get("Location")).toBe(`${ORIGIN}/connect/done/#error=provider_error`);
     const res3 = await callback("github", { error: "redirect_uri_mismatch", state }, nonce);
-    expect(res3.headers.get("Location")).toBe(`${ORIGIN}/connect/done#error=provider_error`);
+    expect(res3.headers.get("Location")).toBe(`${ORIGIN}/connect/done/#error=provider_error`);
   });
 
   it("delivers invalid_state when the state has expired", async () => {

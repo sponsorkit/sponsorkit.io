@@ -255,7 +255,7 @@ import { Sponsorkit } from "@sponsorkit/sdk";
 
 const sk = new Sponsorkit({ github: "octocat" });
 console.log(sk.checkoutUrl({ frequency: "monthly", amount: 500 }));
-// https://sponsorkit.io/checkout?targets=github%3Aoctocat&amount=500&frequency=monthly
+// https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat&amount=500&frequency=monthly
 ```
 ```csharp title="Link.cs"
 using Sponsorkit;

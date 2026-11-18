@@ -90,6 +90,13 @@ scenarios! {
     config_env_replaces_process_env => "config-env-replaces-process-env",
     config_cache_ttl_minimum => "config-cache-ttl-minimum",
     nag_interactive => "nag-interactive",
+    site_base_url_sign_in_loopback => "site-base-url-sign-in-loopback",
+    site_base_url_sign_in_paste => "site-base-url-sign-in-paste",
+    site_base_url_defaults_to_api => "site-base-url-defaults-to-api",
+    site_base_url_checkout_url => "site-base-url-checkout-url",
+    site_base_url_trailing_slashes => "site-base-url-trailing-slashes",
+    site_base_url_checkout_signed_in => "site-base-url-checkout-signed-in",
+    site_base_url_checkout_signs_in_first => "site-base-url-checkout-signs-in-first",
 }
 
 /// Fails when scenarios.json gains a scenario this file has no test for (or loses one).

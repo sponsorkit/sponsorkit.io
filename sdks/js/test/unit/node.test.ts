@@ -85,8 +85,15 @@ describe("configuration", () => {
   test("checkoutUrl validates options and needs no network", () => {
     const sk = new Sponsorkit({ github: "OctoCat", env: {} });
     expect(sk.checkoutUrl({ amount: 500, currency: "usd", frequency: "monthly" })).toBe(
-      "https://sponsorkit.io/checkout?targets=github%3Aoctocat&amount=500&currency=USD&frequency=monthly",
+      "https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat&amount=500&currency=USD&frequency=monthly",
     );
+    expect(sk.apiBaseUrl).toBe("https://api.sponsorkit.io");
+    expect(sk.siteBaseUrl).toBe("https://sponsorkit.github.io/sponsorkit.io");
+    const self = new Sponsorkit({ github: "octocat", env: {}, apiBaseUrl: "https://kit.example/" });
+    expect(self.siteBaseUrl).toBe("https://kit.example");
+    expect(self.checkoutUrl()).toBe("https://kit.example/checkout/?targets=github%3Aoctocat");
+    const split = new Sponsorkit({ github: "octocat", env: {}, apiBaseUrl: "https://api.kit.example", siteBaseUrl: "https://kit.example/pages/" });
+    expect(split.checkoutUrl()).toBe("https://kit.example/pages/checkout/?targets=github%3Aoctocat");
     expect(() => sk.checkoutUrl({ provider: "opencollective" })).toThrow(/No opencollective target/);
     expect(() => sk.checkoutUrl({ amount: 1.5 })).toThrow(SponsorkitError);
     expect(() => sk.checkoutUrl({ frequency: "weekly" as never })).toThrow(SponsorkitError);
@@ -354,10 +361,10 @@ describe("loopback receiver", () => {
   });
 
   test("redirects onward during checkout and reports errors", async () => {
-    const r = await startLoopbackReceiver("https://sponsorkit.io/checkout?targets=github%3Ax&step=choose");
+    const r = await startLoopbackReceiver("https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Ax&step=choose");
     const res = await fetch(`${r.redirectUri}?code=skc_x`, { redirect: "manual" });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://sponsorkit.io/checkout?targets=github%3Ax&step=choose");
+    expect(res.headers.get("location")).toBe("https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Ax&step=choose");
     await r.close();
     const e = await startLoopbackReceiver();
     await fetch(`${e.redirectUri}?error=%3Cscript%3E`)

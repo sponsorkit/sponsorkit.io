@@ -88,6 +88,7 @@
               "type": "string",
               "enum": [
                 "apiBaseUrl",
+                "siteBaseUrl",
                 "storageDir",
                 "openBrowser",
                 "promptForCode",
@@ -964,6 +965,9 @@
                               "default": "$BASE_URL",
                               "type": "string"
                             },
+                            "siteBaseUrl": {
+                              "type": "string"
+                            },
                             "storageDir": {
                               "default": "$STORAGE_DIR",
                               "type": "string"
@@ -1070,6 +1074,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -1187,6 +1198,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -1331,6 +1349,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -1447,6 +1472,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -1575,6 +1607,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -1740,6 +1779,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -1875,6 +1921,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -1991,6 +2044,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -2142,6 +2202,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -2270,6 +2337,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -2416,6 +2490,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -3208,6 +3289,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -3350,6 +3438,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -3481,6 +3576,13 @@
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
                                       },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
+                                      },
                                       "count": {
                                         "type": "integer",
                                         "minimum": 0,
@@ -3610,6 +3712,13 @@
                                         "type": "string",
                                         "format": "starts_with",
                                         "pattern": "^\\/.*"
+                                      },
+                                      "server": {
+                                        "type": "string",
+                                        "enum": [
+                                          "api",
+                                          "site"
+                                        ]
                                       },
                                       "count": {
                                         "type": "integer",
@@ -3931,6 +4040,9 @@
                                       "default": "$BASE_URL",
                                       "type": "string"
                                     },
+                                    "siteBaseUrl": {
+                                      "type": "string"
+                                    },
                                     "storageDir": {
                                       "default": "$STORAGE_DIR",
                                       "type": "string"
@@ -4037,6 +4149,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -4154,6 +4273,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -4298,6 +4424,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -4414,6 +4547,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -4542,6 +4682,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -4707,6 +4854,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -4842,6 +4996,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -4958,6 +5119,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -5109,6 +5277,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -5237,6 +5412,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -5383,6 +5565,13 @@
                                                 "type": "string",
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
+                                              },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
                                               },
                                               "count": {
                                                 "type": "integer",
@@ -6175,6 +6364,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -6317,6 +6513,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -6448,6 +6651,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -6578,6 +6788,13 @@
                                                 "format": "starts_with",
                                                 "pattern": "^\\/.*"
                                               },
+                                              "server": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "api",
+                                                  "site"
+                                                ]
+                                              },
                                               "count": {
                                                 "type": "integer",
                                                 "minimum": 0,
@@ -6696,6 +6913,13 @@
                                     "type": "string",
                                     "format": "starts_with",
                                     "pattern": "^\\/.*"
+                                  },
+                                  "server": {
+                                    "type": "string",
+                                    "enum": [
+                                      "api",
+                                      "site"
+                                    ]
                                   },
                                   "count": {
                                     "type": "integer",
@@ -7010,6 +7234,9 @@
                                     "default": "$BASE_URL",
                                     "type": "string"
                                   },
+                                  "siteBaseUrl": {
+                                    "type": "string"
+                                  },
                                   "storageDir": {
                                     "default": "$STORAGE_DIR",
                                     "type": "string"
@@ -7116,6 +7343,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -7233,6 +7467,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -7377,6 +7618,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -7493,6 +7741,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -7621,6 +7876,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -7786,6 +8048,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -7921,6 +8190,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -8037,6 +8313,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -8188,6 +8471,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -8316,6 +8606,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -8462,6 +8759,13 @@
                                               "type": "string",
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
+                                            },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
                                             },
                                             "count": {
                                               "type": "integer",
@@ -9254,6 +9558,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -9396,6 +9707,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -9527,6 +9845,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -9657,6 +9982,13 @@
                                               "format": "starts_with",
                                               "pattern": "^\\/.*"
                                             },
+                                            "server": {
+                                              "type": "string",
+                                              "enum": [
+                                                "api",
+                                                "site"
+                                              ]
+                                            },
                                             "count": {
                                               "type": "integer",
                                               "minimum": 0,
@@ -9769,6 +10101,13 @@
                                     "type": "string",
                                     "format": "starts_with",
                                     "pattern": "^\\/.*"
+                                  },
+                                  "server": {
+                                    "type": "string",
+                                    "enum": [
+                                      "api",
+                                      "site"
+                                    ]
                                   },
                                   "count": {
                                     "type": "integer",
@@ -9919,6 +10258,13 @@
                           "type": "string",
                           "format": "starts_with",
                           "pattern": "^\\/.*"
+                        },
+                        "server": {
+                          "type": "string",
+                          "enum": [
+                            "api",
+                            "site"
+                          ]
                         },
                         "count": {
                           "type": "integer",

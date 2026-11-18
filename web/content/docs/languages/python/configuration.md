@@ -38,7 +38,8 @@ print(sk.targets)  # ('github:octocat', 'opencollective:my-collective')
 | `mock` | `None` | Mock mode: a preset name (`"signed-out"`, `"none"`, `"active-monthly"`, `"one-time"`, `"cancelled"`, `"org"`) or `{"contributions": [...]}`. No network or disk access. Takes precedence over `SPONSORKIT_MOCK`. See [Testing](testing.md#mock-mode). |
 | `storage` | file storage | A custom backend implementing the `Storage` protocol (`read`, `write`, `delete`). |
 | `storage_dir` | per-user config directory | Directory for the state files. Ignored when `storage` is given. See [Platform notes](platform-notes.md#where-state-is-kept). |
-| `api_base_url` | `"https://sponsorkit.io"` | The Sponsorkit origin, for [self-hosting](/docs/reference-http/self-hosting) and tests. Must be an `http` or `https` URL. |
+| `api_base_url` | `"https://api.sponsorkit.io"` | The API origin, used for every API call, for [self-hosting](/docs/reference-http/self-hosting) and tests. Must be an `http` or `https` URL. An empty string counts as unset. |
+| `site_base_url` | `"https://sponsorkit.github.io/sponsorkit.io"`, or `api_base_url` when only that is set | The site base URL (origin plus optional path), used for the `/connect/` and `/checkout/` pages, `checkout_url()` and the loopback checkout redirect. Must be an `http` or `https` URL; trailing slashes are trimmed. An empty string counts as unset. |
 | `sign_in_method` | `"auto"` | `"auto"`, `"loopback"` or `"paste"`. See [Sign-in](sign-in.md#choosing-a-method). |
 | `sign_in_timeout` | `300.0` | Seconds to wait for a loopback or paste-back sign-in before raising `timeout`. Must be positive. |
 | `open_browser` | system launcher | `open_browser(url)` opens the consent and checkout pages. Return `False` or raise to say it couldn't. |

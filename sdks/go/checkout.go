@@ -38,7 +38,7 @@ type CheckoutOptions struct {
 
 var currencyCode = regexp.MustCompile(`^[A-Za-z]{3}$`)
 
-// checkoutQuery returns the validated /checkout query without sign-in params.
+// checkoutQuery returns the validated /checkout/ query without sign-in params.
 // Invalid fields are left out and reported in the error.
 func (c *Client) checkoutQuery(o CheckoutOptions) (url.Values, error) {
 	q := url.Values{}
@@ -79,7 +79,8 @@ func (c *Client) checkoutQuery(o CheckoutOptions) (url.Values, error) {
 	return q, nil
 }
 
-// CheckoutURL returns a link to the /checkout page without sign-in. It is
+// CheckoutURL returns a link to the <SiteBaseURL>/checkout/ page without
+// sign-in. It is
 // synchronous and never touches the network or disk, which suits nags and
 // READMEs; a checkout started this way cannot be detected.
 //
@@ -91,13 +92,13 @@ func (c *Client) CheckoutURL(opts CheckoutOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return c.apiBaseURL + "/checkout?" + q.Encode(), nil
+	return c.siteURL(checkoutPath, q), nil
 }
 
 // OpenCheckout sends the user to contribute and waits for the result: it
 // signs in first if needed (so the new contribution can be
-// detected), opens /checkout in the browser, then polls with a zero cache TTL
-// until a new or changed contribution appears. CheckoutOptions.Timeout bounds
+// detected), opens <SiteBaseURL>/checkout/ in the browser, then polls with a
+// zero cache TTL until a new or changed contribution appears. CheckoutOptions.Timeout bounds
 // only the polling phase; the sign-in phase is bounded by
 // Options.SignInTimeout. Cancelling ctx in either phase, or the polling
 // timeout, resolves with CheckoutUnknown, not an error.
@@ -139,7 +140,7 @@ func (c *Client) OpenCheckout(ctx context.Context, opts CheckoutOptions) (*Check
 	if err := c.devCheck(ctx); err != nil {
 		return nil, err
 	}
-	checkoutURL := c.apiBaseURL + "/checkout?" + query.Encode()
+	checkoutURL := c.siteURL(checkoutPath, query)
 	var baseline *Result
 	stored := c.store().read()
 	if stored.token() != "" {
@@ -159,16 +160,17 @@ func (c *Client) OpenCheckout(ctx context.Context, opts CheckoutOptions) (*Check
 		verifier := NewCodeVerifier()
 		params := cloneValues(query)
 		params.Set("challenge", CodeChallenge(verifier))
-		// PROTOCOL §7.1 item 17: the loopback redirect carries exactly the
-		// checkout params (targets, provider, amount, currency, frequency) and
+		// PROTOCOL §7.1 item 17: the loopback redirect goes to the site's
+		// /checkout/ page and carries exactly the checkout params (targets,
+		// provider, amount, currency, frequency) and
 		// step=choose.
 		cont := cloneValues(query)
 		cont.Set("step", "choose")
 		code, err := c.obtainCode(ctx, codeRequest{
-			path:        "/checkout",
+			path:        checkoutPath,
 			params:      params,
 			method:      opts.SignInMethod,
-			continueURL: c.apiBaseURL + "/checkout?" + cont.Encode(),
+			continueURL: c.siteURL(checkoutPath, cont),
 		})
 		if err != nil {
 			if ctx.Err() != nil {

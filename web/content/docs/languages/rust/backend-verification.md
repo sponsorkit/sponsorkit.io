@@ -85,7 +85,7 @@ whether to fail open or closed.
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `api_base_url` | `Option<String>` | `https://sponsorkit.io` | For [self-hosting](../../reference-http/self-hosting.md) and tests. |
+| `api_base_url` | `Option<String>` | `https://api.sponsorkit.io` | For [self-hosting](../../reference-http/self-hosting.md) and tests. |
 | `http_client` | `Option<reqwest::Client>` | a new client per call | Pass a shared client so connections are pooled across requests. |
 | `request_timeout` | `Option<Duration>` | 30 seconds | Bounds the request, including reading the body. `Some(Duration::ZERO)` disables it. Exceeding it fails with `network_error`. |
 

@@ -235,6 +235,8 @@ fn options_from(args: &Value, ctx: &Ctx) -> Result<Options, StepError> {
         mock,
         storage_dir: Some(PathBuf::from(args["storageDir"].as_str().unwrap_or(&ctx.storage_dir))),
         api_base_url: Some(args["apiBaseUrl"].as_str().unwrap_or(&ctx.base_url).to_string()),
+        // No schema default: passed only when present ("" included, which the SDK treats as unset).
+        site_base_url: str_opt(&args["siteBaseUrl"]),
         sign_in_method: method(&args["signInMethod"]).unwrap_or_default(),
         sign_in_timeout: secs(&args["signInTimeout"]),
         request_timeout: secs(&args["requestTimeout"]),
@@ -250,6 +252,7 @@ fn options_from(args: &Value, ctx: &Ctx) -> Result<Options, StepError> {
 
 struct Ctx {
     base_url: String,
+    site_base_url: String,
     storage_dir: String,
     control: Control,
     config: Option<Value>,
@@ -545,7 +548,13 @@ pub async fn run(id: &str) {
         .as_str()
         .unwrap()
         .to_string();
-    let start_seq = control.state().await["lastRequestSeq"].as_u64().unwrap_or(0);
+    let initial = control.state().await;
+    let start_seq = initial["lastRequestSeq"].as_u64().unwrap_or(0);
+    // `$SITE_BASE_URL`: the fake server's separate site listener (README: GET /__control -> siteBaseUrl).
+    let site_base_url = initial["siteBaseUrl"]
+        .as_str()
+        .unwrap_or_else(|| panic!("the fake server did not report GET /__control -> siteBaseUrl"))
+        .to_string();
 
     let constants: Vars = file["variables"]
         .as_object()
@@ -556,6 +565,7 @@ pub async fn run(id: &str) {
 
     let mut ctx = Ctx {
         base_url: server.base_url.clone(),
+        site_base_url,
         storage_dir: storage_dir.clone(),
         control,
         config: None,
@@ -568,6 +578,7 @@ pub async fn run(id: &str) {
         let s = ctx.control.state().await;
         let mut v: Vars = BTreeMap::new();
         v.insert("$BASE_URL".into(), ctx.base_url.clone());
+        v.insert("$SITE_BASE_URL".into(), ctx.site_base_url.clone());
         v.insert("$STORAGE_DIR".into(), ctx.storage_dir.clone());
         v.insert("$UNREACHABLE_BASE_URL".into(), unreachable.to_string());
         v.insert("$NOW".into(), now_iso());

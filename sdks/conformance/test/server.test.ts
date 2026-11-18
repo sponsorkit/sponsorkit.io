@@ -7,10 +7,12 @@ import { startServer, type RunningServer } from "../src/server";
 
 let server: RunningServer;
 let base: string;
+let siteBase: string;
 
 beforeAll(async () => {
   server = await startServer();
   base = server.baseUrl;
+  siteBase = server.siteBaseUrl;
 });
 afterAll(() => server.stop());
 beforeEach(async () => {
@@ -24,14 +26,14 @@ const control = (body: unknown) => post("/__control", body);
 const patch = (body: unknown) => post("/__control", body, "PATCH");
 const state = async () => (await (await fetch(`${base}/__control`)).json()) as Record<string, unknown> & { issuedSessionTokens: string[] };
 const requests = async (since = 0) =>
-  ((await (await fetch(`${base}/__control/requests?since=${since}`)).json()) as { requests: { method: string; path: string; status: number; query: Record<string, string>; headers: Record<string, string>; body?: unknown; responseHeaders: Record<string, string> }[] }).requests;
+  ((await (await fetch(`${base}/__control/requests?since=${since}`)).json()) as { requests: { server: string; method: string; path: string; status: number; query: Record<string, string>; headers: Record<string, string>; body?: unknown; responseHeaders: Record<string, string> }[] }).requests;
 
 async function pkce() {
   const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
   return { verifier, challenge: await pkceChallenge(verifier) };
 }
 
-function connectUrl(q: Record<string, string>, path = "/connect") {
+function connectUrl(q: Record<string, string>, path = "/connect/") {
   return `${base}${path}?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, ...q })}`;
 }
 
@@ -68,7 +70,7 @@ const contributions = (token?: string) =>
   fetch(`${base}/api/v1/contributions`, token ? { headers: { authorization: `Bearer ${token}` } } : {});
 
 describe("CLI", () => {
-  test("prints exactly LISTENING <port> and serves", async () => {
+  test("prints exactly LISTENING <apiPort> (unchanged by default) and serves both origins", async () => {
     const proc = Bun.spawn(["bun", join(import.meta.dir, "..", "server.ts")], { stdout: "pipe", stderr: "pipe" });
     try {
       const reader = proc.stdout.getReader();
@@ -82,20 +84,34 @@ describe("CLI", () => {
       expect(m).not.toBeNull();
       const res = await fetch(`http://127.0.0.1:${m![1]}/api/v1/health`);
       expect(await res.json()).toEqual({ ok: true, providers: { github: "ok", opencollective: "ok" } });
+      const st = (await (await fetch(`http://127.0.0.1:${m![1]}/__control`)).json()) as { siteBaseUrl: string };
+      expect(st.siteBaseUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/sponsorkit\.io$/);
+      expect(st.siteBaseUrl).not.toContain(`:${m![1]}/`);
+      expect((await fetch(`${st.siteBaseUrl}/checkout/thanks/`)).status).toBe(200);
     } finally {
       proc.kill();
       await proc.exited;
     }
   });
 
-  test("honours --port", async () => {
-    const probe = Bun.serve({ port: 0, fetch: () => new Response() });
-    const port = probe.port!;
-    await probe.stop(true);
-    const proc = Bun.spawn(["bun", join(import.meta.dir, "..", "server.ts"), "--port", String(port)], { stdout: "pipe" });
+  test("honours --port, --site-port and --print-site-port", async () => {
+    const free = async () => {
+      const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+      const p = probe.port!;
+      await probe.stop(true);
+      return p;
+    };
+    const port = await free();
+    const sitePort = await free();
+    const proc = Bun.spawn(["bun", join(import.meta.dir, "..", "server.ts"), "--port", String(port), `--site-port=${sitePort}`, "--print-site-port"], { stdout: "pipe" });
     try {
       const { value } = await proc.stdout.getReader().read();
-      expect(new TextDecoder().decode(value)).toBe(`LISTENING ${port}\n`);
+      const line = new TextDecoder().decode(value);
+      expect(line).toBe(`LISTENING ${port} SITE ${sitePort}\n`);
+      // Harnesses that match the prefix `^LISTENING (\d+)` still get the API port.
+      expect(/^LISTENING (\d+)/.exec(line)![1]).toBe(String(port));
+      const st = (await (await fetch(`http://127.0.0.1:${port}/__control`)).json()) as { siteBaseUrl: string };
+      expect(st.siteBaseUrl).toBe(`http://127.0.0.1:${sitePort}/sponsorkit.io`);
     } finally {
       proc.kill();
       await proc.exited;
@@ -192,7 +208,7 @@ describe("/connect and PKCE", () => {
     expect(loc.searchParams.get("x")).toBe("1");
     expect(loc.searchParams.get("sponsorkit_code")).toMatch(/^skc_/);
     const w = await fetch(connectUrl({ challenge, delivery: "web_message", origin: "https://app.example.com" }), { redirect: "manual" });
-    expect(w.headers.get("location")).toMatch(/^\/connect\/done#code=skc_[^&]+&origin=https%3A%2F%2Fapp.example.com$/);
+    expect(w.headers.get("location")).toMatch(/^\/connect\/done\/#code=skc_[^&]+&origin=https%3A%2F%2Fapp.example.com$/);
   });
 
   test("a wrong verifier, unknown code or malformed verifier is invalid_code", async () => {
@@ -435,7 +451,7 @@ describe("control scenarios", () => {
     const token = await signIn();
     await fetch(`${base}/api/v1/contributions?x=1`, { headers: { authorization: `Bearer ${token}`, cookie: "secret=1", "user-agent": "conformance-test" } });
     const log = await requests();
-    expect(log.map((r) => `${r.method} ${r.path}`)).toEqual(["GET /connect", "POST /api/v1/auth/token", "GET /api/v1/contributions"]);
+    expect(log.map((r) => `${r.method} ${r.path}`)).toEqual(["GET /connect/", "POST /api/v1/auth/token", "GET /api/v1/contributions"]);
     const last = log.at(-1)!;
     expect(last.query).toEqual({ x: "1" });
     expect(last.headers).toMatchObject({ authorization: `Bearer ${token}`, "user-agent": "conformance-test" });
@@ -470,7 +486,7 @@ describe("control scenarios", () => {
 
 describe("/checkout", () => {
   const checkout = (q: Record<string, string>) =>
-    fetch(`${base}/checkout?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, ...q })}`, { redirect: "manual" });
+    fetch(`${base}/checkout/?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, ...q })}`, { redirect: "manual" });
   const providerTarget = (res: Response) => {
     expect(res.status).toBe(302);
     const loc = new URL(res.headers.get("location")!, base);
@@ -498,9 +514,9 @@ describe("/checkout", () => {
     expect(t.provider).toBe("opencollective");
     const u = new URL(t.to!);
     expect(u.origin + u.pathname).toBe("https://opencollective.com/sponsorkit-conformance/donate");
-    expect(Object.fromEntries(u.searchParams)).toEqual({ amount: "5.5", interval: "year", redirect: `${base}/checkout/thanks` });
+    expect(Object.fromEntries(u.searchParams)).toEqual({ amount: "5.5", interval: "year", redirect: `${base}/checkout/thanks/` });
     const oneTime = new URL(providerTarget(await checkout({ provider: "opencollective", frequency: "one_time" })).to!);
-    expect(Object.fromEntries(oneTime.searchParams)).toEqual({ redirect: `${base}/checkout/thanks` });
+    expect(Object.fromEntries(oneTime.searchParams)).toEqual({ redirect: `${base}/checkout/thanks/` });
   });
 
   test("chooser and ineligible pages", async () => {
@@ -535,12 +551,62 @@ describe("/checkout", () => {
     }
     // Paste: the response carries the continue URL.
     const paste = await fetch(`${base}/checkout?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, amount: "500", challenge, delivery: "paste" })}`);
-    expect(paste.headers.get("sponsorkit-conformance-continue")).toBe(`/checkout?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, amount: "500" })}&step=choose`);
+    expect(paste.headers.get("sponsorkit-conformance-continue")).toBe(`/checkout/?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, amount: "500" })}&step=choose`);
   });
 
   test("invalid checkout params", async () => {
     for (const q of <Record<string, string>[]>[{ amount: "5.00" }, { currency: "eur" }, { frequency: "weekly" }, { provider: "patreon" }, { step: "pay" }]) {
       expect((await checkout(q)).status).toBe(400);
     }
+  });
+});
+
+describe("separate site origin", () => {
+  const sitePath = (p: string) => new URL(siteBase).pathname + p;
+
+  test("serves /connect/ and /checkout/ under the base path, with and without the trailing slash", async () => {
+    const { verifier, challenge } = await pkce();
+    for (const path of ["/connect/", "/connect"]) {
+      const res = await fetch(`${siteBase}${path}?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, challenge, delivery: "paste" })}`);
+      expect(res.status).toBe(200);
+      expect((await exchange((await res.text()).trim(), verifier)).status).toBe(200);
+    }
+    for (const path of ["/checkout/", "/checkout"]) {
+      const res = await fetch(`${siteBase}${path}?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, provider: "github" })}`, { redirect: "manual" });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toStartWith("/__fake/provider/github?");
+    }
+    const log = await requests();
+    expect(log.filter((r) => r.server === "site").map((r) => r.path)).toEqual([
+      sitePath("/connect/"),
+      sitePath("/connect"),
+      sitePath("/checkout/"),
+      sitePath("/checkout"),
+    ]);
+    expect(log.filter((r) => r.server === "api").map((r) => r.path)).toEqual(["/api/v1/auth/token", "/api/v1/auth/token"]);
+  });
+
+  test("redirects and continue URLs stay under the site base path", async () => {
+    const { challenge } = await pkce();
+    const w = await fetch(`${siteBase}/connect/?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, challenge, delivery: "web_message", origin: "https://app.example.com" })}`, { redirect: "manual" });
+    expect(w.headers.get("location")).toStartWith(sitePath("/connect/done/#code=skc_"));
+    const paste = await fetch(`${siteBase}/checkout/?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, amount: "500", challenge, delivery: "paste" })}`);
+    expect(paste.headers.get("sponsorkit-conformance-continue")).toBe(`${sitePath("/checkout/")}?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, amount: "500" })}&step=choose`);
+    const oc = await fetch(`${siteBase}/checkout/?${new URLSearchParams({ targets: DEFAULT_TARGETS_PARAM, provider: "opencollective" })}`, { redirect: "manual" });
+    const to = new URL(new URL(oc.headers.get("location")!, siteBase).searchParams.get("to")!);
+    expect(to.searchParams.get("redirect")).toBe(`${siteBase}/checkout/thanks/`);
+  });
+
+  test("serves nothing else: no API, no control API, no pages outside the base path", async () => {
+    const origin = new URL(siteBase).origin;
+    expect((await fetch(`${origin}/api/v1/health`)).status).toBe(404);
+    expect((await fetch(`${siteBase}/api/v1/health`)).status).toBe(404);
+    expect((await fetch(`${origin}/__control`)).status).toBe(404);
+    expect((await fetch(`${origin}/connect/?targets=${DEFAULT_TARGETS_PARAM}`)).status).toBe(404);
+  });
+
+  test("problem type points at the site's API error docs", async () => {
+    const res = await fetch(`${base}/api/v1/nope`);
+    expect(Problem.parse(await res.json()).type).toBe(`${siteBase}/docs/reference-http/http-api/#errors`);
   });
 });

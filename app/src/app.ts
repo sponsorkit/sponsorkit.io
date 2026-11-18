@@ -1,7 +1,7 @@
 import { HEADERS } from "@sponsorkit/shared";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { ConfigError } from "./env";
+import { ConfigError, siteBaseUrl } from "./env";
 import { ApiError, problemResponse } from "./errors";
 import type { AppEnv } from "./hono";
 import { htmlErrorPage } from "./html";
@@ -21,7 +21,7 @@ export function createApp(): Hono<AppEnv> {
     try {
       c.res.headers.set(HEADERS.requestId, requestId);
     } catch {
-      // Immutable headers (e.g. a response passed through from the ASSETS binding).
+      // Immutable headers (e.g. a response passed through from fetch()).
       c.res = new Response(c.res.body, c.res);
       c.res.headers.set(HEADERS.requestId, requestId);
     }
@@ -54,9 +54,8 @@ export function createApp(): Hono<AppEnv> {
     throw new ApiError(404, "not_found", "No such endpoint");
   });
 
-  // Static assets normally bypass the Worker; this covers `wrangler dev` and self-hosting.
-  app.all("*", async (c) => {
-    if (c.env.ASSETS) return c.env.ASSETS.fetch(c.req.raw);
+  // API only (PROTOCOL §3): the site is hosted elsewhere, so every other path is a 404 problem.
+  app.all("*", () => {
     throw new ApiError(404, "not_found");
   });
 
@@ -64,7 +63,7 @@ export function createApp(): Hono<AppEnv> {
     const isOAuth = c.req.path.startsWith("/api/oauth/");
     if (err instanceof ApiError) {
       if (isOAuth) return htmlErrorPage(err.status, "Error", err.detail ?? err.code, c.get("requestId"));
-      return problemResponse(err);
+      return problemResponse(err, siteBaseUrl(c.env, c.req.url));
     }
     logEvent("error", {
       msg: err instanceof ConfigError ? "config_error" : "unhandled_error",
@@ -73,10 +72,10 @@ export function createApp(): Hono<AppEnv> {
       error: describeError(err),
     });
     if (isOAuth) return htmlErrorPage(500, "Something went wrong", "Please try again later.", c.get("requestId"));
-    return problemResponse(new ApiError(500, "internal", "Internal error"));
+    return problemResponse(new ApiError(500, "internal", "Internal error"), siteBaseUrl(c.env, c.req.url));
   });
 
-  app.notFound(() => problemResponse(new ApiError(404, "not_found")));
+  app.notFound((c) => problemResponse(new ApiError(404, "not_found"), siteBaseUrl(c.env, c.req.url)));
 
   return app;
 }

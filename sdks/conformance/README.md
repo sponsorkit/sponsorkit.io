@@ -4,7 +4,7 @@ Every Sponsorkit SDK (JS/TS, .NET, Python, Go, Rust) must pass the scenarios in 
 
 | Path | What it is |
 |---|---|
-| `server.ts` | A fake Sponsorkit API (PROTOCOL §3, plus non-interactive `/connect` and `/checkout`), with a control API for scenarios. |
+| `server.ts` | A fake Sponsorkit API (PROTOCOL §3) plus non-interactive site pages (`/connect/`, `/checkout/`), on two origins (API and site), with a control API for scenarios. |
 | `scenarios.json` | Every scenario: server setup, SDK steps and exact expected outcomes. **Generated** from `src/scenarios.ts`. |
 | `schemas/*.schema.json` | JSON Schemas (2020-12) for `scenarios.json`, the SDK storage file and the control API bodies. Generated. |
 | `fixtures/` | Canonical protocol examples, named contributions, target metadata, mock presets and test vectors. |
@@ -15,6 +15,7 @@ Normative sources: `docs/PROTOCOL.md` (wire format, SDK options and error codes 
 
 ```sh
 bun sdks/conformance/server.ts --port 0   # LISTENING 41237
+bun sdks/conformance/server.ts --print-site-port   # LISTENING 41237 SITE 41238
 bun run --cwd sdks/conformance test        # the kit's own tests
 bun run --cwd sdks/conformance generate    # after editing src/scenarios.ts or src/generate.ts
 ```
@@ -22,17 +23,23 @@ bun run --cwd sdks/conformance generate    # after editing src/scenarios.ts or s
 ## 1. Starting the fake server from a test suite
 
 ```
-bun sdks/conformance/server.ts [--port N] [--host 127.0.0.1]
+bun sdks/conformance/server.ts [--port N] [--site-port N] [--print-site-port] [--host 127.0.0.1]
 ```
 
-- `--port 0` or no `--port` picks a free port.
-- When the server is ready it prints exactly one line to stdout: `LISTENING <port>\n`. It prints nothing else to stdout. Diagnostics go to stderr.
+The server has **two listeners**, mirroring production (PROTOCOL §0): the API origin and a separate site origin.
+
+- `--port` is the API port and `--site-port` the site port. `0`, or no flag, picks a free port.
+- When both are ready it prints exactly one line to stdout, and nothing else. Diagnostics go to stderr.
+  - By default the line is `LISTENING <apiPort>\n`, exactly as before the split, so existing harnesses (including whole-line matches like `^LISTENING (\d+)\n$`) keep working.
+  - With `--print-site-port` the line is `LISTENING <apiPort> SITE <sitePort>\n`. It still starts with `LISTENING <apiPort>`, so a prefix match `^LISTENING (\d+)` also works.
+  - Either way, the site base URL is available from `GET /__control` → `siteBaseUrl`. A harness that reads only the API port can still run the two-origin scenarios. The reference runner does this.
 - It stops on SIGTERM or SIGINT. If `SPONSORKIT_CONFORMANCE_EXIT_ON_STDIN_EOF=1` is set, it also stops when its stdin closes. Use this so a crashed test runner never leaks the server.
-- The base URL is `http://127.0.0.1:<port>`. Pass it to the SDK as `apiBaseUrl`.
+- **API base URL** (`$BASE_URL`): `http://127.0.0.1:<apiPort>`. Pass it to the SDK as `apiBaseUrl`. This origin also serves the site pages at the root, for single-origin setups (§2.2).
+- **Site base URL** (`$SITE_BASE_URL`): `http://127.0.0.1:<sitePort>/sponsorkit.io`. It has a base path, like the GitHub Pages project site. Only scenarios that require the `siteBaseUrl` hook pass it to the SDK, as `siteBaseUrl`.
 
 Typical harness:
 
-1. Once per test session, spawn the server with `bun` on `PATH`, keeping stdin as a pipe. Read stdout until the first newline and parse `LISTENING (\d+)`.
+1. Once per test session, spawn the server with `bun` on `PATH`, keeping stdin as a pipe. Read stdout until the first newline and parse `^LISTENING (\d+)` (with `--print-site-port`: `^LISTENING (\d+) SITE (\d+)`).
 2. Load `scenarios.json`.
 3. For each scenario, run one test in your framework, named after the scenario `id` (§3).
 4. When the session ends, kill the process.
@@ -40,13 +47,16 @@ Typical harness:
 Python sketch:
 
 ```python
-proc = subprocess.Popen(["bun", "sdks/conformance/server.ts"], stdout=PIPE, stdin=PIPE,
+proc = subprocess.Popen(["bun", "sdks/conformance/server.ts", "--print-site-port"], stdout=PIPE, stdin=PIPE,
                         env={**os.environ, "SPONSORKIT_CONFORMANCE_EXIT_ON_STDIN_EOF": "1"})
-port = int(re.fullmatch(r"LISTENING (\d+)\n", proc.stdout.readline().decode())[1])
+m = re.match(r"LISTENING (\d+) SITE (\d+)\n", proc.stdout.readline().decode())
+port, site_port = int(m[1]), int(m[2])
 scenarios = json.load(open("sdks/conformance/scenarios.json"))["scenarios"]
 
 @pytest.mark.parametrize("scenario", scenarios, ids=lambda s: s["id"])
-def test_conformance(scenario): run_scenario(scenario, base_url=f"http://127.0.0.1:{port}")
+def test_conformance(scenario):
+    run_scenario(scenario, base_url=f"http://127.0.0.1:{port}",
+                 site_base_url=f"http://127.0.0.1:{site_port}/sponsorkit.io")
 ```
 
 Scenarios share one server, so run them **sequentially**.
@@ -75,22 +85,37 @@ Its data is deterministic.
   - Codes can be exchanged more than once within their lifetime, like the real Worker.
 - **`supporter.id`:** stable per (target set, first identity). Treat it as opaque.
 
-### 2.2 Non-interactive browser pages
+### 2.2 Non-interactive site pages, on two origins
 
 The test's `openBrowser(url)` hook does an HTTP GET and **follows redirects**, like a browser without JavaScript.
 
+The same fake serves two listeners (PROTOCOL §0, §9):
+
+| Listener | Serves | Page paths |
+|---|---|---|
+| **API** (`$BASE_URL`) | `/api/v1/*`, the control API, and the site pages at the root (single-origin self-hosting: an SDK given only `apiBaseUrl` uses it as `siteBaseUrl`) | `/connect/`, `/checkout/`, `/connect/done/`, `/checkout/thanks/` |
+| **Site** (`$SITE_BASE_URL`) | Only the site pages under the base path `/sponsorkit.io`, plus `/__fake/provider/*` | `/sponsorkit.io/connect/`, `/sponsorkit.io/checkout/`, … |
+
+- On the site listener, everything else is a `404`: `/api/*`, `/__control*`, and pages outside `/sponsorkit.io/`. An SDK that sends API calls to the site, or drops the site's base path, fails visibly.
+- The trailing-slash form (`/connect/`) is canonical. The form without a slash is also accepted, but the scenarios assert the slash form.
+- Redirects issued by a page stay on the listener and base path that served it (for example `/sponsorkit.io/connect/done/#…`). The fake provider page is always at the root, `/__fake/provider/<provider>`.
+- The Open Collective `redirect` in provider URLs is `<origin><base path>/checkout/thanks/` of the listener that served `/checkout/`.
+- problem+json `type` is `$SITE_BASE_URL/docs/reference-http/http-api/#errors`. Clients must not depend on it.
+
+In the table below, `/connect/` and `/checkout/` mean either listener's page.
+
 | Request | Fake behaviour |
 |---|---|
-| `GET /connect?targets&challenge&delivery&…` | Validates the PROTOCOL §4.1 params and answers `400` (HTML) when they are invalid. `targets` must be **canonical**. `challenge` must be a 43-character base64url S256 challenge. A loopback `redirect_uri` must be exactly `http://127.0.0.1:<port>/callback` or `http://[::1]:<port>/callback`.<br>Then it "signs in" as the `provider` param, else `connect.provider`, else the first target's provider. |
+| `GET /connect/?targets&challenge&delivery&…` | Validates the PROTOCOL §4.1 params and answers `400` (HTML) when they are invalid. `targets` must be **canonical**. `challenge` must be a 43-character base64url S256 challenge. A loopback `redirect_uri` must be exactly `http://127.0.0.1:<port>/callback` or `http://[::1]:<port>/callback`.<br>Then it "signs in" as the `provider` param, else `connect.provider`, else the first target's provider. |
 | …`delivery=loopback` | `302` to `<redirect_uri>?code=skc_…`, or `?error=<code>` when `connect.error` is set. |
 | …with `connect.abandon` set | `200` HTML for every delivery. Nothing is delivered and no code is issued: the user never finishes. |
 | …`delivery=paste` | `200 text/plain`. The body is the code followed by `\n`, and the code is also in the `Sponsorkit-Conformance-Code` header. With `connect.error` set, the response is `400` with the body `error: <code>\n`. |
 | …`delivery=redirect` | `302` to `<redirect_uri>` with `sponsorkit_code=` (or `sponsorkit_error=`) appended. |
-| …`delivery=web_message` | `302` to `/connect/done#code=…&origin=…`, which is a `200` HTML page. |
-| `GET /checkout?…` with `challenge`, without `step=choose` | Signs in first, exactly like `/connect`. A paste response also carries `Sponsorkit-Conformance-Continue: /checkout?<params>&step=choose`. |
-| `GET /checkout?…` otherwise | Applies PROTOCOL §6 to the fixture targets:<br>• If there is exactly one eligible provider, or `provider` is given and is eligible, it answers `302` to `/__fake/provider/<provider>?to=<real provider URL>`. That page answers `200` and counts as "the user reached the provider's checkout".<br>• If several providers are eligible, it shows a `200` chooser page, unless `checkoutChoice` is set.<br>• If none is eligible, it shows a `200` page with the reasons. |
+| …`delivery=web_message` | `302` to `<base path>/connect/done/#code=…&origin=…`, which is a `200` HTML page. |
+| `GET /checkout/?…` with `challenge`, without `step=choose` | Signs in first, exactly like `/connect/`. A paste response also carries `Sponsorkit-Conformance-Continue: <base path>/checkout/?<params>&step=choose`. |
+| `GET /checkout/?…` otherwise | Applies PROTOCOL §6 to the fixture targets:<br>• If there is exactly one eligible provider, or `provider` is given and is eligible, it answers `302` to `/__fake/provider/<provider>?to=<real provider URL>`. That page answers `200` and counts as "the user reached the provider's checkout".<br>• If several providers are eligible, it shows a `200` chooser page, unless `checkoutChoice` is set.<br>• If none is eligible, it shows a `200` page with the reasons. |
 
-Every request except `/__control*` is written to the request log.
+Every request except `/__control*` is written to the request log, tagged with the listener that received it (`server: "api"` or `"site"`).
 
 ### 2.3 Control API
 
@@ -100,9 +125,9 @@ All control endpoints take and return JSON.
 |---|---|
 | `POST /__control` `{ scenario?, …options }` | **Replaces** the behaviour with: defaults, then the `server` block of scenario `scenario` from `scenarios.json`, then `options`. Resets the counters. Keeps sessions, codes and the log. Unknown scenario ids, unknown options and unknown fixture names → `400`. |
 | `PATCH /__control` `{ …options }` | **Merges** options into the current behaviour. A `null` value removes that option. The counters of the options given are reset. Scenario `control` steps use this. |
-| `GET /__control` | State: `scenario`, `behaviour`, `counters`, `lastSessionToken`, `issuedSessionTokens` (in issue order, since reset), `lastCode`, `checkoutVisits`, `contributionsCalls`, `lastRequestSeq`. |
+| `GET /__control` | State: `scenario`, `behaviour`, `counters`, `lastSessionToken`, `issuedSessionTokens` (in issue order, since reset), `lastCode`, `checkoutVisits`, `contributionsCalls`, `lastRequestSeq`, `siteBaseUrl` (the site listener's base URL, `$SITE_BASE_URL`). |
 | `POST /__control/reset` | Back to a freshly started server: no behaviour, no sessions, no codes, empty log. |
-| `GET /__control/requests[?since=<seq>]` | `{ requests: [{ seq, time, requestId, method, path, query, headers, body?, status, responseHeaders }], lastSeq }`.<br>• `headers` holds only `authorization`, `content-type`, `accept`, `user-agent`, `origin` and `sponsorkit-*`.<br>• `body` is parsed JSON when possible.<br>• `responseHeaders` holds `location`, `retry-after` and `sponsorkit-session`. |
+| `GET /__control/requests[?since=<seq>]` | `{ requests: [{ seq, time, requestId, server, method, path, query, headers, body?, status, responseHeaders }], lastSeq }`.<br>• `server` is `"api"` or `"site"`: the listener that received the request. `path` is the raw path, including the site's `/sponsorkit.io` base path.<br>• `headers` holds only `authorization`, `content-type`, `accept`, `user-agent`, `origin` and `sponsorkit-*`.<br>• `body` is parsed JSON when possible.<br>• `responseHeaders` holds `location`, `retry-after` and `sponsorkit-session`. |
 | `DELETE /__control/requests` | Clears the log. |
 | `GET /__control/codes/latest` | The last issued code record: `{ code, provider, targets, challenge, delivery, redirectUri, origin, issuedAt, expiresAt, via }`. Answers `404` if no code has been issued. `GET /__control/codes` lists all of them. |
 | `POST /__control/sessions` `{ targets, identities: ["github", …] }` | Mints a session without sign-in and returns `{ sessionToken, expiresAt }`. |
@@ -120,9 +145,9 @@ All control endpoints take and return JSON.
 | `sessionInvalid: true` | Every session token is rejected with `401 session_invalid`, at `/contributions` and as `sessionToken` at `/auth/token`. |
 | `renewSession: { times=1 }` | The next `times` successful `/contributions` responses carry `Sponsorkit-Session: <new token>`. |
 | `newContribution: { contribution, trigger="checkout", afterCalls=0 }` | Makes a contribution appear in `/contributions`, or replace the one with the same id.<br>• **Arming:** it is armed immediately (`trigger: "immediate"`) or when `/__fake/provider/*` is loaded (`"checkout"`).<br>• **Timing:** once armed, the first `afterCalls` successful `/contributions` responses still omit it; every response after that includes it.<br>• `/auth/token` results never include it. |
-| `connect: { provider?, error?, abandon? }` | Which provider non-interactive sign-in uses, or which error to deliver: `access_denied`, `invalid_state` or `provider_error`. `abandon: true`: `/connect` (and the sign-in half of `/checkout`) answers `200` HTML and never delivers anything (sign-in timeout and cancellation scenarios). |
+| `connect: { provider?, error?, abandon? }` | Which provider non-interactive sign-in uses, or which error to deliver: `access_denied`, `invalid_state` or `provider_error`. `abandon: true`: `/connect/` (and the sign-in half of `/checkout/`) answers `200` HTML and never delivers anything (sign-in timeout and cancellation scenarios). |
 | `rejectCodes: true` | `POST /api/v1/auth/token` answers `400 invalid_code` for every code. |
-| `checkoutChoice: Provider` | Auto-picks this provider when the `/checkout` chooser would be shown. |
+| `checkoutChoice: Provider` | Auto-picks this provider when the `/checkout/` chooser would be shown. |
 | `latencyMs: number` | Delays every `/api/*` response. |
 
 ## 3. `scenarios.json`
@@ -144,13 +169,13 @@ All control endpoints take and return JSON.
 }
 ```
 
-Default values for omitted fields are defined in `schemas/scenarios.schema.json` (e.g. `configure.args.apiBaseUrl` defaults to `"$BASE_URL"`). Apply them when you parse.
+Default values for omitted fields are defined in `schemas/scenarios.schema.json` (e.g. `configure.args.apiBaseUrl` defaults to `"$BASE_URL"`). Apply them when you parse. `configure.args.siteBaseUrl` has **no** default: when it is absent, do not pass the option, so the SDK's defaulting rule applies (the site defaults to `apiBaseUrl`).
 
 ### 3.1 Running one scenario
 
 1. `POST /__control/reset`, then `POST /__control {"scenario": "<id>"}`. This applies the scenario's `server` block.
 2. Reset the SDK's per-process state (see `restart` below).
-3. Pick a fresh `$STORAGE_DIR`: an absolute path whose parent exists but which does **not** exist yet. Fetch `$UNREACHABLE_BASE_URL`. Remember `lastRequestSeq` from `GET /__control`.
+3. Pick a fresh `$STORAGE_DIR`: an absolute path whose parent exists but which does **not** exist yet. Fetch `$UNREACHABLE_BASE_URL`. Remember `lastRequestSeq` from `GET /__control` (its `siteBaseUrl` is `$SITE_BASE_URL` if you did not parse it from the `LISTENING` line).
 4. For each step:
    1. Note `lastRequestSeq`.
    2. Substitute variables in the step's `args`.
@@ -167,7 +192,8 @@ These are substituted inside every string. Substitute the longest names first, a
 
 | Variable | Value |
 |---|---|
-| `$BASE_URL` | The fake server's base URL. |
+| `$BASE_URL` | The fake server's API base URL, `http://127.0.0.1:<apiPort>`. |
+| `$SITE_BASE_URL` | The fake server's separate site base URL, `http://127.0.0.1:<sitePort>/sponsorkit.io` (origin plus base path, no trailing slash). Read it from `GET /__control` → `siteBaseUrl`, or build it from the `SITE` port of the `--print-site-port` line. |
 | `$STORAGE_DIR` | The scenario's storage directory (see §3.1). |
 | `$STORAGE_FILE` | `$STORAGE_DIR/$TARGETS_HASH.json` |
 | `$TARGETS_PARAM`, `$TARGETS_HASH` | The default target set's param and `targets_hash`. Other sets appear as literals. All hashes are in `fixtures/vectors.json`. |
@@ -185,7 +211,7 @@ These are the SDK actions; map each one to your SDK's idiomatic API. Return valu
 
 | `action` | `args` | Run as | Return value compared |
 |---|---|---|---|
-| `configure` | `github?`, `opencollective?`, `appName?`, `cacheTtl?`, `mock?`, `apiBaseUrl`, `storageDir`, `signInMethod?`, `env`, `processEnv?`, `devChecks?`, `signInTimeout?` (s), `interactive?` | Construct a **new** SDK instance, replacing the current one.<br>• Always pass `env` as the SDK's `env` override (§4); it replaces the process environment.<br>• `processEnv`: first set these variables in the real process environment, and keep them until the scenario ends (§3.1).<br>• `devChecks`, `signInTimeout`, `interactive`: pass the option only when present. When absent, the SDK uses its default; for `devChecks`, run the harness without the language's implicit development signal (JS `NODE_ENV=development`, Python dev mode). | — |
+| `configure` | `github?`, `opencollective?`, `appName?`, `cacheTtl?`, `mock?`, `apiBaseUrl`, `siteBaseUrl?`, `storageDir`, `signInMethod?`, `env`, `processEnv?`, `devChecks?`, `signInTimeout?` (s), `interactive?` | Construct a **new** SDK instance, replacing the current one.<br>• Always pass `env` as the SDK's `env` override (§4); it replaces the process environment.<br>• `processEnv`: first set these variables in the real process environment, and keep them until the scenario ends (§3.1).<br>• `siteBaseUrl`, `devChecks`, `signInTimeout`, `interactive`: pass the option only when present (for `siteBaseUrl`, an empty string is present and must be passed: it counts as unset in the SDK). When absent, the SDK uses its default; for `devChecks`, run the harness without the language's implicit development signal (JS `NODE_ENV=development`, Python dev mode). | — |
 | `restart` | — | Drop the instance and reset per-process state (nag run memo, dev-check memo, `Retry-After` memo). Construct a new instance with the last `configure` args. This simulates the next run of the app. | — |
 | `signIn` | `method: "loopback" \| "paste"`, `provider?`, `cancelAfter?` (s) | `signIn({ provider })` with the sign-in method forced to `method`. When `cancelAfter` is set, pass a cancellation primitive and fire it that many seconds after the call starts. | — |
 | `isSignedIn` | — | `isSignedIn()` | boolean |
@@ -251,7 +277,7 @@ A matcher is plain JSON with a few `$` operators:
 ] }
 ```
 
-- **Matching a call:** each `calls[i]` matches log entries with the same `method` and `path` whose `query`, `headers` and `body` match the given matchers.
+- **Matching a call:** each `calls[i]` matches log entries with the same `method` and `path` whose `query`, `headers` and `body` match the given matchers. When `calls[i].server` (`"api"` or `"site"`) is given, the entry must also have been received by that listener. Scenarios use it to pin which origin a request went to.
 - **Counting:** `count`, `min` and `max` bound the number of matching entries. With none of them, at least 1 is required.
 - **`exact`** (default `true`): every log entry must be matched by some call.
 - **`includeTargetsLookups`** (default `false`): when false, `GET /api/v1/targets` entries are ignored completely, because dev-time existence checks may happen at any time. When true, they count like any other request. This is how "no network at all" is asserted:
@@ -266,7 +292,8 @@ PROTOCOL §7 lists the SDK options and test hooks. The scenarios declare the one
 
 | Hook | Requirement |
 |---|---|
-| `apiBaseUrl` | Every request goes to this origin. |
+| `apiBaseUrl` | Every API request (`/api/v1/…`) goes to this origin. |
+| `siteBaseUrl` | The `siteBaseUrl` option (PROTOCOL §7): every page URL (`/connect/`, `/checkout/`, `checkoutUrl()`, the loopback checkout redirect) is built on it, keeping its base path. When it is not set but `apiBaseUrl` is, it defaults to `apiBaseUrl`; an empty string counts as unset; trailing slashes are trimmed. |
 | `storageDir` | The SDK uses this directory as is. The SDK **creates** it (mode `0700`) when it first writes. |
 | `openBrowser(url)` | The harness replaces it with an HTTP GET that follows redirects. For loopback flows the SDK's own loopback server must already be listening when the call happens, because the redirect chain reaches it. |
 | `promptForCode(url)` | The harness GETs the paste URL, the way a user would open it, and returns the code from the response (the body, or the `Sponsorkit-Conformance-Code` header). **The harness needs the paste URL.** The SDK should pass it as an argument; otherwise the harness parses it from the SDK's stderr. |
@@ -326,4 +353,9 @@ The behaviours this kit used to clarify are now part of PROTOCOL: §7 (SDK optio
 | §7.1 item 13, `cacheTtl` | `config-cache-ttl-minimum` |
 | §7.1 item 14, mock mode | `mock-nag-in-memory` and every `mock-*` scenario |
 | §7.1 item 16, `checkoutUrl` | `checkout-url-invalid` |
-| §7.1 item 17, loopback redirect after checkout sign-in | `checkout-signs-in-first` |
+| §7.1 item 17, loopback redirect after checkout sign-in | `checkout-signs-in-first`, `site-base-url-checkout-signs-in-first` |
+| §7 `siteBaseUrl` / `apiBaseUrl` split: pages on the site origin, API calls on the API origin | `site-base-url-sign-in-loopback`, `site-base-url-sign-in-paste`, `site-base-url-checkout-signed-in` |
+| §7 base URL defaulting (only `apiBaseUrl` set: site = API; `""` = unset) | `site-base-url-defaults-to-api` |
+| §7 base URL normalization (trailing slashes trimmed) | `site-base-url-trailing-slashes`, `site-base-url-checkout-url` |
+| §7.1 items 8 and 16, `checkoutUrl` on `siteBaseUrl` | `site-base-url-checkout-url` |
+| PROTOCOL §0, §7: page paths use the trailing-slash form | every scenario that asserts `/connect/` or `/checkout/` |

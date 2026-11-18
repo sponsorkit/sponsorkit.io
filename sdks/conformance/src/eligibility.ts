@@ -19,7 +19,7 @@ export function majorUnits(minor: number): string {
   return String(minor / 100);
 }
 
-export function providerRedirectUrl(info: TargetInfo, opts: CheckoutOptions, sponsorkitOrigin: string): string {
+export function providerRedirectUrl(info: TargetInfo, opts: CheckoutOptions, siteBaseUrl: string): string {
   if (info.provider === "github") {
     const tiers = githubTiers(info, opts.frequency).sort((a, b) => a.amount.value - b.amount.value);
     if (tiers.length === 0) return `https://github.com/sponsors/${info.account}`;
@@ -31,11 +31,11 @@ export function providerRedirectUrl(info: TargetInfo, opts: CheckoutOptions, spo
   if (opts.amount !== undefined) q.set("amount", majorUnits(opts.amount));
   if (opts.frequency === "monthly") q.set("interval", "month");
   if (opts.frequency === "yearly") q.set("interval", "year");
-  q.set("redirect", `${sponsorkitOrigin}/checkout/thanks`);
+  q.set("redirect", `${siteBaseUrl}/checkout/thanks/`);
   return `https://opencollective.com/${info.account}/donate?${q.toString()}`;
 }
 
-export function eligibility(info: TargetInfo, opts: CheckoutOptions, sponsorkitOrigin: string): Eligibility {
+export function eligibility(info: TargetInfo, opts: CheckoutOptions, siteBaseUrl: string): Eligibility {
   const provider = info.provider;
   if (!info.exists) return { provider, eligible: false, reason: `${info.target} does not exist` };
   if (opts.frequency && !info.frequencies.includes(opts.frequency))
@@ -44,5 +44,5 @@ export function eligibility(info: TargetInfo, opts: CheckoutOptions, sponsorkitO
     return { provider, eligible: false, reason: `${info.target} only accepts ${info.currency ?? "no currency"}` };
   if (provider === "github" && githubTiers(info, opts.frequency).length === 0)
     return { provider, eligible: false, reason: `${info.target} has no ${opts.frequency ?? "monthly"} tier` };
-  return { provider, eligible: true, url: providerRedirectUrl(info, opts, sponsorkitOrigin) };
+  return { provider, eligible: true, url: providerRedirectUrl(info, opts, siteBaseUrl) };
 }

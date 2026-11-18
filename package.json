@@ -2,7 +2,7 @@
   "name": "sponsorkit",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "app", "web", "sdks/js", "sdks/conformance"],
+  "workspaces": ["packages/*", "app", "web", "sdks/js", "sdks/conformance", "e2e"],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test"

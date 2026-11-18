@@ -77,7 +77,7 @@ code later.
 
 | Code | Constant | Returned by |
 |---|---|---|
-| `invalid_config` | `CodeInvalidConfig` | `New` (malformed targets, `AppName` over 64 characters, a bad `APIBaseURL`, negative durations, an unknown `SignInMethod` or mock preset); `CheckoutURL`/`OpenCheckout` (bad checkout options); `SignIn` (provider not among your targets, or the session can't be stored); `SignOut` (storage can't be written); `GetFinancialContribution`, `SignIn`, `OpenCheckout` (the opt-in dev-time check found a missing target); `TargetsParam`, `TargetsHash` and `VerifySession` (malformed targets); `ParseISODuration` (not a supported duration). |
+| `invalid_config` | `CodeInvalidConfig` | `New` (malformed targets, `AppName` over 64 characters, a bad `APIBaseURL` or `SiteBaseURL`, negative durations, an unknown `SignInMethod` or mock preset); `CheckoutURL`/`OpenCheckout` (bad checkout options); `SignIn` (provider not among your targets, or the session can't be stored); `SignOut` (storage can't be written); `GetFinancialContribution`, `SignIn`, `OpenCheckout` (the opt-in dev-time check found a missing target); `TargetsParam`, `TargetsHash` and `VerifySession` (malformed targets); `ParseISODuration` (not a supported duration). |
 | `disabled` | `CodeDisabled` | `SignIn`, `OpenCheckout` when `SPONSORKIT_DISABLE` is set. |
 | `access_denied` | `CodeAccessDenied` | `SignIn`, `OpenCheckout`: the user declined at the provider. |
 | `invalid_state` | `CodeInvalidState` | `SignIn`, `OpenCheckout`: the sign-in state expired or was invalid. |

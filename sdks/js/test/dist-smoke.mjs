@@ -11,7 +11,10 @@ assert.equal(fc.active().length, 1);
 assert.equal(fc.mock, true);
 assert.equal(await targetsHash("github:octocat"), "0309e87b72e9ebbb324075c26f58478bf2aca6c8cbc26bae3bb2bc74080640f9");
 assert.equal(typeof fileStorage, "function");
-assert.match(new BrowserSponsorkit({ github: "octocat", env: {} }).checkoutUrl(), /^https:\/\/sponsorkit\.io\/checkout\?targets=github%3Aoctocat$/);
+assert.match(
+  new BrowserSponsorkit({ github: "octocat", env: {} }).checkoutUrl(),
+  /^https:\/\/sponsorkit\.github\.io\/sponsorkit\.io\/checkout\/\?targets=github%3Aoctocat$/,
+);
 assert.throws(
   () => new Sponsorkit({ github: "-bad-" }),
   (e) => e instanceof SponsorkitError && e.code === "invalid_config",

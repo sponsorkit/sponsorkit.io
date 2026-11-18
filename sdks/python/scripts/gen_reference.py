@@ -1467,7 +1467,7 @@ _TIMEOUT_NOTE = "Seconds for the HTTP request (`0` disables the timeout); a time
 _VERIFY_NOTES = {
     "token": "The supporter's session token (`sks_...`), as sent by your client.",
     "targets": "Your targets; the session must be bound to exactly this set (after normalization).",
-    "api_base_url": "Sponsorkit origin, for self-hosting and tests.",
+    "api_base_url": "Sponsorkit API origin (default `https://api.sponsorkit.io`); self-hosting and tests.",
     "request_timeout": _TIMEOUT_NOTE,
     "http_client": "Your own httpx client to send the request with (proxies, custom transports).",
     "timeout": "Deprecated alias of `request_timeout`.",

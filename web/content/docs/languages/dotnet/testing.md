@@ -224,7 +224,8 @@ public sealed class NagTests : IDisposable
 
 ## Integration tests
 
-To test a sign-in end to end, run a fake Sponsorkit server and point the client at it with `ApiBaseUrl`. Pass an
+To test a sign-in end to end, run a fake Sponsorkit server and point the client at it with `ApiBaseUrl` (the site
+pages default to the same URL when `SiteBaseUrl` is unset). Pass an
 `OpenBrowser` callback that requests the URL with an `HttpClient` (following redirects, as a browser would), or a
 `PromptForCode` that returns a known code for paste-back. The SDK's own conformance suite does exactly this
 against `sdks/conformance/server.ts`; see [self-hosting](../../reference-http/self-hosting.md) to run the real

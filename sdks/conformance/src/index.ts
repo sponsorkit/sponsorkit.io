@@ -1,4 +1,4 @@
-export { startServer, FakeSponsorkit, loadScenarioServerBlocks, unreachableBaseUrl, type RunningServer, type RequestLogEntry, type IssuedCode } from "./server";
+export { startServer, FakeSponsorkit, loadScenarioServerBlocks, unreachableBaseUrl, SITE_BASE_PATH, type ServerRole, type RunningServer, type RequestLogEntry, type IssuedCode } from "./server";
 export { ControlOptions, ControlPatch, ControlRequest, MintSessionRequest, ContributionRef } from "./control";
 export { ScenariosFile, Scenario, Step, SDK_ERROR_CODES, HOOKS } from "./scenario-schema";
 export { StorageFile, NagState } from "./storage-schema";

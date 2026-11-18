@@ -106,7 +106,7 @@ import { Sponsorkit } from "@sponsorkit/sdk/node";
 const sk = new Sponsorkit({ github: "octocat", opencollective: "my-collective" });
 
 console.error(`Support this project: ${sk.checkoutUrl({ frequency: "monthly" })}`);
-// https://sponsorkit.io/checkout?targets=github%3Aoctocat%2Copencollective%3Amy-collective&frequency=monthly
+// https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat%2Copencollective%3Amy-collective&frequency=monthly
 ```
 
 Contributions made through this link aren't detected by the app that printed it, but they show up in
@@ -131,7 +131,7 @@ Contributions made through this link aren't detected by the app that printed it,
 ```
 
 - `<sponsorkit-button>` calls `openCheckout()` on click. Attributes: `github`, `opencollective`, `api-base-url`,
-  `amount`, `currency`, `frequency`, `provider`, and `label` (sets `aria-label`). The slot is the button text
+  `site-base-url`, `amount`, `currency`, `frequency`, `provider`, and `label` (sets `aria-label`). The slot is the button text
   (default "Sponsor ♥"); style it with `::part(button)`. It fires `sponsorkit:checkout` with the
   `CheckoutResult` as `detail`, and `sponsorkit:error` with `detail.error`.
 - `<sponsorkit-badge>` shows its slot (default "Supporter ♥") when the signed-in user has an active
