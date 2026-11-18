@@ -44,7 +44,7 @@ using Sponsorkit;
 var sk = new SponsorkitClient(new SponsorkitOptions { GitHub = "octocat", OpenCollective = "my-collective" });
 
 Console.WriteLine(sk.CheckoutUrl());
-// https://sponsorkit.io/checkout?targets=github%3Aoctocat%2Copencollective%3Amy-collective
+// https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat%2Copencollective%3Amy-collective
 
 Console.WriteLine(sk.CheckoutUrl(new CheckoutUrlOptions
 {

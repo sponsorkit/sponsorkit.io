@@ -27,6 +27,7 @@ export const SdkErrorCode = z.enum(SDK_ERROR_CODES);
 /** Test hooks / capabilities a scenario needs (README "Required SDK test hooks"). */
 export const HOOKS = [
   "apiBaseUrl",
+  "siteBaseUrl",
   "storageDir",
   "openBrowser",
   "promptForCode",
@@ -50,6 +51,11 @@ export const RequestCall = z
   .object({
     method: z.enum(["GET", "POST", "PATCH", "DELETE", "OPTIONS"]),
     path: z.string().startsWith("/"),
+    /**
+     * Which listener must have received the request: "api" (the `$BASE_URL` origin) or "site"
+     * (the separate `$SITE_BASE_URL` origin). Absent: either.
+     */
+    server: z.enum(["api", "site"]).optional(),
     count: z.number().int().nonnegative().optional(),
     min: z.number().int().nonnegative().optional(),
     max: z.number().int().nonnegative().optional(),
@@ -100,6 +106,12 @@ export const ConfigureArgs = z
     cacheTtl: z.number().int().nonnegative().optional(),
     mock: MockOption.optional(),
     apiBaseUrl: z.string().default("$BASE_URL"),
+    /**
+     * The `siteBaseUrl` option (PROTOCOL §7). Pass it to the SDK only when present (an empty string is
+     * present and must be passed). Absent: the SDK's defaulting rule applies, so the site defaults to
+     * `apiBaseUrl`.
+     */
+    siteBaseUrl: z.string().optional(),
     storageDir: z.string().default("$STORAGE_DIR"),
     signInMethod: z.enum(["auto", "loopback", "paste"]).optional(),
     /**

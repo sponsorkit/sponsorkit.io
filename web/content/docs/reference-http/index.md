@@ -5,7 +5,9 @@ sidebar_label: Overview
 ---
 
 The five SDKs are clients of one small HTTP API, served by a single stateless Cloudflare Worker at
-`https://sponsorkit.io`. Most apps never call it directly. Read this section if you want to:
+`https://api.sponsorkit.io`. The pages people see (this website, including the consent and checkout pages) are a
+separate static site on GitHub Pages at `https://sponsorkit.github.io/sponsorkit.io`. Most apps never call the API
+directly. Read this section if you want to:
 
 - **call the API without an SDK**, for example to verify sessions from a backend in another language:
   [HTTP API](http-api.md);
@@ -19,7 +21,8 @@ The five SDKs are clients of one small HTTP API, served by a single stateless Cl
 The normative definitions live in the repository, next to the code:
 
 - [`docs/PROTOCOL.md`](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/PROTOCOL.md): exactly what goes
-  over the wire. The Worker, the static pages, the conformance suite and every SDK follow it.
+  over the wire, including where the site and the API live. The Worker, the static pages, the conformance suite
+  and every SDK follow it.
 - [`docs/SPEC.md`](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/SPEC.md): why Sponsorkit works the
   way it does, including the trade-offs and the decisions behind them.
 - [`sdks/conformance`](https://github.com/sponsorkit/sponsorkit.io/tree/main/sdks/conformance): a fake API and the
@@ -34,5 +37,5 @@ The normative definitions live in the repository, next to the code:
 | [`GET /api/v1/contributions`](http-api.md#get-contributions) | `Bearer sks_…` | The supporter's live contributions to the session's targets. |
 | [`GET /api/v1/health`](http-api.md#get-health) | none | Whether each provider is reachable. |
 
-Sign-in and checkout run in the browser through the `/connect` and `/checkout` pages; see
-[Wire protocol](protocol.md#sign-in).
+Sign-in and checkout run in the browser through the site's `/connect/` and `/checkout/` pages, which hand over to
+the API's `/api/oauth/…` endpoints; see [Wire protocol](protocol.md#sign-in).

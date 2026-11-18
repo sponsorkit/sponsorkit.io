@@ -72,9 +72,12 @@ const OC_IDENTITY = { provider: "opencollective", id: "rvelxbzm-o9n8y05w-wq9op3d
 
 type Call = NonNullable<NonNullable<NonNullable<Step["expect"]>["requests"]>["calls"]>[number];
 
-const connectCall = (query: Record<string, unknown> = {}, count = 1): Call => ({
+/** Base path of the fake server's separate site origin (PROTOCOL §9; `$SITE_BASE_URL` ends with it). */
+export const SITE_BASE_PATH = "/sponsorkit.io";
+
+const connectCall = (query: Record<string, unknown> = {}, count = 1, where: Pick<Call, "path" | "server"> = { path: "/connect/" }): Call => ({
   method: "GET",
-  path: "/connect",
+  ...where,
   count,
   query: {
     targets: DEFAULT_TARGETS_PARAM,
@@ -173,7 +176,7 @@ const config: Scenario[] = [
       {
         action: "checkoutUrl",
         args: {},
-        expect: { returns: { $url: { base: "$BASE_URL/checkout", query: { $exact: { targets: DEFAULT_TARGETS_PARAM } } } }, requests: noneAtAll },
+        expect: { returns: { $url: { base: "$BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM } } } }, requests: noneAtAll },
       },
     ],
   },
@@ -480,7 +483,7 @@ const signIn: Scenario[] = [
     id: "sign-in-loopback",
     title: "Loopback sign-in",
     description:
-      "signIn() binds 127.0.0.1:<random>, opens /connect with delivery=loopback, receives ?code= on /callback, exchanges it with its PKCE verifier, stores the session token and caches the token response's result. The next getFinancialContribution() is served from that cache.",
+      "signIn() binds 127.0.0.1:<random>, opens /connect/ with delivery=loopback, receives ?code= on /callback, exchanges it with its PKCE verifier, stores the session token and caches the token response's result. The next getFinancialContribution() is served from that cache.",
     category: "sign-in",
     specRefs: ["SPEC §6.2", "PROTOCOL §2", "PROTOCOL §3.2", "PROTOCOL §7", "PROTOCOL §8"],
     requires: ["openBrowser", "signInMethod"],
@@ -509,7 +512,7 @@ const signIn: Scenario[] = [
     id: "sign-in-paste",
     title: "Paste-back sign-in",
     description:
-      "signIn() with the paste method prints the /connect URL (delivery=paste, no redirect_uri) to stderr and calls promptForCode(). The test harness GETs that URL (the fake answers 200 text/plain whose body is the code) and returns the code. The SDK exchanges it.",
+      "signIn() with the paste method prints the /connect/ URL (delivery=paste, no redirect_uri) to stderr and calls promptForCode(). The test harness GETs that URL (the fake answers 200 text/plain whose body is the code) and returns the code. The SDK exchanges it.",
     category: "sign-in",
     specRefs: ["SPEC §6.2", "PROTOCOL §7"],
     requires: ["promptForCode", "signInMethod"],
@@ -541,7 +544,7 @@ const signIn: Scenario[] = [
     id: "sign-in-cancelled",
     title: "Cancelling sign-in throws cancelled",
     description:
-      "The user never finishes sign-in (the fake's /connect delivers nothing). The cancellation signal fires after 1 s; signIn() rejects with cancelled, does not call /auth/token and stores nothing.",
+      "The user never finishes sign-in (the fake's /connect/ delivers nothing). The cancellation signal fires after 1 s; signIn() rejects with cancelled, does not call /auth/token and stores nothing.",
     category: "sign-in",
     specRefs: ["PROTOCOL §7"],
     requires: ["openBrowser", "signInMethod", "cancellation"],
@@ -598,7 +601,7 @@ const signIn: Scenario[] = [
     id: "sign-in-add-identity",
     title: "Adding a second identity",
     description:
-      "While signed in with GitHub, signIn({ provider: \"opencollective\" }) opens /connect with provider=opencollective&add=1 and sends the existing sessionToken to /auth/token. The new token holds both identities, and results include both providers' contributions.",
+      "While signed in with GitHub, signIn({ provider: \"opencollective\" }) opens /connect/ with provider=opencollective&add=1 and sends the existing sessionToken to /auth/token. The new token holds both identities, and results include both providers' contributions.",
     category: "sign-in",
     specRefs: ["SPEC §6.2", "PROTOCOL §3.2", "PROTOCOL §4.1"],
     requires: ["openBrowser", "signInMethod"],
@@ -625,7 +628,7 @@ const signIn: Scenario[] = [
     id: "sign-in-add-identity-dead-session",
     title: "Adding an identity to a dead session starts a new session",
     description:
-      "The stored session token is no longer valid. signIn({ provider: \"opencollective\" }) opens /connect with add=1 and sends the stored sessionToken; /auth/token answers 401 session_invalid. The SDK clears the stored session and retries the same code once without sessionToken, which succeeds with only the new identity.",
+      "The stored session token is no longer valid. signIn({ provider: \"opencollective\" }) opens /connect/ with add=1 and sends the stored sessionToken; /auth/token answers 401 session_invalid. The SDK clears the stored session and retries the same code once without sessionToken, which succeeds with only the new identity.",
     category: "sign-in",
     specRefs: ["PROTOCOL §7", "PROTOCOL §3.2"],
     requires: ["openBrowser", "signInMethod"],
@@ -940,7 +943,7 @@ const checkout: Scenario[] = [
     id: "checkout-detects-new-contribution",
     title: "Checkout detects a new contribution",
     description:
-      "Signed in, openCheckout() opens /checkout (no challenge) which redirects to the provider. The SDK polls /contributions with cacheTtl 0; the second poll after the provider page was loaded contains a new contribution, and openCheckout resolves { status: \"contributed\", contribution }.",
+      "Signed in, openCheckout() opens /checkout/ (no challenge) which redirects to the provider. The SDK polls /contributions with cacheTtl 0; the second poll after the provider page was loaded contains a new contribution, and openCheckout resolves { status: \"contributed\", contribution }.",
     category: "checkout",
     specRefs: ["SPEC §7.3", "PROTOCOL §4.6", "PROTOCOL §6"],
     requires: ["openBrowser", "signInMethod", "checkoutPollInterval"],
@@ -957,7 +960,7 @@ const checkout: Scenario[] = [
           requests: {
             exact: true,
             calls: [
-              { method: "GET", path: "/checkout", count: 1, query: checkoutQuery({ provider: "github", amount: "1000", frequency: "monthly" }) },
+              { method: "GET", path: "/checkout/", count: 1, query: checkoutQuery({ provider: "github", amount: "1000", frequency: "monthly" }) },
               providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"),
               contributionsCall({ min: 2 }),
             ],
@@ -988,7 +991,7 @@ const checkout: Scenario[] = [
           requests: {
             exact: true,
             calls: [
-              { method: "GET", path: "/checkout", count: 1, query: checkoutQuery({ provider: "github", amount: "500", frequency: "monthly" }) },
+              { method: "GET", path: "/checkout/", count: 1, query: checkoutQuery({ provider: "github", amount: "500", frequency: "monthly" }) },
               providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=101"),
               contributionsCall({ min: 1 }),
             ],
@@ -1017,7 +1020,7 @@ const checkout: Scenario[] = [
           requests: {
             exact: true,
             calls: [
-              { method: "GET", path: "/checkout", count: 1, query: checkoutQuery({ provider: "github", frequency: "one_time", amount: ABSENT }) },
+              { method: "GET", path: "/checkout/", count: 1, query: checkoutQuery({ provider: "github", frequency: "one_time", amount: ABSENT }) },
               providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=201"),
               contributionsCall({ min: 2 }),
             ],
@@ -1048,7 +1051,7 @@ const checkout: Scenario[] = [
     id: "checkout-signs-in-first",
     title: "Checkout while signed out signs in first (loopback)",
     description:
-      "openCheckout() while signed out opens /checkout with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <apiBaseUrl>/checkout carrying exactly targets, the checkout options that were set (provider, amount, currency, frequency) and step=choose (PROTOCOL §7.1 item 17); the SDK exchanges the code, then polls until the new contribution appears.",
+      "openCheckout() while signed out opens /checkout/ with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <siteBaseUrl>/checkout/ (which defaults to apiBaseUrl here) carrying exactly targets, the checkout options that were set (provider, amount, currency, frequency) and step=choose (PROTOCOL §7.1 item 17); the SDK exchanges the code, then polls until the new contribution appears.",
     category: "checkout",
     specRefs: ["SPEC §7.3", "PROTOCOL §4.6", "PROTOCOL §7", "PROTOCOL §7.1"],
     requires: ["openBrowser", "signInMethod", "checkoutPollInterval"],
@@ -1066,13 +1069,13 @@ const checkout: Scenario[] = [
             calls: [
               {
                 method: "GET",
-                path: "/checkout",
+                path: "/checkout/",
                 count: 1,
                 query: { targets: DEFAULT_TARGETS_PARAM, challenge: CHALLENGE, delivery: "loopback", redirect_uri: LOOPBACK_URI, provider: "github", amount: "1000", frequency: "monthly", step: ABSENT },
               },
               {
                 method: "GET",
-                path: "/checkout",
+                path: "/checkout/",
                 count: 1,
                 query: { $exact: { targets: DEFAULT_TARGETS_PARAM, provider: "github", amount: "1000", frequency: "monthly", step: "choose" } },
               },
@@ -1090,7 +1093,7 @@ const checkout: Scenario[] = [
   {
     id: "checkout-url",
     title: "checkoutUrl() is synchronous and offline",
-    description: "checkoutUrl() returns <apiBaseUrl>/checkout with the canonical targets and the given options, never a PKCE challenge, and makes no request.",
+    description: "checkoutUrl() returns <siteBaseUrl>/checkout/ (here the defaulted apiBaseUrl) with the canonical targets and the given options, never a PKCE challenge, and makes no request.",
     category: "checkout",
     specRefs: ["SPEC §7.3", "PROTOCOL §4.6"],
     steps: [
@@ -1098,7 +1101,7 @@ const checkout: Scenario[] = [
       {
         action: "checkoutUrl",
         args: { amount: 500, frequency: "monthly" },
-        expect: { returns: { $url: { base: "$BASE_URL/checkout", query: { $exact: { targets: DEFAULT_TARGETS_PARAM, amount: "500", frequency: "monthly" } } } } },
+        expect: { returns: { $url: { base: "$BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM, amount: "500", frequency: "monthly" } } } } },
       },
       {
         action: "checkoutUrl",
@@ -1106,7 +1109,7 @@ const checkout: Scenario[] = [
         expect: {
           returns: {
             $url: {
-              base: "$BASE_URL/checkout",
+              base: "$BASE_URL/checkout/",
               query: { $exact: { targets: DEFAULT_TARGETS_PARAM, provider: "opencollective", amount: "1500", currency: "EUR", frequency: "yearly" } },
             },
           },
@@ -1133,6 +1136,191 @@ const checkout: Scenario[] = [
       { action: "checkoutUrl", args: { provider: "patreon" }, expect: { throws: "invalid_config" } },
     ],
     expect: { requests: noneAtAll, files: [noStorageDir] },
+  },
+];
+
+// ------------------------------------------------------------------ two origins (PROTOCOL §0, §7)
+
+/** Configure with a separate site origin: `siteBaseUrl` = `$SITE_BASE_URL`, `apiBaseUrl` = `$BASE_URL`. */
+const configureTwoOrigins = (args: Record<string, unknown> = {}): Step => configure({ siteBaseUrl: "$SITE_BASE_URL", ...args });
+const SITE_CONNECT = { path: `${SITE_BASE_PATH}/connect/`, server: "site" as const };
+const SITE_CHECKOUT = `${SITE_BASE_PATH}/checkout/`;
+const onApi = (c: Call): Call => ({ ...c, server: "api" });
+
+const site: Scenario[] = [
+  {
+    id: "site-base-url-sign-in-loopback",
+    title: "Loopback sign-in opens the site origin and calls the API origin",
+    description:
+      "With siteBaseUrl and apiBaseUrl on different origins, signIn() opens <siteBaseUrl>/connect/ (the site listener, under its base path /sponsorkit.io, trailing-slash form) and exchanges the code at <apiBaseUrl>/api/v1/auth/token. Contributions are fetched from the API origin. Nothing API-related goes to the site and no page goes to the API.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §0", "PROTOCOL §7", "PROTOCOL §9"],
+    requires: ["siteBaseUrl", "openBrowser", "signInMethod"],
+    steps: [
+      configureTwoOrigins(),
+      signInLoopback({ requests: { exact: true, calls: [connectCall({}, 1, SITE_CONNECT), onApi(tokenCall())] }, maxSeconds: 10 }),
+      refresh({ returns: { signedIn: true, stale: false }, requests: { exact: true, calls: [onApi(contributionsCall(1))] } }),
+    ],
+    expect: { files: [storageFile({ sessionToken: "$SESSION_TOKEN_1" })] },
+  },
+  {
+    id: "site-base-url-sign-in-paste",
+    title: "Paste-back sign-in uses a site-origin URL",
+    description:
+      "With a separate site origin, the paste URL handed to promptForCode() is <siteBaseUrl>/connect/?…&delivery=paste; the code is exchanged at the API origin.",
+    category: "sign-in",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §9"],
+    requires: ["siteBaseUrl", "promptForCode", "signInMethod"],
+    steps: [
+      configureTwoOrigins(),
+      {
+        action: "signIn",
+        args: { method: "paste" },
+        expect: { requests: { exact: true, calls: [connectCall({ delivery: "paste", redirect_uri: ABSENT }, 1, SITE_CONNECT), onApi(tokenCall())] }, maxSeconds: 10 },
+      },
+      isSignedIn(true),
+    ],
+  },
+  {
+    id: "site-base-url-defaults-to-api",
+    title: "Without siteBaseUrl, the site defaults to apiBaseUrl",
+    description:
+      "Only apiBaseUrl is set, so siteBaseUrl defaults to it (PROTOCOL §7 defaulting rule: single-origin self-hosting). /connect/ and /checkout/ go to the API origin at the root, and checkoutUrl() returns <apiBaseUrl>/checkout/. An empty siteBaseUrl counts as unset.",
+    category: "config",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §9"],
+    requires: ["siteBaseUrl", "openBrowser", "signInMethod"],
+    steps: [
+      configure(),
+      signInLoopback({ requests: { exact: true, calls: [connectCall({}, 1, { path: "/connect/", server: "api" }), onApi(tokenCall())] }, maxSeconds: 10 }),
+      {
+        action: "checkoutUrl",
+        args: {},
+        expect: { returns: { $url: { base: "$BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM } } } }, requests: noneAtAll },
+      },
+      configure({ siteBaseUrl: "" }),
+      {
+        action: "checkoutUrl",
+        args: { frequency: "monthly" },
+        note: "siteBaseUrl: \"\" is unset, so the site is still apiBaseUrl.",
+        expect: { returns: { $url: { base: "$BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM, frequency: "monthly" } } } }, requests: noneAtAll },
+      },
+    ],
+  },
+  {
+    id: "site-base-url-checkout-url",
+    title: "checkoutUrl() uses siteBaseUrl",
+    description:
+      "checkoutUrl() returns <siteBaseUrl>/checkout/?… (keeping the site's base path, trailing-slash form), never the API origin. Trailing slashes on both base URLs are trimmed, so the result has no double slash. No request is made.",
+    category: "checkout",
+    specRefs: ["PROTOCOL §7", "PROTOCOL §7.1"],
+    requires: ["siteBaseUrl"],
+    steps: [
+      configureTwoOrigins(),
+      {
+        action: "checkoutUrl",
+        args: { provider: "github", amount: 500, frequency: "monthly" },
+        expect: {
+          returns: { $url: { base: "$SITE_BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM, provider: "github", amount: "500", frequency: "monthly" } } } },
+        },
+      },
+      configure({ siteBaseUrl: "$SITE_BASE_URL/", apiBaseUrl: "$BASE_URL/" }),
+      {
+        action: "checkoutUrl",
+        args: {},
+        note: "Trailing slashes are trimmed from both base URLs.",
+        expect: { returns: { $url: { base: "$SITE_BASE_URL/checkout/", query: { $exact: { targets: DEFAULT_TARGETS_PARAM } } } } },
+      },
+    ],
+    expect: { requests: noneAtAll, files: [{ path: "$STORAGE_FILE", exists: false }] },
+  },
+  {
+    id: "site-base-url-trailing-slashes",
+    title: "Trailing slashes on both base URLs are trimmed",
+    description:
+      "siteBaseUrl and apiBaseUrl are given with a trailing slash. Sign-in opens <siteBaseUrl>/connect/ and API calls go to /api/v1/… on the API origin, with no double slash in either path.",
+    category: "config",
+    specRefs: ["PROTOCOL §7"],
+    requires: ["siteBaseUrl", "openBrowser", "signInMethod"],
+    steps: [
+      configure({ siteBaseUrl: "$SITE_BASE_URL/", apiBaseUrl: "$BASE_URL/" }),
+      signInLoopback({ requests: { exact: true, calls: [connectCall({}, 1, SITE_CONNECT), onApi(tokenCall())] }, maxSeconds: 10 }),
+      refresh({ requests: { exact: true, calls: [onApi(contributionsCall(1))] } }),
+    ],
+  },
+  {
+    id: "site-base-url-checkout-signed-in",
+    title: "Signed-in checkout opens the site origin",
+    description:
+      "Signed in, openCheckout() opens <siteBaseUrl>/checkout/?… (no challenge) on the site origin and polls /api/v1/contributions on the API origin until the new contribution appears.",
+    category: "checkout",
+    specRefs: ["PROTOCOL §4.6", "PROTOCOL §7.1"],
+    requires: ["siteBaseUrl", "openBrowser", "signInMethod", "checkoutPollInterval"],
+    server: { newContribution: { contribution: "github-checkout-new", trigger: "checkout", afterCalls: 0 } },
+    steps: [
+      configureTwoOrigins(),
+      signInLoopback(),
+      {
+        action: "openCheckout",
+        args: { provider: "github", amount: 1000, frequency: "monthly", timeout: 30, pollInterval: 1 },
+        expect: {
+          returns: { $exact: { status: "contributed", contribution: contribution("github-checkout-new") } },
+          maxSeconds: 15,
+          requests: {
+            exact: true,
+            calls: [
+              { method: "GET", path: SITE_CHECKOUT, server: "site", count: 1, query: checkoutQuery({ provider: "github", amount: "1000", frequency: "monthly" }) },
+              providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"),
+              onApi(contributionsCall({ min: 1 })),
+            ],
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "site-base-url-checkout-signs-in-first",
+    title: "Loopback checkout sign-in redirects to <siteBaseUrl>/checkout/",
+    description:
+      "Signed out, openCheckout() opens <siteBaseUrl>/checkout/ with challenge, delivery=loopback and redirect_uri. The SDK's loopback callback answers 302 to <siteBaseUrl>/checkout/?…&step=choose (the site origin, not the API), carrying exactly targets, the checkout options that were set and step=choose (PROTOCOL §7.1 items 8 and 17). The code is exchanged and contributions polled on the API origin.",
+    category: "checkout",
+    specRefs: ["PROTOCOL §4.6", "PROTOCOL §7", "PROTOCOL §7.1"],
+    requires: ["siteBaseUrl", "openBrowser", "signInMethod", "checkoutPollInterval"],
+    server: { newContribution: { contribution: "github-checkout-new", trigger: "checkout", afterCalls: 0 } },
+    steps: [
+      configureTwoOrigins(),
+      {
+        action: "openCheckout",
+        args: { method: "loopback", provider: "github", amount: 1000, frequency: "monthly", timeout: 30, pollInterval: 1 },
+        expect: {
+          returns: { $exact: { status: "contributed", contribution: contribution("github-checkout-new") } },
+          maxSeconds: 15,
+          requests: {
+            exact: true,
+            calls: [
+              {
+                method: "GET",
+                path: SITE_CHECKOUT,
+                server: "site",
+                count: 1,
+                query: { targets: DEFAULT_TARGETS_PARAM, challenge: CHALLENGE, delivery: "loopback", redirect_uri: LOOPBACK_URI, provider: "github", amount: "1000", frequency: "monthly", step: ABSENT },
+              },
+              {
+                method: "GET",
+                path: SITE_CHECKOUT,
+                server: "site",
+                count: 1,
+                query: { $exact: { targets: DEFAULT_TARGETS_PARAM, provider: "github", amount: "1000", frequency: "monthly", step: "choose" } },
+              },
+              onApi(tokenCall()),
+              providerPageCall("https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"),
+              onApi(contributionsCall({ min: 1 })),
+            ],
+          },
+        },
+      },
+      isSignedIn(true),
+    ],
+    expect: { files: [storageFile({ sessionToken: "$SESSION_TOKEN_1" })] },
   },
 ];
 
@@ -1398,7 +1586,9 @@ const serverHelper: Scenario[] = [
 ];
 
 export const VARIABLES: Record<string, string> = {
-  $BASE_URL: "runtime: http://127.0.0.1:<port> of the fake server (from the LISTENING line)",
+  $BASE_URL: "runtime: http://127.0.0.1:<apiPort> of the fake server's API listener (the first number of the LISTENING line)",
+  $SITE_BASE_URL:
+    "runtime: http://127.0.0.1:<sitePort>/sponsorkit.io, the fake server's separate site origin plus its base path (the SITE number of the LISTENING line, or GET /__control -> siteBaseUrl)",
   $STORAGE_DIR: "runtime: a fresh absolute path per scenario whose parent exists and which does not exist yet",
   $STORAGE_FILE: "$STORAGE_DIR/$TARGETS_HASH.json",
   $TARGETS_PARAM: DEFAULT_TARGETS_PARAM,
@@ -1417,6 +1607,6 @@ export function buildScenariosFile(): ScenariosFile {
     version: 1,
     variables: VARIABLES,
     defaults: { targets: { ...DEFAULT_TARGETS }, appName: APP_NAME },
-    scenarios: [...config, ...mock, ...signIn, ...session, ...cache, ...checkout, ...nag, ...storage, ...serverHelper],
+    scenarios: [...config, ...mock, ...signIn, ...session, ...cache, ...checkout, ...site, ...nag, ...storage, ...serverHelper],
   };
 }

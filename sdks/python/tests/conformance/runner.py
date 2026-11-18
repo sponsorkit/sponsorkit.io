@@ -32,8 +32,9 @@ CONFIGURE_DEFAULTS: dict[str, Any] = {
     "storageDir": "$STORAGE_DIR",
     "env": {},
 }
-"""Defaults of the configure step (scenarios.schema.json). ``devChecks``, ``signInTimeout`` and
-``interactive`` have none: when absent, the SDK default applies (PROTOCOL §7)."""
+"""Defaults of the configure step (scenarios.schema.json). ``devChecks``, ``signInTimeout``,
+``interactive``, ``requestTimeout`` and ``siteBaseUrl`` have none: when absent, the SDK default
+applies (PROTOCOL §7)."""
 
 PREDICATES: dict[str, Callable[[ContributionResult], bool]] = {
     "always": lambda fc: True,
@@ -145,6 +146,9 @@ def _construct(config: dict[str, Any], hooks: Hooks) -> Sponsorkit:
         optional["request_timeout"] = config["requestTimeout"]
     if "interactive" in config:
         optional["interactive"] = config["interactive"]
+    if "siteBaseUrl" in config:
+        # Passed whenever present, "" included (the SDK treats "" as unset).
+        optional["site_base_url"] = config["siteBaseUrl"]
     return Sponsorkit(
         github=config.get("github"),
         opencollective=config.get("opencollective"),
@@ -295,9 +299,18 @@ def run_scenario(
     control.call("POST", "/__control", {"scenario": scenario["id"]})
     reset_process_state()
     unreachable = control.call("GET", "/__control/unreachable")["baseUrl"]
-    start_seq = control.state()["lastRequestSeq"]
+    initial = control.state()
+    start_seq = initial["lastRequestSeq"]
+    site_base_url = initial.get("siteBaseUrl")
+    if not site_base_url:
+        raise RuntimeError("No site base URL: the fake server must report GET /__control -> siteBaseUrl")
 
-    static: Vars = {"$BASE_URL": base_url, "$STORAGE_DIR": storage_dir, "$UNREACHABLE_BASE_URL": unreachable}
+    static: Vars = {
+        "$BASE_URL": base_url,
+        "$SITE_BASE_URL": site_base_url,
+        "$STORAGE_DIR": storage_dir,
+        "$UNREACHABLE_BASE_URL": unreachable,
+    }
     minted: list[str] = []
     constants: Vars = {k: v for k, v in variables.items() if not v.startswith("runtime:")}
 

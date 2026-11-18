@@ -5,17 +5,11 @@
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
 
-  // Production hostname. Requires the sponsorkit.io zone on the Cloudflare account.
-  "routes": [{ "pattern": "sponsorkit.io", "custom_domain": true }],
-
-  // Static Next.js export (web/). Assets are served without invoking the Worker,
-  // except for /api/* which always runs the Worker first.
-  "assets": {
-    "directory": "../web/out",
-    "binding": "ASSETS",
-    "run_worker_first": ["/api/*"],
-    "not_found_handling": "404-page"
-  },
+  // API-only Worker (PROTOCOL §0): /api/v1/* and /api/oauth/* on its own custom domain. The site
+  // (web/, static export) is on GitHub Pages; this Worker serves no static assets.
+  // Requires the sponsorkit.io zone on the Cloudflare account. To use another hostname, change this
+  // route, PUBLIC_ORIGIN below and both OAuth apps' callback URLs together.
+  "routes": [{ "pattern": "api.sponsorkit.io", "custom_domain": true }],
 
   // Workers Rate Limiting bindings. The code treats a missing binding as "no limit".
   // namespace_id values only need to be unique within the Cloudflare account.
@@ -43,5 +37,15 @@
   // Secrets (set with `wrangler secret put <NAME>`; see .dev.vars.example):
   // GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, OPENCOLLECTIVE_CLIENT_ID,
   // OPENCOLLECTIVE_CLIENT_SECRET, SEALING_KEYS, PAIRWISE_KEY, GITHUB_METADATA_TOKEN
-  "vars": {}
+  // Public configuration (PROTOCOL §0.1). Trailing slashes are trimmed. SITE_ORIGIN must be the
+  // bare origin of SITE_BASE_URL, otherwise sign-in fails closed. Single-origin self-hosting:
+  // set SITE_ORIGIN (and SITE_BASE_URL) to the API origin, or leave both unset.
+  "vars": {
+    // The API origin: OAuth callback URLs are <PUBLIC_ORIGIN>/api/oauth/<provider>/callback.
+    "PUBLIC_ORIGIN": "https://api.sponsorkit.io",
+    // Site base URL: sign-in deliveries (/connect/done/), consent links and problem `type` URLs.
+    "SITE_BASE_URL": "https://sponsorkit.github.io/sponsorkit.io",
+    // The only Origin accepted by POST /api/oauth/:provider/start.
+    "SITE_ORIGIN": "https://sponsorkit.github.io"
+  }
 }

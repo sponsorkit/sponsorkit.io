@@ -41,6 +41,7 @@ public sealed class SponsorkitClient
     private readonly TargetSet _targets;
     private readonly EnvReader _env;
     private readonly ApiClient _api;
+    private readonly string _siteBaseUrl;
     private readonly StateStore? _store;
     private readonly ISponsorkitStorage? _storage;
     private readonly bool _devChecks;
@@ -56,13 +57,14 @@ public sealed class SponsorkitClient
 
     /// <summary>Creates a client. Validates the configuration synchronously and performs no I/O.</summary>
     /// <param name="options">The configuration. At least one of <see cref="SponsorkitOptions.GitHub"/> and <see cref="SponsorkitOptions.OpenCollective"/> is required.</param>
-    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c> or <c>appName</c>, a non-positive <c>SignInTimeout</c>, a negative <c>RequestTimeout</c>, or an unknown mock preset.</exception>
+    /// <exception cref="SponsorkitError"><c>invalid_config</c>: no targets, a malformed target, a malformed <c>apiBaseUrl</c>, <c>siteBaseUrl</c> or <c>appName</c>, a non-positive <c>SignInTimeout</c>, a negative <c>RequestTimeout</c>, or an unknown mock preset.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public SponsorkitClient(SponsorkitOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _targets = TargetSet.FromOptions(options.GitHub, options.OpenCollective);
         _api = new ApiClient(ApiClient.NormalizeBaseUrl(options.ApiBaseUrl), options.HttpClient, ApiClient.ValidateRequestTimeout(options.RequestTimeout));
+        _siteBaseUrl = ApiClient.ResolveSiteBaseUrl(options.SiteBaseUrl, options.ApiBaseUrl);
         if (!string.IsNullOrEmpty(options.AppName))
         {
             _appName = options.AppName!.Trim();
@@ -115,8 +117,11 @@ public sealed class SponsorkitClient
     /// <summary>Whether mock mode is active.</summary>
     public bool IsMock => _mock is not null;
 
-    /// <summary>The Sponsorkit origin in use.</summary>
+    /// <summary>The Sponsorkit API origin in use (normalized, no trailing slash).</summary>
     public string ApiBaseUrl => _api.BaseUrl;
+
+    /// <summary>The Sponsorkit site base URL in use for page URLs (normalized, no trailing slash).</summary>
+    public string SiteBaseUrl => _siteBaseUrl;
 
     /// <summary>
     /// Forgets per-process state: which nag runs were already counted, the dev-time target check, and any
@@ -395,7 +400,7 @@ public sealed class SponsorkitClient
                 new("provider", options?.Provider),
                 new("add", existing is null ? null : "1"),
             };
-            var code = await ObtainCodeAsync("/connect", query, options?.Method ?? _options.SignInMethod, null, cancellationToken).ConfigureAwait(false);
+            var code = await ObtainCodeAsync(ConnectPage, query, options?.Method ?? _options.SignInMethod, null, cancellationToken).ConfigureAwait(false);
             return await ExchangeAsync(code, verifier, existing, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException e) when (cancellationToken.IsCancellationRequested)
@@ -443,7 +448,11 @@ public sealed class SponsorkitClient
         }
     }
 
-    private string PageUrl(string page, IEnumerable<KeyValuePair<string, string?>> query) => _api.BaseUrl + page + "?" + QueryString.Build(query);
+    // Page paths always use the trailing-slash form (PROTOCOL §7): GitHub Pages serves directories.
+    private const string ConnectPage = "/connect/";
+    private const string CheckoutPage = "/checkout/";
+
+    private string PageUrl(string page, IEnumerable<KeyValuePair<string, string?>> query) => _siteBaseUrl + page + "?" + QueryString.Build(query);
 
     private async Task<string> LoopbackAsync(
         string page,
@@ -587,9 +596,9 @@ public sealed class SponsorkitClient
     /// Suits nags, READMEs and <c>--help</c> output.
     /// </summary>
     /// <param name="options">Preferred provider, amount (minor units), currency and frequency.</param>
-    /// <returns>An absolute URL such as <c>https://sponsorkit.io/checkout?targets=github%3Aoctocat&amp;frequency=monthly</c>.</returns>
+    /// <returns>An absolute URL such as <c>https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat&amp;frequency=monthly</c> (on <see cref="SiteBaseUrl"/>).</returns>
     /// <exception cref="SponsorkitError"><c>invalid_config</c>: an unconfigured provider, or an invalid frequency, amount or currency.</exception>
-    public string CheckoutUrl(CheckoutUrlOptions? options = null) => PageUrl("/checkout", CheckoutQuery(options ?? new CheckoutUrlOptions()));
+    public string CheckoutUrl(CheckoutUrlOptions? options = null) => PageUrl(CheckoutPage, CheckoutQuery(options ?? new CheckoutUrlOptions()));
 
     private List<KeyValuePair<string, string?>> CheckoutQuery(CheckoutUrlOptions o)
     {
@@ -652,7 +661,7 @@ public sealed class SponsorkitClient
             if (file.SessionToken is not null)
             {
                 baseline = file.Cache?.Result ?? await GetCoreAsync(TimeSpan.Zero, cancellationToken).ConfigureAwait(false);
-                var url = PageUrl("/checkout", query);
+                var url = PageUrl(CheckoutPage, query);
                 try
                 {
                     await OpenBrowserAsync(url, cancellationToken).ConfigureAwait(false);
@@ -670,8 +679,8 @@ public sealed class SponsorkitClient
                     new("challenge", Pkce.Challenge(verifier)),
                     new("app_name", _appName),
                 };
-                var continueUrl = PageUrl("/checkout", query) + "&step=choose";
-                var code = await ObtainCodeAsync("/checkout", signInQuery, o.SignInMethod ?? _options.SignInMethod, continueUrl, cancellationToken).ConfigureAwait(false);
+                var continueUrl = PageUrl(CheckoutPage, query) + "&step=choose";
+                var code = await ObtainCodeAsync(CheckoutPage, signInQuery, o.SignInMethod ?? _options.SignInMethod, continueUrl, cancellationToken).ConfigureAwait(false);
                 baseline = await ExchangeAsync(code, verifier, null, cancellationToken).ConfigureAwait(false);
             }
         }

@@ -28,7 +28,8 @@ describe("custom elements", () => {
         return p as unknown as Window;
       },
     });
-    document.body.innerHTML = '<sponsorkit-button github="octocat" amount="500" frequency="monthly" currency="USD">Sponsor me</sponsorkit-button>';
+    document.body.innerHTML =
+      '<sponsorkit-button github="octocat" amount="500" frequency="monthly" currency="USD" api-base-url="https://api.self.example" site-base-url="https://pages.self.example/kit/">Sponsor me</sponsorkit-button>';
     const el = document.querySelector("sponsorkit-button") as HTMLElement;
     const button = el.shadowRoot?.querySelector("button") as HTMLButtonElement;
     expect(button).toBeTruthy();
@@ -36,7 +37,7 @@ describe("custom elements", () => {
     expect(opened).toHaveLength(1);
     await tick(20);
     const url = new URL(opened[0]!.location.href);
-    expect(url.pathname).toBe("/checkout");
+    expect(url.origin + url.pathname).toBe("https://pages.self.example/kit/checkout/");
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       targets: "github:octocat",
       amount: "500",

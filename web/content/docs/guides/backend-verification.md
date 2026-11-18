@@ -185,7 +185,8 @@ whether to fail open or closed.
 
 ### Options
 
-Every SDK accepts the API origin (for [self-hosting](../reference-http/self-hosting.md)) and a request timeout
+Every SDK accepts the API origin (default `https://api.sponsorkit.io`; change it when you
+[self-host](../reference-http/self-hosting.md)) and a request timeout
 (30 seconds by default; `0` disables it). Most also take your own HTTP client:
 
 | Language | Call |
@@ -274,7 +275,7 @@ verifying on every request.
 `verifySession` is a thin wrapper around one HTTP call. In another language, do it yourself:
 
 ```bash
-curl https://sponsorkit.io/api/v1/contributions \
+curl https://api.sponsorkit.io/api/v1/contributions \
   -H "Authorization: Bearer sks_…"
 ```
 

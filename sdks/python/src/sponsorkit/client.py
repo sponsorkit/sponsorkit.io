@@ -20,15 +20,14 @@ from typing import Any, Literal, TypeVar, cast
 import httpx
 
 from ._http import (
-    DEFAULT_API_BASE_URL,
     DEFAULT_HTTP_TIMEOUT,
     USER_AGENT,
     build_url,
     is_session_token,
     iso,
-    normalize_base_url,
     parse_iso,
     problem_code,
+    resolve_base_urls,
     resolve_request_timeout,
     retry_after_seconds,
     unexpected_response,
@@ -205,7 +204,13 @@ class Sponsorkit:
             Overrides ``SPONSORKIT_MOCK``.
         storage: A custom :class:`~sponsorkit.storage.Storage` backend.
         storage_dir: Directory for the storage files (default: the per-user config directory).
-        api_base_url: Sponsorkit origin, for self-hosting and tests.
+        api_base_url: Sponsorkit API origin, used for every API call (default
+            ``https://api.sponsorkit.io``). For self-hosting and tests.
+        site_base_url: Sponsorkit site base URL (origin plus optional path), used for the sign-in
+            page (``<site_base_url>/connect/``), the checkout page (``<site_base_url>/checkout/``),
+            :meth:`checkout_url` and the redirect after a loopback checkout sign-in. Default:
+            ``api_base_url`` when that is set, else ``https://sponsorkit.github.io/sponsorkit.io``.
+            ``None`` and ``""`` count as unset; trailing slashes are trimmed.
         open_browser: ``open_browser(url)`` replaces the system browser. Returning ``False`` or raising
             means the browser could not be opened.
         prompt_for_code: ``prompt_for_code(url)`` returns the code the user pasted (paste-back sign-in).
@@ -241,7 +246,8 @@ class Sponsorkit:
         mock: MockPreset | MockData | Mapping[str, Any] | None = None,
         storage: Storage | None = None,
         storage_dir: str | os.PathLike[str] | None = None,
-        api_base_url: str = DEFAULT_API_BASE_URL,
+        api_base_url: str | None = None,
+        site_base_url: str | None = None,
         open_browser: Callable[[str], object] | None = None,
         prompt_for_code: Callable[[str], str] | None = None,
         sign_in_method: SignInMethod = "auto",
@@ -259,7 +265,7 @@ class Sponsorkit:
         self._param = targets_param(self._targets)
         self._hash = targets_hash(self._targets)
         self._env: Mapping[str, str] = os.environ if env is None else env
-        self._api = normalize_base_url(api_base_url)
+        self._api, self._site = resolve_base_urls(api_base_url, site_base_url)
         if app_name is not None and (not isinstance(app_name, str) or len(app_name) > 64):
             raise SponsorkitError("invalid_config", "app_name must be a string of at most 64 characters")
         self._app_name = app_name or None
@@ -627,7 +633,7 @@ class Sponsorkit:
             )
             if code is not None:
                 return code
-        url = build_url(self._api, path, self._with_app({**params, "delivery": "paste"}))
+        url = build_url(self._site, path, self._with_app({**params, "delivery": "paste"}))
         print(
             f"To sign in to Sponsorkit, open this URL in a browser on any device:\n\n  {url}\n",
             file=sys.stderr,
@@ -663,7 +669,7 @@ class Sponsorkit:
             ) from e
         try:
             q = self._with_app({**params, "delivery": "loopback", "redirect_uri": receiver.redirect_uri})
-            url = build_url(self._api, path, q)
+            url = build_url(self._site, path, q)
             opened = threading.Event()
             box: dict[str, bool] = {}
 
@@ -841,7 +847,7 @@ class Sponsorkit:
         if self.is_signed_in():
             params["add"] = "1"
         code = self._acquire_code(
-            "/connect", params, method, time.monotonic() + limit, cancel, limit=f"{limit:g} s ({label})"
+            "/connect/", params, method, time.monotonic() + limit, cancel, limit=f"{limit:g} s ({label})"
         )
         return self._exchange(code, verifier)
 
@@ -887,7 +893,7 @@ class Sponsorkit:
                 integer, or a currency that is not three uppercase letters.
         """
         opts = self._checkout_options(provider, amount, currency, frequency)
-        return build_url(self._api, "/checkout", {"targets": self._param, **opts.params()})
+        return build_url(self._site, "/checkout/", {"targets": self._param, **opts.params()})
 
     def open_checkout(
         self,
@@ -941,16 +947,16 @@ class Sponsorkit:
         if self.is_signed_in():
             cached = self._read().cache
             baseline = cached.result if cached is not None else self.get_financial_contribution(cache_ttl=0)
-            url = build_url(self._api, "/checkout", query)
+            url = build_url(self._site, "/checkout/", query)
             if not self._open(url):
                 print(f"Open this URL in a browser to contribute:\n\n  {url}\n", file=sys.stderr)
         else:
             verifier = generate_code_verifier()
             # PROTOCOL §7.1 item 17: the redirect carries exactly the checkout params + step=choose.
-            continue_url = build_url(self._api, "/checkout", {**query, "step": "choose"})
+            continue_url = build_url(self._site, "/checkout/", {**query, "step": "choose"})
             try:
                 code = self._acquire_code(
-                    "/checkout",
+                    "/checkout/",
                     {**query, "challenge": code_challenge(verifier)},
                     method,
                     time.monotonic() + self._sign_in_timeout,

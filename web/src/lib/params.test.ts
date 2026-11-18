@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildContinue,
-  buildStartUrl,
+  buildStartForm,
   isValidLoopbackUri,
   isValidOrigin,
   isValidRedirectUri,
@@ -131,24 +131,43 @@ describe("parseConnectParams (PROTOCOL §4.1)", () => {
   });
 });
 
-describe("buildStartUrl", () => {
-  it("forwards the same params to /api/oauth/<provider>/start", () => {
+describe("buildStartForm (PROTOCOL §4.2 step 3)", () => {
+  it("posts the same params as hidden fields to <API>/api/oauth/<provider>/start", () => {
     const r = parseConnectParams(
       qs({ targets: "github:octocat", challenge: CHALLENGE, delivery: "web_message", origin: "https://app.example.com", add: "1" }),
     );
     if (!r.ok) throw new Error("parse failed");
-    const url = new URL(buildStartUrl("", "github", r.value), "https://sponsorkit.io");
-    expect(url.pathname).toBe("/api/oauth/github/start");
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      targets: "github:octocat",
-      challenge: CHALLENGE,
-      delivery: "web_message",
-      origin: "https://app.example.com",
-      add: "1",
-    });
-    expect(buildStartUrl("http://127.0.0.1:8787", "github", r.value, "targets=x")).toMatch(
-      /^http:\/\/127\.0\.0\.1:8787\/api\/oauth\/github\/start\?.*&continue=targets%3Dx$/,
+    const form = buildStartForm("https://api.sponsorkit.io/", "github", r.value);
+    expect(form.action).toBe("https://api.sponsorkit.io/api/oauth/github/start");
+    expect(form.fields).toEqual([
+      ["targets", "github:octocat"],
+      ["challenge", CHALLENGE],
+      ["delivery", "web_message"],
+      ["origin", "https://app.example.com"],
+      ["add", "1"],
+    ]);
+  });
+
+  it("is root-relative for a same-origin API and carries continue last", () => {
+    const r = parseConnectParams(
+      qs({
+        targets: "github:octocat,opencollective:sponsorkit",
+        challenge: CHALLENGE,
+        delivery: "loopback",
+        redirect_uri: "http://127.0.0.1:53682/callback",
+        app_name: "my-cli",
+        provider: "opencollective",
+      }),
     );
+    if (!r.ok) throw new Error("parse failed");
+    const form = buildStartForm("", "opencollective", r.value, "targets=x&amount=500");
+    expect(form.action).toBe("/api/oauth/opencollective/start");
+    expect(form.fields.map(([n]) => n)).toEqual(["targets", "challenge", "delivery", "redirect_uri", "app_name", "provider", "continue"]);
+    expect(Object.fromEntries(form.fields)).toMatchObject({
+      redirect_uri: "http://127.0.0.1:53682/callback",
+      app_name: "my-cli",
+      continue: "targets=x&amount=500",
+    });
   });
 });
 

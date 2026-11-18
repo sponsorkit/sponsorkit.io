@@ -4,9 +4,10 @@ description: Use the <sponsorkit-button> and <sponsorkit-badge> elements, or the
 order: 20
 ---
 
-In the browser, Sponsorkit signs people in and runs checkout in a **popup** on sponsorkit.io, then hands the
-result back to your page. You don't register an app, a callback URL or an origin: the popup only posts the
-sign-in code back to the page that opened it, and the consent screen shows that page's origin.
+In the browser, Sponsorkit signs people in and runs checkout in a **popup** on the Sponsorkit website
+(`sponsorkit.github.io/sponsorkit.io`), then hands the result back to your page. You don't register an app, a
+callback URL or an origin: the popup only posts the sign-in code back to the page that opened it, and the consent
+screen shows that page's origin.
 
 This guide is JavaScript-only, because the browser SDK is. Desktop apps and CLIs in any language are covered
 in [Use Sponsorkit in a CLI or desktop app](native-apps.md).
@@ -56,7 +57,8 @@ than lazily from a component that may never load.
 | Attribute | Element | Meaning |
 |---|---|---|
 | `github`, `opencollective` | both | Your accounts. At least one is required. |
-| `api-base-url` | both | Your own Sponsorkit instance, if you [self-host](../reference-http/self-hosting.md). |
+| `api-base-url` | both | Your own Sponsorkit API origin, if you [self-host](../reference-http/self-hosting.md). |
+| `site-base-url` | both | Your own Sponsorkit site (consent and checkout pages), if you self-host it somewhere other than the API origin. Defaults to `api-base-url` when only that is set. |
 | `amount` | button | Suggested amount in minor units (`500` is $5.00). |
 | `currency` | button | ISO 4217 code, e.g. `USD` or `EUR`. |
 | `frequency` | button | `one_time`, `monthly` or `yearly`. |

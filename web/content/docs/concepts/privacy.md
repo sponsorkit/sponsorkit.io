@@ -9,7 +9,8 @@ shared, your app learns only what it needs, and Sponsorkit itself keeps nothing.
 
 ## What the supporter sees
 
-Before anything is shared, the supporter sees a consent screen on `sponsorkit.io` with:
+Before anything is shared, the supporter sees a consent screen on the Sponsorkit website
+(`sponsorkit.github.io/sponsorkit.io`, or your own site if you [self-host](../reference-http/self-hosting.md)) with:
 
 - **Your targets**, each with the avatar and name fetched from GitHub or Open Collective, so a lookalike account
   is easier to spot.
@@ -73,6 +74,6 @@ The SDK sends nothing but the session token, and only to Sponsorkit when a check
 A short note in your README or privacy policy goes a long way. For example:
 
 > `my-cli` can check whether you sponsor its author on GitHub Sponsors or Open Collective. This only happens after
-> you run `my-cli login` and approve it on sponsorkit.io. It learns the amount, frequency and status of your
+> you run `my-cli login` and approve it on Sponsorkit's consent page. It learns the amount, frequency and status of your
 > sponsorships of this project only, stores a sign-in token in your config directory, and never shares it with
 > anyone else. Run `my-cli logout` to forget it, or set `SPONSORKIT_DISABLE=1` to turn it off.

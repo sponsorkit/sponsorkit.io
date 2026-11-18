@@ -150,6 +150,8 @@ def match_requests(log: list[dict[str, Any]], spec: dict[str, Any]) -> list[str]
         for i, r in enumerate(relevant):
             if r["method"] != call["method"] or r["path"] != call["path"]:
                 continue
+            if "server" in call and r.get("server") != call["server"]:
+                continue
             ok = all(
                 key not in call or not match(r.get(key, _MISSING), call[key])
                 for key in ("query", "headers", "body")
@@ -157,7 +159,7 @@ def match_requests(log: list[dict[str, Any]], spec: dict[str, Any]) -> list[str]
             if ok:
                 matched.add(i)
                 hits += 1
-        label = f"{call['method']} {call['path']}"
+        label = f"{call['method']} {call['path']}" + (f" ({call['server']})" if "server" in call else "")
         if "count" in call and hits != call["count"]:
             errors.append(f"{label}: expected {call['count']} matching request(s), got {hits}")
         if "min" in call and hits < call["min"]:
@@ -169,5 +171,6 @@ def match_requests(log: list[dict[str, Any]], spec: dict[str, Any]) -> list[str]
     if exact:
         for i, r in enumerate(relevant):
             if i not in matched:
-                errors.append(f"unexpected request {r['method']} {r['path']} {r.get('query')}")
+                server = f" ({r['server']})" if r.get("server") else ""
+                errors.append(f"unexpected request {r['method']} {r['path']}{server} {r.get('query')}")
     return errors

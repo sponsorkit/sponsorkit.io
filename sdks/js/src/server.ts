@@ -18,7 +18,7 @@ import { DEFAULT_API_BASE_URL, normalizeBaseUrl } from "./util";
 
 /** Options for {@link verifySession}. */
 export interface VerifySessionOptions {
-  /** API origin. Default `https://sponsorkit.io`. */
+  /** API origin. Default `https://api.sponsorkit.io`; an empty string counts as unset. */
   apiBaseUrl?: string;
   /** Custom `fetch`. */
   fetch?: FetchLike;
@@ -47,7 +47,7 @@ export async function verifySession(
   options: VerifySessionOptions = {},
 ): Promise<FinancialContribution> {
   const expected = targetsParam(targetsFrom(targets));
-  const baseUrl = normalizeBaseUrl(options.apiBaseUrl ?? DEFAULT_API_BASE_URL);
+  const baseUrl = normalizeBaseUrl(options.apiBaseUrl || DEFAULT_API_BASE_URL);
   const timeoutMs = requestTimeoutMs(options.requestTimeout);
   if (typeof token !== "string" || !token.trim()) throw new SponsorkitError("session_invalid", "No session token");
   const res = await fetchContributions(withTimeout(resolveFetch(options.fetch), timeoutMs), baseUrl, token.trim(), Date.now(), options.signal);

@@ -22,6 +22,14 @@
         "wrangler": "^4.163.0",
       },
     },
+    "e2e": {
+      "name": "@sponsorkit/e2e",
+      "version": "0.0.0",
+      "devDependencies": {
+        "playwright": "1.63.0",
+        "wrangler": "^4.163.0",
+      },
+    },
     "packages/shared": {
       "name": "@sponsorkit/shared",
       "version": "0.0.0",
@@ -393,6 +401,8 @@
     "@sponsorkit/app": ["@sponsorkit/app@workspace:app"],
 
     "@sponsorkit/conformance": ["@sponsorkit/conformance@workspace:sdks/conformance"],
+
+    "@sponsorkit/e2e": ["@sponsorkit/e2e@workspace:e2e"],
 
     "@sponsorkit/sdk": ["@sponsorkit/sdk@workspace:sdks/js"],
 

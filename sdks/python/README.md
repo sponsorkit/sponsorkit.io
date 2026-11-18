@@ -63,7 +63,8 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | `mock` | `None` | Preset name or `{"contributions": [...]}` (see [Mock mode](#mock-mode-and-testing)). |
 | `storage_dir` | per-user config dir | Where state files live (see [Local storage](#local-storage)). |
 | `storage` | `FileStorage(storage_dir)` | Custom backend implementing the `Storage` protocol (`read`/`write`/`delete`). |
-| `api_base_url` | `https://sponsorkit.io` | Self-hosting and tests. |
+| `api_base_url` | `https://api.sponsorkit.io` | The API origin, used for every API call (`/api/v1/…`). Self-hosting and tests. |
+| `site_base_url` | `api_base_url` if that is set, else `https://sponsorkit.github.io/sponsorkit.io` | The site base URL (origin plus optional path) for the sign-in page (`<site_base_url>/connect/`), the checkout page and `checkout_url()` (`<site_base_url>/checkout/`), and the redirect after a loopback checkout sign-in. `None` and `""` count as unset; trailing slashes are trimmed. |
 | `sign_in_method` | `"auto"` | `"auto"`, `"loopback"` or `"paste"`. |
 | `open_browser` | system launcher | `open_browser(url)`; return `False` or raise if it could not open. It runs in a helper thread: the loopback callback is accepted while it is still running. The default runs `xdg-open` / `open` / `rundll32` (or `webbrowser.open` when `$BROWSER` is set or no launcher exists): a non-zero exit counts as failed, still running after 1.5 s counts as opened. |
 | `prompt_for_code` | read a line from stdin | `prompt_for_code(url) -> str` for paste-back sign-in. See the [stdin limitation](#sign-in). |
@@ -84,7 +85,7 @@ malformed targets and invalid options (even when Sponsorkit is disabled).
 | `sign_in(provider=None, *, method=None, timeout=None, cancel=None)` | `asign_in` | Signs in, or adds a second provider identity when already signed in. Returns the fresh result. `timeout` overrides `sign_in_timeout` for this call. |
 | `is_signed_in()` | `ais_signed_in` | Whether a session is stored. No network. |
 | `open_checkout(*, provider, amount, currency, frequency, timeout=600, cancel=None, method=None, poll_interval=None)` | `aopen_checkout` | Signs in if needed, opens the checkout page, then polls until a new or changed contribution appears. Returns `CheckoutResult("contributed", contribution)`, or `CheckoutResult("unknown")` when polling times out or `cancel` is set. `timeout` covers only the polling phase; the sign-in phase uses `sign_in_timeout` (and raises `timeout`). |
-| `checkout_url(*, provider, amount, currency, frequency)` | – | Offline, synchronous link to the checkout page (no sign-in). Great for nags and READMEs. Raises `invalid_config` for an unconfigured provider, an unknown frequency, a non-positive amount or a malformed currency. |
+| `checkout_url(*, provider, amount, currency, frequency)` | – | Offline, synchronous link to the checkout page, `<site_base_url>/checkout/?…` (no sign-in). Great for nags and READMEs. Raises `invalid_config` for an unconfigured provider, an unknown frequency, a non-positive amount or a malformed currency. |
 | `sign_out()` | `asign_out` | Deletes the stored token and cache locally (nag state is kept). No network. Raises `invalid_config` if storage can't be updated. |
 | `nag(id, *, every=10, or_every=None)` | – | A [`Nag`](#nag-helper). |
 
@@ -146,7 +147,7 @@ the signed-out result. `SPONSORKIT_DISABLE=1` turns everything into a no-op (`di
 
 - **Loopback** (desktop): listens on `127.0.0.1:<random>/callback`, opens the browser, waits up to
   `sign_in_timeout` (5 minutes) for the code, exchanges it with its PKCE verifier.
-- **Paste-back** (SSH, containers): prints a `https://sponsorkit.io/connect?…&delivery=paste` URL to
+- **Paste-back** (SSH, containers): prints a `https://sponsorkit.github.io/sponsorkit.io/connect/?…&delivery=paste` URL to
   stderr and asks for the code shown in the browser (valid for 10 minutes). `sign_in_timeout` and
   `cancel` apply to the prompt too (a blocked `prompt_for_code` is left running in a daemon thread).
 - **`auto`** (default) picks paste-back when `SSH_CONNECTION`/`SSH_TTY` is set or there is no
@@ -224,7 +225,8 @@ Mock mode performs no network or disk access (nag state lives in memory, per ins
 immediately (checkout simulates a new contribution). The `mock` option beats `SPONSORKIT_MOCK`.
 
 For tests of your own code, inject `env={}`, `storage=MemoryStorage()`, `clock=...`,
-`open_browser=...`, `prompt_for_code=...` and `api_base_url=...`, and call
+`open_browser=...`, `prompt_for_code=...` and `api_base_url=...` (the site defaults to the same
+origin then), and call
 `sponsorkit.reset_process_state()` between tests to forget per-process memos (nag runs counted,
 dev check, `Retry-After`).
 

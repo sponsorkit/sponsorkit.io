@@ -209,7 +209,7 @@ threads of one process, so keep tests that depend on this state in one test func
 | `storage_dir` | Keep each test's session, cache and nag counters in a temporary directory. |
 | `interactive` | Pretend stdout and stderr are (or aren't) terminals for nags. |
 | `restart` | Reset per-process state before constructing, like `Sponsorkit::reset_process_state()`. |
-| `api_base_url` | Point the SDK at a fake API on `127.0.0.1`. |
+| `api_base_url` | Point the SDK at a fake API on `127.0.0.1` (its site pages too, since `site_base_url` defaults to it). |
 | `open_browser`, `prompt_for_code` | Drive sign-in without a browser or a terminal: the hook receives the URL the user would open. |
 | `checkout_poll_interval`, `sign_in_timeout`, `request_timeout` | Keep end-to-end tests fast. |
 

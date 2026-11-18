@@ -199,6 +199,11 @@ pub fn matches(actual: Option<&Value>, expected: &Value, path: &str) -> Vec<Stri
     }
 }
 
+/// ` (api)` / ` (site)` for a call or logged request that names its listener.
+fn server_suffix(v: &Value) -> String {
+    v.get("server").and_then(Value::as_str).map(|s| format!(" ({s})")).unwrap_or_default()
+}
+
 /// Request-log assertion.
 pub fn match_requests(log: &[Value], spec: &Value) -> Vec<String> {
     let exact = spec.get("exact").and_then(Value::as_bool).unwrap_or(true);
@@ -214,6 +219,10 @@ pub fn match_requests(log: &[Value], spec: &Value) -> Vec<String> {
             if r["method"] != call["method"] || r["path"] != call["path"] {
                 continue;
             }
+            // Optional `server` ("api" | "site"): the listener that must have received it.
+            if call.get("server").is_some_and(|s| !s.is_null() && r.get("server") != Some(s)) {
+                continue;
+            }
             let ok = ["query", "headers", "body"]
                 .iter()
                 .all(|k| call.get(*k).is_none_or(|m| matches(r.get(*k), m, "$").is_empty()));
@@ -222,7 +231,12 @@ pub fn match_requests(log: &[Value], spec: &Value) -> Vec<String> {
                 n += 1;
             }
         }
-        let label = format!("{} {}", call["method"].as_str().unwrap_or(""), call["path"].as_str().unwrap_or(""));
+        let label = format!(
+            "{} {}{}",
+            call["method"].as_str().unwrap_or(""),
+            call["path"].as_str().unwrap_or(""),
+            server_suffix(call)
+        );
         let (count, min, max) = (call["count"].as_u64(), call["min"].as_u64(), call["max"].as_u64());
         if let Some(c) = count {
             if n != c {
@@ -247,9 +261,10 @@ pub fn match_requests(log: &[Value], spec: &Value) -> Vec<String> {
         for (i, r) in relevant.iter().enumerate() {
             if !matched[i] {
                 errors.push(format!(
-                    "unexpected request {} {} {}",
+                    "unexpected request {} {}{} {}",
                     r["method"].as_str().unwrap_or(""),
                     r["path"].as_str().unwrap_or(""),
+                    server_suffix(r),
                     r["query"]
                 ));
             }
@@ -278,5 +293,14 @@ mod tests {
             )
             .is_empty()
         );
+    }
+
+    #[test]
+    fn request_server_field() {
+        let log = vec![json!({ "method": "GET", "path": "/connect/", "server": "site", "query": {} })];
+        let spec = |server: &str| json!({ "calls": [{ "method": "GET", "path": "/connect/", "server": server }] });
+        assert!(match_requests(&log, &spec("site")).is_empty());
+        assert!(!match_requests(&log, &spec("api")).is_empty());
+        assert!(match_requests(&log, &json!({ "calls": [{ "method": "GET", "path": "/connect/" }] })).is_empty());
     }
 }

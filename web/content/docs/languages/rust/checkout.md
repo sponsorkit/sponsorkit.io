@@ -51,7 +51,7 @@ fn main() -> Result<(), sponsorkit::Error> {
 
     // Let the page offer every provider:
     println!("{}", sk.checkout_url(&CheckoutOptions::default())?);
-    // https://sponsorkit.io/checkout?targets=github%3Aoctocat%2Copencollective%3Amy-collective
+    // https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat%2Copencollective%3Amy-collective
 
     // Suggest $10 a year through Open Collective:
     let url = sk.checkout_url(&CheckoutOptions {

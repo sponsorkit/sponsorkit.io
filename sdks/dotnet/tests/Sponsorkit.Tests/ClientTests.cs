@@ -51,7 +51,7 @@ public sealed class ClientTests : IDisposable
         var e = await Assert.ThrowsAsync<SponsorkitError>(() => sk.SignInAsync());
         Assert.Equal(SponsorkitErrorCodes.NetworkError, e.Code);
         Assert.NotNull(prompted);
-        Assert.Contains("/connect?targets=github%3Aoctocat&challenge=", prompted, StringComparison.Ordinal);
+        Assert.Contains("/connect/?targets=github%3Aoctocat&challenge=", prompted, StringComparison.Ordinal);
         Assert.Contains("delivery=paste", prompted, StringComparison.Ordinal);
         Assert.Contains("app_name=unit-test", prompted, StringComparison.Ordinal);
         Assert.False(sk.IsSignedIn());
@@ -110,7 +110,7 @@ public sealed class ClientTests : IDisposable
     {
         var sk = new SponsorkitClient(new SponsorkitOptions { GitHub = "octocat", Environment = new Dictionary<string, string>() });
         var url = sk.CheckoutUrl(new CheckoutUrlOptions { Provider = "github", Amount = 500, Currency = "usd", Frequency = Frequencies.Monthly });
-        Assert.Equal("https://sponsorkit.io/checkout?targets=github%3Aoctocat&provider=github&amount=500&currency=USD&frequency=monthly", url);
+        Assert.Equal("https://sponsorkit.github.io/sponsorkit.io/checkout/?targets=github%3Aoctocat&provider=github&amount=500&currency=USD&frequency=monthly", url);
         Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => sk.CheckoutUrl(new CheckoutUrlOptions { Currency = "" })).Code);
     }
 
@@ -128,8 +128,24 @@ public sealed class ClientTests : IDisposable
     {
         Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => new SponsorkitClient(new SponsorkitOptions { GitHub = "x", ApiBaseUrl = "ftp://example.com" })).Code);
         Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => new SponsorkitClient(new SponsorkitOptions { GitHub = "x", AppName = new string('a', 65) })).Code);
-        Assert.Equal("https://sponsorkit.io", new SponsorkitClient(new SponsorkitOptions { GitHub = "x", ApiBaseUrl = "https://sponsorkit.io/" }).ApiBaseUrl);
+        Assert.Equal(SponsorkitErrorCodes.InvalidConfig, Assert.Throws<SponsorkitError>(() => new SponsorkitClient(new SponsorkitOptions { GitHub = "x", SiteBaseUrl = "not a url" })).Code);
+        Assert.Equal("https://api.example.com", new SponsorkitClient(new SponsorkitOptions { GitHub = "x", ApiBaseUrl = "https://api.example.com/" }).ApiBaseUrl);
         Assert.Throws<ArgumentNullException>(() => new SponsorkitClient(null!));
+    }
+
+    [Theory]
+    [InlineData(null, null, "https://api.sponsorkit.io", "https://sponsorkit.github.io/sponsorkit.io")]
+    [InlineData("", "", "https://api.sponsorkit.io", "https://sponsorkit.github.io/sponsorkit.io")]
+    [InlineData("https://sk.example.com//", null, "https://sk.example.com", "https://sk.example.com")]
+    [InlineData("https://sk.example.com", "", "https://sk.example.com", "https://sk.example.com")]
+    [InlineData(null, "https://example.github.io/sk/", "https://api.sponsorkit.io", "https://example.github.io/sk")]
+    [InlineData("https://api.example.com/", "https://example.github.io/sk//", "https://api.example.com", "https://example.github.io/sk")]
+    public void Base_urls_follow_the_defaulting_rule(string? api, string? site, string wantApi, string wantSite)
+    {
+        var sk = new SponsorkitClient(new SponsorkitOptions { GitHub = "octocat", ApiBaseUrl = api, SiteBaseUrl = site, Environment = new Dictionary<string, string>() });
+        Assert.Equal(wantApi, sk.ApiBaseUrl);
+        Assert.Equal(wantSite, sk.SiteBaseUrl);
+        Assert.Equal(wantSite + "/checkout/?targets=github%3Aoctocat", sk.CheckoutUrl());
     }
 
     [Fact]

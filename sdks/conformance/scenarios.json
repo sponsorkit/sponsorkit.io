@@ -2,7 +2,8 @@
   "$schema": "./schemas/scenarios.schema.json",
   "version": 1,
   "variables": {
-    "$BASE_URL": "runtime: http://127.0.0.1:<port> of the fake server (from the LISTENING line)",
+    "$BASE_URL": "runtime: http://127.0.0.1:<apiPort> of the fake server's API listener (the first number of the LISTENING line)",
+    "$SITE_BASE_URL": "runtime: http://127.0.0.1:<sitePort>/sponsorkit.io, the fake server's separate site origin plus its base path (the SITE number of the LISTENING line, or GET /__control -> siteBaseUrl)",
     "$STORAGE_DIR": "runtime: a fresh absolute path per scenario whose parent exists and which does not exist yet",
     "$STORAGE_FILE": "$STORAGE_DIR/$TARGETS_HASH.json",
     "$TARGETS_PARAM": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -156,7 +157,7 @@
           "expect": {
             "returns": {
               "$url": {
-                "base": "$BASE_URL/checkout",
+                "base": "$BASE_URL/checkout/",
                 "query": {
                   "$exact": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance"
@@ -2298,7 +2299,7 @@
     {
       "id": "sign-in-loopback",
       "title": "Loopback sign-in",
-      "description": "signIn() binds 127.0.0.1:<random>, opens /connect with delivery=loopback, receives ?code= on /callback, exchanges it with its PKCE verifier, stores the session token and caches the token response's result. The next getFinancialContribution() is served from that cache.",
+      "description": "signIn() binds 127.0.0.1:<random>, opens /connect/ with delivery=loopback, receives ?code= on /callback, exchanges it with its PKCE verifier, stores the session token and caches the token response's result. The next getFinancialContribution() is served from that cache.",
       "category": "sign-in",
       "specRefs": [
         "SPEC §6.2",
@@ -2331,7 +2332,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2455,7 +2456,7 @@
     {
       "id": "sign-in-paste",
       "title": "Paste-back sign-in",
-      "description": "signIn() with the paste method prints the /connect URL (delivery=paste, no redirect_uri) to stderr and calls promptForCode(). The test harness GETs that URL (the fake answers 200 text/plain whose body is the code) and returns the code. The SDK exchanges it.",
+      "description": "signIn() with the paste method prints the /connect/ URL (delivery=paste, no redirect_uri) to stderr and calls promptForCode(). The test harness GETs that URL (the fake answers 200 text/plain whose body is the code) and returns the code. The SDK exchanges it.",
       "category": "sign-in",
       "specRefs": [
         "SPEC §6.2",
@@ -2485,7 +2486,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2624,7 +2625,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2674,7 +2675,7 @@
     {
       "id": "sign-in-cancelled",
       "title": "Cancelling sign-in throws cancelled",
-      "description": "The user never finishes sign-in (the fake's /connect delivers nothing). The cancellation signal fires after 1 s; signIn() rejects with cancelled, does not call /auth/token and stores nothing.",
+      "description": "The user never finishes sign-in (the fake's /connect/ delivers nothing). The cancellation signal fires after 1 s; signIn() rejects with cancelled, does not call /auth/token and stores nothing.",
       "category": "sign-in",
       "specRefs": [
         "PROTOCOL §7"
@@ -2713,7 +2714,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2801,7 +2802,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2889,7 +2890,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -2995,7 +2996,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -3066,7 +3067,7 @@
     {
       "id": "sign-in-add-identity",
       "title": "Adding a second identity",
-      "description": "While signed in with GitHub, signIn({ provider: \"opencollective\" }) opens /connect with provider=opencollective&add=1 and sends the existing sessionToken to /auth/token. The new token holds both identities, and results include both providers' contributions.",
+      "description": "While signed in with GitHub, signIn({ provider: \"opencollective\" }) opens /connect/ with provider=opencollective&add=1 and sends the existing sessionToken to /auth/token. The new token holds both identities, and results include both providers' contributions.",
       "category": "sign-in",
       "specRefs": [
         "SPEC §6.2",
@@ -3104,7 +3105,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -3221,7 +3222,7 @@
     {
       "id": "sign-in-add-identity-dead-session",
       "title": "Adding an identity to a dead session starts a new session",
-      "description": "The stored session token is no longer valid. signIn({ provider: \"opencollective\" }) opens /connect with add=1 and sends the stored sessionToken; /auth/token answers 401 session_invalid. The SDK clears the stored session and retries the same code once without sessionToken, which succeeds with only the new identity.",
+      "description": "The stored session token is no longer valid. signIn({ provider: \"opencollective\" }) opens /connect/ with add=1 and sends the stored sessionToken; /auth/token answers 401 session_invalid. The SDK clears the stored session and retries the same code once without sessionToken, which succeeds with only the new identity.",
       "category": "sign-in",
       "specRefs": [
         "PROTOCOL §7",
@@ -3271,7 +3272,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/connect",
+                  "path": "/connect/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -4908,7 +4909,7 @@
     {
       "id": "checkout-detects-new-contribution",
       "title": "Checkout detects a new contribution",
-      "description": "Signed in, openCheckout() opens /checkout (no challenge) which redirects to the provider. The SDK polls /contributions with cacheTtl 0; the second poll after the provider page was loaded contains a new contribution, and openCheckout resolves { status: \"contributed\", contribution }.",
+      "description": "Signed in, openCheckout() opens /checkout/ (no challenge) which redirects to the provider. The SDK polls /contributions with cacheTtl 0; the second poll after the provider page was loaded contains a new contribution, and openCheckout resolves { status: \"contributed\", contribution }.",
       "category": "checkout",
       "specRefs": [
         "SPEC §7.3",
@@ -4993,7 +4994,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/checkout",
+                  "path": "/checkout/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5154,7 +5155,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/checkout",
+                  "path": "/checkout/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5243,7 +5244,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/checkout",
+                  "path": "/checkout/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5349,7 +5350,7 @@
     {
       "id": "checkout-signs-in-first",
       "title": "Checkout while signed out signs in first (loopback)",
-      "description": "openCheckout() while signed out opens /checkout with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <apiBaseUrl>/checkout carrying exactly targets, the checkout options that were set (provider, amount, currency, frequency) and step=choose (PROTOCOL §7.1 item 17); the SDK exchanges the code, then polls until the new contribution appears.",
+      "description": "openCheckout() while signed out opens /checkout/ with challenge, delivery=loopback and redirect_uri. The fake delivers ?code= to the loopback callback, which redirects the browser to <siteBaseUrl>/checkout/ (which defaults to apiBaseUrl here) carrying exactly targets, the checkout options that were set (provider, amount, currency, frequency) and step=choose (PROTOCOL §7.1 item 17); the SDK exchanges the code, then polls until the new contribution appears.",
       "category": "checkout",
       "specRefs": [
         "SPEC §7.3",
@@ -5430,7 +5431,7 @@
               "calls": [
                 {
                   "method": "GET",
-                  "path": "/checkout",
+                  "path": "/checkout/",
                   "count": 1,
                   "query": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5451,7 +5452,7 @@
                 },
                 {
                   "method": "GET",
-                  "path": "/checkout",
+                  "path": "/checkout/",
                   "count": 1,
                   "query": {
                     "$exact": {
@@ -5532,7 +5533,7 @@
     {
       "id": "checkout-url",
       "title": "checkoutUrl() is synchronous and offline",
-      "description": "checkoutUrl() returns <apiBaseUrl>/checkout with the canonical targets and the given options, never a PKCE challenge, and makes no request.",
+      "description": "checkoutUrl() returns <siteBaseUrl>/checkout/ (here the defaulted apiBaseUrl) with the canonical targets and the given options, never a PKCE challenge, and makes no request.",
       "category": "checkout",
       "specRefs": [
         "SPEC §7.3",
@@ -5556,7 +5557,7 @@
           "expect": {
             "returns": {
               "$url": {
-                "base": "$BASE_URL/checkout",
+                "base": "$BASE_URL/checkout/",
                 "query": {
                   "$exact": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5579,7 +5580,7 @@
           "expect": {
             "returns": {
               "$url": {
-                "base": "$BASE_URL/checkout",
+                "base": "$BASE_URL/checkout/",
                 "query": {
                   "$exact": {
                     "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
@@ -5699,6 +5700,866 @@
           {
             "path": "$STORAGE_DIR",
             "exists": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-base-url-sign-in-loopback",
+      "title": "Loopback sign-in opens the site origin and calls the API origin",
+      "description": "With siteBaseUrl and apiBaseUrl on different origins, signIn() opens <siteBaseUrl>/connect/ (the site listener, under its base path /sponsorkit.io, trailing-slash form) and exchanges the code at <apiBaseUrl>/api/v1/auth/token. Contributions are fetched from the API origin. Nothing API-related goes to the site and no page goes to the API.",
+      "category": "sign-in",
+      "specRefs": [
+        "PROTOCOL §0",
+        "PROTOCOL §7",
+        "PROTOCOL §9"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "openBrowser",
+        "signInMethod"
+      ],
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL"
+          }
+        },
+        {
+          "action": "signIn",
+          "args": {
+            "method": "loopback"
+          },
+          "expect": {
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/connect/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$regex": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "delivery": "loopback",
+                    "redirect_uri": {
+                      "$regex": "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]{1,5}/callback$"
+                    },
+                    "app_name": "conformance-app",
+                    "add": {
+                      "$absent": true
+                    }
+                  }
+                },
+                {
+                  "method": "POST",
+                  "path": "/api/v1/auth/token",
+                  "count": 1,
+                  "headers": {
+                    "content-type": {
+                      "$regex": "^application/json"
+                    }
+                  },
+                  "body": {
+                    "code": {
+                      "$regex": "^skc_"
+                    },
+                    "codeVerifier": {
+                      "$regex": "^[A-Za-z0-9._~-]{43,128}$"
+                    },
+                    "sessionToken": {
+                      "$absent": true
+                    }
+                  },
+                  "server": "api"
+                }
+              ]
+            },
+            "maxSeconds": 10
+          }
+        },
+        {
+          "action": "getFinancialContribution",
+          "args": {
+            "cacheTtl": 0
+          },
+          "expect": {
+            "returns": {
+              "signedIn": true,
+              "stale": false
+            },
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/api/v1/contributions",
+                  "count": 1,
+                  "headers": {
+                    "authorization": "Bearer $LAST_SESSION_TOKEN"
+                  },
+                  "server": "api"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "expect": {
+        "files": [
+          {
+            "path": "$STORAGE_FILE",
+            "exists": true,
+            "kind": "file",
+            "schema": "storage-file",
+            "json": {
+              "sessionToken": "$SESSION_TOKEN_1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-base-url-sign-in-paste",
+      "title": "Paste-back sign-in uses a site-origin URL",
+      "description": "With a separate site origin, the paste URL handed to promptForCode() is <siteBaseUrl>/connect/?…&delivery=paste; the code is exchanged at the API origin.",
+      "category": "sign-in",
+      "specRefs": [
+        "PROTOCOL §7",
+        "PROTOCOL §9"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "promptForCode",
+        "signInMethod"
+      ],
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL"
+          }
+        },
+        {
+          "action": "signIn",
+          "args": {
+            "method": "paste"
+          },
+          "expect": {
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/connect/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$regex": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "delivery": "paste",
+                    "redirect_uri": {
+                      "$absent": true
+                    },
+                    "app_name": "conformance-app",
+                    "add": {
+                      "$absent": true
+                    }
+                  }
+                },
+                {
+                  "method": "POST",
+                  "path": "/api/v1/auth/token",
+                  "count": 1,
+                  "headers": {
+                    "content-type": {
+                      "$regex": "^application/json"
+                    }
+                  },
+                  "body": {
+                    "code": {
+                      "$regex": "^skc_"
+                    },
+                    "codeVerifier": {
+                      "$regex": "^[A-Za-z0-9._~-]{43,128}$"
+                    },
+                    "sessionToken": {
+                      "$absent": true
+                    }
+                  },
+                  "server": "api"
+                }
+              ]
+            },
+            "maxSeconds": 10
+          }
+        },
+        {
+          "action": "isSignedIn",
+          "expect": {
+            "returns": true,
+            "requests": {
+              "exact": true,
+              "calls": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "site-base-url-defaults-to-api",
+      "title": "Without siteBaseUrl, the site defaults to apiBaseUrl",
+      "description": "Only apiBaseUrl is set, so siteBaseUrl defaults to it (PROTOCOL §7 defaulting rule: single-origin self-hosting). /connect/ and /checkout/ go to the API origin at the root, and checkoutUrl() returns <apiBaseUrl>/checkout/. An empty siteBaseUrl counts as unset.",
+      "category": "config",
+      "specRefs": [
+        "PROTOCOL §7",
+        "PROTOCOL §9"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "openBrowser",
+        "signInMethod"
+      ],
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app"
+          }
+        },
+        {
+          "action": "signIn",
+          "args": {
+            "method": "loopback"
+          },
+          "expect": {
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/connect/",
+                  "server": "api",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$regex": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "delivery": "loopback",
+                    "redirect_uri": {
+                      "$regex": "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]{1,5}/callback$"
+                    },
+                    "app_name": "conformance-app",
+                    "add": {
+                      "$absent": true
+                    }
+                  }
+                },
+                {
+                  "method": "POST",
+                  "path": "/api/v1/auth/token",
+                  "count": 1,
+                  "headers": {
+                    "content-type": {
+                      "$regex": "^application/json"
+                    }
+                  },
+                  "body": {
+                    "code": {
+                      "$regex": "^skc_"
+                    },
+                    "codeVerifier": {
+                      "$regex": "^[A-Za-z0-9._~-]{43,128}$"
+                    },
+                    "sessionToken": {
+                      "$absent": true
+                    }
+                  },
+                  "server": "api"
+                }
+              ]
+            },
+            "maxSeconds": 10
+          }
+        },
+        {
+          "action": "checkoutUrl",
+          "args": {},
+          "expect": {
+            "returns": {
+              "$url": {
+                "base": "$BASE_URL/checkout/",
+                "query": {
+                  "$exact": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance"
+                  }
+                }
+              }
+            },
+            "requests": {
+              "exact": true,
+              "includeTargetsLookups": true,
+              "calls": []
+            }
+          }
+        },
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": ""
+          }
+        },
+        {
+          "action": "checkoutUrl",
+          "args": {
+            "frequency": "monthly"
+          },
+          "note": "siteBaseUrl: \"\" is unset, so the site is still apiBaseUrl.",
+          "expect": {
+            "returns": {
+              "$url": {
+                "base": "$BASE_URL/checkout/",
+                "query": {
+                  "$exact": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "frequency": "monthly"
+                  }
+                }
+              }
+            },
+            "requests": {
+              "exact": true,
+              "includeTargetsLookups": true,
+              "calls": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "site-base-url-checkout-url",
+      "title": "checkoutUrl() uses siteBaseUrl",
+      "description": "checkoutUrl() returns <siteBaseUrl>/checkout/?… (keeping the site's base path, trailing-slash form), never the API origin. Trailing slashes on both base URLs are trimmed, so the result has no double slash. No request is made.",
+      "category": "checkout",
+      "specRefs": [
+        "PROTOCOL §7",
+        "PROTOCOL §7.1"
+      ],
+      "requires": [
+        "siteBaseUrl"
+      ],
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL"
+          }
+        },
+        {
+          "action": "checkoutUrl",
+          "args": {
+            "provider": "github",
+            "amount": 500,
+            "frequency": "monthly"
+          },
+          "expect": {
+            "returns": {
+              "$url": {
+                "base": "$SITE_BASE_URL/checkout/",
+                "query": {
+                  "$exact": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "provider": "github",
+                    "amount": "500",
+                    "frequency": "monthly"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL/",
+            "apiBaseUrl": "$BASE_URL/"
+          }
+        },
+        {
+          "action": "checkoutUrl",
+          "args": {},
+          "note": "Trailing slashes are trimmed from both base URLs.",
+          "expect": {
+            "returns": {
+              "$url": {
+                "base": "$SITE_BASE_URL/checkout/",
+                "query": {
+                  "$exact": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "requests": {
+          "exact": true,
+          "includeTargetsLookups": true,
+          "calls": []
+        },
+        "files": [
+          {
+            "path": "$STORAGE_FILE",
+            "exists": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-base-url-trailing-slashes",
+      "title": "Trailing slashes on both base URLs are trimmed",
+      "description": "siteBaseUrl and apiBaseUrl are given with a trailing slash. Sign-in opens <siteBaseUrl>/connect/ and API calls go to /api/v1/… on the API origin, with no double slash in either path.",
+      "category": "config",
+      "specRefs": [
+        "PROTOCOL §7"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "openBrowser",
+        "signInMethod"
+      ],
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL/",
+            "apiBaseUrl": "$BASE_URL/"
+          }
+        },
+        {
+          "action": "signIn",
+          "args": {
+            "method": "loopback"
+          },
+          "expect": {
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/connect/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$regex": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "delivery": "loopback",
+                    "redirect_uri": {
+                      "$regex": "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]{1,5}/callback$"
+                    },
+                    "app_name": "conformance-app",
+                    "add": {
+                      "$absent": true
+                    }
+                  }
+                },
+                {
+                  "method": "POST",
+                  "path": "/api/v1/auth/token",
+                  "count": 1,
+                  "headers": {
+                    "content-type": {
+                      "$regex": "^application/json"
+                    }
+                  },
+                  "body": {
+                    "code": {
+                      "$regex": "^skc_"
+                    },
+                    "codeVerifier": {
+                      "$regex": "^[A-Za-z0-9._~-]{43,128}$"
+                    },
+                    "sessionToken": {
+                      "$absent": true
+                    }
+                  },
+                  "server": "api"
+                }
+              ]
+            },
+            "maxSeconds": 10
+          }
+        },
+        {
+          "action": "getFinancialContribution",
+          "args": {
+            "cacheTtl": 0
+          },
+          "expect": {
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/api/v1/contributions",
+                  "count": 1,
+                  "headers": {
+                    "authorization": "Bearer $LAST_SESSION_TOKEN"
+                  },
+                  "server": "api"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "site-base-url-checkout-signed-in",
+      "title": "Signed-in checkout opens the site origin",
+      "description": "Signed in, openCheckout() opens <siteBaseUrl>/checkout/?… (no challenge) on the site origin and polls /api/v1/contributions on the API origin until the new contribution appears.",
+      "category": "checkout",
+      "specRefs": [
+        "PROTOCOL §4.6",
+        "PROTOCOL §7.1"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "openBrowser",
+        "signInMethod",
+        "checkoutPollInterval"
+      ],
+      "server": {
+        "newContribution": {
+          "contribution": "github-checkout-new",
+          "trigger": "checkout",
+          "afterCalls": 0
+        }
+      },
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL"
+          }
+        },
+        {
+          "action": "signIn",
+          "args": {
+            "method": "loopback"
+          }
+        },
+        {
+          "action": "openCheckout",
+          "args": {
+            "provider": "github",
+            "amount": 1000,
+            "frequency": "monthly",
+            "timeout": 30,
+            "pollInterval": 1
+          },
+          "expect": {
+            "returns": {
+              "$exact": {
+                "status": "contributed",
+                "contribution": {
+                  "id": "con_github_H85XMnrEy1jyETE-045vIt",
+                  "provider": "github",
+                  "target": "github:sponsorkit-conformance",
+                  "sponsor": {
+                    "type": "user",
+                    "provider": "github",
+                    "id": "583231",
+                    "handle": "conformance-user"
+                  },
+                  "via": "direct",
+                  "kind": "recurring",
+                  "frequency": "monthly",
+                  "status": "active",
+                  "amount": {
+                    "value": 1000,
+                    "currency": "USD"
+                  },
+                  "tier": {
+                    "id": "ST_kwDOconf102",
+                    "name": "Lunch"
+                  },
+                  "flags": [],
+                  "private": false,
+                  "startedAt": "2026-11-16T12:00:00Z",
+                  "endedAt": null,
+                  "lastChargedAt": null,
+                  "nextChargeAt": null,
+                  "totalContributed": null
+                }
+              }
+            },
+            "maxSeconds": 15,
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/checkout/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$absent": true
+                    },
+                    "delivery": {
+                      "$absent": true
+                    },
+                    "redirect_uri": {
+                      "$absent": true
+                    },
+                    "provider": "github",
+                    "amount": "1000",
+                    "frequency": "monthly"
+                  }
+                },
+                {
+                  "method": "GET",
+                  "path": "/__fake/provider/github",
+                  "count": 1,
+                  "query": {
+                    "to": "https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"
+                  }
+                },
+                {
+                  "method": "GET",
+                  "path": "/api/v1/contributions",
+                  "min": 1,
+                  "headers": {
+                    "authorization": "Bearer $LAST_SESSION_TOKEN"
+                  },
+                  "server": "api"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "site-base-url-checkout-signs-in-first",
+      "title": "Loopback checkout sign-in redirects to <siteBaseUrl>/checkout/",
+      "description": "Signed out, openCheckout() opens <siteBaseUrl>/checkout/ with challenge, delivery=loopback and redirect_uri. The SDK's loopback callback answers 302 to <siteBaseUrl>/checkout/?…&step=choose (the site origin, not the API), carrying exactly targets, the checkout options that were set and step=choose (PROTOCOL §7.1 items 8 and 17). The code is exchanged and contributions polled on the API origin.",
+      "category": "checkout",
+      "specRefs": [
+        "PROTOCOL §4.6",
+        "PROTOCOL §7",
+        "PROTOCOL §7.1"
+      ],
+      "requires": [
+        "siteBaseUrl",
+        "openBrowser",
+        "signInMethod",
+        "checkoutPollInterval"
+      ],
+      "server": {
+        "newContribution": {
+          "contribution": "github-checkout-new",
+          "trigger": "checkout",
+          "afterCalls": 0
+        }
+      },
+      "steps": [
+        {
+          "action": "configure",
+          "args": {
+            "github": "sponsorkit-conformance",
+            "opencollective": "sponsorkit-conformance",
+            "appName": "conformance-app",
+            "siteBaseUrl": "$SITE_BASE_URL"
+          }
+        },
+        {
+          "action": "openCheckout",
+          "args": {
+            "method": "loopback",
+            "provider": "github",
+            "amount": 1000,
+            "frequency": "monthly",
+            "timeout": 30,
+            "pollInterval": 1
+          },
+          "expect": {
+            "returns": {
+              "$exact": {
+                "status": "contributed",
+                "contribution": {
+                  "id": "con_github_H85XMnrEy1jyETE-045vIt",
+                  "provider": "github",
+                  "target": "github:sponsorkit-conformance",
+                  "sponsor": {
+                    "type": "user",
+                    "provider": "github",
+                    "id": "583231",
+                    "handle": "conformance-user"
+                  },
+                  "via": "direct",
+                  "kind": "recurring",
+                  "frequency": "monthly",
+                  "status": "active",
+                  "amount": {
+                    "value": 1000,
+                    "currency": "USD"
+                  },
+                  "tier": {
+                    "id": "ST_kwDOconf102",
+                    "name": "Lunch"
+                  },
+                  "flags": [],
+                  "private": false,
+                  "startedAt": "2026-11-16T12:00:00Z",
+                  "endedAt": null,
+                  "lastChargedAt": null,
+                  "nextChargeAt": null,
+                  "totalContributed": null
+                }
+              }
+            },
+            "maxSeconds": 15,
+            "requests": {
+              "exact": true,
+              "calls": [
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/checkout/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                    "challenge": {
+                      "$regex": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "delivery": "loopback",
+                    "redirect_uri": {
+                      "$regex": "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]{1,5}/callback$"
+                    },
+                    "provider": "github",
+                    "amount": "1000",
+                    "frequency": "monthly",
+                    "step": {
+                      "$absent": true
+                    }
+                  }
+                },
+                {
+                  "method": "GET",
+                  "path": "/sponsorkit.io/checkout/",
+                  "server": "site",
+                  "count": 1,
+                  "query": {
+                    "$exact": {
+                      "targets": "github:sponsorkit-conformance,opencollective:sponsorkit-conformance",
+                      "provider": "github",
+                      "amount": "1000",
+                      "frequency": "monthly",
+                      "step": "choose"
+                    }
+                  }
+                },
+                {
+                  "method": "POST",
+                  "path": "/api/v1/auth/token",
+                  "count": 1,
+                  "headers": {
+                    "content-type": {
+                      "$regex": "^application/json"
+                    }
+                  },
+                  "body": {
+                    "code": {
+                      "$regex": "^skc_"
+                    },
+                    "codeVerifier": {
+                      "$regex": "^[A-Za-z0-9._~-]{43,128}$"
+                    },
+                    "sessionToken": {
+                      "$absent": true
+                    }
+                  },
+                  "server": "api"
+                },
+                {
+                  "method": "GET",
+                  "path": "/__fake/provider/github",
+                  "count": 1,
+                  "query": {
+                    "to": "https://github.com/sponsors/sponsorkit-conformance/sponsorships?tier_id=102"
+                  }
+                },
+                {
+                  "method": "GET",
+                  "path": "/api/v1/contributions",
+                  "min": 1,
+                  "headers": {
+                    "authorization": "Bearer $LAST_SESSION_TOKEN"
+                  },
+                  "server": "api"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "action": "isSignedIn",
+          "expect": {
+            "returns": true,
+            "requests": {
+              "exact": true,
+              "calls": []
+            }
+          }
+        }
+      ],
+      "expect": {
+        "files": [
+          {
+            "path": "$STORAGE_FILE",
+            "exists": true,
+            "kind": "file",
+            "schema": "storage-file",
+            "json": {
+              "sessionToken": "$SESSION_TOKEN_1"
+            }
           }
         ]
       }

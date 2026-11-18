@@ -1,8 +1,10 @@
 /** Small internal helpers. */
 import { SponsorkitError } from "./errors";
 
-/** The default API origin. */
-export const DEFAULT_API_BASE_URL = "https://sponsorkit.io";
+/** The default API origin (PROTOCOL §0): where every `/api/v1/…` call goes. */
+export const DEFAULT_API_BASE_URL = "https://api.sponsorkit.io";
+/** The default site base URL (PROTOCOL §0): origin plus base path of the pages (`/connect/`, `/checkout/`). */
+export const DEFAULT_SITE_BASE_URL = "https://sponsorkit.github.io/sponsorkit.io";
 
 /** An environment map (`process.env`-shaped). */
 export type Env = Record<string, string | undefined>;
@@ -62,16 +64,67 @@ export function stableStringify(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
-/** Validates and normalizes an API origin (`https://sponsorkit.io`). */
-export function normalizeBaseUrl(url: string): string {
+function parseHttpUrl(url: string, name: string): URL {
   let u: URL;
   try {
     u = new URL(url);
   } catch {
-    throw new SponsorkitError("invalid_config", `Invalid apiBaseUrl "${url}"`);
+    throw new SponsorkitError("invalid_config", `Invalid ${name} "${url}"`);
   }
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new SponsorkitError("invalid_config", `apiBaseUrl must be http(s): "${url}"`);
-  return u.origin;
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new SponsorkitError("invalid_config", `${name} must be http(s): "${url}"`);
+  return u;
+}
+
+/** Validates and normalizes an API origin (`https://api.sponsorkit.io`). */
+export function normalizeBaseUrl(url: string): string {
+  return parseHttpUrl(url, "apiBaseUrl").origin;
+}
+
+/**
+ * Validates and normalizes a site base URL: an origin plus an optional base path
+ * (`https://sponsorkit.github.io/sponsorkit.io`), without trailing slashes, query or fragment.
+ */
+export function normalizeSiteBaseUrl(url: string): string {
+  const u = parseHttpUrl(url, "siteBaseUrl");
+  if (u.search || u.hash || u.username || u.password)
+    throw new SponsorkitError("invalid_config", `siteBaseUrl must be an origin plus an optional path: "${url}"`);
+  return `${u.origin}${u.pathname.replace(/\/+$/, "")}`;
+}
+
+/** Normalized API and site base URLs. */
+export interface BaseUrls {
+  /** API origin, no trailing slash. */
+  apiBaseUrl: string;
+  /** Site base URL (origin plus optional base path), no trailing slash. */
+  siteBaseUrl: string;
+}
+
+/**
+ * PROTOCOL §7 base URL rule: `apiBaseUrl` defaults to {@link DEFAULT_API_BASE_URL}; `siteBaseUrl`
+ * defaults to `apiBaseUrl` when that was set (single-origin self-hosting, tests), else to
+ * {@link DEFAULT_SITE_BASE_URL}. Empty strings count as unset; trailing slashes are trimmed.
+ */
+export function resolveBaseUrls(options: { apiBaseUrl?: string | null; siteBaseUrl?: string | null }): BaseUrls {
+  const api = options.apiBaseUrl || undefined;
+  const site = options.siteBaseUrl || undefined;
+  if (api !== undefined && typeof api !== "string") throw new SponsorkitError("invalid_config", "apiBaseUrl must be a string");
+  if (site !== undefined && typeof site !== "string") throw new SponsorkitError("invalid_config", "siteBaseUrl must be a string");
+  return {
+    apiBaseUrl: normalizeBaseUrl(api ?? DEFAULT_API_BASE_URL),
+    siteBaseUrl: normalizeSiteBaseUrl(site ?? api ?? DEFAULT_SITE_BASE_URL),
+  };
+}
+
+/** Page paths on the site (PROTOCOL §4): always the trailing-slash form. */
+export const SITE_PATHS = { connect: "/connect/", checkout: "/checkout/" } as const;
+
+/** A site page path. */
+export type SitePath = (typeof SITE_PATHS)[keyof typeof SITE_PATHS];
+
+/** `<siteBaseUrl><path>?<query>`. */
+export function sitePageUrl(siteBaseUrl: string, path: SitePath, query: URLSearchParams | string): string {
+  const q = String(query);
+  return `${siteBaseUrl}${path}${q ? `?${q}` : ""}`;
 }
 
 /** True if the value looks like a plain object. */

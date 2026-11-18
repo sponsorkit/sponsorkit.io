@@ -9,7 +9,7 @@ contributions on, ask what the current user contributes, and send them to contri
 - Sign-in through the system browser (loopback) or a pasted code on headless machines.
 - Mock mode for tests, a polite nag helper, and backend verification of session tokens.
 
-Website: <https://sponsorkit.io> · Spec: `docs/SPEC.md` · Wire protocol: `docs/PROTOCOL.md`
+Website: <https://sponsorkit.github.io/sponsorkit.io/> · Spec: `docs/SPEC.md` · Wire protocol: `docs/PROTOCOL.md`
 
 ## Install
 
@@ -74,7 +74,8 @@ malformed (even when disabled), or the mock preset is unknown.
 | `cache_ttl` | 1 h (min 60 s) | How long a cached result is served without calling the API. |
 | `mock` | – | `Mock::Preset(MockPreset::…)` or `Mock::Contributions(vec![…])`. Beats `SPONSORKIT_MOCK`. |
 | `storage_dir` | per-user config dir | Linux `$XDG_CONFIG_HOME/sponsorkit` (else `~/.config/sponsorkit`), macOS `~/Library/Application Support/sponsorkit`, Windows `%APPDATA%\sponsorkit`. Relative values of these variables are ignored. When no directory can be determined (e.g. `HOME` unset), the session is kept in memory for the life of the client: construction never fails for this and nothing is written to the working directory. |
-| `api_base_url` | `https://sponsorkit.io` | Origin of the API (self-hosting, tests). |
+| `api_base_url` | `https://api.sponsorkit.io` (`DEFAULT_API_BASE_URL`) | Origin of the API, used for every API call (`/api/v1/…`). Trailing slashes are trimmed; `""` counts as unset. |
+| `site_base_url` | `https://sponsorkit.github.io/sponsorkit.io` (`DEFAULT_SITE_BASE_URL`), **or `api_base_url` when that is set and this is not** | Site base URL (origin plus optional base path), used for every page URL: `<site_base_url>/connect/`, `<site_base_url>/checkout/`, `checkout_url` and the loopback redirect after a checkout sign-in. The fallback keeps single-origin self-hosting and tests working with `api_base_url` alone. Trailing slashes are trimmed; `""` counts as unset. |
 | `request_timeout` | 30 s (`DEFAULT_REQUEST_TIMEOUT`) | Timeout for every HTTP request, body included; `Duration::ZERO` disables it. A timeout is a network failure: `get_financial_contribution` serves the stale cache, `sign_in` fails with `network_error`. |
 | `sign_in_method` | `Auto` | `Auto` (loopback, falls back to paste-back without a display, over SSH, or when the browser cannot open), `Loopback`, `Paste`. |
 | `sign_in_timeout` | 300 s | How long a loopback or paste-back sign-in may take (also the sign-in phase of `open_checkout`). Exceeding it fails with `timeout`. |
@@ -95,8 +96,8 @@ An environment variable counts as **set** when it is non-empty and not `0` or `f
 | `get_financial_contribution(GetOptions { cache_ttl })` | `Result<ContributionResult>` | Never fails for network/server problems (see below). `GetOptions::fresh()` bypasses the cache. |
 | `sign_in(SignInOptions { provider, method, cancel })` | `Result<ContributionResult>` | Loopback or paste-back, bounded by `sign_in_timeout`. While signed in, adds a second identity (`provider: Some(Provider::OpenCollective)`); if the stored session is dead, it is cleared and the same code is exchanged again for a new session. |
 | `is_signed_in()` | `bool` | Local only. |
-| `open_checkout(CheckoutOptions { provider, amount, currency, frequency, timeout, poll_interval, cancel, sign_in_method })` | `Result<CheckoutOutcome>` | Signs in first if needed, opens `/checkout`, polls until a new or changed contribution appears. `Contributed { contribution }` or `Unknown` (polling `timeout`, default 10 min, or cancellation in either phase). The `timeout` starts once the checkout page is open; signing in first is bounded by `sign_in_timeout` and fails with `timeout`. |
-| `checkout_url(&CheckoutOptions)` | `Result<String>` | Synchronous, offline link to `/checkout` without sign-in. For nags and READMEs. `invalid_config` for an unconfigured provider, an amount ≤ 0 or a currency that is not three letters. |
+| `open_checkout(CheckoutOptions { provider, amount, currency, frequency, timeout, poll_interval, cancel, sign_in_method })` | `Result<CheckoutOutcome>` | Signs in first if needed, opens `<site_base_url>/checkout/` (after a loopback sign-in the browser is redirected to `<site_base_url>/checkout/?…&step=choose`), polls until a new or changed contribution appears. `Contributed { contribution }` or `Unknown` (polling `timeout`, default 10 min, or cancellation in either phase). The `timeout` starts once the checkout page is open; signing in first is bounded by `sign_in_timeout` and fails with `timeout`. |
+| `checkout_url(&CheckoutOptions)` | `Result<String>` | Synchronous, offline link to `<site_base_url>/checkout/?…` without sign-in. For nags and READMEs. `invalid_config` for an unconfigured provider, an amount ≤ 0 or a currency that is not three letters. |
 | `sign_out()` | `Result<()>` | Deletes the session token and cache; keeps nag state. |
 | `nag(NagOptions)` | `Nag` | See [Nag helper](#nag-helper). |
 | `Sponsorkit::reset_process_state()` | – | Forget nag runs counted, the dev-check memo and `Retry-After` back-offs. |
@@ -226,7 +227,7 @@ assert!(fc.mock && fc.active().len() == 1);
   `open_checkout` simulates a new contribution; state, including nag runs, lives in memory per instance.
 - `SPONSORKIT_DISABLE=1` beats mock mode.
 - For end-to-end tests, inject `open_browser`, `prompt_for_code`, `storage_dir`,
-  `api_base_url`, `env` and `checkout_poll_interval` (see `tests/common/mod.rs`).
+  `api_base_url`, `site_base_url`, `env` and `checkout_poll_interval` (see `tests/common/mod.rs`).
 
 ## Backend verification
 
@@ -247,7 +248,7 @@ match verify_session(token, &Targets::github("octocat")).await {
 ```
 
 `server::verify_session_with(token, &targets, VerifyOptions { api_base_url, http_client, request_timeout })`
-overrides the origin, reuses an HTTP client or changes the 30 s request timeout
+overrides the API origin (default `https://api.sponsorkit.io`), reuses an HTTP client or changes the 30 s request timeout
 (`Duration::ZERO` disables it). It never touches local storage. When the answer cannot be
 verified (API unreachable, timed out, 5xx, 429) it fails with `network_error`;
 on 429, `e.retry_after()` says how long to wait.
@@ -273,7 +274,10 @@ cargo clippy --all-targets -- -D warnings
 `tests/conformance.rs` has one test per scenario id of `sdks/conformance/scenarios.json`
 (`-` becomes `_`), run against `bun sdks/conformance/server.ts`. The harness
 (`tests/common/mod.rs`) always passes `configure.env` as the `env` override, passes
-`devChecks`, `signInTimeout` and `interactive` only when a scenario sets them, sets
+`siteBaseUrl`, `devChecks`, `signInTimeout` and `interactive` only when a scenario sets
+them (`siteBaseUrl: ""` is passed and counts as unset), reads `$SITE_BASE_URL` from
+`GET /__control` → `siteBaseUrl` (the fake server's separate site listener), checks the
+optional `server` (`api` / `site`) of expected requests against the request log, sets
 `processEnv` in the real process environment for the scenario, cancels `signIn` and
 `openCheckout` through a `CancellationToken` after `cancelAfter`, and matches
 `expect.error` against `{ code, retryAfter }` (from `Error::retry_after()`).

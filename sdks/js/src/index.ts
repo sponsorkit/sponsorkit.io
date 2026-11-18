@@ -14,7 +14,7 @@
 import { abortError, type CodeRequest, SponsorkitCore, type SponsorkitCoreOptions } from "./core";
 import { SponsorkitError } from "./errors";
 import { hasLocalStorage, localStorageAdapter, memoryStorage, type SponsorkitStorage } from "./storage";
-import { isObject } from "./util";
+import { isObject, SITE_PATHS } from "./util";
 
 /** Options for the browser client. */
 export interface SponsorkitOptions extends SponsorkitCoreOptions {
@@ -100,8 +100,12 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
     return true;
   }
 
-  private get apiOrigin(): string {
-    return this.apiBaseUrl;
+  /**
+   * The origin sign-in messages must come from: the origin of `siteBaseUrl` (the `/connect/done/` page
+   * posts them), never the API origin (PROTOCOL §7).
+   */
+  private get siteOrigin(): string {
+    return new URL(this.siteBaseUrl).origin;
   }
 
   protected beginInteraction(): Interaction {
@@ -129,9 +133,11 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
     const w = win();
     if (interaction.redirect || !interaction.popup) {
       if (!w || !this.returnTo) throw new SponsorkitError("popup_blocked", "The Sponsorkit popup was blocked");
-      if (request.path === "/checkout") {
+      if (request.path === SITE_PATHS.checkout) {
         // A redirect can't return to the app and continue to checkout; use the anonymous checkout page.
-        w.location.assign(request.continueUrl?.replace(/&step=choose$/, "") ?? `${this.apiBaseUrl}/checkout?targets=${encodeURIComponent(this.targetsParam)}`);
+        w.location.assign(
+          request.continueUrl?.replace(/&step=choose$/, "") ?? this.pageUrl(SITE_PATHS.checkout, new URLSearchParams({ targets: this.targetsParam })),
+        );
         return new Promise<never>(() => {});
       }
       const q = new URLSearchParams(request.params);
@@ -142,7 +148,7 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
       } catch {
         throw new SponsorkitError("popup_blocked", "The popup was blocked and sessionStorage is unavailable for the redirect fallback");
       }
-      w.location.assign(`${this.apiBaseUrl}${request.path}?${q}`);
+      w.location.assign(this.pageUrl(request.path, q));
       // The page navigates away; sign-in completes on return (see handleRedirectCallback()).
       return new Promise<never>(() => {});
     }
@@ -151,7 +157,8 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
     const q = new URLSearchParams(request.params);
     q.set("delivery", "web_message");
     q.set("origin", w.location.origin);
-    const url = `${this.apiBaseUrl}${request.path}?${q}`;
+    const url = this.pageUrl(request.path, q);
+    const expectedOrigin = this.siteOrigin;
     return new Promise<string>((resolve, reject) => {
       let timer: ReturnType<typeof setInterval> | undefined;
       const cleanup = () => {
@@ -160,7 +167,7 @@ export class Sponsorkit extends SponsorkitCore<Interaction> {
         request.signal.removeEventListener("abort", onAbort);
       };
       const onMessage = (event: MessageEvent) => {
-        if (event.origin !== this.apiOrigin || event.source !== popup) return;
+        if (event.origin !== expectedOrigin || event.source !== popup) return;
         const data: unknown = event.data;
         if (!isObject(data)) return;
         if (data.type === "sponsorkit:code" && typeof data.code === "string") {

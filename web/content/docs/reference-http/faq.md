@@ -12,8 +12,9 @@ Nothing. There's no plan, no fee and no cut of contributions. Sponsorkit never t
 GitHub Sponsors or Open Collective directly, under their usual terms. The SDKs are published under the MIT
 license.
 
-The hosted service is designed to fit Cloudflare's free Workers plan: it has no database, page views are static
-files, and SDKs cache results locally so each user causes at most about one API call per hour. If you'd rather
+The hosted service is designed to fit Cloudflare's free Workers plan: the API Worker has no database, the
+website and its consent and checkout pages are static files on GitHub Pages (so page views cost the Worker
+nothing), and SDKs cache results locally so each user causes at most about one API call per hour. If you'd rather
 not depend on it, you can [run your own](self-hosting.md).
 
 ### Do I need an account, an API key or a webhook?

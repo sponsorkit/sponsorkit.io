@@ -4,12 +4,15 @@
  * Pure: no DOM access. Pages pass `new URLSearchParams(location.search)`.
  */
 import {
+  API_PATHS,
   Delivery,
   Frequency,
   InvalidTargetError,
+  OAUTH_START_FIELDS,
   Provider,
   targetsFromParam,
   targetToString,
+  trimTrailingSlashes,
   type Target,
 } from "@sponsorkit/shared";
 
@@ -154,7 +157,7 @@ function parseAppName(sp: URLSearchParams, errors: string[]): string | undefined
   return v;
 }
 
-/** Validates the sign-in parameters shared by `/connect` and `/checkout` (PROTOCOL §4.1). */
+/** Validates the sign-in parameters shared by `/connect/` and `/checkout/` (PROTOCOL §4.1). */
 function parseSignInParts(
   sp: URLSearchParams,
   targets: Target[] | null,
@@ -202,7 +205,7 @@ function parseSignInParts(
   };
 }
 
-/** Parse `/connect` query parameters (PROTOCOL §4.1–4.2). */
+/** Parse `/connect/` query parameters (PROTOCOL §4.1–4.2). */
 export function parseConnectParams(sp: URLSearchParams): ParseResult<SignInParams> {
   const errors: string[] = [];
   const targets = parseTargets(sp, errors);
@@ -222,7 +225,7 @@ export function parseConnectParams(sp: URLSearchParams): ParseResult<SignInParam
   };
 }
 
-/** Parse `/checkout` query parameters (PROTOCOL §4.6). */
+/** Parse `/checkout/` query parameters (PROTOCOL §4.6). */
 export function parseCheckoutParams(sp: URLSearchParams): ParseResult<CheckoutParams> {
   const errors: string[] = [];
   const targets = parseTargets(sp, errors);
@@ -317,7 +320,7 @@ export function requesterOf(p: SignInParams): Requester {
 }
 
 /**
- * The `continue` value passed to `/api/oauth/:provider/start` from `/checkout` (PROTOCOL §4.6 step 1):
+ * The `continue` form field of `POST /api/oauth/:provider/start` from `/checkout/` (PROTOCOL §4.6 step 1):
  * the checkout query string without challenge, delivery, origin and redirect_uri.
  * Built from the validated values so nothing unexpected is carried through.
  */
@@ -332,19 +335,37 @@ export function buildContinue(p: CheckoutParams): string {
   return q.toString();
 }
 
-/** `/api/oauth/<provider>/start?<same params>[&continue=…]` (PROTOCOL §4.2 step 3, §4.3). */
-export function buildStartUrl(apiBase: string, provider: Provider, p: SignInParams, continueValue?: string): string {
-  const q = new URLSearchParams();
-  q.set("targets", p.targetsParam);
-  q.set("challenge", p.challenge);
-  q.set("delivery", p.delivery);
-  if (p.origin !== undefined) q.set("origin", p.origin);
-  if (p.redirectUri !== undefined) q.set("redirect_uri", p.redirectUri);
-  if (p.appName !== undefined) q.set("app_name", p.appName);
-  if (p.provider !== undefined) q.set("provider", p.provider);
-  if (p.add) q.set("add", "1");
-  if (continueValue !== undefined) q.set("continue", continueValue);
-  return `${apiBase}/api/oauth/${provider}/start?${q.toString()}`;
+/** A sign-in start form: `POST <action>` with these hidden fields (PROTOCOL §4.2 step 3, §4.3). */
+export interface StartForm {
+  /** `<API origin>/api/oauth/<provider>/start`, or root-relative when the API is same-origin. */
+  action: string;
+  /** Hidden fields in `OAUTH_START_FIELDS` order, only those present. */
+  fields: [name: string, value: string][];
+}
+
+/**
+ * The top-level form POST that starts provider OAuth (PROTOCOL §4.2 step 3): one hidden field per
+ * present §4.1 parameter, plus `continue` from `/checkout/` (§4.6). Values are exactly what the
+ * query parameters would have been.
+ */
+export function buildStartForm(apiBase: string, provider: Provider, p: SignInParams, continueValue?: string): StartForm {
+  const values: Record<(typeof OAUTH_START_FIELDS)[number], string | undefined> = {
+    targets: p.targetsParam,
+    challenge: p.challenge,
+    delivery: p.delivery,
+    origin: p.origin,
+    redirect_uri: p.redirectUri,
+    app_name: p.appName,
+    provider: p.provider,
+    add: p.add ? "1" : undefined,
+    continue: continueValue,
+  };
+  const fields: [string, string][] = [];
+  for (const name of OAUTH_START_FIELDS) {
+    const v = values[name];
+    if (v !== undefined) fields.push([name, v]);
+  }
+  return { action: `${trimTrailingSlashes(apiBase)}${API_PATHS.oauthStart(provider)}`, fields };
 }
 
 /** `/api/v1/targets?github=…&opencollective=…` query for a target set (PROTOCOL §3.1). */

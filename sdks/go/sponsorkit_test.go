@@ -288,6 +288,91 @@ func TestResultHelpers(t *testing.T) {
 	}
 }
 
+// TestBaseURLDefaults pins the PROTOCOL §7 base URL rules: the site defaults to
+// APIBaseURL when only that is set, "" counts as unset, trailing slashes are
+// trimmed and page paths keep the site's base path and trailing slash.
+func TestBaseURLDefaults(t *testing.T) {
+	cases := []struct{ api, site, want string }{
+		{"", "", sponsorkit.DefaultSiteBaseURL + "/checkout/"},
+		{"http://127.0.0.1:9", "", "http://127.0.0.1:9/checkout/"},
+		{"http://127.0.0.1:9//", "", "http://127.0.0.1:9/checkout/"},
+		{"", "https://example.com/base//", "https://example.com/base/checkout/"},
+		{"http://127.0.0.1:9", "https://example.com/base/", "https://example.com/base/checkout/"},
+	}
+	for _, tc := range cases {
+		c, err := sponsorkit.New(sponsorkit.Options{GitHub: "octocat", APIBaseURL: tc.api, SiteBaseURL: tc.site})
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, err := c.CheckoutURL(sponsorkit.CheckoutOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.SplitN(raw, "?", 2)[0]; got != tc.want {
+			t.Errorf("api %q site %q: got %s, want %s", tc.api, tc.site, got, tc.want)
+		}
+	}
+	if sponsorkit.DefaultAPIBaseURL != "https://api.sponsorkit.io" || sponsorkit.DefaultSiteBaseURL != "https://sponsorkit.github.io/sponsorkit.io" {
+		t.Errorf("defaults: %s, %s", sponsorkit.DefaultAPIBaseURL, sponsorkit.DefaultSiteBaseURL)
+	}
+	if _, err := sponsorkit.New(sponsorkit.Options{GitHub: "octocat", SiteBaseURL: "ftp://x"}); err == nil {
+		t.Error("an invalid SiteBaseURL must be rejected")
+	}
+}
+
+// TestSiteBaseURLNormalization pins the cross-SDK base URL normalization:
+// the path keeps its percent-encoding, the host is lowercased, a default port
+// is dropped, dot segments are resolved, surrounding whitespace is ignored,
+// and credentials, a query or a fragment are rejected with invalid_config.
+func TestSiteBaseURLNormalization(t *testing.T) {
+	ok := []struct{ site, want string }{
+		{"https://example.com/a%20b", "https://example.com/a%20b/checkout/"},
+		{"https://example.com/a%2Fb/", "https://example.com/a%2Fb/checkout/"},
+		{"https://Example.COM:443/Base/", "https://example.com/Base/checkout/"},
+		{"HTTP://EXAMPLE.com:80", "http://example.com/checkout/"},
+		{"http://example.com:8080/x", "http://example.com:8080/x/checkout/"},
+		{"https://example.com:80/", "https://example.com:80/checkout/"},
+		{"  https://example.com/base \n", "https://example.com/base/checkout/"},
+		{"https://example.com/a/./b/../c/", "https://example.com/a/c/checkout/"},
+		{"https://example.com/?", "https://example.com/checkout/"},
+		{"https://example.com/#", "https://example.com/checkout/"},
+		{"http://[::1]:443/", "http://[::1]:443/checkout/"},
+	}
+	for _, tc := range ok {
+		c, err := sponsorkit.New(sponsorkit.Options{GitHub: "octocat", SiteBaseURL: tc.site})
+		if err != nil {
+			t.Errorf("site %q: %v", tc.site, err)
+			continue
+		}
+		raw, err := c.CheckoutURL(sponsorkit.CheckoutOptions{Amount: 500, Currency: "usd", Frequency: sponsorkit.Monthly})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.SplitN(raw, "?", 2)[0]; got != tc.want {
+			t.Errorf("site %q: got %s, want %s", tc.site, got, tc.want)
+		}
+	}
+	bad := []string{
+		"https://example.com/?x=1",
+		"https://example.com/base#frag",
+		"https://user:pw@example.com/",
+		"https://user@example.com",
+		"https:example.com",
+		"https://example.com:99999/",
+		"ftp://example.com",
+		"example.com",
+	}
+	for _, site := range bad {
+		for _, opts := range []sponsorkit.Options{{GitHub: "octocat", SiteBaseURL: site}, {GitHub: "octocat", APIBaseURL: site}} {
+			_, err := sponsorkit.New(opts)
+			var se *sponsorkit.Error
+			if !errors.As(err, &se) || se.Code != sponsorkit.CodeInvalidConfig {
+				t.Errorf("%+v: want invalid_config, got %v", opts, err)
+			}
+		}
+	}
+}
+
 func TestCheckoutURL(t *testing.T) {
 	c, err := sponsorkit.New(sponsorkit.Options{GitHub: " OctoCat ", OpenCollective: "webpack", APIBaseURL: "http://127.0.0.1:9/"})
 	if err != nil {
@@ -301,7 +386,7 @@ func TestCheckoutURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.Scheme+"://"+u.Host+u.Path != "http://127.0.0.1:9/checkout" {
+	if u.Scheme+"://"+u.Host+u.Path != "http://127.0.0.1:9/checkout/" {
 		t.Errorf("base: %s", u)
 	}
 	want := url.Values{"targets": {"github:octocat,opencollective:webpack"}, "provider": {"opencollective"}, "amount": {"1500"}, "currency": {"EUR"}, "frequency": {"yearly"}}

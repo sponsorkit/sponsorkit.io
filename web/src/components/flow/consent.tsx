@@ -3,7 +3,7 @@
 import { Fragment, type ReactNode } from "react";
 import type { Provider, Target, TargetInfo } from "@sponsorkit/shared";
 import { apiBase } from "@/lib/api";
-import { buildStartUrl, requesterOf, type Requester, type SignInParams } from "@/lib/params";
+import { buildStartForm, requesterOf, type Requester, type SignInParams } from "@/lib/params";
 import { AlertIcon, ProviderIcon, ShieldIcon } from "../icons";
 import { findInfo, TargetRow } from "./targets";
 import type { TargetsState } from "./use-targets";
@@ -17,6 +17,19 @@ const PROVIDER_SHORT: Record<Provider, string> = {
   github: "GitHub",
   opencollective: "Open Collective",
 };
+
+/**
+ * True when the page runs inside a frame. GitHub Pages can't send anti-framing headers, so the
+ * pages that start sign-in must not render provider buttons when framed (PROTOCOL §4.1).
+ * A cross-origin `window.top` can still be compared; any error counts as framed.
+ */
+export function isFramed(): boolean {
+  try {
+    return window.top !== window.self;
+  } catch {
+    return true;
+  }
+}
 
 /** "Who is asking" (PROTOCOL §4.2, SPEC §5.4). */
 export function RequesterBox({ requester }: { requester: Requester }) {
@@ -130,14 +143,44 @@ export function Consent({
 
       <ConsentText targets={params.targets} infos={infos} />
 
-      <div className="actions">
-        {providers.map((p) => (
-          <a key={p} className={`btn btn-block btn-${p}`} href={buildStartUrl(apiBase(), p, params, continueValue)} data-testid={`continue-${p}`}>
-            <ProviderIcon provider={p} size={20} />
-            {BUTTON_LABEL[p]}
-          </a>
-        ))}
-      </div>
+      {isFramed() ? (
+        <div className="alert alert-warn" role="status" data-testid="framed">
+          <AlertIcon size={18} />
+          <p>
+            For your safety, sign-in can’t start inside another page.{" "}
+            <a href={window.location.href} target="_blank" rel="noopener noreferrer" data-testid="open-top-level">
+              Open this page in a new window
+            </a>{" "}
+            to continue.
+          </p>
+        </div>
+      ) : (
+        <div className="actions">
+          {providers.map((p) => {
+            // A top-level form POST, so the browser sends this site's Origin (PROTOCOL §4.2 step 3, §4.3).
+            const form = buildStartForm(apiBase(), p, params, continueValue);
+            return (
+              <form
+                key={p}
+                className="start-form"
+                method="post"
+                action={form.action}
+                encType="application/x-www-form-urlencoded"
+                target="_self"
+                data-testid={`start-form-${p}`}
+              >
+                {form.fields.map(([name, value]) => (
+                  <input key={name} type="hidden" name={name} value={value} />
+                ))}
+                <button type="submit" className={`btn btn-block btn-${p}`} data-testid={`continue-${p}`}>
+                  <ProviderIcon provider={p} size={20} />
+                  {BUTTON_LABEL[p]}
+                </button>
+              </form>
+            );
+          })}
+        </div>
+      )}
       <p className="fineprint">
         You’ll sign in on {providers.map((p) => PROVIDER_SHORT[p]).join(" or ")}. Sponsorkit never sees your password and keeps no record of you.
       </p>

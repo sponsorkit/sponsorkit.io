@@ -17,7 +17,8 @@ use crate::types::ContributionResult;
 /// Options for [`verify_session_with`].
 #[derive(Debug, Clone, Default)]
 pub struct VerifyOptions {
-    /// API origin. Default `https://sponsorkit.io`.
+    /// API origin. Default [`crate::DEFAULT_API_BASE_URL`] (`https://api.sponsorkit.io`);
+    /// an empty string counts as unset.
     pub api_base_url: Option<String>,
     /// HTTP client to reuse (connection pooling). Default: a new client.
     pub http_client: Option<reqwest::Client>,
@@ -27,7 +28,7 @@ pub struct VerifyOptions {
     pub request_timeout: Option<std::time::Duration>,
 }
 
-/// Verifies a session token against `https://sponsorkit.io` and returns its live result.
+/// Verifies a session token against `https://api.sponsorkit.io` and returns its live result.
 ///
 /// See [`verify_session_with`].
 pub async fn verify_session(token: &str, targets: &Targets) -> Result<ContributionResult> {

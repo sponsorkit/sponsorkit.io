@@ -83,3 +83,38 @@ test("an SDK that throws on network errors fails offline-with-cache", async () =
   expect(err).toBeInstanceOf(ScenarioFailure);
   expect(String(err)).toMatch(/unexpected error/);
 }, 30_000);
+
+test.each([
+  ["site-base-url-sign-in-loopback", /unexpected request GET \/connect\/ \(api\)/],
+  ["site-base-url-checkout-url", /URL base/],
+  ["site-base-url-checkout-signs-in-first", /unexpected request GET \/checkout\/ \(api\)/],
+])("an SDK that ignores siteBaseUrl fails %s", async (id, message) => {
+  const broken: SdkAdapter = {
+    ...referenceAdapter,
+    create: ({ siteBaseUrl: _ignored, ...config }, hooks) => referenceAdapter.create(config, hooks),
+  };
+  const err = await run(scenario(id), broken).catch((e) => e);
+  expect(err).toBeInstanceOf(ScenarioFailure);
+  expect(String(err)).toMatch(message);
+}, 30_000);
+
+test("an SDK that drops the site base path fails site-base-url-checkout-url", async () => {
+  const broken: SdkAdapter = {
+    ...referenceAdapter,
+    create: (config, hooks) =>
+      referenceAdapter.create({ ...config, ...(config.siteBaseUrl ? { siteBaseUrl: new URL(config.siteBaseUrl).origin } : {}) }, hooks),
+  };
+  const err = await run(scenario("site-base-url-checkout-url"), broken).catch((e) => e);
+  expect(err).toBeInstanceOf(ScenarioFailure);
+  expect(String(err)).toMatch(/URL base/);
+}, 30_000);
+
+test("an SDK that sends API calls to the site fails site-base-url-sign-in-loopback", async () => {
+  const broken: SdkAdapter = {
+    ...referenceAdapter,
+    create: (config, hooks) =>
+      referenceAdapter.create({ ...config, ...(config.siteBaseUrl ? { apiBaseUrl: config.siteBaseUrl } : {}) }, hooks),
+  };
+  const err = await run(scenario("site-base-url-sign-in-loopback"), broken).catch((e) => e);
+  expect(err).toBeInstanceOf(ScenarioFailure);
+}, 30_000);

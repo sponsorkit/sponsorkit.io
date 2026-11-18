@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { absoluteUrl, BASE_PATH, SITE_URL } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sponsorkit.io"),
+  // The GitHub Pages project site by default (NEXT_PUBLIC_SITE_URL, see web/site-config.ts).
+  metadataBase: new URL(`${SITE_URL}/`),
   title: {
     default: "Sponsorkit — sponsorships inside your software",
     template: "%s · Sponsorkit",
@@ -14,12 +16,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sponsorkit",
     description: "Build GitHub Sponsors and Open Collective contributions straight into your software.",
-    url: "https://sponsorkit.io",
+    url: absoluteUrl("/"),
     siteName: "Sponsorkit",
     type: "website",
   },
   // Next.js does not add basePath to metadata icon URLs, so prefix it for sub-path hosting (GitHub Pages).
-  icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icon.svg` },
+  icons: { icon: `${BASE_PATH}/icon.svg` },
 };
 
 export const viewport: Viewport = {

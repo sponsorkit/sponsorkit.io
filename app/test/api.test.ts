@@ -71,16 +71,28 @@ describe("common behaviour", () => {
     await expectProblem(await call("/api/other"), 404, "not_found");
   });
 
-  it("serves non-API paths from ASSETS when bound", async () => {
-    const env = makeEnv({ ASSETS: { fetch: async () => new Response("<html>connect</html>", { headers: { "Content-Type": "text/html" } }) } });
-    const res = await call("/connect", {}, env);
-    expect(await res.text()).toContain("connect");
-    expect(res.headers.get("Sponsorkit-Request-Id")).toBeTruthy();
+  it("serves no static assets: non-API paths are not_found problems", async () => {
+    for (const path of ["/", "/connect/", "/connect/done/", "/checkout/", "/docs/", "/index.html"]) {
+      const res = await call(path);
+      await expectProblem(res, 404, "not_found");
+      expect(res.headers.get("Sponsorkit-Request-Id")).toBeTruthy();
+    }
   });
 
-  it("problem types point at an existing docs anchor", async () => {
+  it("sends no CORS headers on /api/oauth/*", async () => {
+    const res = await call("/api/oauth/github/start", {
+      method: "OPTIONS",
+      headers: { Origin: "https://app.example.com", "Access-Control-Request-Method": "POST" },
+    });
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  it("problem types point at the HTTP API docs' error list on the site", async () => {
     const body = await expectProblem(await call("/api/v1/nope"), 404, "not_found");
-    expect(body.type).toBe("https://sponsorkit.io/docs#error-contract");
+    // Single origin (no site vars): the site is the API origin.
+    expect(body.type).toBe("https://sponsorkit.test/docs/reference-http/http-api/#errors");
+    const split = await expectProblem(await call("/api/v1/nope", {}, makeEnv({ PUBLIC_ORIGIN: "https://api.sponsorkit.io", SITE_BASE_URL: "https://sponsorkit.github.io/sponsorkit.io/" })), 404, "not_found");
+    expect(split.type).toBe("https://sponsorkit.github.io/sponsorkit.io/docs/reference-http/http-api/#errors");
   });
 
   it("rate limits per IP with Retry-After", async () => {

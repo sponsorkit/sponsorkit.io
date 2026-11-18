@@ -172,5 +172,6 @@ const sk = new Sponsorkit({
 });
 ```
 
-The fake server's `/connect` and `/checkout` pages are non-interactive, and it has a control API for setting
+With only `apiBaseUrl` set, `siteBaseUrl` defaults to it, so the SDK also opens the fake server's `/connect/` and
+`/checkout/` pages. They are non-interactive, and it has a control API for setting
 up contributions; `sdks/conformance/README.md` in the repository describes both.

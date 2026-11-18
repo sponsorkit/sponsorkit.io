@@ -18,8 +18,11 @@ use crate::targets::{Provider, TargetSet, Targets};
 use crate::time::{now_iso, now_ms, parse_iso};
 use crate::types::ContributionResult;
 
-/// The default API origin.
-pub const DEFAULT_API_BASE_URL: &str = "https://sponsorkit.io";
+/// The default API origin, used for every API call (`/api/v1/…`).
+pub const DEFAULT_API_BASE_URL: &str = "https://api.sponsorkit.io";
+/// The default site base URL (origin plus base path), used for every page
+/// URL: `/connect/`, `/checkout/` and [`Sponsorkit::checkout_url`].
+pub const DEFAULT_SITE_BASE_URL: &str = "https://sponsorkit.github.io/sponsorkit.io";
 /// The default cache TTL (1 hour).
 pub const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(3600);
 /// The minimum cache TTL accepted by [`Options::cache_ttl`] (60 s).
@@ -45,7 +48,7 @@ pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 pub type OpenBrowserHook = Arc<dyn Fn(String) -> BoxFuture<std::io::Result<()>> + Send + Sync>;
 
 /// Replacement for reading the paste-back code from stdin: receives the
-/// `/connect?…&delivery=paste` URL the user has to open and returns the code.
+/// `<site_base_url>/connect/?…&delivery=paste` URL the user has to open and returns the code.
 pub type PromptForCodeHook = Arc<dyn Fn(String) -> BoxFuture<std::io::Result<String>> + Send + Sync>;
 
 /// How `sign_in` (and `open_checkout` when signed out) gets the sign-in code.
@@ -90,8 +93,18 @@ pub struct Options {
     /// session lives in memory for the life of the client; the SDK never
     /// falls back to the current working directory.
     pub storage_dir: Option<PathBuf>,
-    /// API origin (self-hosting, tests). Default `https://sponsorkit.io`.
+    /// API origin, used for every API call (`/api/v1/…`). Default
+    /// [`DEFAULT_API_BASE_URL`] (`https://api.sponsorkit.io`). Trailing
+    /// slashes are trimmed; an empty string counts as unset.
     pub api_base_url: Option<String>,
+    /// Site base URL (origin plus optional base path), used for every page
+    /// URL: `<site_base_url>/connect/`, `<site_base_url>/checkout/`,
+    /// [`Sponsorkit::checkout_url`] and the loopback redirect after a checkout
+    /// sign-in. Default [`DEFAULT_SITE_BASE_URL`]
+    /// (`https://sponsorkit.github.io/sponsorkit.io`), **or `api_base_url`
+    /// when that is set and this is not** (single-origin self-hosting, tests).
+    /// Trailing slashes are trimmed; an empty string counts as unset.
+    pub site_base_url: Option<String>,
     /// Timeout for each HTTP request, including reading the body. Default
     /// [`DEFAULT_REQUEST_TIMEOUT`] (30 s); `Some(Duration::ZERO)` disables it.
     /// A timeout counts as a network failure: `get_financial_contribution`
@@ -137,6 +150,7 @@ impl fmt::Debug for Options {
             .field("mock", &self.mock)
             .field("storage_dir", &self.storage_dir)
             .field("api_base_url", &self.api_base_url)
+            .field("site_base_url", &self.site_base_url)
             .field("request_timeout", &self.request_timeout)
             .field("sign_in_method", &self.sign_in_method)
             .field("sign_in_timeout", &self.sign_in_timeout)
@@ -186,6 +200,7 @@ pub(crate) struct Inner {
     pub app_name: Option<String>,
     pub cache_ttl: Duration,
     pub api_base_url: String,
+    pub site_base_url: String,
     pub request_timeout: Duration,
     pub storage: Option<Storage>,
     pub disabled: bool,
@@ -219,18 +234,60 @@ impl fmt::Debug for Sponsorkit {
             .field("disabled", &self.inner.disabled)
             .field("mock", &self.inner.mock.is_some())
             .field("api_base_url", &self.inner.api_base_url)
+            .field("site_base_url", &self.inner.site_base_url)
             .finish_non_exhaustive()
     }
 }
 
-pub(crate) fn validate_base_url(url: Option<&str>) -> Result<String> {
-    let raw = url.unwrap_or(DEFAULT_API_BASE_URL).trim().trim_end_matches('/').to_string();
+/// `None` for an unset or empty (`""`) option, as PROTOCOL §7 and the shared
+/// `resolveBaseUrls` reference say. Any other value counts as set: it comes
+/// back with surrounding whitespace and trailing slashes removed, and a value
+/// that is whitespace only (or slashes only) is an `invalid_config` error, the
+/// same as in the JS, Python and Go SDKs, rather than silently using a default.
+fn set_value(url: Option<&str>, name: &str) -> Result<Option<String>> {
+    match url {
+        None | Some("") => Ok(None),
+        Some(u) => {
+            let v = u.trim().trim_end_matches('/');
+            if v.is_empty() {
+                return Err(Error::invalid_config(format!("{name} must be an http(s) URL, got \"{u}\"")));
+            }
+            Ok(Some(v.to_string()))
+        }
+    }
+}
+
+/// Validates an http(s) base URL (already trimmed). `name` is the option name.
+fn check_base_url(raw: String, name: &str) -> Result<String> {
     let parsed =
-        reqwest::Url::parse(&raw).map_err(|e| Error::invalid_config(format!("Invalid api_base_url \"{raw}\": {e}")))?;
-    if !matches!(parsed.scheme(), "http" | "https") || parsed.host_str().is_none() {
-        return Err(Error::invalid_config(format!("api_base_url must be an http(s) origin, got \"{raw}\"")));
+        reqwest::Url::parse(&raw).map_err(|e| Error::invalid_config(format!("Invalid {name} \"{raw}\": {e}")))?;
+    if !matches!(parsed.scheme(), "http" | "https")
+        || parsed.host_str().is_none()
+        || parsed.query().is_some()
+        || parsed.fragment().is_some()
+    {
+        return Err(Error::invalid_config(format!("{name} must be an http(s) URL, got \"{raw}\"")));
     }
     Ok(raw)
+}
+
+/// The API base URL: `url` (trimmed) or [`DEFAULT_API_BASE_URL`].
+pub(crate) fn validate_base_url(url: Option<&str>) -> Result<String> {
+    check_base_url(set_value(url, "api_base_url")?.unwrap_or_else(|| DEFAULT_API_BASE_URL.to_string()), "api_base_url")
+}
+
+/// Resolves `(api_base_url, site_base_url)` with the PROTOCOL §7 defaulting
+/// rule: each falls back to its default, except that a set `api_base_url`
+/// with no `site_base_url` makes the site default to the API base URL.
+/// Empty strings count as unset; trailing slashes are trimmed.
+pub(crate) fn resolve_base_urls(api: Option<&str>, site: Option<&str>) -> Result<(String, String)> {
+    let api_set = set_value(api, "api_base_url")?;
+    let site = set_value(site, "site_base_url")?
+        .or_else(|| api_set.clone())
+        .unwrap_or_else(|| DEFAULT_SITE_BASE_URL.to_string());
+    let api = validate_base_url(api_set.as_deref())?;
+    let site = check_base_url(site, "site_base_url")?;
+    Ok((api, site))
 }
 
 /// The SDK's HTTP client. It has no timeout of its own: every request gets
@@ -288,7 +345,8 @@ impl Sponsorkit {
                 return Err(Error::invalid_config("app_name must be at most 64 characters"));
             }
         }
-        let api_base_url = validate_base_url(options.api_base_url.as_deref())?;
+        let (api_base_url, site_base_url) =
+            resolve_base_urls(options.api_base_url.as_deref(), options.site_base_url.as_deref())?;
         let mock_state = if disabled { None } else { mock.as_ref().map(|m| Mutex::new(MockState::new(&targets, m))) };
         let hash = targets.hash();
         let storage = if disabled || mock_state.is_some() {
@@ -304,6 +362,7 @@ impl Sponsorkit {
                 app_name: options.app_name.clone().filter(|s| !s.is_empty()),
                 cache_ttl: options.cache_ttl.unwrap_or(DEFAULT_CACHE_TTL).max(MIN_CACHE_TTL),
                 api_base_url,
+                site_base_url,
                 request_timeout: options.request_timeout.unwrap_or(DEFAULT_REQUEST_TIMEOUT),
                 storage,
                 disabled,
@@ -750,6 +809,32 @@ mod tests {
         let err = sk.sign_out().await.unwrap_err();
         assert_eq!(err.code(), crate::ErrorCode::InvalidConfig, "{err}");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn base_url_defaulting_rule() {
+        let r = |a: Option<&str>, s: Option<&str>| resolve_base_urls(a, s).unwrap();
+        assert_eq!(r(None, None), (DEFAULT_API_BASE_URL.into(), DEFAULT_SITE_BASE_URL.into()));
+        assert_eq!(r(Some(""), Some("")), (DEFAULT_API_BASE_URL.into(), DEFAULT_SITE_BASE_URL.into()));
+        assert_eq!(r(Some("http://x:1/"), None), ("http://x:1".into(), "http://x:1".into()));
+        assert_eq!(r(Some("http://x:1"), Some("")), ("http://x:1".into(), "http://x:1".into()));
+        assert_eq!(r(None, Some("https://s.test/base//")), (DEFAULT_API_BASE_URL.into(), "https://s.test/base".into()));
+        assert_eq!(r(Some("http://a:1"), Some("http://s:2/p")), ("http://a:1".into(), "http://s:2/p".into()));
+        assert!(resolve_base_urls(None, Some("ftp://s.test")).is_err());
+        assert!(resolve_base_urls(None, Some("https://s.test/?q=1")).is_err());
+        assert!(resolve_base_urls(Some("not a url"), None).is_err());
+    }
+
+    #[test]
+    fn whitespace_only_base_url_is_invalid_config_not_unset() {
+        // PROTOCOL §7: only "" counts as unset (matches shared resolveBaseUrls, JS, Python, Go).
+        for (a, s) in [(Some("  "), None), (None, Some("  ")), (Some("\t"), Some("")), (Some("http://x:1"), Some(" "))]
+        {
+            let err = resolve_base_urls(a, s).unwrap_err();
+            assert_eq!(err.code(), crate::ErrorCode::InvalidConfig, "{a:?} {s:?}: {err}");
+        }
+        assert_eq!(validate_base_url(Some(" ")).unwrap_err().code(), crate::ErrorCode::InvalidConfig);
+        assert_eq!(validate_base_url(Some("")).unwrap(), DEFAULT_API_BASE_URL);
     }
 
     #[test]

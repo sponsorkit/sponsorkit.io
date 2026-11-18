@@ -60,7 +60,7 @@ export const ControlOptions = z
         provider: Provider.optional(),
         error: DeliveredError.optional(),
         /**
-         * The user never finishes: `/connect` (and the sign-in half of `/checkout`) answers `200` HTML
+         * The user never finishes: `/connect/` (and the sign-in half of `/checkout/`) answers `200` HTML
          * and delivers neither a code nor an error. Used for sign-in timeout and cancellation scenarios.
          */
         abandon: z.boolean().optional(),

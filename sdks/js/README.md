@@ -68,6 +68,17 @@ receiver can't bind to `127.0.0.1`: it prints a URL to stderr and reads the code
 accepted even while your `openBrowser` is still running. A `/callback` request without a non-empty `code` or
 `error` gets a `400` and the receiver keeps waiting.
 
+### Site and API
+
+The pages (`/connect/`, `/checkout/`) live on the Sponsorkit site, `https://sponsorkit.github.io/sponsorkit.io`;
+the API lives at `https://api.sponsorkit.io`. To self-host, set `apiBaseUrl`, and `siteBaseUrl` too when your
+pages are on a different origin or base path. With `apiBaseUrl` alone the SDK assumes one origin serves both
+(`siteBaseUrl` defaults to it). Empty strings count as unset and trailing slashes are trimmed.
+
+```ts
+new Sponsorkit({ github: "octocat", apiBaseUrl: "https://api.example.com", siteBaseUrl: "https://example.com/sponsorkit" });
+```
+
 > **Paste-back and stdin.** The default stdin prompt can't cancel its blocking read. After a cancelled or
 > timed-out paste-back (`signal`, `signInTimeout`), the next line typed may still go to that pending read
 > instead of your app. If your app reads stdin itself, pass `promptForCode`.
@@ -87,7 +98,8 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 | `mock` | – | Mock mode: a preset name or `{ contributions }` (see below). |
 | `storage` | platform | A `SponsorkitStorage` (`{ read(hash), write(hash, json) }`) or a Web Storage object. |
 | `storageDir` (node) | per-user config dir | `$XDG_CONFIG_HOME/sponsorkit` (else `$HOME/.config/sponsorkit`), `$HOME/Library/Application Support/sponsorkit`, `%APPDATA%\sponsorkit`. If none can be determined (e.g. `HOME` is unset), state is kept in memory for the process; the SDK never writes to the current directory. |
-| `apiBaseUrl` | `https://sponsorkit.io` | Origin of a self-hosted Sponsorkit or a test server. |
+| `apiBaseUrl` | `https://api.sponsorkit.io` | Origin of the API (every `/api/v1/…` call), for self-hosting or a test server. |
+| `siteBaseUrl` | `https://sponsorkit.github.io/sponsorkit.io`, or `apiBaseUrl` when only that is set | Site base URL (origin plus optional base path) for the pages: `<siteBaseUrl>/connect/`, `<siteBaseUrl>/checkout/`, `checkoutUrl()` and the loopback checkout redirect. In the browser, sign-in messages are accepted only from this URL's origin. |
 | `signInMethod` (node) | `"auto"` | `"auto" \| "loopback" \| "paste"`. |
 | `openBrowser(url)` (node) | system browser | Replace how URLs are opened. |
 | `promptForCode(url)` (node) | stdin | Replace how the paste-back code is read. Receives the URL to open. Pass it if your app reads stdin itself (see the paste-back note above). |
@@ -133,12 +145,12 @@ Throws `SponsorkitError{code: "invalid_config"}` when no target is given or a ta
 - **`getSessionToken()`** → `Promise<string | null>`: the `sks_…` token to forward to your backend (see Backend verification).
 - **`openCheckout({ provider?, amount?, currency?, frequency?, timeout? = 600, signal? })`** →
   `Promise<{ status: "contributed", contribution } | { status: "unknown" }>`. Signs in first if needed
-  (in the same popup / browser tab), opens `/checkout`, then polls with `cacheTtl: 0` until a new or
+  (in the same popup / browser tab), opens `<siteBaseUrl>/checkout/`, then polls with `cacheTtl: 0` until a new or
   changed contribution appears. `timeout` counts from when polling starts; the sign-in phase is bounded by
   `signInTimeout` (and rejects with `timeout` when that passes). Polling timeout and `signal`
   cancellation (in either phase) resolve `{ status: "unknown" }`. `amount` is in minor units (cents).
 - **`checkoutUrl({ provider?, amount?, currency?, frequency? })`** → `string`. Synchronous and offline: a
-  `/checkout` link without sign-in, for nags and READMEs. Throws `invalid_config` for an unconfigured
+  `<siteBaseUrl>/checkout/?…` link without sign-in, for nags and READMEs. Throws `invalid_config` for an unconfigured
   provider, a frequency other than `one_time`/`monthly`/`yearly`, a non-positive or non-integer amount, or
   a currency that isn't a 3-letter ISO 4217 code.
 - **`signOut()`** → deletes the token and cache locally (nag state is kept). Rejects with `invalid_config` if
@@ -208,7 +220,7 @@ Environment variables (set = non-empty and not `0`/`false`):
 The `env` option replaces the process environment for all of these.
 
 For integration tests, point `apiBaseUrl` at the conformance fake server
-(`bun sdks/conformance/server.ts`), pass a temporary `storageDir`, and replace `openBrowser` /
+(`bun sdks/conformance/server.ts`; with `apiBaseUrl` alone the site pages come from the same server), pass a temporary `storageDir`, and replace `openBrowser` /
 `promptForCode`.
 
 ## Web components
@@ -226,9 +238,9 @@ For integration tests, point `apiBaseUrl` at the conformance fake server
 ```
 
 - `<sponsorkit-button>` opens checkout (popup, synchronously on click). Attributes: `github`,
-  `opencollective`, `amount`, `currency`, `frequency`, `provider`, `api-base-url`, `label`.
+  `opencollective`, `amount`, `currency`, `frequency`, `provider`, `api-base-url`, `site-base-url`, `label`.
   Fires `sponsorkit:checkout` (`detail` = checkout result) and `sponsorkit:error`.
-- `<sponsorkit-badge>` shows "Supporter ♥" when `active()` is non-empty and is hidden otherwise. Call
+- `<sponsorkit-badge>` (attributes `github`, `opencollective`, `api-base-url`, `site-base-url`) shows "Supporter ♥" when `active()` is non-empty and is hidden otherwise. Call
   `badge.refresh()` after signing in.
 - Assign `element.client = sk` to share an existing `Sponsorkit` instance.
 

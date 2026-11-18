@@ -2,9 +2,18 @@
  * The conformance fake Sponsorkit API (PROTOCOL §9).
  *
  * It implements the §3 HTTP API with deterministic data, plus non-interactive
- * versions of the browser pages (/connect, /checkout) so SDK test suites can
+ * versions of the site pages (/connect/, /checkout/) so SDK test suites can
  * drive sign-in and checkout with a plain HTTP client. Behaviour is switched
  * through the control API under /__control (see README.md).
+ *
+ * Two listeners share one FakeSponsorkit (PROTOCOL §0, §9):
+ * - the **API** origin serves /api/v1/*, the control API, and also the site
+ *   pages at the root (single-origin self-hosting: `siteBaseUrl` defaults to
+ *   `apiBaseUrl`);
+ * - the **site** origin serves only the site pages, under the base path
+ *   {@link SITE_BASE_PATH} (like the GitHub Pages project site), plus the fake
+ *   provider pages. Everything else there is a 404, so an SDK that sends API
+ *   calls to the site, or drops the base path, fails visibly.
  */
 import {
   ContributionResult,
@@ -18,6 +27,7 @@ import {
   targetsFromParam,
   targetsHash,
   targetsToParam,
+  problemTypeUrl,
   type Contribution,
   type ErrorCode,
   type Identity,
@@ -33,6 +43,11 @@ import { FAKE_IDENTITIES, defaultPool, namedContribution, targetInfo } from "./f
 export const CODE_TTL_SECONDS = 60;
 export const PASTE_CODE_TTL_SECONDS = 600;
 export const SESSION_TTL_SECONDS = 180 * 24 * 3600;
+/** Base path of the site listener, mirroring the GitHub Pages project site (`/sponsorkit.io`). */
+export const SITE_BASE_PATH = "/sponsorkit.io";
+
+/** Which listener received a request. */
+export type ServerRole = "api" | "site";
 
 /** Request headers copied into the request log. Everything else is dropped. */
 const LOGGED_HEADERS = ["authorization", "content-type", "accept", "user-agent", "origin"];
@@ -41,6 +56,8 @@ export interface RequestLogEntry {
   seq: number;
   time: string;
   requestId: string;
+  /** The listener that received the request: "api" (the API origin) or "site" (the separate site origin). */
+  server: ServerRole;
   method: string;
   path: string;
   query: Record<string, string>;
@@ -129,9 +146,9 @@ function json(data: unknown, status = 200, headers: Record<string, string> = {})
   });
 }
 
-function problem(p: HttpProblem): Response {
+function problem(p: HttpProblem, siteBaseUrl: string): Response {
   return new Response(
-    JSON.stringify({ type: `https://sponsorkit.io/problems/${p.code}`, title: TITLES[p.code], status: p.status, code: p.code, detail: p.detail }),
+    JSON.stringify({ type: problemTypeUrl(siteBaseUrl), title: TITLES[p.code], status: p.status, code: p.code, detail: p.detail }),
     { status: p.status, headers: { "content-type": "application/problem+json", ...p.headers } },
   );
 }
@@ -180,6 +197,8 @@ export class FakeSponsorkit {
   private requestCounter = 0;
   private checkoutVisits = 0;
   private contributionsCalls = 0;
+  /** Base URL of the site listener (origin + SITE_BASE_PATH), once started. */
+  siteBaseUrl: string | null = null;
 
   constructor(private readonly options: FakeServerOptions = {}) {}
 
@@ -263,6 +282,7 @@ export class FakeSponsorkit {
       checkoutVisits: this.checkoutVisits,
       contributionsCalls: this.contributionsCalls,
       lastRequestSeq: this.seq,
+      siteBaseUrl: this.siteBaseUrl,
     };
   }
 
@@ -282,9 +302,11 @@ export class FakeSponsorkit {
 
   // ---------------------------------------------------------------- HTTP
 
-  async fetch(request: Request): Promise<Response> {
+  /** Handles one request. `role` says which listener received it (default: the API listener). */
+  async fetch(request: Request, role: ServerRole = "api"): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/__control" || url.pathname.startsWith("/__control/")) {
+      if (role === "site") return json({ error: "The control API is only served on the API origin" }, 404);
       return this.withCors(await this.handleControl(request, url));
     }
 
@@ -294,6 +316,7 @@ export class FakeSponsorkit {
       seq: ++this.seq,
       time: new Date().toISOString(),
       requestId,
+      server: role,
       method: request.method,
       path: url.pathname,
       query: Object.fromEntries(url.searchParams),
@@ -313,10 +336,14 @@ export class FakeSponsorkit {
     this.log.push(entry);
 
     let response: Response;
+    const site = this.siteBaseUrl ?? url.origin;
     try {
-      response = await this.route(request.method, url, bodyText, request.headers.get("authorization"));
+      response =
+        role === "site"
+          ? this.routeSite(request.method, url)
+          : await this.route(request.method, url, bodyText, request.headers.get("authorization"));
     } catch (e) {
-      response = e instanceof HttpProblem ? problem(e) : problem(new HttpProblem(500, "internal", String(e)));
+      response = e instanceof HttpProblem ? problem(e, site) : problem(new HttpProblem(500, "internal", String(e)), site);
     }
     response = this.withCors(response);
     response.headers.set(HEADERS.requestId, requestId);
@@ -401,12 +428,32 @@ export class FakeSponsorkit {
       throw new HttpProblem(404, "not_found", `No route ${method} ${path}`);
     }
 
+    // Single-origin: the API listener also serves the site pages at the root.
+    return this.page(method, url, path, "");
+  }
+
+  /** The site listener: pages under SITE_BASE_PATH, plus the fake provider pages. Nothing else. */
+  private routeSite(method: string, url: URL): Response {
+    const path = url.pathname;
+    if (method === "OPTIONS") return new Response(null, { status: 204 });
+    if (path.startsWith("/__fake/")) return this.page(method, url, path, SITE_BASE_PATH);
+    if (path === SITE_BASE_PATH || path.startsWith(`${SITE_BASE_PATH}/`))
+      return this.page(method, url, path.slice(SITE_BASE_PATH.length) || "/", SITE_BASE_PATH);
+    return html(404, "Not found", `<p>The site lives under ${escapeHtml(SITE_BASE_PATH)}/.</p>`);
+  }
+
+  /**
+   * A site page. `path` is relative to the site base path `prefix` ("" on the API listener).
+   * The trailing-slash form (`/connect/`) is canonical; the form without a slash is accepted too.
+   */
+  private page(method: string, url: URL, path: string, prefix: string): Response {
     if (method !== "GET") return html(405, "Method not allowed", "");
-    if (path === "/connect") return this.connect(url, "connect");
-    if (path === "/checkout") return this.checkout(url);
-    if (path === "/connect/done") return html(200, "Sponsorkit", "<p>You can close this window.</p>");
-    if (path === "/checkout/thanks") return html(200, "Thank you", "<p>Thanks for your contribution.</p>");
-    const fake = /^\/__fake\/provider\/([a-z]+)$/.exec(path);
+    const page = path.length > 1 ? path.replace(/\/$/, "") : path;
+    if (page === "/connect") return this.connect(url, "connect", prefix);
+    if (page === "/checkout") return this.checkout(url, prefix);
+    if (page === "/connect/done") return html(200, "Sponsorkit", "<p>You can close this window.</p>");
+    if (page === "/checkout/thanks") return html(200, "Thank you", "<p>Thanks for your contribution.</p>");
+    const fake = /^\/__fake\/provider\/([a-z]+)$/.exec(page);
     if (fake) return this.fakeProviderPage(fake[1]!, url);
     return html(404, "Not found", "");
   }
@@ -617,14 +664,17 @@ export class FakeSponsorkit {
     return { ok: true, targets: canonical, provider, challenge, delivery: delivery.data, redirectUri, origin };
   }
 
-  /** Non-interactive /connect (and the sign-in half of /checkout): issue a code and deliver it. */
-  private connect(url: URL, via: "connect" | "checkout", continueQuery?: string): Response {
+  /**
+   * Non-interactive /connect/ (and the sign-in half of /checkout/): issue a code and deliver it.
+   * `prefix` is the site base path of the listener that serves the page ("" on the API listener).
+   */
+  private connect(url: URL, via: "connect" | "checkout", prefix: string, continueQuery?: string): Response {
     const p = this.signInParams(url);
     if (!p.ok) return p.response;
     if (this.behaviour.connect?.abandon)
       return html(200, "Sign in to Sponsorkit", "<p>Waiting for the provider. (Conformance: this sign-in is never completed.)</p>");
     const error = this.behaviour.connect?.error;
-    if (error) return this.deliver(p, { error }, continueQuery);
+    if (error) return this.deliver(p, { error }, prefix, continueQuery);
     const ttl = p.delivery === "paste" ? PASTE_CODE_TTL_SECONDS : CODE_TTL_SECONDS;
     const now = nowSeconds();
     const record: IssuedCode = {
@@ -641,12 +691,13 @@ export class FakeSponsorkit {
     };
     this.codes.set(record.code, record);
     this.lastCode = record;
-    return this.deliver(p, { code: record.code }, continueQuery);
+    return this.deliver(p, { code: record.code }, prefix, continueQuery);
   }
 
   private deliver(
     p: { delivery: Delivery; redirectUri: string | null; origin: string | null },
     what: { code: string } | { error: string },
+    prefix: string,
     continueQuery?: string,
   ): Response {
     const isCode = "code" in what;
@@ -664,17 +715,17 @@ export class FakeSponsorkit {
         return redirect(u.toString());
       }
       case "web_message":
-        return redirect(`/connect/done#${isCode ? "code" : "error"}=${encodeURIComponent(value)}&origin=${encodeURIComponent(p.origin!)}${isCode ? cont : ""}`);
+        return redirect(`${prefix}/connect/done/#${isCode ? "code" : "error"}=${encodeURIComponent(value)}&origin=${encodeURIComponent(p.origin!)}${isCode ? cont : ""}`);
       case "paste": {
         const headers: Record<string, string> = { "content-type": "text/plain; charset=utf-8" };
         if (isCode) headers["sponsorkit-conformance-code"] = value;
-        if (isCode && continueQuery) headers["sponsorkit-conformance-continue"] = `/checkout?${continueQuery}&step=choose`;
+        if (isCode && continueQuery) headers["sponsorkit-conformance-continue"] = `${prefix}/checkout/?${continueQuery}&step=choose`;
         return new Response(isCode ? `${value}\n` : `error: ${value}\n`, { status: isCode ? 200 : 400, headers });
       }
     }
   }
 
-  private checkout(url: URL): Response {
+  private checkout(url: URL, prefix: string): Response {
     const q = url.searchParams;
     const bad = (msg: string) => html(400, "Invalid checkout link", `<p>${escapeHtml(msg)}</p>`);
     const targetsParam = q.get("targets");
@@ -713,12 +764,13 @@ export class FakeSponsorkit {
     if (q.has("challenge") && step !== "choose") {
       const cont = new URLSearchParams(q);
       for (const k of ["challenge", "delivery", "origin", "redirect_uri"]) cont.delete(k);
-      return this.connect(url, "checkout", cont.toString());
+      return this.connect(url, "checkout", prefix, cont.toString());
     }
 
     // Step 2: choose a provider (PROTOCOL §6).
-    const origin = url.origin;
-    const results = targets.map((t) => eligibility(targetInfo(t.provider, t.account), opts, origin));
+    // The Open Collective `redirect` is <site base URL>/checkout/thanks/ (PROTOCOL §6).
+    const siteBase = `${url.origin}${prefix}`;
+    const results = targets.map((t) => eligibility(targetInfo(t.provider, t.account), opts, siteBase));
     const eligible = results.filter((r) => r.eligible);
     let pick: (typeof eligible)[number] | undefined;
     if (requested !== null) pick = eligible.find((r) => r.provider === requested);
@@ -763,25 +815,43 @@ export async function loadScenarioServerBlocks(path = new URL("../scenarios.json
 }
 
 export interface RunningServer {
+  /** Port of the API listener. */
   port: number;
+  /** `http://127.0.0.1:<port>`: pass it to the SDK as `apiBaseUrl` (and to the runner as `baseUrl`). */
   baseUrl: string;
+  /** Port of the separate site listener. */
+  sitePort: number;
+  /** `http://127.0.0.1:<sitePort>/sponsorkit.io`: the `siteBaseUrl` of two-origin scenarios (`$SITE_BASE_URL`). */
+  siteBaseUrl: string;
   fake: FakeSponsorkit;
   stop(): Promise<void>;
 }
 
-export async function startServer(opts: { port?: number; hostname?: string; scenarios?: Record<string, ControlRequest> } = {}): Promise<RunningServer> {
+export async function startServer(
+  opts: { port?: number; sitePort?: number; hostname?: string; scenarios?: Record<string, ControlRequest> } = {},
+): Promise<RunningServer> {
   const fake = new FakeSponsorkit({ scenarios: opts.scenarios ?? (await loadScenarioServerBlocks()) });
-  const server = Bun.serve({
-    port: opts.port ?? 0,
-    hostname: opts.hostname ?? "127.0.0.1",
-    idleTimeout: 120,
-    fetch: (req) => fake.fetch(req),
-  });
-  const port = server.port!;
+  const hostname = opts.hostname ?? "127.0.0.1";
+  const api = Bun.serve({ port: opts.port ?? 0, hostname, idleTimeout: 120, fetch: (req) => fake.fetch(req, "api") });
+  let site: ReturnType<typeof Bun.serve>;
+  try {
+    site = Bun.serve({ port: opts.sitePort ?? 0, hostname, idleTimeout: 120, fetch: (req) => fake.fetch(req, "site") });
+  } catch (e) {
+    await api.stop(true);
+    throw e;
+  }
+  const port = api.port!;
+  const sitePort = site.port!;
+  const siteBaseUrl = `http://127.0.0.1:${sitePort}${SITE_BASE_PATH}`;
+  fake.siteBaseUrl = siteBaseUrl;
   return {
     port,
     baseUrl: `http://127.0.0.1:${port}`,
+    sitePort,
+    siteBaseUrl,
     fake,
-    stop: () => server.stop(true),
+    stop: async () => {
+      await Promise.all([api.stop(true), site.stop(true)]);
+    },
   };
 }

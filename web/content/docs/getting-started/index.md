@@ -12,7 +12,7 @@ There is no Sponsorkit account to create, no API key, no webhook and no dashboar
 receive money on, and the SDK does the rest.
 
 :::warning[Project status: not live yet]
-The hosted service at `sponsorkit.io` isn't deployed yet, so real sign-ins, checks and `checkoutUrl()` links
+The hosted API at `api.sponsorkit.io` isn't deployed yet, so real sign-ins, checks and `checkoutUrl()` links
 that point at it don't work today. Some provider behaviour (for example which GitHub sponsorship data the
 requested scopes return) has only been tested against stubbed provider responses, not live GitHub or Open
 Collective accounts. What works now: [mock mode](../guides/mock-mode.md), which needs no network, and
@@ -35,11 +35,12 @@ decide who "counts" as a supporter. You write that rule, in your own code.
 
 ## How it works
 
-Your app talks to a small, stateless service at `sponsorkit.io`. The service has no database: everything it
-needs travels inside an encrypted session token that the SDK keeps on the supporter's device.
+Your app talks to a small, stateless service: an HTTP API at `https://api.sponsorkit.io`, plus the consent and
+checkout pages of this website (`https://sponsorkit.github.io/sponsorkit.io`). The service has no database:
+everything it needs travels inside an encrypted session token that the SDK keeps on the supporter's device.
 
 ```text title="One sign-in, then cheap checks"
-  Your app + SDK                    sponsorkit.io (no database)            GitHub / Open Collective
+  Your app + SDK                    Sponsorkit (no database)               GitHub / Open Collective
   ─────────────────                 ───────────────────────────            ────────────────────────
   1  signIn()  ── opens ─────────▶  consent screen: names your
                                     targets and who is asking  ── OAuth ─▶ supporter approves

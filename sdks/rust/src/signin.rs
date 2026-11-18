@@ -33,9 +33,9 @@ pub struct SignInOptions {
 
 /// Which page starts the flow.
 pub(crate) enum StartPage {
-    /// `/connect`.
+    /// `<site_base_url>/connect/`.
     Connect,
-    /// `/checkout` with these checkout params (sign in first, then continue).
+    /// `<site_base_url>/checkout/` with these checkout params (sign in first, then continue).
     Checkout(Vec<(String, String)>),
 }
 
@@ -281,10 +281,11 @@ impl Sponsorkit {
         extra: &[(String, String)],
     ) -> String {
         let path = match page {
-            StartPage::Connect => "/connect",
-            StartPage::Checkout(_) => "/checkout",
+            StartPage::Connect => "/connect/",
+            StartPage::Checkout(_) => "/checkout/",
         };
-        let mut url = reqwest::Url::parse(&format!("{}{}", self.inner.api_base_url, path)).expect("validated base URL");
+        let mut url =
+            reqwest::Url::parse(&format!("{}{}", self.inner.site_base_url, path)).expect("validated base URL");
         {
             let mut q = url.query_pairs_mut();
             match page {
@@ -385,8 +386,8 @@ impl Sponsorkit {
         let redirect_after: Option<Arc<str>> = match page {
             StartPage::Connect => None,
             StartPage::Checkout(params) => {
-                let mut u =
-                    reqwest::Url::parse(&format!("{}/checkout", self.inner.api_base_url)).expect("validated base URL");
+                let mut u = reqwest::Url::parse(&format!("{}/checkout/", self.inner.site_base_url))
+                    .expect("validated base URL");
                 {
                     let mut q = u.query_pairs_mut();
                     for (k, v) in params {

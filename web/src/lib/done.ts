@@ -1,8 +1,9 @@
 /**
- * `/connect/done` fragment handling (PROTOCOL §4.5). Pure: the page passes `location.hash`.
+ * `/connect/done/` fragment handling (PROTOCOL §4.5). Pure: the page passes `location.hash`.
  */
 import { CODE_PREFIX } from "@sponsorkit/shared";
 import { isValidOrigin } from "./params";
+import { BASE_PATH, SITE_PATHS, sitePath } from "./site";
 
 export type DoneState =
   | { kind: "code"; code: string; origin: string; continueQuery: string | null }
@@ -19,8 +20,8 @@ export function isValidCode(code: string): boolean {
 }
 
 /**
- * Validates a `continue` value: a query string for `/checkout`. Returns it normalized, or null.
- * Never yields anything that can leave `/checkout` on this origin.
+ * Validates a `continue` value: a query string for `/checkout/`. Returns it normalized, or null.
+ * Never yields anything that can leave `/checkout/` on this site.
  */
 export function normalizeContinue(raw: string | null): string | null {
   if (raw === null) return null;
@@ -33,9 +34,9 @@ export function normalizeContinue(raw: string | null): string | null {
   return q.toString();
 }
 
-/** `/checkout?<continue>&step=choose` */
-export function checkoutContinueHref(continueQuery: string): string {
-  return `/checkout?${continueQuery}&step=choose`;
+/** Site page `/checkout/?<continue>&step=choose` under the base path (PROTOCOL §4.5). */
+export function checkoutContinueHref(continueQuery: string, basePath: string = BASE_PATH): string {
+  return `${sitePath(SITE_PATHS.checkout, basePath)}?${continueQuery}&step=choose`;
 }
 
 export function parseDoneHash(hash: string): DoneState {

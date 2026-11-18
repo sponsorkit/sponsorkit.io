@@ -1,6 +1,16 @@
 import type { BrowserContext, Route } from "@playwright/test";
 import type { TargetInfo, TargetsResponse } from "@sponsorkit/shared";
 
+/** Base path the export is served under (see playwright.config.ts). */
+export const BASE_PATH = (process.env.BASE_PATH ?? "/sponsorkit.io").replace(/\/+$/, "");
+/** API origin the build calls (NEXT_PUBLIC_SPONSORKIT_API_BASE, default https://api.sponsorkit.io). */
+export const API = (process.env.NEXT_PUBLIC_SPONSORKIT_API_BASE ?? "https://api.sponsorkit.io").replace(/\/+$/, "");
+
+/** Root-relative URL of a site path under the base path: `p("/connect/?…")` → `/sponsorkit.io/connect/?…`. */
+export function p(path: string): string {
+  return `${BASE_PATH}${path}`;
+}
+
 export const CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 export const CODE = "skc_AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8";
 
@@ -40,28 +50,47 @@ export const opencollective: TargetInfo = {
   tiers: [],
 };
 
+/** A request the page sent to `/api/oauth/*`. */
+export interface OAuthRequest {
+  method: string;
+  url: string;
+  /** Request body (form-encoded for a start), or null. */
+  body: string | null;
+  headers: Record<string, string>;
+}
+
 export interface ApiMock {
   /** Every /api/v1/targets query string seen. */
   targetQueries: string[];
+  /** Every request to /api/oauth/* (sign-in starts). */
+  oauth: OAuthRequest[];
 }
 
 /**
- * Mocks `/api/v1/*`, provider avatars, `/api/oauth/*` and the external provider checkout pages
- * for the whole context (so popups are covered too).
+ * Mocks the API origin (`/api/v1/*` with CORS, `/api/oauth/*`), provider avatars and the external
+ * provider checkout pages for the whole context (so popups are covered too).
  */
 export async function mockApi(context: BrowserContext, infos: TargetInfo[] = [github, opencollective]): Promise<ApiMock> {
-  const mock: ApiMock = { targetQueries: [] };
-  await context.route("**/api/v1/targets?*", async (route: Route) => {
+  const mock: ApiMock = { targetQueries: [], oauth: [] };
+  await context.route(`${API}/api/v1/targets?*`, async (route: Route) => {
     const url = new URL(route.request().url());
     mock.targetQueries.push(url.search);
     const wanted = new Set<string>();
     for (const [k, v] of url.searchParams) wanted.add(`${k}:${v}`);
     const body: TargetsResponse = { targets: infos.filter((i) => wanted.has(i.target)) };
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+    // Cross-origin fetch from the site: the API answers with CORS `*` (PROTOCOL §3).
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify(body),
+    });
   });
-  await context.route("**/api/oauth/**", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>oauth start</title><h1>OAuth start</h1>" }),
-  );
+  await context.route(`${API}/api/oauth/**`, async (route) => {
+    const req = route.request();
+    mock.oauth.push({ method: req.method(), url: req.url(), body: req.postData(), headers: await req.allHeaders() });
+    await route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>oauth start</title><h1>OAuth start</h1>" });
+  });
   await context.route(/^https:\/\/(avatars\.githubusercontent\.com|images\.opencollective\.com)\//, (route) =>
     route.fulfill({ status: 200, contentType: "image/png", body: PNG }),
   );

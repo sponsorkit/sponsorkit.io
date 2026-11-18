@@ -37,9 +37,16 @@ useless to anyone else. How a code is delivered is constrained too:
 - **Loopback:** only to `http://127.0.0.1:<port>/callback` or `http://[::1]:<port>/callback`.
 - **Paste-back:** shown to the person, who pastes it into the app that is waiting for it.
 
-Provider sign-in only starts from the consent screen: when the browser reports (through Fetch Metadata) that the
-request came from another site or was typed in, the service refuses it and links to the consent screen instead.
-A crafted link can't skip what the supporter is agreeing to.
+Provider sign-in only starts from the consent screen. The consent page (on the Sponsorkit website) starts it with
+a form POST to the API, and the API accepts the start only when the browser's `Origin` header names the website's
+origin, which no other site can forge. A link, a redirect, a typed-in URL or a form on another site is refused
+with a page that links to the consent screen instead, and nothing is started. The consent page also refuses to
+show its sign-in buttons inside a frame. A crafted link can't skip what the supporter is agreeing to.
+
+The short-lived `__Host-` cookie that binds the OAuth state to the browser is set by the API on its own domain,
+in a top-level navigation, so it is a first-party cookie and blocking third-party cookies doesn't affect it. The
+details, including the residual risks, are in the
+[wire protocol](https://github.com/sponsorkit/sponsorkit.io/blob/main/docs/PROTOCOL.md#security-cross-site-consent-start).
 
 ## What a session token can do
 

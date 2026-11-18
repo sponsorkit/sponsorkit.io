@@ -17,7 +17,7 @@ public sealed class VerifySessionOptions
     /// <summary>The Open Collective slug that receives contributions.</summary>
     public string? OpenCollective { get; set; }
 
-    /// <summary>The Sponsorkit origin. Default <c>https://sponsorkit.io</c>.</summary>
+    /// <summary>The Sponsorkit API origin. Default <c>https://api.sponsorkit.io</c>.</summary>
     public string? ApiBaseUrl { get; set; }
 
     /// <summary>The HTTP client to use. Default: a shared internal client.</summary>

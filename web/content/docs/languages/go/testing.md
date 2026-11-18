@@ -308,7 +308,8 @@ func TestServesCacheWhenTheAPIFails(t *testing.T) {
 
 The SDK's own test suite runs the language-neutral conformance scenarios against a fake Sponsorkit API,
 `sdks/conformance/server.ts` (run it with `bun sdks/conformance/server.ts --port 0`). It also serves
-non-interactive `/connect` and `/checkout` pages, so you can exercise sign-in and checkout end to end; see
+non-interactive `/connect/` and `/checkout/` pages (with only `APIBaseURL` set, `SiteBaseURL` defaults to it), so
+you can exercise sign-in and checkout end to end; see
 `sdks/conformance/README.md` in the repository. To test against a real API you control, see
 [self-hosting](../../reference-http/self-hosting.md).
 

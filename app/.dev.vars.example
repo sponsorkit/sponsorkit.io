@@ -1,11 +1,11 @@
 # Copy to app/.dev.vars for `wrangler dev`. In production set each with `wrangler secret put <NAME>`.
 # Never commit real values.
 
-# GitHub OAuth App (callback URL: <origin>/api/oauth/github/callback)
+# GitHub OAuth App (callback URL: <PUBLIC_ORIGIN>/api/oauth/github/callback)
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 
-# Open Collective OAuth app (callback URL: <origin>/api/oauth/opencollective/callback)
+# Open Collective OAuth app (callback URL: <PUBLIC_ORIGIN>/api/oauth/opencollective/callback)
 OPENCOLLECTIVE_CLIENT_ID=
 OPENCOLLECTIVE_CLIENT_SECRET=
 
@@ -23,8 +23,25 @@ PAIRWISE_KEY=
 # (a fine-grained PAT with no permissions is enough). Never used for supporter data.
 GITHUB_METADATA_TOKEN=
 
-# Optional: public origin used to build OAuth callback URLs (defaults to the request origin).
-# PUBLIC_ORIGIN=https://sponsorkit.io
+# Public configuration (PROTOCOL §0.1). These are plain vars, not secrets: production values are in
+# wrangler.jsonc "vars". Values in .dev.vars override them for `wrangler dev`.
+#
+# PUBLIC_ORIGIN: the API origin, used to build OAuth callback URLs (unset: the request's origin).
+# SITE_BASE_URL: where the site lives (origin + base path); deliveries go to <SITE_BASE_URL>/connect/done/,
+#   consent links to <SITE_BASE_URL>/connect/ and /checkout/ (unset: PUBLIC_ORIGIN, i.e. single origin).
+# SITE_ORIGIN: the only Origin accepted by POST /api/oauth/:provider/start; must be the bare origin of
+#   SITE_BASE_URL (unset: derived from SITE_BASE_URL).
+#
+# Local development with the site on `next dev` (http://localhost:3000) and the Worker on wrangler dev
+# (http://localhost:8787). Note the __Host- nonce cookie needs a secure context; localhost counts.
+# PUBLIC_ORIGIN=http://localhost:8787
+# SITE_BASE_URL=http://localhost:3000
+# SITE_ORIGIN=http://localhost:3000
+#
+# Single-origin self-hosting (site and API behind one origin):
+# PUBLIC_ORIGIN=https://sponsorkit.example.com
+# SITE_BASE_URL=https://sponsorkit.example.com
+# SITE_ORIGIN=https://sponsorkit.example.com
 
 # Optional provider base URL overrides (tests / self-hosting):
 # GITHUB_OAUTH_BASE=https://github.com

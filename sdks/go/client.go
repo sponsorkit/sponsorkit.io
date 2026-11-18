@@ -19,8 +19,19 @@ import (
 // Version is the SDK version.
 const Version = "0.1.0"
 
-// DefaultAPIBaseURL is the Sponsorkit API origin.
-const DefaultAPIBaseURL = "https://sponsorkit.io"
+// DefaultAPIBaseURL is the Sponsorkit API origin, used for every API call
+// (/api/v1/...).
+const DefaultAPIBaseURL = "https://api.sponsorkit.io"
+
+// DefaultSiteBaseURL is the Sponsorkit site (origin plus base path), used for
+// every page URL: /connect/, /checkout/ and CheckoutURL.
+const DefaultSiteBaseURL = "https://sponsorkit.github.io/sponsorkit.io"
+
+// Page paths on the site. Always the trailing-slash form (PROTOCOL §7).
+const (
+	connectPath  = "/connect/"
+	checkoutPath = "/checkout/"
+)
 
 const (
 	defaultCacheTTL        = time.Hour
@@ -71,8 +82,15 @@ type Options struct {
 	StorageDir string
 	// Storage replaces the file storage entirely.
 	Storage Storage
-	// APIBaseURL overrides the API origin (self-hosting, tests).
+	// APIBaseURL overrides the API origin used for API calls (self-hosting,
+	// tests). Defaults to DefaultAPIBaseURL. Trailing slashes are trimmed.
 	APIBaseURL string
+	// SiteBaseURL overrides the site base URL (origin plus optional base path)
+	// used for the /connect/ and /checkout/ pages, CheckoutURL and the loopback
+	// redirect after a checkout sign-in. When empty it defaults to APIBaseURL if
+	// that is set (single-origin self-hosting, tests), else to
+	// DefaultSiteBaseURL. Trailing slashes are trimmed.
+	SiteBaseURL string
 	// HTTPClient is used for all API calls. Defaults to http.DefaultClient's
 	// transport; RequestTimeout applies whichever client is used.
 	HTTPClient *http.Client
@@ -143,6 +161,7 @@ type Client struct {
 	param         string
 	hash          string
 	apiBaseURL    string
+	siteBaseURL   string
 	appName       string
 	cacheTTL      time.Duration
 	pollInterval  time.Duration
@@ -249,7 +268,7 @@ func New(opts Options) (*Client, error) {
 	if len(c.appName) > maxAppNameLength {
 		return nil, newError(CodeInvalidConfig, "appName must be at most 64 characters", nil)
 	}
-	if c.apiBaseURL, err = normalizeBaseURL(opts.APIBaseURL); err != nil {
+	if c.apiBaseURL, c.siteBaseURL, err = resolveBaseURLs(opts.APIBaseURL, opts.SiteBaseURL); err != nil {
 		return nil, err
 	}
 	switch {
@@ -335,15 +354,110 @@ func New(opts Options) (*Client, error) {
 	return c, nil
 }
 
+// normalizeBaseURL validates the API base URL; empty means DefaultAPIBaseURL.
 func normalizeBaseURL(raw string) (string, error) {
 	if raw == "" {
 		return DefaultAPIBaseURL, nil
 	}
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return "", newError(CodeInvalidConfig, fmt.Sprintf("invalid APIBaseURL %q", raw), err)
+	return parseBaseURL("APIBaseURL", raw)
+}
+
+// resolveBaseURLs applies the PROTOCOL §7 defaulting rule: an empty option is
+// unset; the site falls back to the API base URL when only that is set, and
+// otherwise to DefaultSiteBaseURL.
+func resolveBaseURLs(apiRaw, siteRaw string) (api, site string, err error) {
+	if api, err = normalizeBaseURL(apiRaw); err != nil {
+		return "", "", err
 	}
-	return u.Scheme + "://" + u.Host + strings.TrimRight(u.Path, "/"), nil
+	switch {
+	case siteRaw != "":
+		if site, err = parseBaseURL("SiteBaseURL", siteRaw); err != nil {
+			return "", "", err
+		}
+	case apiRaw != "":
+		site = api
+	default:
+		site = DefaultSiteBaseURL
+	}
+	return api, site, nil
+}
+
+// parseBaseURL validates and normalizes a base URL (an origin plus an
+// optional base path) for the option called name.
+//
+// It applies the same normalization as the other SDKs (WHATWG URL style):
+// leading and trailing C0 controls and spaces are ignored, the scheme and host
+// are lowercased, a default port (:80 for http, :443 for https) is dropped,
+// dot segments are resolved, the path keeps its percent-encoding, and trailing
+// slashes are trimmed. Credentials, a query or a fragment are rejected with
+// CodeInvalidConfig, as is anything that is not an absolute http(s) URL.
+func parseBaseURL(name, raw string) (string, error) {
+	invalid := func(err error) (string, error) {
+		return "", newError(CodeInvalidConfig, fmt.Sprintf("invalid %s %q", name, raw), err)
+	}
+	u, err := url.Parse(strings.TrimFunc(raw, func(r rune) bool { return r <= 0x20 }))
+	if err != nil {
+		return invalid(err)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if (scheme != "http" && scheme != "https") || u.Opaque != "" || u.Host == "" {
+		return invalid(nil)
+	}
+	if u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return "", newError(CodeInvalidConfig,
+			fmt.Sprintf("%s must be an origin plus an optional path (no credentials, query or fragment): %q", name, raw), nil)
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return invalid(nil)
+	}
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]" // IPv6 literal
+	}
+	if port := u.Port(); port != "" {
+		n, perr := strconv.Atoi(port)
+		if perr != nil || n > 65535 {
+			return invalid(perr)
+		}
+		if !(scheme == "http" && n == 80) && !(scheme == "https" && n == 443) {
+			host += ":" + strconv.Itoa(n)
+		}
+	}
+	return scheme + "://" + host + strings.TrimRight(removeDotSegments(u.EscapedPath()), "/"), nil
+}
+
+// removeDotSegments resolves "." and ".." segments (including their
+// percent-encoded forms) in an escaped absolute path, as WHATWG URL parsing does.
+func removeDotSegments(p string) string {
+	if p == "" {
+		return ""
+	}
+	segs := strings.Split(strings.TrimPrefix(p, "/"), "/")
+	out := make([]string, 0, len(segs))
+	for i, s := range segs {
+		last := i == len(segs)-1
+		switch strings.ToLower(s) {
+		case ".", "%2e":
+			if last {
+				out = append(out, "")
+			}
+		case "..", ".%2e", "%2e.", "%2e%2e":
+			if len(out) > 0 {
+				out = out[:len(out)-1]
+			}
+			if last {
+				out = append(out, "")
+			}
+		default:
+			out = append(out, s)
+		}
+	}
+	return "/" + strings.Join(out, "/")
+}
+
+// siteURL returns <siteBaseURL><path>?<q>.
+func (c *Client) siteURL(path string, q url.Values) string {
+	return c.siteBaseURL + path + "?" + q.Encode()
 }
 
 // Targets returns the canonical target strings, e.g. ["github:octocat"].

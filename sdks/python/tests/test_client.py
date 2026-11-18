@@ -90,6 +90,18 @@ def make(api: Api | None = None, **kw: Any) -> Sponsorkit:
         {},
         {"github": "-bad"},
         {"github": "ok", "api_base_url": "ftp://x"},
+        {"github": "ok", "site_base_url": "ftp://x"},
+        {"github": "ok", "site_base_url": "sponsorkit.github.io"},
+        {"github": "ok", "site_base_url": "https://example.com/?x=1"},
+        {"github": "ok", "site_base_url": "https://example.com/#x"},
+        {"github": "ok", "site_base_url": "https://example.com/base?"},
+        {"github": "ok", "site_base_url": "https://u:p@example.com/"},
+        {"github": "ok", "site_base_url": "https://example.com/a b"},
+        {"github": "ok", "site_base_url": "https://example.com:99999"},
+        {"github": "ok", "site_base_url": "   "},
+        {"github": "ok", "api_base_url": "https://example.com/?x=1"},
+        {"github": "ok", "api_base_url": "https://example.com/#x"},
+        {"github": "ok", "api_base_url": "https://u@example.com"},
         {"github": "ok", "sign_in_method": "fax"},
         {"github": "ok", "app_name": "x" * 65},
         {"github": "ok", "mock": "platinum"},
@@ -121,13 +133,55 @@ def test_env_flag_semantics(value: str, disabled: bool) -> None:
     assert make(env={"SPONSORKIT_DISABLE": value}).disabled is disabled
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "api", "site"),
+    [
+        ({}, "https://api.sponsorkit.io", "https://sponsorkit.github.io/sponsorkit.io"),
+        (
+            {"api_base_url": "", "site_base_url": ""},
+            "https://api.sponsorkit.io",
+            "https://sponsorkit.github.io/sponsorkit.io",
+        ),
+        ({"api_base_url": "http://h:1//"}, "http://h:1", "http://h:1"),
+        ({"api_base_url": "http://h:1", "site_base_url": ""}, "http://h:1", "http://h:1"),
+        (
+            {"api_base_url": "http://h:1", "site_base_url": "http://s:2/base/"},
+            "http://h:1",
+            "http://s:2/base",
+        ),
+        ({"site_base_url": "http://s:2/base"}, "https://api.sponsorkit.io", "http://s:2/base"),
+        # Surrounding whitespace is trimmed; scheme and host are lowercased; default ports dropped.
+        (
+            {"site_base_url": " https://example.com/base "},
+            "https://api.sponsorkit.io",
+            "https://example.com/base",
+        ),
+        (
+            {
+                "api_base_url": "\tHTTP://API.Example.COM:443/ ",
+                "site_base_url": "HTTPS://Example.COM:8443/Base/",
+            },
+            "http://api.example.com:443",
+            "https://example.com:8443/Base",
+        ),
+        ({"api_base_url": "https://h:443/"}, "https://h", "https://h"),
+        ({"api_base_url": "http://[::1]:8787"}, "http://[::1]:8787", "http://[::1]:8787"),
+    ],
+)
+def test_base_url_defaulting(kwargs: dict[str, Any], api: str, site: str) -> None:
+    """PROTOCOL §7: the site falls back to a set api_base_url; "" counts as unset."""
+    sk = make(env={"SPONSORKIT_DISABLE": "1"}, **kwargs)
+    assert sk.checkout_url().startswith(f"{site}/checkout/?targets=")
+    assert (sk._api, sk._site) == (api, site)
+
+
 def test_properties_and_checkout_url_validation(tmp_path: Path) -> None:
     sk = make(storage_dir=tmp_path / "s", api_base_url="http://example.test/")
     assert sk.targets == ("github:sponsorkit-conformance", "opencollective:sponsorkit-conformance")
     assert sk.targets_hash == HASH
     assert (
         sk.checkout_url()
-        == f"http://example.test/checkout?targets={sk.targets_param.replace(':', '%3A').replace(',', '%2C')}"
+        == f"http://example.test/checkout/?targets={sk.targets_param.replace(':', '%3A').replace(',', '%2C')}"
     )
     for bad in (
         {"amount": -1},
@@ -341,7 +395,9 @@ def test_disabled_does_nothing(tmp_path: Path) -> None:
     with pytest.raises(SponsorkitError) as e:
         sk.open_checkout()
     assert e.value.code == "disabled"
-    assert sk.checkout_url(frequency="monthly").startswith("https://sponsorkit.io/checkout?")
+    assert sk.checkout_url(frequency="monthly").startswith(
+        "https://sponsorkit.github.io/sponsorkit.io/checkout/?"
+    )
     assert not (tmp_path / "s").exists()
 
 

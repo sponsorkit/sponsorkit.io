@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Provider, WindowMessage } from "@sponsorkit/shared";
 import { describeOffer, FREQUENCY_LABEL, planCheckout, PROVIDER_LABEL, type CheckoutOptions, type CheckoutPlan, type ProviderOption } from "@/lib/checkout";
 import { buildContinue, parseCheckoutParams, type CheckoutParams, type ParseResult } from "@/lib/params";
+import { browserSiteBaseUrl } from "@/lib/site";
 import { AlertIcon, ArrowRightIcon, HeartIcon, ProviderIcon } from "../icons";
 import { Consent, InvalidLink, Loading } from "./consent";
 import { Avatar, displayName } from "./targets";
@@ -22,7 +23,7 @@ function notifyOpener(origin: string | undefined, provider: Provider): void {
   }
 }
 
-/** `/checkout` (PROTOCOL §4.6). */
+/** `/checkout/` (PROTOCOL §4.6). */
 export function CheckoutClient() {
   const [parsed, setParsed] = useState<ParseResult<CheckoutParams> | null>(null);
 
@@ -63,7 +64,7 @@ function CheckoutChoose({ params }: { params: CheckoutParams }) {
 
   const plan: CheckoutPlan | null = useMemo(() => {
     if (targetsState.status !== "ready") return null;
-    return planCheckout(params.targets, targetsState.infos, opts, window.location.origin);
+    return planCheckout(params.targets, targetsState.infos, opts, browserSiteBaseUrl());
   }, [targetsState, params.targets, opts]);
 
   const redirected = useRef(false);

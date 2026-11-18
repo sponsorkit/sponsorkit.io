@@ -9,7 +9,7 @@ Quickstart::
     if not fc.active():
         print(f"Support my-cli: {sk.checkout_url(frequency='monthly')}")
 
-See https://sponsorkit.io/docs for the full documentation.
+See https://sponsorkit.github.io/sponsorkit.io/docs/ for the full documentation.
 """
 
 from ._state import reset_process_state

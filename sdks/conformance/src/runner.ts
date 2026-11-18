@@ -5,8 +5,9 @@
  *
  * TypeScript/JavaScript SDKs can use it directly:
  *
- *   const server = await spawnConformanceServer();
- *   for (const s of loadScenarios().scenarios) test(s.id, () => runScenario(s, adapter, { baseUrl: server.baseUrl, storageRoot }));
+ *   const server = await startServer();
+ *   for (const s of loadScenarios(json).scenarios)
+ *     test(s.id, () => runScenario(s, adapter, { baseUrl: server.baseUrl, siteBaseUrl: server.siteBaseUrl, storageRoot, variables }));
  */
 import { chmod, mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";
@@ -56,7 +57,13 @@ export interface SdkAdapter {
 }
 
 export interface RunContext {
+  /** The fake server's API base URL (`$BASE_URL`). */
   baseUrl: string;
+  /**
+   * The fake server's site base URL (`$SITE_BASE_URL`): `http://127.0.0.1:<sitePort>/sponsorkit.io`.
+   * When omitted, the runner reads it from `GET /__control` -> `siteBaseUrl`.
+   */
+  siteBaseUrl?: string;
   /** The `variables` map of scenarios.json (constant entries are substituted; "runtime:" entries are computed). */
   variables: Record<string, string>;
   /** An existing directory; each scenario gets a fresh, not-yet-existing $STORAGE_DIR below it. */
@@ -91,7 +98,10 @@ class Control {
     return data;
   }
   state() {
-    return this.call<{ lastSessionToken: string | null; issuedSessionTokens: string[]; lastRequestSeq: number }>("GET", "/__control");
+    return this.call<{ lastSessionToken: string | null; issuedSessionTokens: string[]; lastRequestSeq: number; siteBaseUrl?: string | null }>(
+      "GET",
+      "/__control",
+    );
   }
   async requests(since: number): Promise<LoggedRequest[]> {
     return (await this.call<{ requests: LoggedRequest[] }>("GET", `/__control/requests?since=${since}`)).requests;
@@ -132,10 +142,14 @@ export async function runScenario(scenario: ParsedScenario, adapter: SdkAdapter,
   await control.call("POST", "/__control", { scenario: scenario.id });
   await adapter.resetProcessState();
   const unreachable = (await control.call<{ baseUrl: string }>("GET", "/__control/unreachable")).baseUrl;
-  const startSeq = (await control.state()).lastRequestSeq;
+  const initial = await control.state();
+  const startSeq = initial.lastRequestSeq;
+  const siteBaseUrl = ctx.siteBaseUrl ?? initial.siteBaseUrl;
+  if (!siteBaseUrl) throw new Error("No site base URL: pass RunContext.siteBaseUrl or use a fake server that reports GET /__control -> siteBaseUrl");
 
   const staticVars: Vars = {
     $BASE_URL: ctx.baseUrl,
+    $SITE_BASE_URL: siteBaseUrl,
     $STORAGE_DIR: storageDir,
     $UNREACHABLE_BASE_URL: unreachable,
   };

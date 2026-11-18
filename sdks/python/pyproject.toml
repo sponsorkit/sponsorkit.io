@@ -29,9 +29,9 @@ dependencies = ["httpx>=0.24,<1"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.10", "jsonschema>=4.20"]
 
 [project.urls]
-Homepage = "https://sponsorkit.io"
+Homepage = "https://sponsorkit.github.io/sponsorkit.io/"
 Repository = "https://github.com/sponsorkit/sponsorkit.io"
-Documentation = "https://sponsorkit.io/docs"
+Documentation = "https://sponsorkit.github.io/sponsorkit.io/docs/"
 Issues = "https://github.com/sponsorkit/sponsorkit.io/issues"
 
 [tool.hatch.build.targets.wheel]

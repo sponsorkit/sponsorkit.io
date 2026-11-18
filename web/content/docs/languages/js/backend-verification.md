@@ -97,7 +97,7 @@ function verifySession(
 
 | Option | Type | Default | |
 |---|---|---|---|
-| `apiBaseUrl` | `string` | `"https://sponsorkit.io"` | API origin (self-hosting, tests). |
+| `apiBaseUrl` | `string` | `"https://api.sponsorkit.io"` | API origin (self-hosting, tests). |
 | `fetch` | `FetchLike` | global `fetch` | Custom `fetch`. |
 | `signal` | `AbortSignal` | none | Aborts the request. |
 | `requestTimeout` | `number` | `30` | Seconds before the request is abandoned with `network_error`; `0` disables the limit. |

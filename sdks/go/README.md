@@ -3,7 +3,7 @@
 Build financial contributions (GitHub Sponsors and Open Collective) directly into your Go program. There is no Sponsorkit account, API key, dashboard or webhook: you name the account(s) you receive sponsorships on, and write your own rule.
 
 - **Module:** `github.com/sponsorkit/sponsorkit.io/sdks/go` (package `sponsorkit`)
-- **Version:** 0.1.0 · **License:** MIT · **Homepage:** <https://sponsorkit.io> · **Source:** <https://github.com/sponsorkit/sponsorkit.io>
+- **Version:** 0.1.0 · **License:** MIT · **Homepage:** <https://sponsorkit.github.io/sponsorkit.io> · **Source:** <https://github.com/sponsorkit/sponsorkit.io>
 - **Requirements:** Go 1.23+, standard library only.
 
 ## Install
@@ -78,7 +78,8 @@ All methods are safe for concurrent use. Methods that may do I/O take a `context
 | `Mock` | – | `sponsorkit.MockPreset(name)` or `sponsorkit.MockContributions(...)`. See [Mock mode](#mock-mode-and-testing). |
 | `StorageDir` | `os.UserConfigDir()/sponsorkit` | Where the state file lives. If there is no per-user config directory (HOME and XDG_CONFIG_HOME unset, or not absolute paths), state is kept in process memory only: nothing is written to the working directory and `New` still succeeds. |
 | `Storage` | `&DirStorage{Dir: StorageDir}` | Replace file storage (e.g. with a keychain-backed implementation). |
-| `APIBaseURL` | `https://sponsorkit.io` | API origin (self-hosting, tests). |
+| `APIBaseURL` | `https://api.sponsorkit.io` | API origin, used for every API call (`/api/v1/…`). Self-hosting, tests. Trailing slashes are trimmed. |
+| `SiteBaseURL` | `https://sponsorkit.github.io/sponsorkit.io`, **or `APIBaseURL` when only that is set** | Site base URL (origin plus optional base path), used for every page URL: `<SiteBaseURL>/connect/`, `<SiteBaseURL>/checkout/`, `CheckoutURL` and the loopback redirect after a checkout sign-in. An empty string counts as unset; trailing slashes are trimmed. Setting only `APIBaseURL` keeps single-origin self-hosting working. |
 | `HTTPClient` | `&http.Client{}` | HTTP client for API calls. `RequestTimeout` applies whichever client you pass. |
 | `RequestTimeout` | 30 s | Bounds every HTTP request, including reading the response. `sponsorkit.NoRequestTimeout` (any negative value) disables it; the zero value means the 30 s default (the protocol's `requestTimeout: 0` is `NoRequestTimeout` in Go). A timeout is a network error: `GetFinancialContribution` serves the stale cache, `SignIn` returns `network_error`. |
 | `OpenBrowser` | `OpenSystemBrowser` | Opens a URL (`xdg-open` / `open` / `rundll32`, never a shell). An opener that exits non-zero within 1.5 s counts as a failure, so `SignInAuto` falls back to paste-back; one still running after 1.5 s counts as opened. The loopback callback is accepted while `OpenBrowser` is still running. |
@@ -100,8 +101,8 @@ All methods are safe for concurrent use. Methods that may do I/O take a `context
 | `SignIn(ctx, ...SignInOptions) (*Result, error)` | Signs in; when already signed in, adds an identity (`SignInOptions{Provider: sponsorkit.OpenCollective}`). Cancel `ctx` to abandon it (`cancelled`); `SignInTimeout` bounds the wait (`timeout`). If the stored session turns out to be dead while adding an identity, it is cleared and the exchange is retried once as a fresh sign-in. |
 | `IsSignedIn() bool` | Whether a session token is stored. No network. |
 | `SessionToken() string` | The stored `sks_…` token, to forward to your backend. |
-| `OpenCheckout(ctx, CheckoutOptions) (*CheckoutResult, error)` | Signs in first if needed, opens `/checkout`, then polls until a new or changed contribution appears. `CheckoutOptions.Timeout` (default 10 min) covers only polling; the sign-in phase uses `SignInTimeout` and returns `timeout` when it elapses. Cancelling `ctx` in either phase, or the polling timeout, resolves `Status: "unknown"`. |
-| `CheckoutURL(CheckoutOptions) (string, error)` | Synchronous link to `/checkout` without sign-in; no network or disk. Returns `invalid_config` for an unconfigured provider or an invalid frequency, amount or currency. |
+| `OpenCheckout(ctx, CheckoutOptions) (*CheckoutResult, error)` | Signs in first if needed, opens `<SiteBaseURL>/checkout/`, then polls until a new or changed contribution appears. `CheckoutOptions.Timeout` (default 10 min) covers only polling; the sign-in phase uses `SignInTimeout` and returns `timeout` when it elapses. Cancelling `ctx` in either phase, or the polling timeout, resolves `Status: "unknown"`. |
+| `CheckoutURL(CheckoutOptions) (string, error)` | Synchronous link to `<SiteBaseURL>/checkout/?…` without sign-in; no network or disk. Returns `invalid_config` for an unconfigured provider or an invalid frequency, amount or currency. |
 | `SignOut(ctx) error` | Deletes the token and cache locally. Nag state is kept. |
 | `Nag(NagOptions) *Nag` | See [Nag helper](#nag-helper). |
 | `Targets() []string`, `TargetsParam() string`, `Disabled() bool`, `IsMock() bool` | Introspection. |
@@ -145,8 +146,8 @@ if errors.As(err, &skErr) && skErr.Code == sponsorkit.CodeDisabled { /* … */ }
 
 ## Sign-in flows
 
-- **Loopback** (default with a display): listens on `127.0.0.1:<random>`, opens `https://sponsorkit.io/connect?…&delivery=loopback` in the browser and waits for the callback, up to `SignInTimeout` (5 minutes by default).
-- **Paste-back** (SSH, containers, no display, when `127.0.0.1` can't be bound, or when the browser can't be opened): prints a `…&delivery=paste` URL to stderr; the user opens it on any device and pastes the code back.
+- **Loopback** (default with a display): listens on `127.0.0.1:<random>`, opens `https://sponsorkit.github.io/sponsorkit.io/connect/?…&delivery=loopback` (the `SiteBaseURL`) in the browser and waits for the callback, up to `SignInTimeout` (5 minutes by default). During `OpenCheckout` the callback then redirects the browser to `<SiteBaseURL>/checkout/?…&step=choose`.
+- **Paste-back** (SSH, containers, no display, when `127.0.0.1` can't be bound, or when the browser can't be opened): prints a `<SiteBaseURL>/connect/?…&delivery=paste` URL to stderr; the user opens it on any device and pastes the code back.
 
 A `GET /callback` without a non-empty `code` or `error` gets `400` and the loopback receiver keeps waiting.
 
@@ -207,7 +208,7 @@ case sponsorkit.CodeNetworkError:
 }
 ```
 
-`VerifySession` calls `GET /api/v1/contributions` with the token and checks that the session's targets equal yours. It uses no local storage or cache. Options: `WithAPIBaseURL`, `WithHTTPClient`, `WithRequestTimeout` (default 30 s; `sponsorkit.NoRequestTimeout` disables it; a timeout returns `network_error`).
+`VerifySession` calls `GET /api/v1/contributions` with the token and checks that the session's targets equal yours. It uses no local storage or cache. Options: `WithAPIBaseURL` (default `https://api.sponsorkit.io`), `WithHTTPClient`, `WithRequestTimeout` (default 30 s; `sponsorkit.NoRequestTimeout` disables it; a timeout returns `network_error`).
 
 ## Local storage
 
@@ -224,7 +225,7 @@ go vet ./...
 gofmt -l .
 ```
 
-`TestConformance` starts `bun ../conformance/server.ts`, then runs every scenario in `sdks/conformance/scenarios.json` as a subtest named after its id, e.g. `go test -run 'TestConformance/checkout-signs-in-first'`. It sets configure's `processEnv` in the real process environment and restores it after each scenario, maps `cancelAfter` to a cancelled `context.Context`, and matches `expect.error` against `{code, retryAfter}` from `*sponsorkit.Error`. A `checkoutUrl` step with `amount: 0` (or a fractional amount) is logged and treated as passed, because `CheckoutOptions.Amount` is an `int64` in which 0 means unset.
+`TestConformance` starts `bun ../conformance/server.ts` (an API listener at `$BASE_URL` that also serves the pages, plus a separate site listener whose base URL `$SITE_BASE_URL` it reads from `GET /__control` → `siteBaseUrl`), then runs every scenario in `sdks/conformance/scenarios.json` as a subtest named after its id, e.g. `go test -run 'TestConformance/checkout-signs-in-first'`. It sets configure's `processEnv` in the real process environment and restores it after each scenario, maps `cancelAfter` to a cancelled `context.Context`, and passes `configure.siteBaseUrl` as `SiteBaseURL` only when given, checks the optional `server` (`"api"` or `"site"`) of expected requests, and matches `expect.error` against `{code, retryAfter}` from `*sponsorkit.Error`. A `checkoutUrl` step with `amount: 0` (or a fractional amount) is logged and treated as passed, because `CheckoutOptions.Amount` is an `int64` in which 0 means unset.
 
 The website's API reference (`/docs/reference/go`) is generated from the doc comments by `scripts/gen-docs.sh`, which runs the standard-library generator in `scripts/gendocs` (a separate module, so it is not part of the published package):
 

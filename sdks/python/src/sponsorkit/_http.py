@@ -15,7 +15,10 @@ import httpx
 from ._version import __version__
 from .errors import SponsorkitError
 
-DEFAULT_API_BASE_URL = "https://sponsorkit.io"
+DEFAULT_API_BASE_URL = "https://api.sponsorkit.io"
+"""Default ``api_base_url``: the Sponsorkit API origin (PROTOCOL §7)."""
+DEFAULT_SITE_BASE_URL = "https://sponsorkit.github.io/sponsorkit.io"
+"""Default ``site_base_url``: the Sponsorkit site (sign-in and checkout pages, PROTOCOL §7)."""
 USER_AGENT = f"sponsorkit-python/{__version__}"
 DEFAULT_HTTP_TIMEOUT = 30.0
 """Default per-request timeout in seconds (PROTOCOL §7.0); ``request_timeout=0`` disables it."""
@@ -45,14 +48,58 @@ def resolve_request_timeout(value: object, name: str = "request_timeout") -> flo
     return None if value == 0 else float(value)
 
 
-def normalize_base_url(url: str) -> str:
-    """Validate ``api_base_url`` (an origin, optionally with a path prefix) and strip trailing slashes."""
+def normalize_base_url(url: str, name: str = "api_base_url") -> str:
+    """Validate a base URL (an origin, optionally with a path prefix) and normalize it.
+
+    Surrounding whitespace is ignored; scheme and host are lowercased, a default port is dropped
+    and trailing slashes are trimmed. A query, fragment or userinfo is ``invalid_config``
+    (PROTOCOL §7: an origin plus an optional path), matching the other SDKs.
+    """
     if not isinstance(url, str):
-        raise SponsorkitError("invalid_config", "api_base_url must be a string")
-    parts = urlsplit(url)
-    if parts.scheme not in ("http", "https") or not parts.netloc:
-        raise SponsorkitError("invalid_config", f'api_base_url must be an http(s) URL, got "{url}"')
-    return url.rstrip("/")
+        raise SponsorkitError("invalid_config", f"{name} must be a string")
+    raw = url.strip()
+    try:
+        parts = urlsplit(raw)
+        port = parts.port
+    except ValueError:
+        raise SponsorkitError("invalid_config", f'Invalid {name} "{url}"') from None
+    scheme = parts.scheme.lower()
+    host = parts.hostname
+    if scheme not in ("http", "https") or not host:
+        raise SponsorkitError("invalid_config", f'{name} must be an http(s) URL, got "{url}"')
+    if (
+        parts.query
+        or parts.fragment
+        or "?" in raw
+        or "#" in raw
+        or parts.username is not None
+        or parts.password is not None
+        or any(c.isspace() or ord(c) < 0x20 or ord(c) == 0x7F for c in raw)
+    ):
+        raise SponsorkitError(
+            "invalid_config", f'{name} must be an origin plus an optional path, got "{url}"'
+        )
+    if ":" in host:
+        host = f"[{host}]"
+    if port is not None and port != (443 if scheme == "https" else 80):
+        host = f"{host}:{port}"
+    return f"{scheme}://{host}{parts.path.rstrip('/')}"
+
+
+def resolve_base_urls(api_base_url: str | None, site_base_url: str | None) -> tuple[str, str]:
+    """``(api, site)`` base URLs after the PROTOCOL §7 defaulting rule, trailing slashes trimmed.
+
+    ``None`` and ``""`` count as unset. An unset ``api_base_url`` is :data:`DEFAULT_API_BASE_URL`.
+    An unset ``site_base_url`` is ``api_base_url`` when that was set (single-origin self-hosting
+    and tests), else :data:`DEFAULT_SITE_BASE_URL`.
+    """
+    api = normalize_base_url(api_base_url) if api_base_url != "" and api_base_url is not None else None
+    site = (
+        normalize_base_url(site_base_url, "site_base_url")
+        if site_base_url != "" and site_base_url is not None
+        else None
+    )
+    return api or DEFAULT_API_BASE_URL, site or api or DEFAULT_SITE_BASE_URL
 
 
 def build_url(base: str, path: str, params: Mapping[str, str]) -> str:

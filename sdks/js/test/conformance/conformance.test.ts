@@ -31,6 +31,10 @@ afterAll(async () => {
 
 describe("conformance", () => {
   for (const scenario of file.scenarios) {
-    test(scenario.id, () => runScenario(scenario, nodeAdapter, { baseUrl: server.baseUrl, storageRoot, variables: file.variables }), 60_000);
+    test(
+      scenario.id,
+      () => runScenario(scenario, nodeAdapter, { baseUrl: server.baseUrl, siteBaseUrl: server.siteBaseUrl, storageRoot, variables: file.variables }),
+      60_000,
+    );
   }
 });

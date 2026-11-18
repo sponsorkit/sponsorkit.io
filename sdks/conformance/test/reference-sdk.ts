@@ -8,7 +8,11 @@ import { join } from "node:path";
 import {
   ContributionResult,
   InvalidTargetError,
+  SITE_PATHS,
   TokenResponse,
+  resolveBaseUrls,
+  siteUrl,
+  trimTrailingSlashes,
   targetToString,
   targetsFromOptions,
   targetsHash,
@@ -71,6 +75,9 @@ class ReferenceSdk implements SdkInstance {
   /** Mock mode keeps nag state in memory, per instance (PROTOCOL §7.1 item 14). */
   private readonly mockNags = new Map<string, { runs: number; lastShown: string | null }>();
   private readonly devChecks: boolean;
+  /** API origin and site base URL, after the PROTOCOL §7 defaulting rule. */
+  private readonly api: string;
+  private readonly site: string;
   private hash!: string;
 
   constructor(
@@ -95,6 +102,9 @@ class ReferenceSdk implements SdkInstance {
     }
     this.cacheTtl = Math.max(60, cfg.cacheTtl ?? 3600);
     this.devChecks = cfg.devChecks ?? isSet(cfg.env.SPONSORKIT_DEV_CHECKS);
+    const urls = resolveBaseUrls({ apiBaseUrl: cfg.apiBaseUrl, siteBaseUrl: cfg.siteBaseUrl });
+    this.api = urls.apiBaseUrl;
+    this.site = urls.siteBaseUrl;
   }
 
   async init(): Promise<this> {
@@ -134,7 +144,7 @@ class ReferenceSdk implements SdkInstance {
         const q = new URLSearchParams(this.targets.map((t) => [t.provider, t.account]));
         let res: Response;
         try {
-          res = await fetch(`${this.cfg.apiBaseUrl}/api/v1/targets?${q}`);
+          res = await fetch(`${this.api}/api/v1/targets?${q}`);
         } catch {
           return; // offline: skip the dev check
         }
@@ -189,7 +199,7 @@ class ReferenceSdk implements SdkInstance {
 
     let res: Response;
     try {
-      res = await fetch(`${this.cfg.apiBaseUrl}/api/v1/contributions`, { headers: { authorization: `Bearer ${stored.sessionToken}` } });
+      res = await fetch(`${this.api}/api/v1/contributions`, { headers: { authorization: `Bearer ${stored.sessionToken}` } });
     } catch {
       return fallback();
     }
@@ -255,7 +265,7 @@ class ReferenceSdk implements SdkInstance {
     const stored = await this.read();
     const post = async (sessionToken: string | null | undefined): Promise<Response> => {
       try {
-        return await fetch(`${this.cfg.apiBaseUrl}/api/v1/auth/token`, {
+        return await fetch(`${this.api}/api/v1/auth/token`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ code, codeVerifier: verifier, ...(sessionToken ? { sessionToken } : {}) }),
@@ -306,10 +316,10 @@ class ReferenceSdk implements SdkInstance {
     if (method === "loopback") {
       code = await this.loopback((redirectUri) => {
         const q = this.connectParams(challenge, { delivery: "loopback", redirect_uri: redirectUri, ...extra });
-        return `${this.cfg.apiBaseUrl}/connect?${q}`;
+        return siteUrl(this.site, SITE_PATHS.connect, q);
       }, signal);
     } else {
-      const url = `${this.cfg.apiBaseUrl}/connect?${this.connectParams(challenge, { delivery: "paste", ...extra })}`;
+      const url = siteUrl(this.site, SITE_PATHS.connect, this.connectParams(challenge, { delivery: "paste", ...extra }));
       code = (await this.hooks.promptForCode(url)).trim();
     }
     return this.exchange(code, verifier);
@@ -332,7 +342,7 @@ class ReferenceSdk implements SdkInstance {
     if (args.currency !== undefined && !/^[A-Z]{3}$/.test(args.currency)) throw new SponsorkitError("invalid_config", "currency must be ISO 4217");
     if (args.frequency !== undefined && !VALID_FREQUENCIES.includes(args.frequency))
       throw new SponsorkitError("invalid_config", "frequency must be one_time, monthly or yearly");
-    return `${this.cfg.apiBaseUrl}/checkout?${this.checkoutQuery(args)}`;
+    return siteUrl(this.site, SITE_PATHS.checkout, this.checkoutQuery(args));
   }
 
   async openCheckout(args: CheckoutArgs & { method?: "loopback" | "paste"; signal?: AbortSignal }) {
@@ -348,7 +358,7 @@ class ReferenceSdk implements SdkInstance {
     let baseline: ContributionResult;
     if (await this.isSignedIn()) {
       baseline = (await this.read()).cache?.result ?? (await this.getFinancialContribution({ cacheTtl: 0 }));
-      await this.hooks.openBrowser(`${this.cfg.apiBaseUrl}/checkout?${query}`);
+      await this.hooks.openBrowser(siteUrl(this.site, SITE_PATHS.checkout, query));
     } else {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
       const challenge = await pkceChallenge(verifier);
@@ -361,10 +371,10 @@ class ReferenceSdk implements SdkInstance {
         q.set("delivery", "loopback");
         q.set("redirect_uri", redirectUri);
         if (this.cfg.appName) q.set("app_name", this.cfg.appName);
-        return `${this.cfg.apiBaseUrl}/checkout?${q}`;
+        return siteUrl(this.site, SITE_PATHS.checkout, q);
           },
           args.signal,
-          `${this.cfg.apiBaseUrl}/checkout?${query}&step=choose`,
+          siteUrl(this.site, SITE_PATHS.checkout, `${query}&step=choose`),
         );
       } catch (e) {
         if (e instanceof SponsorkitError && e.code === "cancelled") return { status: "unknown" as const };
@@ -459,7 +469,7 @@ export const referenceAdapter: SdkAdapter = {
     }
     let res: Response;
     try {
-      res = await fetch(`${apiBaseUrl}/api/v1/contributions`, { headers: { authorization: `Bearer ${token}` } });
+      res = await fetch(`${trimTrailingSlashes(apiBaseUrl)}/api/v1/contributions`, { headers: { authorization: `Bearer ${token}` } });
     } catch {
       throw await networkError(null);
     }

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:root": "BASE_PATH= NEXT_PUBLIC_SPONSORKIT_API_BASE= next build",
     "serve": "node scripts/serve.mjs",
     "docs:generate": "bun scripts/docs-generate.ts",
     "docs:validate": "bun scripts/validate-generated.ts",

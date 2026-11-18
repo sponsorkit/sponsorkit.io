@@ -11,8 +11,10 @@ page explains it with examples.
 
 ## Conventions
 
-- **Base URL:** `https://sponsorkit.io`, or your own origin if you [self-host](self-hosting.md). Every path below
-  is relative to it.
+- **Base URL:** `https://api.sponsorkit.io`, or your own API origin if you [self-host](self-hosting.md). Every
+  path below is relative to it. The API is served on its own domain and serves nothing but `/api/v1/…` and
+  `/api/oauth/…`; the website, including the consent and checkout pages, is a separate static site at
+  `https://sponsorkit.github.io/sponsorkit.io` (see [Browser pages and OAuth endpoints](#browser-pages-and-oauth-endpoints)).
 - **Format:** requests and responses are JSON. Amounts are integers in minor units with an ISO 4217 currency
   (`{ "value": 500, "currency": "USD" }` is $5.00). Timestamps are ISO 8601 strings.
 - **Authentication:** only `GET /api/v1/contributions` needs it, as `Authorization: Bearer sks_…`. There are no
@@ -20,7 +22,9 @@ page explains it with examples.
 - **Request ID:** every response carries a `Sponsorkit-Request-Id` header. Include it when you report a problem.
 - **CORS:** `/api/v1/*` allows any origin (`Access-Control-Allow-Origin: *`) without credentials. Allowed request
   headers are `Authorization` and `Content-Type`; exposed response headers are `Sponsorkit-Session`,
-  `Sponsorkit-Request-Id` and `Retry-After`. So browsers can call the API directly.
+  `Sponsorkit-Request-Id` and `Retry-After`. So browsers can call the API directly; the website's own pages call
+  it the same way, cross-origin. The `/api/oauth/*` endpoints are only reached by top-level browser navigations
+  and send no CORS headers.
 
 ### Errors
 
@@ -29,7 +33,7 @@ Errors use [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details wi
 
 ```json title="400 Bad Request"
 {
-  "type": "https://sponsorkit.io/docs#error-contract",
+  "type": "https://sponsorkit.github.io/sponsorkit.io/docs/reference-http/http-api/#errors",
   "title": "Invalid target",
   "status": 400,
   "code": "invalid_target",
@@ -37,7 +41,8 @@ Errors use [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details wi
 }
 ```
 
-Branch on `code`, not on `title` or `detail`, which are for humans and may change.
+Branch on `code`, not on `type`, `title` or `detail`. `type` links to this section of the docs (on a
+self-hosted instance, to its own site), and `title` and `detail` are for humans and may change.
 
 | Code | Status | Meaning |
 |---|---|---|
@@ -46,7 +51,7 @@ Branch on `code`, not on `title` or `detail`, which are for humans and may chang
 | `invalid_code` | 400 | The sign-in code is malformed, expired or tampered with, or the code verifier doesn't match. |
 | `session_invalid` | 401 | The session token is missing, malformed, tampered with, expired or sealed with an unknown key. |
 | `rate_limited` | 429 | Too many requests. Wait for the number of seconds in `Retry-After`. |
-| `not_found` | 404 | No such endpoint. |
+| `not_found` | 404 | No such endpoint. The API serves no pages or static files, so every path outside `/api/` is a `404` too. |
 | `internal` | 500, 502 | Something went wrong on the server (500), or a provider couldn't be reached (502). |
 
 ### Rate limits
@@ -75,7 +80,7 @@ your targets exist. No authentication.
 trimmed and lowercased.
 
 ```bash
-curl "https://sponsorkit.io/api/v1/targets?github=octocat&opencollective=my-project"
+curl "https://api.sponsorkit.io/api/v1/targets?github=octocat&opencollective=my-project"
 ```
 
 ```json title="200 OK"
@@ -157,7 +162,7 @@ started the sign-in, which holds the verifier, can exchange it.
 | `sessionToken` | string, optional | An existing session, to add this identity to it. |
 
 ```bash
-curl https://sponsorkit.io/api/v1/auth/token \
+curl https://api.sponsorkit.io/api/v1/auth/token \
   -H "Content-Type: application/json" \
   -d '{"code":"skc_…","codeVerifier":"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"}'
 ```
@@ -209,7 +214,7 @@ What the signed-in supporter (and the organizations they belong to) has contribu
 fetched live from GitHub and Open Collective with the supporter's own provider tokens.
 
 ```bash
-curl https://sponsorkit.io/api/v1/contributions \
+curl https://api.sponsorkit.io/api/v1/contributions \
   -H "Authorization: Bearer sks_AWkx…"
 ```
 
@@ -283,7 +288,7 @@ Responses carry `Cache-Control: no-store`.
 Whether the Worker can reach each provider. No authentication. The answer is cached in the Worker for 30 seconds.
 
 ```bash
-curl https://sponsorkit.io/api/v1/health
+curl https://api.sponsorkit.io/api/v1/health
 ```
 
 ```json title="200 OK"
@@ -294,16 +299,22 @@ Each provider is `"ok"` or `"degraded"`.
 
 ## Browser pages and OAuth endpoints
 
-Sign-in and checkout run in the browser, through two static pages and two Worker endpoints. SDKs only build the
-first URL; the rest is navigation.
+Sign-in and checkout run in the browser, through static pages on the **site**
+(`https://sponsorkit.github.io/sponsorkit.io`) and two endpoints on the **API** (`https://api.sponsorkit.io`).
+SDKs only build the first URL; the rest is navigation. Page URLs always end in `/`.
 
-| URL | What it does |
-|---|---|
-| `/connect?targets=…&challenge=…&delivery=…` | The consent page: shows the targets, who is asking and one button per provider. |
-| `/api/oauth/:provider/start?…` | Starts OAuth with GitHub or Open Collective. Only accepts navigations from the consent page. |
-| `/api/oauth/:provider/callback` | The provider's redirect target. Creates the sign-in code and delivers it to the app. |
-| `/connect/done` | Posts the code to the opener (popup flow) or shows it for paste-back. |
-| `/checkout?targets=…` | Signs in if a `challenge` is given, then picks a provider and redirects to it. |
+| Where | URL | What it does |
+|---|---|---|
+| Site | `/connect/?targets=…&challenge=…&delivery=…` | The consent page: shows the targets, who is asking and one button per provider. |
+| API | `POST /api/oauth/:provider/start` | Starts OAuth with GitHub or Open Collective. The consent page's button submits the sign-in parameters to it as a form. |
+| API | `GET /api/oauth/:provider/callback` | The provider's redirect target. Creates the sign-in code and delivers it to the app. |
+| Site | `/connect/done/` | Posts the code to the opener (popup flow) or shows it for paste-back. |
+| Site | `/checkout/?targets=…` | Signs in if a `challenge` is given, then picks a provider and redirects to it. |
+
+The start endpoint only accepts a form POST whose `Origin` header is exactly the site's origin
+(`https://sponsorkit.github.io`), which only the consent page can produce. Links, redirects, typed-in URLs and
+forms on other sites get an HTML `403` (or `405` for a `GET`) that links to the consent page, and nothing is
+started. The short-lived nonce cookie that binds the OAuth state to the browser is set on the API's domain.
 
 `delivery` is one of `web_message` (popup), `redirect`, `loopback` or `paste`. The parameters, the delivery
 rules and the checkout eligibility rules are summarized in [Wire protocol](protocol.md) and specified in

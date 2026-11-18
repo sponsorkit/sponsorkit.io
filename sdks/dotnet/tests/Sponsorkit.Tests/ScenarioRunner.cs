@@ -136,6 +136,8 @@ internal sealed class ScenarioRunner
             AppName = Str(args, "appName"),
             Mock = mock,
             ApiBaseUrl = Str(args, "apiBaseUrl"),
+            // Only when present (an empty string is present and passed through: the SDK treats it as unset).
+            SiteBaseUrl = Str(args, "siteBaseUrl"),
             StorageDirectory = Str(args, "storageDir"),
             // `env` is always passed: it replaces the process environment for the SPONSORKIT_* variables and CI.
             Environment = ((JsonObject)args["env"]!).ToDictionary(kv => kv.Key, kv => kv.Value!.GetValue<string>()),
@@ -353,8 +355,12 @@ internal sealed class ScenarioRunner
         await _server.CallAsync(HttpMethod.Post, "/__control", new JsonObject { ["scenario"] = Id });
         SponsorkitClient.ResetProcessState();
         var unreachable = (await _server.CallAsync(HttpMethod.Get, "/__control/unreachable"))["baseUrl"]!.GetValue<string>();
-        var startSeq = (await _server.CallAsync(HttpMethod.Get, "/__control"))["lastRequestSeq"]!.GetValue<int>();
+        var initial = await _server.CallAsync(HttpMethod.Get, "/__control");
+        var startSeq = initial["lastRequestSeq"]!.GetValue<int>();
         _static["$BASE_URL"] = _server.BaseUrl;
+        _static["$SITE_BASE_URL"] = initial["siteBaseUrl"] is JsonValue site
+            ? site.GetValue<string>()
+            : throw new InvalidOperationException("The fake server did not report GET /__control -> siteBaseUrl");
         _static["$STORAGE_DIR"] = storageDir;
         _static["$UNREACHABLE_BASE_URL"] = unreachable;
 

@@ -18,21 +18,21 @@ It works with GitHub Sponsors and Open Collective. SDKs: JS/TS (`npm i @sponsork
 
 ## Documentation
 
-The full documentation lives at **[sponsorkit.io/docs](https://sponsorkit.io/docs)**. Good places to start:
+The full documentation lives at **[sponsorkit.github.io/sponsorkit.io/docs](https://sponsorkit.github.io/sponsorkit.io/docs/)**. Good places to start:
 
-- [Getting started](https://sponsorkit.io/docs/getting-started) and the five-language [quickstart](https://sponsorkit.io/docs/getting-started/quickstart)
-- [Install](https://sponsorkit.io/docs/install): how to fetch the SDK for each language, from a package registry or from source
-- [Concepts](https://sponsorkit.io/docs/concepts) and [guides](https://sponsorkit.io/docs/guides)
-- The [API reference](https://sponsorkit.io/docs/reference), generated from each SDK's source
+- [Getting started](https://sponsorkit.github.io/sponsorkit.io/docs/getting-started/) and the five-language [quickstart](https://sponsorkit.github.io/sponsorkit.io/docs/getting-started/quickstart/)
+- [Install](https://sponsorkit.github.io/sponsorkit.io/docs/install/): how to fetch the SDK for each language, from a package registry or from source
+- [Concepts](https://sponsorkit.github.io/sponsorkit.io/docs/concepts/) and [guides](https://sponsorkit.github.io/sponsorkit.io/docs/guides/)
+- The [API reference](https://sponsorkit.github.io/sponsorkit.io/docs/reference/), generated from each SDK's source
 
-The site is built from `web/` by `.github/workflows/ci.yml`, with the API reference generated from each SDK, and deployed together with the Worker to Cloudflare on every push to `main` (once deploys are enabled; see `docs/SPEC.md` §13). To work on the docs, see `web/content/docs/CONTRIBUTING-DOCS.md`.
+Sponsorkit runs in two places: the **site** (`web/`: landing page, docs and the consent and checkout pages) is a static export on GitHub Pages at https://sponsorkit.github.io/sponsorkit.io, and the **API** (`app/`) is a Cloudflare Worker at https://api.sponsorkit.io (see `docs/PROTOCOL.md` §0). `.github/workflows/ci.yml` builds the site, with the API reference generated from each SDK, and on every push to `main` deploys it to GitHub Pages and the Worker to Cloudflare (once deploys are enabled; see `docs/SPEC.md` §13). To work on the docs, see `web/content/docs/CONTRIBUTING-DOCS.md`.
 
 ## Repository
 
 | Path | What |
 |---|---|
-| `app/` | The stateless Cloudflare Worker: API, OAuth, sealed sessions |
-| `web/` | The static site: landing page, docs, `/connect`, `/checkout` |
+| `app/` | The stateless, API-only Cloudflare Worker (`api.sponsorkit.io`): API, OAuth, sealed sessions |
+| `web/` | The static site on GitHub Pages: landing page, docs, `/connect/`, `/checkout/` |
 | `packages/shared/` | Shared Zod schemas and types |
 | `sdks/{js,dotnet,python,go,rust}/` | The SDKs |
 | `sdks/conformance/` | The conformance kit every SDK passes |

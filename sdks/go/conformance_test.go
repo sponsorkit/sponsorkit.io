@@ -142,6 +142,8 @@ type controlState struct {
 	LastSessionToken    *string  `json:"lastSessionToken"`
 	IssuedSessionTokens []string `json:"issuedSessionTokens"`
 	LastRequestSeq      float64  `json:"lastRequestSeq"`
+	// SiteBaseURL is the site listener's base URL ($SITE_BASE_URL).
+	SiteBaseURL string `json:"siteBaseUrl"`
 }
 
 func (c *control) state() (controlState, error) {
@@ -469,6 +471,10 @@ func matchRequests(log []map[string]any, spec map[string]any) []string {
 			if r["method"] != call["method"] || r["path"] != call["path"] {
 				continue
 			}
+			// Optional listener check: "api" or "site" (README §3.6).
+			if want, has := call["server"]; has && r["server"] != want {
+				continue
+			}
 			ok := true
 			for _, part := range []string{"query", "headers", "body"} {
 				if want, has := call[part]; has && len(match(getKey(r, part), want, "$")) > 0 {
@@ -481,6 +487,9 @@ func matchRequests(log []map[string]any, spec map[string]any) []string {
 			}
 		}
 		label := fmt.Sprintf("%v %v", call["method"], call["path"])
+		if sv, ok := call["server"].(string); ok {
+			label += " (" + sv + ")"
+		}
 		count, hasCount := call["count"].(float64)
 		minN, hasMin := call["min"].(float64)
 		maxN, hasMax := call["max"].(float64)
@@ -500,7 +509,11 @@ func matchRequests(log []map[string]any, spec map[string]any) []string {
 	if exact {
 		for i, r := range relevant {
 			if !matched[i] {
-				errs = append(errs, fmt.Sprintf("unexpected request %v %v?%s", r["method"], r["path"], toJSON(r["query"])))
+				where := ""
+				if sv, ok := r["server"].(string); ok {
+					where = " (" + sv + ")"
+				}
+				errs = append(errs, fmt.Sprintf("unexpected request %v %v?%s%s", r["method"], r["path"], toJSON(r["query"]), where))
 			}
 		}
 	}
@@ -640,6 +653,7 @@ func (h *harness) runtimeVars(r *scenarioRun) vars {
 		"$BASE_URL":             h.baseURL,
 		"$STORAGE_DIR":          r.storageDir,
 		"$UNREACHABLE_BASE_URL": r.unreachable,
+		"$SITE_BASE_URL":        s.SiteBaseURL,
 		"$NOW":                  time.Now().UTC().Format("2006-01-02T15:04:05.000Z07:00"),
 	}
 	if s.LastSessionToken != nil {
@@ -749,12 +763,15 @@ func (h *harness) newClient(args map[string]any) (*sponsorkit.Client, error) {
 		OpenCollective: str(args, "opencollective"),
 		AppName:        str(args, "appName"),
 		APIBaseURL:     str(args, "apiBaseUrl"),
-		StorageDir:     str(args, "storageDir"),
-		SignInMethod:   sponsorkit.SignInMethod(str(args, "signInMethod")),
-		Env:            env,
-		OpenBrowser:    h.openBrowser,
-		PromptForCode:  h.promptForCode,
-		Stderr:         io.Discard,
+		// siteBaseUrl has no default: absent and "" both leave it unset, so the
+		// SDK's rule applies (the site defaults to apiBaseUrl).
+		SiteBaseURL:   str(args, "siteBaseUrl"),
+		StorageDir:    str(args, "storageDir"),
+		SignInMethod:  sponsorkit.SignInMethod(str(args, "signInMethod")),
+		Env:           env,
+		OpenBrowser:   h.openBrowser,
+		PromptForCode: h.promptForCode,
+		Stderr:        io.Discard,
 	}
 	if d, ok := args["devChecks"].(bool); ok {
 		opts.DevChecks = boolPtr(d)

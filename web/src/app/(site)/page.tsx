@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Code } from "@/components/code";
 import { PROTOCOL_URL } from "@/components/chrome";
 import { CheckIcon, GitHubIcon, HeartIcon, OpenCollectiveIcon } from "@/components/icons";
 import { heroSnippet, languages, quickstart } from "@/content/snippets";
+import { absoluteUrl } from "@/lib/site";
+
+export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl("/") },
+};
 
 const faqs: { q: string; a: ReactNode }[] = [
   {
@@ -65,8 +71,9 @@ const faqs: { q: string; a: ReactNode }[] = [
     q: "Can I run it myself?",
     a: (
       <p>
-        Yes. Sponsorkit is a single stateless Cloudflare Worker with no database. Bring your own OAuth apps and point the SDK at
-        it with <code>apiBaseUrl</code>. See <Link href="/docs/reference-http/self-hosting">self-hosting</Link>.
+        Yes. The API is a single stateless Cloudflare Worker with no database, and these pages are a static site. Bring your own
+        OAuth apps and point the SDK at them with <code>apiBaseUrl</code> (and <code>siteBaseUrl</code> if the pages live
+        elsewhere). See <Link href="/docs/reference-http/self-hosting">self-hosting</Link>.
       </p>
     ),
   },
